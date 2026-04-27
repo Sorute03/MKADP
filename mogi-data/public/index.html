@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>全体集計</title>
+</head>
+<body>
+<h2>全体集計</h2>
+<pre id="out"></pre>
+
+<script>
+fetch("summary.json")
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById("out").textContent =
+      JSON.stringify(data, null, 2)
+  });
+</script>
+</body>
+</html>
