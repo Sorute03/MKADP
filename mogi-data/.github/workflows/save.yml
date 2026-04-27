@@ -1,0 +1,28 @@
+name: Aggregate
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # 毎時0分に実行
+  workflow_dispatch:
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run aggregate
+        run: node scripts/aggregate.js
+
+      - name: Commit summary
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add public/summary.json
+          git commit -m "Update summary" || echo "No changes"
+          git push
