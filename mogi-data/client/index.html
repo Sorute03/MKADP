@@ -50,255 +50,6 @@
 </head>
 
 <body>
-
-<h2>MKWorld ラウンジ分析（配布ページ）</h2>
-
-<div class="section-block">
-  <label>直近 N レースで比較：</label>
-  <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-  <button onclick="refreshModeView(allRecords)">再描画</button>
-</div>
-<!-- ▼ レース登録ボタン（右下固定） -->
-<button id="openModalBtn" style="
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  padding: 14px 20px;
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 50px;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 9999;
-">＋ レース登録</button>
-
-<!-- ▼ モーダル本体 -->
-<div id="raceModal" style="
-  display:none;
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(3px);
-  justify-content:center;
-  align-items:center;
-  z-index:9998;
-">
-  <div style="
-    background:#fff;
-    padding:24px;
-    width: 95%;
-    max-width: 520px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 90%;
-    overflow-y: auto;
-  ">
-    <h3>レース登録</h3>
-
-    <!-- ▼ モード選択 -->
-    <label>モード</label><br>
-    <select id="modalMode" style="width:100%; margin-bottom:12px;">
-      <option value="lounge">ラウンジ</option>
-      <option value="tournament">大会</option>
-      <option value="nora">野良</option>
-    </select>
-
-    <!-- ▼ Tier（ラウンジのみ） -->
-    <div id="modalTierBlock">
-      <label>Tier</label><br>
-      <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
-    </div>
-
-    <!-- ▼ Season（ラウンジのみ） -->
-    <div id="modalSeasonBlock">
-      <label>Season</label><br>
-      <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
-    </div>
-
-    <!-- ▼ レース数（大会・野良） -->
-    <div id="modalRaceCountBlock">
-      <label>レース数</label><br>
-      <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
-        <option value="1">1レース</option>
-        <option value="2">2レース</option>
-        <option value="3">3レース</option>
-        <option value="4">4レース</option>
-        <option value="5">5レース</option>
-        <option value="6">6レース</option>
-        <option value="7">7レース</option>
-        <option value="8">8レース（大会）</option>
-        <option value="9">9レース</option>
-        <option value="10">10レース</option>
-        <option value="11">11レース</option>
-        <option value="12">12レース（大会）</option>
-      </select>
-    </div>
-
-    <!-- ▼ ラウンジは12固定（中断OK） -->
-    <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
-      ※ ラウンジは最大12レース（途中中断OK）
-    </div>
-
-    <!-- ▼ レース入力エリア -->
-    <div id="modalRaceInputs"></div>
-
-    <div style="text-align:right; margin-top:20px;">
-      <button id="closeModalBtn" style="padding:8px 16px; margin-right:8px;">キャンセル</button>
-      <button id="saveRaceBtn" style="padding:8px 16px; background:#007bff; color:#fff; border:none;">保存</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ▼ courseList（ここに後で Part1〜Part3 を入れる） */
-const courseList = [];  // ← 今は空のまま
-
-/* ▼ スコア計算 */
-function calcScore(rank) {
-  const table = {
-    1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
-    7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1
-  };
-  return table[rank] || 0;
-}
-
-/* ▼ モーダル要素 */
-const modal = document.getElementById("raceModal");
-const openModalBtn = document.getElementById("openModalBtn");
-const closeModalBtn = document.getElementById("closeModalBtn");
-const saveRaceBtn = document.getElementById("saveRaceBtn");
-
-const modalMode = document.getElementById("modalMode");
-const modalTierBlock = document.getElementById("modalTierBlock");
-const modalSeasonBlock = document.getElementById("modalSeasonBlock");
-const modalRaceCountBlock = document.getElementById("modalRaceCountBlock");
-const modalLoungeInfo = document.getElementById("modalLoungeInfo");
-
-const modalTier = document.getElementById("modalTier");
-const modalSeason = document.getElementById("modalSeason");
-const modalRaceCount = document.getElementById("modalRaceCount");
-const modalRaceInputs = document.getElementById("modalRaceInputs");
-
-/* ▼ 初期化 */
-function initModalSelectors() {
-  modalTier.innerHTML = loungeTiers.filter(t => t !== "ALL").map(t => `<option>${t}</option>`).join("");
-  modalSeason.innerHTML = ["S20","S21","S22","S23"].map(s => `<option>${s}</option>`).join("");
-}
-
-/* ▼ モード切替 */
-modalMode.onchange = () => updateModalMode();
-
-function updateModalMode() {
-  const mode = modalMode.value;
-
-  if (mode === "lounge") {
-    modalTierBlock.style.display = "block";
-    modalSeasonBlock.style.display = "block";
-    modalRaceCountBlock.style.display = "none";
-    modalLoungeInfo.style.display = "block";
-    generateRaceInputs(12);
-  } else {
-    modalTierBlock.style.display = "none";
-    modalSeasonBlock.style.display = "none";
-    modalRaceCountBlock.style.display = "block";
-    modalLoungeInfo.style.display = "none";
-    generateRaceInputs(Number(modalRaceCount.value));
-  }
-}
-
-/* ▼ レース数変更（大会・野良） */
-modalRaceCount.onchange = () => {
-  generateRaceInputs(Number(modalRaceCount.value));
-};
-
-/* ▼ レース入力欄生成 */
-function generateRaceInputs(count) {
-  modalRaceInputs.innerHTML = "";
-
-  for (let i = 1; i <= count; i++) {
-    modalRaceInputs.innerHTML += `
-      <div style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px;">
-        <strong>${i} レース目</strong><br>
-
-        <label>コース</label><br>
-        <select id="raceCourse_${i}" style="width:100%; margin-bottom:8px;">
-          ${courseList.map(c => `<option>${c}</option>`).join("")}
-        </select>
-
-        <label>順位</label><br>
-        <input id="raceRank_${i}" type="number" min="1" max="12" style="width:100%; margin-bottom:8px;">
-
-        <label>スコア（自動）</label><br>
-        <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
-      </div>
-    `;
-  }
-
-  for (let i = 1; i <= count; i++) {
-    const rankInput = document.getElementById(`raceRank_${i}`);
-    const scoreInput = document.getElementById(`raceScore_${i}`);
-
-    rankInput.oninput = () => {
-      scoreInput.value = calcScore(Number(rankInput.value));
-    };
-  }
-}
-
-/* ▼ モーダル開閉 */
-openModalBtn.onclick = () => {
-  initModalSelectors();
-  updateModalMode();
-  modal.classList.add("show");
-};
-
-closeModalBtn.onclick = () => {
-  modal.classList.remove("show");
-};
-
-/* ▼ 保存処理 */
-saveRaceBtn.onclick = () => {
-  const mode = modalMode.value;
-  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
-
-  const records = [];
-
-  for (let i = 1; i <= count; i++) {
-    const rank = Number(document.getElementById(`raceRank_${i}`).value);
-    if (!rank) continue;
-
-    const course = document.getElementById(`raceCourse_${i}`).value;
-
-    records.push({
-      mode,
-      season: mode === "lounge" ? modalSeason.value : null,
-      tier: mode === "lounge" ? modalTier.value : null,
-      course,
-      rank,
-      score: calcScore(rank),
-      timestamp: Date.now()
-    });
-  }
-
-  if (records.length === 0) {
-    alert("1レース以上入力してください");
-    return;
-  }
-
-  const key = "loungeRecords";
-  const old = JSON.parse(localStorage.getItem(key) || "[]");
-  const merged = [...old, ...records];
-  localStorage.setItem(key, JSON.stringify(merged));
-
-  allRecords.push(...records);
-  refreshModeView(allRecords);
-
-  modal.classList.remove("show");
-};
-</script>
-
 <script>
 const courseList = [
   "マリオブラザーズサーキット",
@@ -566,6 +317,256 @@ courseList.push(
   "ピーチスタジアム→レインボーロード"
 );
 </script>
+
+<h2>MKWorld ラウンジ分析（配布ページ）</h2>
+
+<div class="section-block">
+  <label>直近 N レースで比較：</label>
+  <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
+  <button onclick="refreshModeView(allRecords)">再描画</button>
+</div>
+<!-- ▼ レース登録ボタン（右下固定） -->
+<button id="openModalBtn" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
+">＋ レース登録</button>
+
+<!-- ▼ モーダル本体 -->
+<div id="raceModal" style="
+  display:none;
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
+  justify-content:center;
+  align-items:center;
+  z-index:9998;
+">
+  <div style="
+    background:#fff;
+    padding:24px;
+    width: 95%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    max-height: 90%;
+    overflow-y: auto;
+  ">
+    <h3>レース登録</h3>
+
+    <!-- ▼ モード選択 -->
+    <label>モード</label><br>
+    <select id="modalMode" style="width:100%; margin-bottom:12px;">
+      <option value="lounge">ラウンジ</option>
+      <option value="tournament">大会</option>
+      <option value="nora">野良</option>
+    </select>
+
+    <!-- ▼ Tier（ラウンジのみ） -->
+    <div id="modalTierBlock">
+      <label>Tier</label><br>
+      <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
+    </div>
+
+    <!-- ▼ Season（ラウンジのみ） -->
+    <div id="modalSeasonBlock">
+      <label>Season</label><br>
+      <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
+    </div>
+
+    <!-- ▼ レース数（大会・野良） -->
+    <div id="modalRaceCountBlock">
+      <label>レース数</label><br>
+      <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
+        <option value="1">1レース</option>
+        <option value="2">2レース</option>
+        <option value="3">3レース</option>
+        <option value="4">4レース</option>
+        <option value="5">5レース</option>
+        <option value="6">6レース</option>
+        <option value="7">7レース</option>
+        <option value="8">8レース（大会）</option>
+        <option value="9">9レース</option>
+        <option value="10">10レース</option>
+        <option value="11">11レース</option>
+        <option value="12">12レース（大会）</option>
+      </select>
+    </div>
+
+    <!-- ▼ ラウンジは12固定（中断OK） -->
+    <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
+      ※ ラウンジは最大12レース（途中中断OK）
+    </div>
+
+    <!-- ▼ レース入力エリア -->
+    <div id="modalRaceInputs"></div>
+
+    <div style="text-align:right; margin-top:20px;">
+      <button id="closeModalBtn" style="padding:8px 16px; margin-right:8px;">キャンセル</button>
+      <button id="saveRaceBtn" style="padding:8px 16px; background:#007bff; color:#fff; border:none;">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ▼ courseList（ここに後で Part1〜Part3 を入れる） */
+const courseList = [];  // ← 今は空のまま
+
+/* ▼ スコア計算 */
+function calcScore(rank) {
+  const table = {
+    1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
+    7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1
+  };
+  return table[rank] || 0;
+}
+
+/* ▼ モーダル要素 */
+const modal = document.getElementById("raceModal");
+const openModalBtn = document.getElementById("openModalBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const saveRaceBtn = document.getElementById("saveRaceBtn");
+
+const modalMode = document.getElementById("modalMode");
+const modalTierBlock = document.getElementById("modalTierBlock");
+const modalSeasonBlock = document.getElementById("modalSeasonBlock");
+const modalRaceCountBlock = document.getElementById("modalRaceCountBlock");
+const modalLoungeInfo = document.getElementById("modalLoungeInfo");
+
+const modalTier = document.getElementById("modalTier");
+const modalSeason = document.getElementById("modalSeason");
+const modalRaceCount = document.getElementById("modalRaceCount");
+const modalRaceInputs = document.getElementById("modalRaceInputs");
+
+/* ▼ 初期化 */
+function initModalSelectors() {
+  modalTier.innerHTML = loungeTiers.filter(t => t !== "ALL").map(t => `<option>${t}</option>`).join("");
+  modalSeason.innerHTML = ["S20","S21","S22","S23"].map(s => `<option>${s}</option>`).join("");
+}
+
+/* ▼ モード切替 */
+modalMode.onchange = () => updateModalMode();
+
+function updateModalMode() {
+  const mode = modalMode.value;
+
+  if (mode === "lounge") {
+    modalTierBlock.style.display = "block";
+    modalSeasonBlock.style.display = "block";
+    modalRaceCountBlock.style.display = "none";
+    modalLoungeInfo.style.display = "block";
+    generateRaceInputs(12);
+  } else {
+    modalTierBlock.style.display = "none";
+    modalSeasonBlock.style.display = "none";
+    modalRaceCountBlock.style.display = "block";
+    modalLoungeInfo.style.display = "none";
+    generateRaceInputs(Number(modalRaceCount.value));
+  }
+}
+
+/* ▼ レース数変更（大会・野良） */
+modalRaceCount.onchange = () => {
+  generateRaceInputs(Number(modalRaceCount.value));
+};
+
+/* ▼ レース入力欄生成 */
+function generateRaceInputs(count) {
+  modalRaceInputs.innerHTML = "";
+
+  for (let i = 1; i <= count; i++) {
+    modalRaceInputs.innerHTML += `
+      <div style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px;">
+        <strong>${i} レース目</strong><br>
+
+        <label>コース</label><br>
+        <select id="raceCourse_${i}" style="width:100%; margin-bottom:8px;">
+          ${courseList.map(c => `<option>${c}</option>`).join("")}
+        </select>
+
+        <label>順位</label><br>
+        <input id="raceRank_${i}" type="number" min="1" max="12" style="width:100%; margin-bottom:8px;">
+
+        <label>スコア（自動）</label><br>
+        <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
+      </div>
+    `;
+  }
+
+  for (let i = 1; i <= count; i++) {
+    const rankInput = document.getElementById(`raceRank_${i}`);
+    const scoreInput = document.getElementById(`raceScore_${i}`);
+
+    rankInput.oninput = () => {
+      scoreInput.value = calcScore(Number(rankInput.value));
+    };
+  }
+}
+
+/* ▼ モーダル開閉 */
+openModalBtn.onclick = () => {
+  initModalSelectors();
+  updateModalMode();
+  modal.classList.add("show");
+};
+
+closeModalBtn.onclick = () => {
+  modal.classList.remove("show");
+};
+
+/* ▼ 保存処理 */
+saveRaceBtn.onclick = () => {
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+
+  const records = [];
+
+  for (let i = 1; i <= count; i++) {
+    const rank = Number(document.getElementById(`raceRank_${i}`).value);
+    if (!rank) continue;
+
+    const course = document.getElementById(`raceCourse_${i}`).value;
+
+    records.push({
+      mode,
+      season: mode === "lounge" ? modalSeason.value : null,
+      tier: mode === "lounge" ? modalTier.value : null,
+      course,
+      rank,
+      score: calcScore(rank),
+      timestamp: Date.now()
+    });
+  }
+
+  if (records.length === 0) {
+    alert("1レース以上入力してください");
+    return;
+  }
+
+  const key = "loungeRecords";
+  const old = JSON.parse(localStorage.getItem(key) || "[]");
+  const merged = [...old, ...records];
+  localStorage.setItem(key, JSON.stringify(merged));
+
+  allRecords.push(...records);
+  refreshModeView(allRecords);
+
+  modal.classList.remove("show");
+};
+</script>
+
+
 
 <!-- ▼ 分析 UI 全体 -->
 
