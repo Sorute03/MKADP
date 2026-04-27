@@ -46,6 +46,8 @@ function aggregate(records) {
     bySeason: {},
     daily: {},
     monthly: {},
+    dailyCourse: {},
+    monthlyCourse: {},
     rankings: {}
   };
 
@@ -102,6 +104,18 @@ function aggregate(records) {
     // --- monthly ---
     const m = ensure(summary.monthly, month, { count: 0 });
     m.count++;
+
+    // --- dailyCourse（★新規追加） ---
+    const dc = ensure(summary.dailyCourse, day, {});
+    const dcCourse = ensure(dc, course, { count: 0, ranks: [] });
+    dcCourse.count++;
+    dcCourse.ranks.push(r.rank);
+
+    // --- monthlyCourse（★新規追加） ---
+    const mc = ensure(summary.monthlyCourse, month, {});
+    const mcCourse = ensure(mc, course, { count: 0, ranks: [] });
+    mcCourse.count++;
+    mcCourse.ranks.push(r.rank);
   }
 
   // 平均値を計算して整形
@@ -138,36 +152,30 @@ function aggregate(records) {
     delete s.scores;
   }
 
+  // --- dailyCourse 平均値 ---
+  for (const day of Object.keys(summary.dailyCourse)) {
+    for (const course of Object.keys(summary.dailyCourse[day])) {
+      const dc = summary.dailyCourse[day][course];
+      dc.avgRank = avg(dc.ranks);
+      delete dc.ranks;
+    }
+  }
+
+  // --- monthlyCourse 平均値 ---
+  for (const month of Object.keys(summary.monthlyCourse)) {
+    for (const course of Object.keys(summary.monthlyCourse[month])) {
+      const mc = summary.monthlyCourse[month][course];
+      mc.avgRank = avg(mc.ranks);
+      delete mc.ranks;
+    }
+  }
+
   // --- ランキング生成 ---
   summary.rankings.mostPlayedCourses =
     Object.entries(summary.byCourse)
       .sort((a,b)=>b[1].count - a[1].count)
       .slice(0, 20)
       .map(([course, data]) => ({ course, count: data.count }));
-
-  summary.rankings.mostPlayedByTier = {};
-  for (const tier of Object.keys(summary.byTier)) {
-    summary.rankings.mostPlayedByTier[tier] =
-      Object.entries(summary.byCourseTier)
-        .map(([course, tiers]) => ({
-          course,
-          count: tiers[tier]?.count || 0
-        }))
-        .sort((a,b)=>b.count - a.count)
-        .slice(0, 20);
-  }
-
-  summary.rankings.mostPlayedBySeason = {};
-  for (const season of Object.keys(summary.bySeason)) {
-    summary.rankings.mostPlayedBySeason[season] =
-      Object.entries(summary.byCourseSeason)
-        .map(([course, seasons]) => ({
-          course,
-          count: seasons[season]?.count || 0
-        }))
-        .sort((a,b)=>b.count - a.count)
-        .slice(0, 20);
-  }
 
   return summary;
 }
