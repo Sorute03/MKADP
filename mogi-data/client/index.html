@@ -418,10 +418,22 @@
     </div>
   </div>
 </div>
-
+  
 <script>
-/* ▼ courseList（ここに後で Part1〜Part3 を入れる） */
-const courseList = [];  // ← 今は空のまま
+document.getElementById("openModalBtn").addEventListener("click", () => {
+  document.getElementById("raceModal").classList.add("show");
+});
+
+document.getElementById("closeModalBtn").addEventListener("click", () => {
+  document.getElementById("raceModal").classList.remove("show");
+});
+
+document.getElementById("raceModal").addEventListener("click", (e) => {
+  if (e.target.id === "raceModal") {
+    document.getElementById("raceModal").classList.remove("show");
+  }
+});
+</script>
 
 /* ▼ スコア計算 */
 function calcScore(rank) {
