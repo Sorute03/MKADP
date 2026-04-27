@@ -50,6 +50,13 @@ a:hover { text-decoration: underline; }
 </div>
 
 <script>
+fetch("aggregate.json")
+  .then(r => r.json())
+  .then(data => {
+    allRecords = data;
+    refreshModeView(allRecords);
+  });
+
 async function loadSummary() {
   const res = await fetch("summary.json");
   return await res.json();
