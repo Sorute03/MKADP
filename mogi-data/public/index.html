@@ -52,15 +52,16 @@ async function loadSummary() {
   return await res.json();
 }
 
-function renderList(el, items) {
+function renderList(el, items, totalCount) {
   el.innerHTML = "";
   items.forEach((item, i) => {
+    const rate = ((item.count / totalCount) * 100).toFixed(2);
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
       <span class="rank">${i+1}位</span>
       <span>${item.course}</span>
-      <span>（${item.count}回）</span>
+      <span>（${item.count}回 / ${rate}%）</span>
     `;
     el.appendChild(div);
   });
@@ -77,10 +78,13 @@ function renderOptions(select, keys) {
 }
 
 loadSummary().then(summary => {
+  const total = summary.totalCount;
+
   // --- 全体ランキング ---
   renderList(
     document.getElementById("overallList"),
-    summary.rankings.mostPlayedCourses
+    summary.rankings.mostPlayedCourses,
+    total
   );
 
   // --- Tier別 ---
@@ -91,7 +95,8 @@ loadSummary().then(summary => {
     const key = document.getElementById("tierSelect").value;
     renderList(
       document.getElementById("tierList"),
-      summary.rankings.mostPlayedByTier[key]
+      summary.rankings.mostPlayedByTier[key],
+      total
     );
   }
   document.getElementById("tierSelect").onchange = updateTier;
@@ -105,50 +110,45 @@ loadSummary().then(summary => {
     const key = document.getElementById("seasonSelect").value;
     renderList(
       document.getElementById("seasonList"),
-      summary.rankings.mostPlayedBySeason[key]
+      summary.rankings.mostPlayedBySeason[key],
+      total
     );
   }
   document.getElementById("seasonSelect").onchange = updateSeason;
   updateSeason();
 
   // --- 日別 ---
-  const dailyKeys = Object.keys(summary.daily).sort();
+  const dailyKeys = Object.keys(summary.dailyCourse).sort();
   renderOptions(document.getElementById("dailySelect"), dailyKeys);
 
   function updateDaily() {
     const key = document.getElementById("dailySelect").value;
-    const dayCount = summary.daily[key].count;
+    const dailyData = summary.dailyCourse[key] || {};
 
-    // コース別に日付フィルタをかける
-    const filtered = Object.entries(summary.byCourse)
-      .map(([course, data]) => ({
-        course,
-        count: data.count // 本来は日付別に集計するなら aggregate.js を強化
-      }))
+    const list = Object.entries(dailyData)
+      .map(([course, data]) => ({ course, count: data.count }))
       .sort((a,b)=>b.count - a.count)
       .slice(0, 20);
 
-    renderList(document.getElementById("dailyList"), filtered);
+    renderList(document.getElementById("dailyList"), list, total);
   }
   document.getElementById("dailySelect").onchange = updateDaily;
   updateDaily();
 
   // --- 月別 ---
-  const monthlyKeys = Object.keys(summary.monthly).sort();
+  const monthlyKeys = Object.keys(summary.monthlyCourse).sort();
   renderOptions(document.getElementById("monthlySelect"), monthlyKeys);
 
   function updateMonthly() {
     const key = document.getElementById("monthlySelect").value;
+    const monthlyData = summary.monthlyCourse[key] || {};
 
-    const filtered = Object.entries(summary.byCourse)
-      .map(([course, data]) => ({
-        course,
-        count: data.count // 本来は月別に集計するなら aggregate.js を強化
-      }))
+    const list = Object.entries(monthlyData)
+      .map(([course, data]) => ({ course, count: data.count }))
       .sort((a,b)=>b.count - a.count)
       .slice(0, 20);
 
-    renderList(document.getElementById("monthlyList"), filtered);
+    renderList(document.getElementById("monthlyList"), list, total);
   }
   document.getElementById("monthlySelect").onchange = updateMonthly;
   updateMonthly();
