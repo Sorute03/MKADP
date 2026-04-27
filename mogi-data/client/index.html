@@ -1285,6 +1285,12 @@ function updateScatterView() {
     }
   });
 }
+// 1時間に1回送信
+setInterval(sendDataToGitHub, 3600000);
+
+// 初回送信したいならコメント解除
+// sendDataToGitHub();
+
 async function sendDataToGitHub() {
   const key = "loungeRecords";
   const data = JSON.parse(localStorage.getItem(key) || "[]");
@@ -1295,10 +1301,10 @@ async function sendDataToGitHub() {
 
   const content = btoa(JSON.stringify(data, null, 2));
 
-  await fetch(`https://api.github.com/repos/【あなたのGitHub名】/【リポジトリ名】/contents/${fileName}`, {
+  await fetch(`https://api.github.com/repos/【GitHubユーザー名】/【リポジトリ名】/contents/${fileName}`, {
     method: "PUT",
     headers: {
-      "Authorization": "token 【GitHubのPersonal Access Token】",
+      "Authorization": "token 【GitHub Personal Access Token】",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -1308,7 +1314,12 @@ async function sendDataToGitHub() {
   });
 }
 
-setInterval(sendDataToGitHub, 3600000); // 1時間ごと
+function generateUserId() {
+  const id = "user_" + Math.random().toString(36).slice(2);
+  localStorage.setItem("userId", id);
+  return id;
+}
+
 
 </script>
 </body>
