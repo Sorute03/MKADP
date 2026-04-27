@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模擬データ（個人用・GitHub Contents API版）</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+input, select, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+.card { padding: 15px; border: 1px solid #ccc; border-radius: 8px; margin-top: 20px; }
+.hidden { display: none; }
+nav button { width: 48%; }
+pre { white-space: pre-wrap; }
+small { color: #666; }
+</style>
+</head>
+<body>
+<h2>模擬データ（個人用）</h2>
+<small>※ このHTMLは公開前提です。GitHubトークンは「users/」だけ書き込み可能な Fine-grained Token を使ってください。</small>
+
+<nav>
+  <button id="btnInput">データ入力</button>
+  <button id="btnSummary">個人集計</button>
+</nav>
+
+<!-- 入力画面 -->
+<div id="pageInput">
+  <h3>データ入力</h3>
+
+  <label>コース名</label>
+  <input id="course" placeholder="例: マリオサーキット">
+
+  <label>順位</label>
+  <input id="rank" type="number" min="1" max="12">
+
+  <label>得点</label>
+  <input id="score" type="number">
+
+  <label>Season</label>
+  <select id="season">
+    <option value="season1">season1</option>
+    <option value="season2">season2</option>
+  </select>
+
+  <label>Tier</label>
+  <select id="tier">
+    <option value="SQ">SQ</option>
+    <option value="DE">DE</option>
+  </select>
+
+  <button id="saveLocal">ローカル保存</button>
+  <button id="sendGithub">GitHubへ送信</button>
+
+  <div class="card">
+    <h3>ローカル保存データ一覧</h3>
+    <pre id="localList"></pre>
+  </div>
+</div>
+
+<!-- 個人集計画面 -->
+<div id="pageSummary" class="hidden">
+  <h3>個人集計データ</h3>
+  <pre id="summary"></pre>
+</div>
+
+<script type="module">
+/* ============================
+   GitHub 設定（書き換え）
+============================ */
+const GITHUB_OWNER = "YOUR_GITHUB_NAME";
+const GITHUB_REPO  = "YOUR_REPO_NAME";
+const GITHUB_TOKEN = "YOUR_FINE_GRAINED_TOKEN"; // users/ 以下のみ書き込み権限
+
+const GITHUB_API_BASE =
+  `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents`;
+
+/* ============================
+   deviceId（重複防止）
+============================ */
+function getDeviceId() {
+  let id = localStorage.getItem("mogi_deviceId");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("mogi_deviceId", id);
+  }
+  return id;
+}
+const deviceId = getDeviceId();
+
+/* ============================
+   IndexedDB
+============================ */
+const DB_NAME = "mogiDB";
+const STORE   = "results";
+let dbLocal;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function addLocal(record) {
+  const tx = dbLocal.transaction(STORE, "readwrite");
+  tx.objectStore(STORE).add(record);
+  return new Promise(res => tx.oncomplete = res);
+}
+
+async function getAllLocal() {
+  const tx = dbLocal.transaction(STORE, "readonly");
+  const req = tx.objectStore(STORE).getAll();
+  return new Promise(res => req.onsuccess = () => res(req.result));
+}
+
+async function putManyLocal(records) {
+  const tx = dbLocal.transaction(STORE, "readwrite");
+  const store = tx.objectStore(STORE);
+  for (const r of records) store.put(r);
+  return new Promise(res => tx.oncomplete = res);
+}
+
+/* ============================
+   UTF-8 → Base64
+============================ */
+function toBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+/* ============================
+   GitHub Contents API 送信
+   users/{deviceId}/{timestamp}.json として保存
+============================ */
+async function sendRecordToGithub(record) {
+  const ts   = record.timestamp || Date.now();
+  const path = `users/${deviceId}/${ts}.json`;
+  const url  = `${GITHUB_API_BASE}/${encodeURIComponent(path)}`;
+
+  const content = toBase64(JSON.stringify(record));
+
+  const body = {
+    message: `add record ${deviceId} ${ts}`,
+    content
+  };
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${GITHUB_TOKEN}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub送信失敗: ${res.status} ${text}`);
+  }
+}
+
+/* ============================
+   個人集計
+============================ */
+function calcSummary(records) {
+  if (records.length === 0) return "データなし";
+
+  const ranks  = records.map(r => r.rank);
+  const scores = records.map(r => r.score);
+
+  const avgRank  = (ranks.reduce((a,b)=>a+b,0) / ranks.length).toFixed(2);
+  const avgScore = (scores.reduce((a,b)=>a+b,0) / scores.length).toFixed(2);
+
+  const top = records.filter(r => r.rank <= 5).length;
+  const mid = records.filter(r => r.rank >= 6 && r.rank <= 15).length;
+  const low = records.filter(r => r.rank >= 16).length;
+
+  return JSON.stringify({
+    試行回数: records.length,
+    平均順位: avgRank,
+    平均得点: avgScore,
+    上位率: ((top / records.length) * 100).toFixed(1) + "%",
+    中位率: ((mid / records.length) * 100).toFixed(1) + "%",
+    下位率: ((low / records.length) * 100).toFixed(1) + "%"
+  }, null, 2);
+}
+
+/* ============================
+   UI イベント
+============================ */
+document.getElementById("saveLocal").onclick = async () => {
+  const record = {
+    course: course.value,
+    rank: Number(rank.value),
+    score: Number(score.value),
+    season: season.value,
+    tier: tier.value,
+    timestamp: Date.now(),
+    deviceId,
+    sent: false
+  };
+  await addLocal(record);
+  alert("ローカル保存しました");
+  refreshLocal();
+};
+
+document.getElementById("sendGithub").onclick = async () => {
+  try {
+    const all    = await getAllLocal();
+    const unsent = all.filter(r => !r.sent);
+
+    if (unsent.length === 0) {
+      alert("未送信データはありません");
+      return;
+    }
+
+    for (const r of unsent) {
+      await sendRecordToGithub(r);
+      r.sent = true;
+    }
+    await putManyLocal(all);
+
+    alert("GitHubへ送信しました");
+    refreshLocal();
+  } catch (e) {
+    console.error(e);
+    alert(e.message);
+  }
+};
+
+document.getElementById("btnInput").onclick = () => {
+  pageInput.classList.remove("hidden");
+  pageSummary.classList.add("hidden");
+};
+
+document.getElementById("btnSummary").onclick = async () => {
+  const all = await getAllLocal();
+  summary.textContent = calcSummary(all);
+  pageInput.classList.add("hidden");
+  pageSummary.classList.remove("hidden");
+};
+
+/* ============================
+   初期化
+============================ */
+dbLocal = await openDB();
+refreshLocal();
+
+async function refreshLocal() {
+  const all = await getAllLocal();
+  localList.textContent = JSON.stringify(all, null, 2);
+}
+</script>
+</body>
+</html>
