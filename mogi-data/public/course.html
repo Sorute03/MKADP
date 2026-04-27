@@ -6,7 +6,7 @@
 <style>
 body { font-family: sans-serif; padding: 20px; }
 h2 { margin-top: 30px; }
-select { padding: 8px; font-size: 16px; }
+select, input { padding: 8px; font-size: 16px; width: 100%; margin-bottom: 10px; }
 .section { margin-top: 25px; }
 .item { padding: 4px 0; border-bottom: 1px solid #ddd; }
 .ranktag { color: #888; margin-left: 8px; }
@@ -20,9 +20,7 @@ select { padding: 8px; font-size: 16px; }
   color: #333;
   font-size: 14px;
 }
-.backbtn:hover {
-  background: #ddd;
-}
+.backbtn:hover { background: #ddd; }
 </style>
 </head>
 <body>
@@ -30,6 +28,9 @@ select { padding: 8px; font-size: 16px; }
 <a href="index.html" class="backbtn">← ランキングに戻る</a>
 
 <h1>コース詳細ページ</h1>
+
+<label>コース検索</label>
+<input id="searchBox" placeholder="コース名を入力">
 
 <label>コースを選択</label>
 <select id="courseSelect"></select>
@@ -72,20 +73,42 @@ function renderList(obj, formatter) {
 loadSummary().then(summary => {
   const courseKeys = Object.keys(summary.byCourse).sort();
   const select = document.getElementById("courseSelect");
+  const searchBox = document.getElementById("searchBox");
 
-  // コース一覧をセレクトに追加
-  courseKeys.forEach(c => {
-    const op = document.createElement("option");
-    op.value = c;
-    op.textContent = c;
-    select.appendChild(op);
-  });
+  // セレクトに全コース追加
+  function populateSelect(list) {
+    select.innerHTML = "";
+    list.forEach(c => {
+      const op = document.createElement("option");
+      op.value = c;
+      op.textContent = c;
+      select.appendChild(op);
+    });
+  }
+
+  populateSelect(courseKeys);
 
   // URLパラメータで初期選択
   const initial = getQueryParam("course");
   if (initial && courseKeys.includes(initial)) {
     select.value = initial;
+    searchBox.value = initial;
   }
+
+  // 検索欄 → セレクト絞り込み
+  searchBox.addEventListener("input", () => {
+    const q = searchBox.value.trim();
+    const filtered = courseKeys.filter(c => c.includes(q));
+    populateSelect(filtered);
+
+    // 一致するものがあれば自動選択
+    if (filtered.length > 0) {
+      select.value = filtered[0];
+      update();
+    } else {
+      document.getElementById("content").innerHTML = "<p>該当コースなし</p>";
+    }
+  });
 
   function update() {
     const course = select.value;
@@ -94,7 +117,7 @@ loadSummary().then(summary => {
 
     let html = "";
 
-    // --- 基本情報（平均値なし） ---
+    // --- 基本情報 ---
     const rate = (base.count / total * 100).toFixed(2);
     const overallRank = findRank(summary.rankings.mostPlayedCourses, course);
 
