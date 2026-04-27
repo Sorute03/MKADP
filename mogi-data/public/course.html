@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>コース詳細</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+h2 { margin-top: 30px; }
+select { padding: 8px; font-size: 16px; }
+.section { margin-top: 25px; }
+.item { padding: 4px 0; border-bottom: 1px solid #ddd; }
+.ranktag { color: #888; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<h1>コース詳細ページ</h1>
+
+<label>コースを選択</label>
+<select id="courseSelect"></select>
+
+<div id="content"></div>
+
+<script>
+async function loadSummary() {
+  const res = await fetch("summary.json");
+  return await res.json();
+}
+
+// ランキング順位を取得する関数
+function findRank(list, course) {
+  const idx = list.findIndex(item => item.course === course);
+  return idx === -1 ? "-" : (idx + 1);
+}
+
+function renderSection(title, html) {
+  return `
+    <div class="section">
+      <h2>${title}</h2>
+      ${html}
+    </div>
+  `;
+}
+
+function renderList(obj, formatter) {
+  return Object.entries(obj)
+    .map(([key, data]) => formatter(key, data))
+    .join("");
+}
+
+loadSummary().then(summary => {
+  const courseKeys = Object.keys(summary.byCourse).sort();
+  const select = document.getElementById("courseSelect");
+
+  // コース一覧をセレクトに追加
+  courseKeys.forEach(c => {
+    const op = document.createElement("option");
+    op.value = c;
+    op.textContent = c;
+    select.appendChild(op);
+  });
+
+  function update() {
+    const course = select.value;
+    const base = summary.byCourse[course];
+    const total = summary.totalCount;
+
+    let html = "";
+
+    // --- 基本情報（平均値なし） ---
+    const rate = (base.count / total * 100).toFixed(2);
+    const overallRank = findRank(summary.rankings.mostPlayedCourses, course);
+
+    html += renderSection("基本情報", `
+      <div class="item">走行回数：${base.count}回</div>
+      <div class="item">選択率：${rate}%</div>
+      <div class="item">全体ランキング：${overallRank}位</div>
+    `);
+
+    // --- Tier別 ---
+    const tierData = summary.byCourseTier[course] || {};
+    html += renderSection("Tier別", renderList(tierData, (tier, data) => {
+      const rank = findRank(summary.rankings.mostPlayedByTier[tier] || [], course);
+      return `
+        <div class="item">
+          ${tier}：${data.count}回
+          <span class="ranktag">（${rank}位）</span>
+        </div>
+      `;
+    }));
+
+    // --- Season別 ---
+    const seasonData = summary.byCourseSeason[course] || {};
+    html += renderSection("Season別", renderList(seasonData, (season, data) => {
+      const rank = findRank(summary.rankings.mostPlayedBySeason[season] || [], course);
+      return `
+        <div class="item">
+          ${season}：${data.count}回
+          <span class="ranktag">（${rank}位）</span>
+        </div>
+      `;
+    }));
+
+    // --- 日別 ---
+    const daily = summary.dailyCourse;
+    const dailyFiltered = {};
+    for (const day of Object.keys(daily)) {
+      if (daily[day][course]) dailyFiltered[day] = daily[day][course];
+    }
+
+    html += renderSection("日別推移", renderList(dailyFiltered, (day, data) => {
+      // 日別ランキングを作る
+      const list = Object.entries(summary.dailyCourse[day])
+        .map(([c, d]) => ({ course: c, count: d.count }))
+        .sort((a,b)=>b.count - a.count);
+
+      const rank = findRank(list, course);
+
+      return `
+        <div class="item">
+          ${day}：${data.count}回
+          <span class="ranktag">（${rank}位）</span>
+        </div>
+      `;
+    }));
+
+    // --- 月別 ---
+    const monthly = summary.monthlyCourse;
+    const monthlyFiltered = {};
+    for (const month of Object.keys(monthly)) {
+      if (monthly[month][course]) monthlyFiltered[month] = monthly[month][course];
+    }
+
+    html += renderSection("月別推移", renderList(monthlyFiltered, (month, data) => {
+      const list = Object.entries(summary.monthlyCourse[month])
+        .map(([c, d]) => ({ course: c, count: d.count }))
+        .sort((a,b)=>b.count - a.count);
+
+      const rank = findRank(list, course);
+
+      return `
+        <div class="item">
+          ${month}：${data.count}回
+          <span class="ranktag">（${rank}位）</span>
+        </div>
+      `;
+    }));
+
+    document.getElementById("content").innerHTML = html;
+  }
+
+  select.onchange = update;
+  update();
+});
+</script>
+
+</body>
+</html>
