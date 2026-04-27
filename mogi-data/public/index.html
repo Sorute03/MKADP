@@ -2,19 +2,158 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>全体集計</title>
+<title>全体集計ダッシュボード</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+h2 { margin-top: 40px; }
+.list { margin-top: 10px; }
+.item { padding: 6px 0; border-bottom: 1px solid #ddd; }
+.rank { font-weight: bold; margin-right: 10px; }
+.section { margin-top: 30px; }
+select { padding: 8px; font-size: 16px; }
+</style>
 </head>
 <body>
-<h2>全体集計</h2>
-<pre id="out"></pre>
+
+<h1>全体集計ダッシュボード</h1>
+
+<div class="section">
+  <h2>全体ランキング（コース別）</h2>
+  <div id="overallList" class="list"></div>
+</div>
+
+<div class="section">
+  <h2>Tier別ランキング</h2>
+  <select id="tierSelect"></select>
+  <div id="tierList" class="list"></div>
+</div>
+
+<div class="section">
+  <h2>Season別ランキング</h2>
+  <select id="seasonSelect"></select>
+  <div id="seasonList" class="list"></div>
+</div>
+
+<div class="section">
+  <h2>日別ランキング</h2>
+  <select id="dailySelect"></select>
+  <div id="dailyList" class="list"></div>
+</div>
+
+<div class="section">
+  <h2>月別ランキング</h2>
+  <select id="monthlySelect"></select>
+  <div id="monthlyList" class="list"></div>
+</div>
 
 <script>
-fetch("summary.json")
-  .then(r => r.json())
-  .then(data => {
-    document.getElementById("out").textContent =
-      JSON.stringify(data, null, 2)
+async function loadSummary() {
+  const res = await fetch("summary.json");
+  return await res.json();
+}
+
+function renderList(el, items) {
+  el.innerHTML = "";
+  items.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <span class="rank">${i+1}位</span>
+      <span>${item.course}</span>
+      <span>（${item.count}回）</span>
+    `;
+    el.appendChild(div);
   });
+}
+
+function renderOptions(select, keys) {
+  select.innerHTML = "";
+  keys.forEach(k => {
+    const op = document.createElement("option");
+    op.value = k;
+    op.textContent = k;
+    select.appendChild(op);
+  });
+}
+
+loadSummary().then(summary => {
+  // --- 全体ランキング ---
+  renderList(
+    document.getElementById("overallList"),
+    summary.rankings.mostPlayedCourses
+  );
+
+  // --- Tier別 ---
+  const tierKeys = Object.keys(summary.rankings.mostPlayedByTier);
+  renderOptions(document.getElementById("tierSelect"), tierKeys);
+
+  function updateTier() {
+    const key = document.getElementById("tierSelect").value;
+    renderList(
+      document.getElementById("tierList"),
+      summary.rankings.mostPlayedByTier[key]
+    );
+  }
+  document.getElementById("tierSelect").onchange = updateTier;
+  updateTier();
+
+  // --- Season別 ---
+  const seasonKeys = Object.keys(summary.rankings.mostPlayedBySeason);
+  renderOptions(document.getElementById("seasonSelect"), seasonKeys);
+
+  function updateSeason() {
+    const key = document.getElementById("seasonSelect").value;
+    renderList(
+      document.getElementById("seasonList"),
+      summary.rankings.mostPlayedBySeason[key]
+    );
+  }
+  document.getElementById("seasonSelect").onchange = updateSeason;
+  updateSeason();
+
+  // --- 日別 ---
+  const dailyKeys = Object.keys(summary.daily).sort();
+  renderOptions(document.getElementById("dailySelect"), dailyKeys);
+
+  function updateDaily() {
+    const key = document.getElementById("dailySelect").value;
+    const dayCount = summary.daily[key].count;
+
+    // コース別に日付フィルタをかける
+    const filtered = Object.entries(summary.byCourse)
+      .map(([course, data]) => ({
+        course,
+        count: data.count // 本来は日付別に集計するなら aggregate.js を強化
+      }))
+      .sort((a,b)=>b.count - a.count)
+      .slice(0, 20);
+
+    renderList(document.getElementById("dailyList"), filtered);
+  }
+  document.getElementById("dailySelect").onchange = updateDaily;
+  updateDaily();
+
+  // --- 月別 ---
+  const monthlyKeys = Object.keys(summary.monthly).sort();
+  renderOptions(document.getElementById("monthlySelect"), monthlyKeys);
+
+  function updateMonthly() {
+    const key = document.getElementById("monthlySelect").value;
+
+    const filtered = Object.entries(summary.byCourse)
+      .map(([course, data]) => ({
+        course,
+        count: data.count // 本来は月別に集計するなら aggregate.js を強化
+      }))
+      .sort((a,b)=>b.count - a.count)
+      .slice(0, 20);
+
+    renderList(document.getElementById("monthlyList"), filtered);
+  }
+  document.getElementById("monthlySelect").onchange = updateMonthly;
+  updateMonthly();
+});
 </script>
+
 </body>
 </html>
