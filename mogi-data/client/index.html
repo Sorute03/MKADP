@@ -325,6 +325,21 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
+<div id="tabs" style="margin-bottom:20px;">
+  <button class="tabBtn active" data-tab="analysisTab">分析</button>
+  <button class="tabBtn" data-tab="historyTab">レース一覧</button>
+</div>
+  
+<!-- ▼ 分析タブ -->
+<div id="analysisTab" class="tabContent" style="display:block;">
+  <!-- ここに今の分析UI全部が入る（rangeN とかグラフとか） -->
+</div>
+
+<!-- ▼ レース一覧タブ -->
+<div id="historyTab" class="tabContent" style="display:none;">
+  <h3>登録済みレース一覧</h3>
+  <div id="raceHistoryList"></div>
+</div>
 
 <div class="section-block">
   <label>直近 N レースで比較：</label>
