@@ -1591,6 +1591,11 @@ function generateBatchId() {
 setInterval(sendDataToGitHub, 3600000);
 // 初回送信したいならコメント解除
 // sendDataToGitHub();
+  
+function toBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
 
 async function sendDataToGitHub() {
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
@@ -1617,7 +1622,7 @@ async function sendDataToGitHub() {
   };
 
   const fileName = `data/${userId}_${batchId}.json`;
-  const content = btoa(JSON.stringify(payload, null, 2));
+  const content = toBase64(JSON.stringify(payload, null, 2));
   const res = await fetch(`https://api.github.com/repos/Sorute03/MKADP/contents/${fileName}`, {
     method: "PUT",
     headers: {
