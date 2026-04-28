@@ -787,38 +787,60 @@ saveRaceBtn.onclick = async () => {
 /* ==========
    共通データ
 ========== */
-const secretKey = "MKWorldSecretKey2026";
+async function getAesKey() {
+  let keyBase64 = localStorage.getItem("aesKey");
+  if (!keyBase64) {
+    const raw = crypto.getRandomValues(new Uint8Array(32)); // 256bit
+    keyBase64 = btoa(String.fromCharCode(...raw));
+    localStorage.setItem("aesKey", keyBase64);
+  }
+
+  const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
+  return crypto.subtle.importKey(
+    "raw",
+    raw,
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
 
 async function encrypt(text) {
-  const enc = new TextEncoder().encode(text);
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secretKey),
-    "AES-GCM",
-    false,
-    ["encrypt"]
-  );
+  const key = await getAesKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc);
-  return btoa(JSON.stringify({ iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) }));
+
+  const encoded = new TextEncoder().encode(text);
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    encoded
+  );
+
+  const combined = new Uint8Array(iv.length + cipher.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(cipher), iv.length);
+
+  return btoa(String.fromCharCode(...combined));
 }
 
+
 async function decrypt(base64) {
-  const { iv, data } = JSON.parse(atob(base64));
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secretKey),
-    "AES-GCM",
-    false,
-    ["decrypt"]
-  );
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
+  const key = await getAesKey();
+  const data = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+  const iv = data.slice(0, 12);
+  const cipher = data.slice(12);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
     key,
-    new Uint8Array(data)
+    cipher
   );
-  return new TextDecoder().decode(decrypted);
+
+  return new TextDecoder().decode(plain);
 }
+
 
 /* ▼ セーブデータ生成 */
 async function exportSaveData() {
