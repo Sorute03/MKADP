@@ -10,6 +10,10 @@ h2 { margin-top: 30px; }
 .item { padding: 6px 0; border-bottom: 1px solid #ddd; }
 .stat { margin: 4px 0; }
 </style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 <body>
 
@@ -25,6 +29,12 @@ h2 { margin-top: 30px; }
 
 <h2>Season別割合（ラウンジのみ）</h2>
 <div id="seasonDist"></div>
+
+<h2>Tier別勝率（全ユーザー）</h2>
+<div id="tierWinRate"></div>
+
+<h2>Season別勝率推移（全ユーザー）</h2>
+<canvas id="seasonChart" width="400" height="200"></canvas>
 
 <script>
 /* ============================
@@ -88,6 +98,85 @@ function calcSeasonDistribution(records) {
 }
 
 /* ============================
+   ▼ Tier別勝率（全ユーザー）
+============================ */
+function calcTierWinRate(records) {
+  const map = {};
+
+  records.forEach(r => {
+    if (r.mode !== "lounge") return;
+    if (!map[r.tier]) map[r.tier] = { total: 0, wins: 0 };
+
+    map[r.tier].total++;
+    if (r.rank === 1) map[r.tier].wins++;
+  });
+
+  return Object.entries(map)
+    .map(([tier, v]) => ({
+      tier,
+      winRate: v.total ? (v.wins / v.total) : 0,
+      total: v.total
+    }))
+    .sort((a, b) => b.winRate - a.winRate);
+}
+
+function renderTierWinRate(el, list) {
+  el.innerHTML = "";
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.textContent =
+      `${item.tier}： 勝率 ${(item.winRate * 100).toFixed(1)}%（${item.total}レース）`;
+    el.appendChild(div);
+  });
+}
+
+/* ============================
+   ▼ Season別勝率推移（全ユーザー）
+============================ */
+function calcSeasonWinRate(records) {
+  const map = {};
+
+  records.forEach(r => {
+    if (r.mode !== "lounge") return;
+    if (!map[r.season]) map[r.season] = { total: 0, wins: 0 };
+
+    map[r.season].total++;
+    if (r.rank === 1) map[r.season].wins++;
+  });
+
+  return Object.entries(map)
+    .map(([season, v]) => ({
+      season,
+      winRate: v.total ? (v.wins / v.total) : 0
+    }))
+    .sort((a, b) => a.season.localeCompare(b.season));
+}
+
+function renderSeasonChart(list) {
+  const ctx = document.getElementById("seasonChart").getContext("2d");
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: list.map(x => x.season),
+      datasets: [{
+        label: "勝率（%）",
+        data: list.map(x => (x.winRate * 100).toFixed(1)),
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.3)",
+        tension: 0.2
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+}
+
+/* ============================
    ▼ リスト描画
 ============================ */
 function renderDist(el, dist, total) {
@@ -114,9 +203,8 @@ function renderDist(el, dist, total) {
   const total = filtered.length;
 
   // 基本統計（総レース数のみ）
-  document.getElementById("basicStats").innerHTML = `
-    <div class="stat">総レース数：${total}</div>
-  `;
+  document.getElementById("basicStats").innerHTML =
+    `<div class="stat">総レース数：${total}</div>`;
 
   // モード別
   renderDist(document.getElementById("modeDist"), calcModeDistribution(filtered), total);
@@ -126,6 +214,14 @@ function renderDist(el, dist, total) {
 
   // Season別
   renderDist(document.getElementById("seasonDist"), calcSeasonDistribution(filtered), total);
+
+  // Tier別勝率
+  const tierWin = calcTierWinRate(filtered);
+  renderTierWinRate(document.getElementById("tierWinRate"), tierWin);
+
+  // Season別勝率推移
+  const seasonWin = calcSeasonWinRate(filtered);
+  renderSeasonChart(seasonWin);
 })();
 </script>
 
