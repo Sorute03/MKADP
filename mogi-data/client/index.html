@@ -604,10 +604,15 @@ saveRaceBtn.onclick = async () => {
 
   allRecords.push(...records);
   refreshModeView(allRecords);
+  
 
   /* ▼ 追加：暗号化保存＋バックアップ */
   await saveAllRecords();
   downloadBackup();
+  // ▼ 送信キューに追加（未送信データだけを1時間後に送る）
+  const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
+  queue.push(...records);
+  localStorage.setItem("sendQueue", JSON.stringify(queue));
 
   modal.classList.remove("show");
 };
@@ -1474,7 +1479,6 @@ function update3DView() {
 /* ==========
    散布図（強さ × 成長）
 ========== */
-
 function updateScatterView() {
   const records = filterByModeAndRange(allRecords);
   if (!records.length) {
@@ -1531,43 +1535,83 @@ function updateScatterView() {
     }
   });
 }
-// 1時間に1回送信
-setInterval(sendDataToGitHub, 3600000);
 
+/* ============================================================
+   ▼ 固定コピー対策ID（ユーザーID）生成
+   ============================================================ */
+function getUserCopyId() {
+  let id = localStorage.getItem("userCopyId");
+  if (!id) {
+    const unixSec = Math.floor(Date.now() / 1000);
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    id = `U-${unixSec}-${rand}`;
+    localStorage.setItem("userCopyId", id);
+  }
+  return id;
+}
+
+/* ============================================================
+   ▼ 1時間バッチID生成
+   ============================================================ */
+function generateBatchId() {
+  const unixSec = Math.floor(Date.now() / 1000);
+  const rand = Math.floor(100000 + Math.random() * 900000);
+  return `${unixSec}-${rand}`;
+}
+
+/* ============================================================
+   ▼ 1時間ごとの送信処理
+   ============================================================ */
+setInterval(sendDataToGitHub, 3600000);
 // 初回送信したいならコメント解除
 // sendDataToGitHub();
 
 async function sendDataToGitHub() {
-  const key = "loungeRecords";
-  const data = JSON.parse(localStorage.getItem(key) || "[]");
-  if (!data.length) return;
+  const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
+  if (!queue.length) return;
 
-  const userId = localStorage.getItem("userId") || generateUserId();
-  const fileName = `data/${userId}.json`;
+  const userId = getUserCopyId();      // 固定コピーID
+  const batchId = generateBatchId();   // 1時間バッチID
 
-  const content = btoa(JSON.stringify(data, null, 2));
+  // 公開用データに変換（匿名化）
+  const publicRaces = queue.map(r => ({
+    mode: r.mode,
+    season: r.season,
+    tier: r.tier,
+    course: r.course,
+    rank: r.rank,
+    score: r.score
+  }));
 
-  await fetch(`https://api.github.com/repos/【GitHubユーザー名】/【リポジトリ名】/contents/${fileName}`, {
+  const payload = {
+    userId,
+    batchId,
+    timestamp: Math.floor(Date.now() / 1000),
+    races: publicRaces
+  };
+
+  const fileName = `data/${userId}_${batchId}.json`;
+  const content = btoa(JSON.stringify(payload, null, 2));
+
+  const res = await fetch(`https://api.github.com/repos/【GitHubユーザー名】/【リポジトリ名】/contents/${fileName}`, {
     method: "PUT",
     headers: {
       "Authorization": "token 【GitHub Personal Access Token】",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      message: "update user data",
+      message: "add batch data",
       content
     })
   });
+
+  if (res.ok) {
+    console.log("送信成功:", batchId);
+    localStorage.setItem("sendQueue", "[]"); // キューを空にする
+  } else {
+    console.log("送信失敗 → 次の1時間に再試行");
+  }
 }
-
-function generateUserId() {
-  const id = "user_" + Math.random().toString(36).slice(2);
-  localStorage.setItem("userId", id);
-  return id;
-}
-
-
 </script>
 </body>
 </html>
-
