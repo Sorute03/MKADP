@@ -1617,26 +1617,28 @@ async function sendDataToGitHub() {
 
   const fileName = `data/${userId}_${batchId}.json`;
   const content = btoa(JSON.stringify(payload, null, 2));
-
-  const res = await fetch(`https://api.github.com/repos/【GitHubユーザー名】/【リポジトリ名】/contents/${fileName}`, {
+  const res = await fetch(`https://api.github.com/repos/Sorute03/MKADP/contents/${fileName}`, {
     method: "PUT",
     headers: {
-      "Authorization": "token 【GitHub Personal Access Token】",
+      "Authorization": "token12345", // ← Fine-grained Token
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
       message: "add batch data",
-      content
+      content: content,          // ← Base64エンコード済みの文字列
+      sha: undefined             // ← 新規作成なので不要（上書き時のみ必要）
     })
   });
-
+  
   if (res.ok) {
     console.log("送信成功:", batchId);
     localStorage.setItem("sendQueue", "[]"); // キューを空にする
   } else {
+    const errorText = await res.text();
     console.log("送信失敗 → 次の1時間に再試行");
+    console.log(errorText);
   }
-}
+
 </script>
 </body>
 </html>
