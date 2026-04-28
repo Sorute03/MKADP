@@ -11,43 +11,44 @@ h2 { margin-top: 40px; }
 .item { padding: 6px 0; border-bottom: 1px solid #ddd; }
 .rank { font-weight: bold; margin-right: 10px; }
 .section { margin-top: 30px; }
-select { padding: 8px; font-size: 16px; }
+select { padding: 8px; font-size: 16px; margin-right: 10px; }
 a { color: #0077cc; text-decoration: none; }
 a:hover { text-decoration: underline; }
+.filterBox { margin-bottom: 20px; }
 </style>
 </head>
 <body>
 
 <h1>全体集計ダッシュボード</h1>
 
-<div class="section">
-  <h2>全体ランキング（コース別）</h2>
-  <div id="overallList" class="list"></div>
+<div class="filterBox">
+  <label>モード：</label>
+  <select id="filterMode" class="filter">
+    <option value="all">すべて</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label>Tier：</label>
+  <select id="filterTier" class="filter">
+    <option value="all">すべて</option>
+  </select>
+
+  <label>Season：</label>
+  <select id="filterSeason" class="filter">
+    <option value="all">すべて</option>
+  </select>
+
+  <label>日付：</label>
+  <input type="date" id="filterDate" class="filter">
+
+  <label>月：</label>
+  <input type="month" id="filterMonth" class="filter">
 </div>
 
-<div class="section">
-  <h2>Tier別ランキング</h2>
-  <select id="tierSelect"></select>
-  <div id="tierList" class="list"></div>
-</div>
-
-<div class="section">
-  <h2>Season別ランキング</h2>
-  <select id="seasonSelect"></select>
-  <div id="seasonList" class="list"></div>
-</div>
-
-<div class="section">
-  <h2>日別ランキング</h2>
-  <select id="dailySelect"></select>
-  <div id="dailyList" class="list"></div>
-</div>
-
-<div class="section">
-  <h2>月別ランキング</h2>
-  <select id="monthlySelect"></select>
-  <div id="monthlyList" class="list"></div>
-</div>
+<h2>コース別ランキング（フィルター適用後）</h2>
+<div id="rankingList" class="list"></div>
 
 <script>
 /* ============================
@@ -60,103 +61,69 @@ async function loadAllData() {
 }
 
 /* ============================
+   ▼ フィルター適用
+============================ */
+function applyFilters(races) {
+  let filtered = [...races];
+
+  const mode = document.getElementById("filterMode").value;
+  const tier = document.getElementById("filterTier").value;
+  const season = document.getElementById("filterSeason").value;
+  const date = document.getElementById("filterDate").value;
+  const month = document.getElementById("filterMonth").value;
+
+  if (mode !== "all") {
+    filtered = filtered.filter(r => r.mode === mode);
+  }
+
+  if (tier !== "all") {
+    filtered = filtered.filter(r => r.tier === tier);
+  }
+
+  if (season !== "all") {
+    filtered = filtered.filter(r => r.season === season);
+  }
+
+  if (date) {
+    filtered = filtered.filter(r => {
+      const d = new Date(r.timestamp * 1000).toISOString().slice(0, 10);
+      return d === date;
+    });
+  }
+
+  if (month) {
+    filtered = filtered.filter(r => {
+      const m = new Date(r.timestamp * 1000).toISOString().slice(0, 7);
+      return m === month;
+    });
+  }
+
+  return filtered;
+}
+
+/* ============================
    ▼ コース別集計
 ============================ */
 function aggregateByCourse(races) {
   const map = {};
 
-  for (const r of races) {
-    if (!map[r.course]) {
-      map[r.course] = { count: 0 };
-    }
-    map[r.course].count++;
-  }
+  races.forEach(r => {
+    if (!map[r.course]) map[r.course] = 0;
+    map[r.course]++;
+  });
 
   return Object.entries(map)
-    .map(([course, v]) => ({ course, count: v.count }))
+    .map(([course, count]) => ({ course, count }))
     .sort((a, b) => b.count - a.count);
 }
 
 /* ============================
-   ▼ Tier別集計
+   ▼ ランキング描画
 ============================ */
-function aggregateByTier(races) {
-  const map = {};
-
-  for (const r of races) {
-    if (!r.tier) continue;
-
-    if (!map[r.tier]) map[r.tier] = {};
-    if (!map[r.tier][r.course]) map[r.tier][r.course] = 0;
-
-    map[r.tier][r.course]++;
-  }
-
-  return map;
-}
-
-/* ============================
-   ▼ Season別集計
-============================ */
-function aggregateBySeason(races) {
-  const map = {};
-
-  for (const r of races) {
-    if (!r.season) continue;
-
-    if (!map[r.season]) map[r.season] = {};
-    if (!map[r.season][r.course]) map[r.season][r.course] = 0;
-
-    map[r.season][r.course]++;
-  }
-
-  return map;
-}
-
-/* ============================
-   ▼ 日別集計（YYYY-MM-DD）
-============================ */
-function aggregateDaily(races) {
-  const map = {};
-
-  for (const r of races) {
-    const d = new Date(r.timestamp * 1000);
-    const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
-
-    if (!map[key]) map[key] = {};
-    if (!map[key][r.course]) map[key][r.course] = 0;
-
-    map[key][r.course]++;
-  }
-
-  return map;
-}
-
-/* ============================
-   ▼ 月別集計（YYYY-MM）
-============================ */
-function aggregateMonthly(races) {
-  const map = {};
-
-  for (const r of races) {
-    const d = new Date(r.timestamp * 1000);
-    const key = d.toISOString().slice(0, 7); // YYYY-MM
-
-    if (!map[key]) map[key] = {};
-    if (!map[key][r.course]) map[key][r.course] = 0;
-
-    map[key][r.course]++;
-  }
-
-  return map;
-}
-
-/* ============================
-   ▼ リスト描画
-============================ */
-function renderList(el, items, total) {
+function renderRanking(el, list, total) {
   el.innerHTML = "";
-  items.forEach((item, i) => {
+
+  list.forEach((item, i) => {
     const rate = ((item.count / total) * 100).toFixed(2);
     const encoded = encodeURIComponent(item.course);
 
@@ -172,88 +139,57 @@ function renderList(el, items, total) {
 }
 
 /* ============================
-   ▼ セレクトボックス描画
+   ▼ Tier / Season の選択肢生成
 ============================ */
-function renderOptions(select, keys) {
-  select.innerHTML = "";
-  keys.forEach(k => {
+function initTierSeasonOptions(races) {
+  const tierSet = new Set();
+  const seasonSet = new Set();
+
+  races.forEach(r => {
+    if (r.mode === "lounge") {
+      if (r.tier) tierSet.add(r.tier);
+      if (r.season) seasonSet.add(r.season);
+    }
+  });
+
+  const tierSelect = document.getElementById("filterTier");
+  tierSet.forEach(t => {
     const op = document.createElement("option");
-    op.value = k;
-    op.textContent = k;
-    select.appendChild(op);
+    op.value = t;
+    op.textContent = t;
+    tierSelect.appendChild(op);
+  });
+
+  const seasonSelect = document.getElementById("filterSeason");
+  seasonSet.forEach(s => {
+    const op = document.createElement("option");
+    op.value = s;
+    op.textContent = s;
+    seasonSelect.appendChild(op);
   });
 }
 
 /* ============================
    ▼ メイン処理
 ============================ */
-loadAllData().then(races => {
-  const total = races.length;
+let allRaces = [];
 
-  // 全体ランキング
-  const overall = aggregateByCourse(races);
-  renderList(document.getElementById("overallList"), overall, total);
+async function updateRanking() {
+  const filtered = applyFilters(allRaces);
+  const list = aggregateByCourse(filtered);
+  renderRanking(document.getElementById("rankingList"), list, filtered.length);
+}
 
-  // Tier別
-  const byTier = aggregateByTier(races);
-  const tierKeys = Object.keys(byTier);
-  renderOptions(document.getElementById("tierSelect"), tierKeys);
+(async function() {
+  allRaces = await loadAllData();
+  initTierSeasonOptions(allRaces);
 
-  function updateTier() {
-    const key = document.getElementById("tierSelect").value;
-    const list = Object.entries(byTier[key])
-      .map(([course, count]) => ({ course, count }))
-      .sort((a,b)=>b.count - a.count);
-    renderList(document.getElementById("tierList"), list, total);
-  }
-  document.getElementById("tierSelect").onchange = updateTier;
-  updateTier();
+  document.querySelectorAll(".filter").forEach(el => {
+    el.onchange = updateRanking;
+  });
 
-  // Season別
-  const bySeason = aggregateBySeason(races);
-  const seasonKeys = Object.keys(bySeason);
-  renderOptions(document.getElementById("seasonSelect"), seasonKeys);
-
-  function updateSeason() {
-    const key = document.getElementById("seasonSelect").value;
-    const list = Object.entries(bySeason[key])
-      .map(([course, count]) => ({ course, count }))
-      .sort((a,b)=>b.count - a.count);
-    renderList(document.getElementById("seasonList"), list, total);
-  }
-  document.getElementById("seasonSelect").onchange = updateSeason;
-  updateSeason();
-
-  // 日別
-  const daily = aggregateDaily(races);
-  const dailyKeys = Object.keys(daily).sort();
-  renderOptions(document.getElementById("dailySelect"), dailyKeys);
-
-  function updateDaily() {
-    const key = document.getElementById("dailySelect").value;
-    const list = Object.entries(daily[key])
-      .map(([course, count]) => ({ course, count }))
-      .sort((a,b)=>b.count - a.count);
-    renderList(document.getElementById("dailyList"), list, total);
-  }
-  document.getElementById("dailySelect").onchange = updateDaily;
-  updateDaily();
-
-  // 月別
-  const monthly = aggregateMonthly(races);
-  const monthlyKeys = Object.keys(monthly).sort();
-  renderOptions(document.getElementById("monthlySelect"), monthlyKeys);
-
-  function updateMonthly() {
-    const key = document.getElementById("monthlySelect").value;
-    const list = Object.entries(monthly[key])
-      .map(([course, count]) => ({ course, count }))
-      .sort((a,b)=>b.count - a.count);
-    renderList(document.getElementById("monthlyList"), list, total);
-  }
-  document.getElementById("monthlySelect").onchange = updateMonthly;
-  updateMonthly();
-});
+  updateRanking();
+})();
 </script>
 
 </body>
