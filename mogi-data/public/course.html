@@ -5,474 +5,128 @@
 <title>コース詳細</title>
 <style>
 body { font-family: sans-serif; padding: 20px; }
+h1 { margin-bottom: 10px; }
 h2 { margin-top: 30px; }
-select, input { padding: 8px; font-size: 16px; width: 100%; margin-bottom: 10px; }
-.section { margin-top: 25px; }
-.item { padding: 4px 0; border-bottom: 1px solid #ddd; }
-.ranktag { color: #888; margin-left: 8px; }
-.backbtn {
-  display: inline-block;
-  margin-bottom: 20px;
-  padding: 8px 14px;
-  background: #eee;
-  border-radius: 6px;
-  text-decoration: none;
-  color: #333;
-  font-size: 14px;
-}
-.backbtn:hover { background: #ddd; }
+.item { padding: 6px 0; border-bottom: 1px solid #ddd; }
+.stat { margin: 4px 0; }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="backbtn">← ランキングに戻る</a>
+<h1 id="courseTitle"></h1>
 
-<h1>コース詳細ページ</h1>
+<div id="basicStats"></div>
 
-<label>コース検索</label>
-<input id="searchBox" placeholder="コース名を入力">
+<h2>モード別割合（全ユーザー）</h2>
+<div id="modeDist"></div>
 
-<label>コースを選択</label>
-<select id="courseSelect"></select>
+<h2>Tier別割合（ラウンジのみ）</h2>
+<div id="tierDist"></div>
 
-<div id="content"></div>
+<h2>Season別割合（ラウンジのみ）</h2>
+<div id="seasonDist"></div>
 
 <script>
-fetch("aggregate.json")
-  .then(r => r.json())
-  .then(data => {
-    allRecords = data;
-    refreshModeView(allRecords);
+/* ============================
+   ▼ all.json を読み込む
+============================ */
+async function loadAllData() {
+  const res = await fetch("data/all.json");
+  const json = await res.json();
+  return json.races;
+}
+
+/* ============================
+   ▼ URL パラメータからコース名取得
+============================ */
+function getCourseName() {
+  const params = new URLSearchParams(location.search);
+  return params.get("course");
+}
+
+/* ============================
+   ▼ モード別割合
+============================ */
+function calcModeDistribution(records) {
+  const dist = { lounge: 0, tournament: 0, nora: 0 };
+
+  records.forEach(r => {
+    if (dist[r.mode] !== undefined) dist[r.mode]++;
   });
 
-const ALL_COURSES = [
-  "マリオブラザーズサーキット",
-  "トロフィーシティ",
-  "シュポポコースター",
-  "DKうちゅうセンター",
-  "サンサンさばく",
-  "ヘイホーカーニバル",
-  "ワリオスタジアム",
-  "キラーシップ",
-  "DKスノーマウンテン",
-  "ロゼッタてんもんだい",
-  "アイスビルディング",
-  "ワリオシップ",
-  "ノコノコビーチ",
-  "リバーサイドサファリ",
-  "ピーチスタジアム",
-  "ピーチビーチ",
-  "ソルティータウン",
-  "ディノディノジャングル",
-  "ハテナしんでん",
-  "プクプクフォールズ",
-  "ショーニューロード",
-  "おばけシネマ",
-  "ほねほねツイスター",
-  "モーモーカントリー",
-  "チョコマウンテン",
-  "キノピオファクトリー",
-  "クッパキャッスル",
-  "どんぐりツリーハウス",
-  "マリオサーキット",
-  "レインボーロード",
-
-  // --- 道コース（A→B） ---
-  "DKうちゅうセンター→マリオブラザーズサーキット",
-  "キノピオファクトリー→マリオブラザーズサーキット",
-  "サンサンさばく→マリオブラザーズサーキット",
-  "シュポポコースター→マリオブラザーズサーキット",
-  "チョコマウンテン→マリオブラザーズサーキット",
-  "トロフィーシティ→マリオブラザーズサーキット",
-  "ヘイホーカーニバル→マリオブラザーズサーキット",
-  "ワリオスタジアム→マリオブラザーズサーキット",
-
-  "DKうちゅうセンター→トロフィーシティ",
-  "シュポポコースター→トロフィーシティ",
-  "サンサンさばく→トロフィーシティ",
-  "チョコマウンテン→トロフィーシティ",
-  "ノコノコビーチ→トロフィーシティ",
-  "ピーチスタジアム→トロフィーシティ",
-  "マリオブラザーズサーキット→トロフィーシティ",
-  "モーモーカントリー→トロフィーシティ",
-  "リバーサイドサファリ→トロフィーシティ",
-  "ワリオスタジアム→トロフィーシティ",
-
-  "DKうちゅうセンター→シュポポコースター",
-  "サンサンさばく→シュポポコースター",
-  "チョコマウンテン→シュポポコースター",
-  "トロフィーシティ→シュポポコースター",
-  "マリオブラザーズサーキット→シュポポコースター",
-
-  "シュポポコースター→DKうちゅうセンター",
-  "トロフィーシティ→DKうちゅうセンター",
-  "ノコノコビーチ→DKうちゅうセンター",
-
-  "DKうちゅうセンター→サンサンさばく",
-  "シュポポコースター→サンサンさばく",
-  "トロフィーシティ→サンサンさばく",
-  "ヘイホーカーニバル→サンサンさばく",
-  "マリオブラザーズサーキット→サンサンさばく",
-
-  "キラーシップ→ヘイホーカーニバル",
-  "サンサンさばく→ヘイホーカーニバル",
-  "チョコマウンテン→ヘイホーカーニバル",
-  "マリオブラザーズサーキット→ヘイホーカーニバル",
-  "ワリオスタジアム→ヘイホーカーニバル",
-
-  "キノピオファクトリー→ワリオスタジアム",
-  "キラーシップ→ワリオスタジアム",
-  "クッパキャッスル→ワリオスタジアム",
-  "チョコマウンテン→ワリオスタジアム",
-  "トロフィーシティ→ワリオスタジアム",
-  "ヘイホーカーニバル→ワリオスタジアム",
-
-  "キノピオファクトリー→キラーシップ",
-  "クッパキャッスル→キラーシップ",
-  "ヘイホーカーニバル→キラーシップ",
-  "ほねほねツイスター→キラーシップ",
-  "ワリオスタジアム→キラーシップ",
-
-  "アイスビルディング→DKスノーマウンテン",
-  "ショーニューロード→DKスノーマウンテン",
-  "ソルティータウン→DKスノーマウンテン",
-  "プクプクフォールズ→DKスノーマウンテン",
-  "モーモーカントリー→DKスノーマウンテン",
-  "ロゼッタてんもんだい→DKスノーマウンテン",
-  "ワリオシップ→DKスノーマウンテン",
-
-  "DKスノーマウンテン→ロゼッタてんもんだい",
-  "アイスビルディング→ロゼッタてんもんだい",
-  "おばけシネマ→ロゼッタてんもんだい",
-  "ショーニューロード→ロゼッタてんもんだい",
-  "プクプクフォールズ→ロゼッタてんもんだい",
-  "マリオサーキット→ロゼッタてんもんだい",
-  "ワリオシップ→ロゼッタてんもんだい",
-
-  "DKスノーマウンテン→アイスビルディング",
-  "ショーニューロード→アイスビルディング",
-  "ロゼッタてんもんだい→アイスビルディング",
-  "ワリオシップ→アイスビルディング",
-
-  "DKスノーマウンテン→ワリオシップ",
-  "アイスビルディング→ワリオシップ",
-  "ソルティータウン→ワリオシップ",
-  "ピーチビーチ→ワリオシップ",
-  "プクプクフォールズ→ワリオシップ",
-  "ロゼッタてんもんだい→ワリオシップ",
-
-  "DKうちゅうセンター→ノコノコビーチ",
-  "サンサンさばく→ノコノコビーチ",
-  "シュポポコースター→ノコノコビーチ",
-  "ディノディノジャングル→ノコノコビーチ",
-  "トロフィーシティ→ノコノコビーチ",
-  "ハテナしんでん→ノコノコビーチ",
-  "ピーチスタジアム→ノコノコビーチ",
-  "リバーサイドサファリ→ノコノコビーチ",
-
-  "ソルティータウン→リバーサイドサファリ",
-  "ディノディノジャングル→リバーサイドサファリ",
-  "トロフィーシティ→リバーサイドサファリ",
-  "ノコノコビーチ→リバーサイドサファリ",
-  "ハテナしんでん→リバーサイドサファリ",
-  "ピーチスタジアム→リバーサイドサファリ",
-  "ピーチビーチ→リバーサイドサファリ",
-  "プクプクフォールズ→リバーサイドサファリ",
-
-  "DKうちゅうセンター→ピーチスタジアム",
-  "キノピオファクトリー→ピーチスタジアム",
-  "チョコマウンテン→ピーチスタジアム",
-  "トロフィーシティ→ピーチスタジアム",
-  "ノコノコビーチ→ピーチスタジアム",
-  "プクプクフォールズ→ピーチスタジアム",
-  "マリオサーキット→ピーチスタジアム",
-  "モーモーカントリー→ピーチスタジアム",
-  "リバーサイドサファリ→ピーチスタジアム",
-
-  "ソルティータウン→ピーチビーチ",
-  "ディノディノジャングル→ピーチビーチ",
-  "ハテナしんでん→ピーチビーチ",
-  "リバーサイドサファリ→ピーチビーチ",
-  "ワリオシップ→ピーチビーチ",
-
-  "DKスノーマウンテン→ソルティータウン",
-  "アイスビルディング→ソルティータウン",
-  "ディノディノジャングル→ソルティータウン",
-  "ハテナしんでん→ソルティータウン",
-  "ピーチビーチ→ソルティータウン",
-  "プクプクフォールズ→ソルティータウン",
-  "リバーサイドサファリ→ソルティータウン",
-  "ワリオシップ→ソルティータウン",
-
-  "ソルティータウン→ディノディノジャングル",
-  "ノコノコビーチ→ディノディノジャングル",
-  "ハテナしんでん→ディノディノジャングル",
-  "ピーチビーチ→ディノディノジャングル",
-  "リバーサイドサファリ→ディノディノジャングル",
-
-  "ソルティータウン→ハテナしんでん",
-  "ディノディノジャングル→ハテナしんでん",
-  "ピーチビーチ→ハテナしんでん",
-  "リバーサイドサファリ→ハテナしんでん",
-
-  "DKスノーマウンテン→プクプクフォールズ",
-  "アイスビルディング→プクプクフォールズ",
-  "ショーニューロード→プクプクフォールズ",
-  "ソルティータウン→プクプクフォールズ",
-  "チョコマウンテン→プクプクフォールズ",
-  "ピーチスタジアム→プクプクフォールズ",
-  "モーモーカントリー→プクプクフォールズ",
-  "リバーサイドサファリ→プクプクフォールズ",
-  "ロゼッタてんもんだい→プクプクフォールズ",
-  "ワリオシップ→プクプクフォールズ",
-
-  "DKスノーマウンテン→ショーニューロード",
-  "アイスビルディング→ショーニューロード",
-  "おばけシネマ→ショーニューロード",
-  "キノピオファクトリー→ショーニューロード",
-  "どんぐりツリーハウス→ショーニューロード",
-  "プクプクフォールズ→ショーニューロード",
-  "マリオサーキット→ショーニューロード",
-  "モーモーカントリー→ショーニューロード",
-  "ロゼッタてんもんだい→ショーニューロード",
-
-  "ショーニューロード→おばけシネマ",
-  "どんぐりツリーハウス→おばけシネマ",
-  "ほねほねツイスター→おばけシネマ",
-  "マリオサーキット→おばけシネマ",
-  "ロゼッタてんもんだい→おばけシネマ",
-
-  "おばけシネマ→ほねほねツイスター",
-  "キノピオファクトリー→ほねほねツイスター",
-  "キラーシップ→ほねほねツイスター",
-  "クッパキャッスル→ほねほねツイスター",
-  "どんぐりツリーハウス→ほねほねツイスター",
-  "マリオサーキット→ほねほねツイスター",
-  "モーモーカントリー→ほねほねツイスター",
-  "ワリオスタジアム→ほねほねツイスター",
-
-  "DKスノーマウンテン→モーモーカントリー",
-  "キノピオファクトリー→モーモーカントリー",
-  "ショーニューロード→モーモーカントリー",
-  "チョコマウンテン→モーモーカントリー",
-  "トロフィーシティ→モーモーカントリー",
-  "ピーチスタジアム→モーモーカントリー",
-  "プクプクフォールズ→モーモーカントリー",
-  "ほねほねツイスター→モーモーカントリー",
-  "マリオサーキット→モーモーカントリー",
-
-  "キノピオファクトリー→チョコマウンテン",
-  "クッパキャッスル→チョコマウンテン",
-  "シュポポコースター→チョコマウンテン",
-  "トロフィーシティ→チョコマウンテン",
-  "ピーチスタジアム→チョコマウンテン",
-  "プクプクフォールズ→チョコマウンテン",
-  "ヘイホーカーニバル→チョコマウンテン",
-  "マリオブラザーズサーキット→チョコマウンテン",
-  "モーモーカントリー→チョコマウンテン",
-  "ワリオスタジアム→チョコマウンテン",
-
-  "キラーシップ→キノピオファクトリー",
-  "クッパキャッスル→キノピオファクトリー",
-  "ショーニューロード→キノピオファクトリー",
-  "チョコマウンテン→キノピオファクトリー",
-  "どんぐりツリーハウス→キノピオファクトリー",
-  "ピーチスタジアム→キノピオファクトリー",
-  "ほねほねツイスター→キノピオファクトリー",
-  "マリオサーキット→キノピオファクトリー",
-  "マリオブラザーズサーキット→キノピオファクトリー",
-  "モーモーカントリー→キノピオファクトリー",
-
-  "ワリオスタジアム→モーモーカントリー",
-
-  "キノピオファクトリー→クッパキャッスル",
-  "キラーシップ→クッパキャッスル",
-  "チョコマウンテン→クッパキャッスル",
-  "ほねほねツイスター→クッパキャッスル",
-  "マリオサーキット→クッパキャッスル",
-  "ワリオスタジアム→クッパキャッスル",
-
-  "おばけシネマ→どんぐりツリーハウス",
-  "キノピオファクトリー→どんぐりツリーハウス",
-  "ショーニューロード→どんぐりツリーハウス",
-  "ほねほねツイスター→どんぐりツリーハウス",
-  "マリオサーキット→どんぐりツリーハウス",
-
-  "おばけシネマ→マリオサーキット",
-  "キノピオファクトリー→マリオサーキット",
-  "クッパキャッスル→マリオサーキット",
-  "ショーニューロード→マリオサーキット",
-  "どんぐりツリーハウス→マリオサーキット",
-  "ほねほねツイスター→マリオサーキット",
-  "モーモーカントリー→マリオサーキット",
-  "ロゼッタてんもんだい→マリオサーキット",
-
-  "ピーチスタジアム→レインボーロード"
-];
-
-// URLパラメータ取得
-function getQueryParam(name) {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(name);
+  return dist;
 }
 
-async function loadSummary() {
-  const res = await fetch("summary.json");
-  return await res.json();
+/* ============================
+   ▼ Tier別割合（ラウンジのみ）
+============================ */
+function calcTierDistribution(records) {
+  const dist = {};
+
+  records.forEach(r => {
+    if (r.mode !== "lounge") return;
+    if (!dist[r.tier]) dist[r.tier] = 0;
+    dist[r.tier]++;
+  });
+
+  return dist;
 }
 
-// ランキング順位を取得
-function findRank(list, course) {
-  const idx = list.findIndex(item => item.course === course);
-  return idx === -1 ? "-" : (idx + 1);
+/* ============================
+   ▼ Season別割合（ラウンジのみ）
+============================ */
+function calcSeasonDistribution(records) {
+  const dist = {};
+
+  records.forEach(r => {
+    if (r.mode !== "lounge") return;
+    if (!dist[r.season]) dist[r.season] = 0;
+    dist[r.season]++;
+  });
+
+  return dist;
 }
 
-function renderSection(title, html) {
-  return `
-    <div class="section">
-      <h2>${title}</h2>
-      ${html}
-    </div>
+/* ============================
+   ▼ リスト描画
+============================ */
+function renderDist(el, dist, total) {
+  el.innerHTML = "";
+  Object.entries(dist).forEach(([key, count]) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    const rate = ((count / total) * 100).toFixed(2);
+    div.textContent = `${key}： ${count}回（${rate}%）`;
+    el.appendChild(div);
+  });
+}
+
+/* ============================
+   ▼ メイン処理
+============================ */
+(async function() {
+  const course = getCourseName();
+  document.getElementById("courseTitle").textContent = course;
+
+  const races = await loadAllData();
+  const filtered = races.filter(r => r.course === course);
+
+  const total = filtered.length;
+
+  // 基本統計（総レース数のみ）
+  document.getElementById("basicStats").innerHTML = `
+    <div class="stat">総レース数：${total}</div>
   `;
-}
 
-function renderList(obj, formatter) {
-  return Object.entries(obj)
-    .map(([key, data]) => formatter(key, data))
-    .join("");
-}
+  // モード別
+  renderDist(document.getElementById("modeDist"), calcModeDistribution(filtered), total);
 
-loadSummary().then(summary => {
-  const courseKeys = Object.keys(summary.byCourse).sort();
-  const select = document.getElementById("courseSelect");
-  const searchBox = document.getElementById("searchBox");
+  // Tier別
+  renderDist(document.getElementById("tierDist"), calcTierDistribution(filtered), total);
 
-  // セレクトに全コース追加
-  function populateSelect(list) {
-    select.innerHTML = "";
-    list.forEach(c => {
-      const op = document.createElement("option");
-      op.value = c;
-      op.textContent = c;
-      select.appendChild(op);
-    });
-  }
-
-  populateSelect(courseKeys);
-
-  // URLパラメータで初期選択
-  const initial = getQueryParam("course");
-  if (initial && courseKeys.includes(initial)) {
-    select.value = initial;
-    searchBox.value = initial;
-  }
-
-  // 検索欄 → セレクト絞り込み
-  searchBox.addEventListener("input", () => {
-    const q = searchBox.value.trim();
-    const filtered = courseKeys.filter(c => c.includes(q));
-    populateSelect(filtered);
-
-    // 一致するものがあれば自動選択
-    if (filtered.length > 0) {
-      select.value = filtered[0];
-      update();
-    } else {
-      document.getElementById("content").innerHTML = "<p>該当コースなし</p>";
-    }
-  });
-
-  function update() {
-    const course = select.value;
-    const base = summary.byCourse[course];
-    const total = summary.totalCount;
-
-    let html = "";
-
-    // --- 基本情報 ---
-    const rate = (base.count / total * 100).toFixed(2);
-    const overallRank = findRank(summary.rankings.mostPlayedCourses, course);
-
-    html += renderSection("基本情報", `
-      <div class="item">走行回数：${base.count}回</div>
-      <div class="item">選択率：${rate}%</div>
-      <div class="item">全体ランキング：${overallRank}位</div>
-    `);
-
-    // --- Tier別 ---
-    const tierData = summary.byCourseTier[course] || {};
-    html += renderSection("Tier別", renderList(tierData, (tier, data) => {
-      const rank = findRank(summary.rankings.mostPlayedByTier[tier] || [], course);
-      return `
-        <div class="item">
-          ${tier}：${data.count}回
-          <span class="ranktag">（${rank}位）</span>
-        </div>
-      `;
-    }));
-
-    // --- Season別 ---
-    const seasonData = summary.byCourseSeason[course] || {};
-    html += renderSection("Season別", renderList(seasonData, (season, data) => {
-      const rank = findRank(summary.rankings.mostPlayedBySeason[season] || [], course);
-      return `
-        <div class="item">
-          ${season}：${data.count}回
-          <span class="ranktag">（${rank}位）</span>
-        </div>
-      `;
-    }));
-
-    // --- 日別 ---
-    const daily = summary.dailyCourse;
-    const dailyFiltered = {};
-    for (const day of Object.keys(daily)) {
-      if (daily[day][course]) dailyFiltered[day] = daily[day][course];
-    }
-
-    html += renderSection("日別推移", renderList(dailyFiltered, (day, data) => {
-      const list = Object.entries(summary.dailyCourse[day])
-        .map(([c, d]) => ({ course: c, count: d.count }))
-        .sort((a,b)=>b.count - a.count);
-
-      const rank = findRank(list, course);
-
-      return `
-        <div class="item">
-          ${day}：${data.count}回
-          <span class="ranktag">（${rank}位）</span>
-        </div>
-      `;
-    }));
-
-    // --- 月別 ---
-    const monthly = summary.monthlyCourse;
-    const monthlyFiltered = {};
-    for (const month of Object.keys(monthly)) {
-      if (monthly[month][course]) monthlyFiltered[month] = monthly[month][course];
-    }
-
-    html += renderSection("月別推移", renderList(monthlyFiltered, (month, data) => {
-      const list = Object.entries(summary.monthlyCourse[month])
-        .map(([c, d]) => ({ course: c, count: d.count }))
-        .sort((a,b)=>b.count - a.count);
-
-      const rank = findRank(list, course);
-
-      return `
-        <div class="item">
-          ${month}：${data.count}回
-          <span class="ranktag">（${rank}位）</span>
-        </div>
-      `;
-    }));
-
-    document.getElementById("content").innerHTML = html;
-  }
-
-  select.onchange = update;
-  update();
-});
+  // Season別
+  renderDist(document.getElementById("seasonDist"), calcSeasonDistribution(filtered), total);
+})();
 </script>
 
 </body>
