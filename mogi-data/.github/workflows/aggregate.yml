@@ -3,7 +3,7 @@ name: Aggregate All Race Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"   # 毎時0分に実行（必要に応じて変更）
+    - cron: "0 * * * *"
 
 jobs:
   aggregate:
@@ -21,20 +21,26 @@ jobs:
 
       - name: Aggregate all JSON files
         run: |
-          echo "[]" > all_races.json
+          echo "[]" > all_data.json
 
-          # data/ フォルダ内の全 JSON を結合
+          # data/*.json をすべて読み込んで結合
           for file in data/*.json; do
             echo "Processing $file"
-            jq -s '.[0] * .[1]' all_races.json <(jq '.races' "$file") > tmp.json
-            mv tmp.json all_races.json
+            jq -s '.[0] + [.[1]]' all_data.json "$file" > tmp.json
+            mv tmp.json all_data.json
           done
 
-          # 重複排除（同じ userId + batchId の races をまとめる）
-          jq 'unique_by(.batchId)' all_races.json > all_unique.json
-
-          # all.json として保存
-          mv all_unique.json mogi-data/public/data/all.json
+          # userId でグループ化し、batchId 重複は無視（unique_by）
+          jq '
+            group_by(.userId) |
+            map({
+              userId: .[0].userId,
+              batches: (
+                map({batchId, races})
+                | unique_by(.batchId)   # ← 同じ batchId は無視
+              )
+            })
+          ' all_data.json > mogi-data/public/data/all.json
 
       - name: Commit and push
         run: |
