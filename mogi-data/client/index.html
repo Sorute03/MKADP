@@ -325,14 +325,23 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
+
+<!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
   <button class="tabBtn active" data-tab="analysisTab">分析</button>
   <button class="tabBtn" data-tab="historyTab">レース一覧</button>
 </div>
-  
-<!-- ▼ 分析タブ -->
+
+<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
 <div id="analysisTab" class="tabContent" style="display:block;">
-  <!-- ここに今の分析UI全部が入る（rangeN とかグラフとか） -->
+
+  <div class="section-block">
+    <label>直近 N レースで比較：</label>
+    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
+    <button onclick="refreshModeView(allRecords)">再描画</button>
+  </div>
+
+  <!-- ここにグラフや分析UIが続く -->
 </div>
 
 <!-- ▼ レース一覧タブ -->
@@ -341,11 +350,7 @@ courseList.push(
   <div id="raceHistoryList"></div>
 </div>
 
-<div class="section-block">
-  <label>直近 N レースで比較：</label>
-  <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-  <button onclick="refreshModeView(allRecords)">再描画</button>
-</div>
+
 <!-- ▼ レース登録ボタン（右下固定） -->
 <button id="openModalBtn" style="
   position: fixed;
