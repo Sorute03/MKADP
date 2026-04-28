@@ -51,6 +51,11 @@
 
 <body>
 <script>
+// Tier 一覧（ALL は分析用のみ）
+const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
+
+// 全レコード（localStorage + セッション追加分）
+let allRecords = [];
 const courseList = [
   "マリオブラザーズサーキット",
   "トロフィーシティ",
@@ -912,11 +917,7 @@ async function loadAllRecords() {
 
 
 
-// Tier 一覧（ALL は分析用のみ）
-const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
 
-// 全レコード（localStorage + セッション追加分）
-let allRecords = [];
 
 // Chart.js インスタンス保持用
 let chartWinRate, chartAvgRank, chartAvgScore;
