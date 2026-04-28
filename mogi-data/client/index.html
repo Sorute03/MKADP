@@ -1601,50 +1601,41 @@ async function sendDataToGitHub() {
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   if (!queue.length) return;
 
-  const userId = getUserCopyId();      // 固定コピーID
-  const batchId = generateBatchId();   // 1時間バッチID
-
-  // 公開用データに変換（匿名化）
-  const publicRaces = queue.map(r => ({
-    mode: r.mode,
-    season: r.season,
-    tier: r.tier,
-    course: r.course,
-    rank: r.rank,
-    score: r.score
-  }));
-
   const payload = {
-    userId,
-    batchId,
+    userId: getUserCopyId(),
+    batchId: generateBatchId(),
     timestamp: Math.floor(Date.now() / 1000),
-    races: publicRaces
+    races: queue
   };
 
-  const fileName = `data/${userId}_${batchId}.json`;
-  const content = toBase64(JSON.stringify(payload, null, 2));
-  const res = await fetch(`https://api.github.com/repos/Sorute03/MKADP/contents/${fileName}`, {
-    method: "PUT",
-    headers: {
-      "Authorization": "token12345", // ← Fine-grained Token
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: "add batch data",
-      content: content,          // ← Base64エンコード済みの文字列
-      sha: undefined             // ← 新規作成なので不要（上書き時のみ必要）
-    })
-  });
-  
+  // GitHub Actions の workflow_dispatch を叩く
+  const res = await fetch(
+    "https://api.github.com/repos/Sorute03/MKADP/actions/workflows/receive.yml/dispatches",
+    {
+      method: "POST",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ref: "main",
+        inputs: {
+          payload: JSON.stringify(payload)
+        }
+      })
+    }
+  );
+
   if (res.ok) {
-    console.log("送信成功:", batchId);
-    localStorage.setItem("sendQueue", "[]"); // キューを空にする
+    console.log("送信要求を GitHub Actions に送信しました");
+    localStorage.setItem("sendQueue", "[]");
   } else {
     const errorText = await res.text();
     console.log("送信失敗 → 次の1時間に再試行");
     console.log(errorText);
   }
 }
+
 </script>
 </body>
 </html>
