@@ -1,36 +1,47 @@
-name: Aggregate MKWorld Data
+name: Aggregate All Race Data
 
 on:
-  push:
-    paths:
-      - "data/*.json"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"   # 毎時0分に実行（必要に応じて変更）
 
 jobs:
   aggregate:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Aggregate all user batch data
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Prepare output directory
+        run: mkdir -p mogi-data/public/data
+
+      - name: Aggregate all JSON files
         run: |
-          mkdir -p public/data
-          echo '{"races":[]}' > public/data/all.json
+          echo "[]" > all_races.json
 
-          # 全 data/*.json を読み込んで races を結合
-          for f in data/*.json; do
-            jq -s '
-              reduce .[] as $item ({"races": []};
-                .races += $item.races
-              )
-            ' public/data/all.json "$f" > tmp.json
-            mv tmp.json public/data/all.json
+          # data/ フォルダ内の全 JSON を結合
+          for file in data/*.json; do
+            echo "Processing $file"
+            jq -s '.[0] * .[1]' all_races.json <(jq '.races' "$file") > tmp.json
+            mv tmp.json all_races.json
           done
 
-      - name: Commit aggregated data
+          # 重複排除（同じ userId + batchId の races をまとめる）
+          jq 'unique_by(.batchId)' all_races.json > all_unique.json
+
+          # all.json として保存
+          mv all_unique.json mogi-data/public/data/all.json
+
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add public/data/all.json
-          git commit -m "Update aggregated MKWorld data" || echo "No changes"
+          git add mogi-data/public/data/all.json
+          git commit -m "Update all.json"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
