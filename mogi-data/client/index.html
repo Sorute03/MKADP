@@ -1562,6 +1562,7 @@ function updateScatterView() {
   });
 }
 
+
 /* ============================================================
    ▼ 固定コピー対策ID（ユーザーID）生成
    ============================================================ */
@@ -1577,7 +1578,7 @@ function getUserCopyId() {
 }
 
 /* ============================================================
-   ▼ 1時間バッチID生成
+   ▼ バッチID生成（6時間に1回送信）
    ============================================================ */
 function generateBatchId() {
   const unixSec = Math.floor(Date.now() / 1000);
@@ -1586,20 +1587,27 @@ function generateBatchId() {
 }
 
 /* ============================================================
-   ▼ 1時間ごとの送信処理
+   ▼ 6時間に1回だけ送信する判定
    ============================================================ */
-setInterval(sendDataToGitHub, 3600000);
-// 初回送信したいならコメント解除
-// sendDataToGitHub();
-  
-function toBase64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
+function shouldSendNow() {
+  const lastSent = Number(localStorage.getItem("lastSent") || 0);
+  const now = Date.now();
+  const SIX_HOURS = 6 * 60 * 60 * 1000; // 6時間
+
+  return now - lastSent >= SIX_HOURS;
 }
 
-
-async function sendDataToGitHub() {
+/* ============================================================
+   ▼ Cloudflare Worker に送信（6時間に1回）
+   ============================================================ */
+async function sendDataToWorker() {
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   if (!queue.length) return;
+
+  if (!shouldSendNow()) {
+    console.log("まだ送信しない（6時間に1回）");
+    return;
+  }
 
   const payload = {
     userId: getUserCopyId(),
@@ -1608,33 +1616,33 @@ async function sendDataToGitHub() {
     races: queue
   };
 
-  // GitHub Actions の workflow_dispatch を叩く
-  const res = await fetch(
-    "https://api.github.com/repos/Sorute03/MKADP/actions/workflows/receive.yml/dispatches",
-    {
+  try {
+    const res = await fetch("https://mkadp.haruto-mori0602.workers.dev/", {
       method: "POST",
-      headers: {
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        ref: "main",
-        inputs: {
-          payload: JSON.stringify(payload)
-        }
-      })
-    }
-  );
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
 
-  if (res.ok) {
-    console.log("送信要求を GitHub Actions に送信しました");
-    localStorage.setItem("sendQueue", "[]");
-  } else {
-    const errorText = await res.text();
-    console.log("送信失敗 → 次の1時間に再試行");
-    console.log(errorText);
+    if (res.ok) {
+      console.log("送信完了（6時間に1回）");
+      localStorage.setItem("sendQueue", "[]");
+      localStorage.setItem("lastSent", Date.now());
+    } else {
+      console.log("送信失敗 → 次の6時間後に再試行");
+      console.log(await res.text());
+    }
+  } catch (e) {
+    console.log("送信エラー → 次の6時間後に再試行");
+    console.error(e);
   }
 }
+
+/* ============================================================
+   ▼ 自動送信チェック（5分ごと）
+   ============================================================ */
+setInterval(() => {
+  sendDataToWorker();
+}, 5 * 60 * 1000); // 5分ごとにチェック
 
 </script>
 </body>
