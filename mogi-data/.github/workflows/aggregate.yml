@@ -1,9 +1,9 @@
-name: Aggregate Data
+name: Aggregate MKWorld Data
 
 on:
-  schedule:
-    - cron: "0 * * * *"   # 毎時0分
-  workflow_dispatch:
+  push:
+    paths:
+      - "data/*.json"
 
 jobs:
   aggregate:
@@ -12,20 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Aggregate JSON
+      - name: Aggregate all user batch data
         run: |
-          mkdir -p public
-          node scripts/aggregate.js
+          mkdir -p public/data
+          echo '{"races":[]}' > public/data/all.json
 
-      - name: Commit and Push
+          # 全 data/*.json を読み込んで races を結合
+          for f in data/*.json; do
+            jq -s '
+              reduce .[] as $item ({"races": []};
+                .races += $item.races
+              )
+            ' public/data/all.json "$f" > tmp.json
+            mv tmp.json public/data/all.json
+          done
+
+      - name: Commit aggregated data
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add public/aggregate.json
-          git commit -m "update aggregate" || echo "No changes"
+          git add public/data/all.json
+          git commit -m "Update aggregated MKWorld data" || echo "No changes"
           git push
