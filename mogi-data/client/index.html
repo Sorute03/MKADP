@@ -583,6 +583,59 @@ saveRaceBtn.onclick = () => {
   modal.classList.remove("show");
 };
 </script>
+<script>
+  document.querySelectorAll(".tabBtn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+  
+      const target = btn.dataset.tab;
+      document.querySelectorAll(".tabContent").forEach(tab => {
+        tab.style.display = (tab.id === target) ? "block" : "none";
+      });
+    };
+  });
+</script>
+<script>
+  function renderRaceHistory() {
+    const box = document.getElementById("raceHistoryList");
+    box.innerHTML = "";
+  
+    allRecords
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .forEach(r => {
+        const div = document.createElement("div");
+        div.style = "padding:8px; border-bottom:1px solid #ddd;";
+  
+        div.innerHTML = `
+          <strong>${r.course}</strong>
+          (${r.rank}位 / ${r.score}点 / ${r.mode})
+          <button data-ts="${r.timestamp}" style="margin-left:10px;">削除</button>
+        `;
+  
+        box.appendChild(div);
+      });
+  
+    document.querySelectorAll("#raceHistoryList button").forEach(btn => {
+      btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
+    });
+  }
+</script>
+<script>
+  function deleteRecord(ts) {
+    const key = "loungeRecords";
+  
+    const old = JSON.parse(localStorage.getItem(key) || "[]");
+    const filtered = old.filter(r => r.timestamp !== ts);
+    localStorage.setItem(key, JSON.stringify(filtered));
+  
+    allRecords = allRecords.filter(r => r.timestamp !== ts);
+  
+    refreshModeView(allRecords);
+    renderRaceHistory();
+  }
+</script>
+
 
 
 
@@ -733,6 +786,9 @@ window.addEventListener("load", () => {
 
   // 初回描画
   refreshModeView(allRecords);
+  
+  renderRaceHistory();
+
 });
 
 /* ==========
