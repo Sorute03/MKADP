@@ -23,21 +23,21 @@ jobs:
         run: |
           echo "[]" > all_data.json
 
-          # data/*.json をすべて読み込んで結合
+          # data/*.json をすべて読み込んで配列に追加
           for file in data/*.json; do
             echo "Processing $file"
             jq -s '.[0] + [.[1]]' all_data.json "$file" > tmp.json
             mv tmp.json all_data.json
           done
 
-          # userId でグループ化し、batchId 重複は無視（unique_by）
+          # userId ごとにグループ化し、batchId 重複を排除
           jq '
             group_by(.userId) |
             map({
               userId: .[0].userId,
               batches: (
-                map({batchId, races})
-                | unique_by(.batchId)   # ← 同じ batchId は無視
+                map({batchId, timestamp, races})
+                | unique_by(.batchId)
               )
             })
           ' all_data.json > mogi-data/public/data/all.json
@@ -47,7 +47,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add mogi-data/public/data/all.json
-          git commit -m "Update all.json"
+          git commit -m "Update all.json" || echo "No changes"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
