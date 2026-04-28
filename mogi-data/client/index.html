@@ -325,6 +325,11 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
+<div style="margin: 20px 0;">
+  <button id="exportSaveBtn">セーブデータ出力</button>
+  <button id="importSaveBtn">セーブデータ復元</button>
+  <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
+</div>
 
 <!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
@@ -564,7 +569,7 @@ closeModalBtn.onclick = () => {
 };
 
 /* ▼ 保存処理 */
-saveRaceBtn.onclick = () => {
+saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
 
@@ -600,8 +605,13 @@ saveRaceBtn.onclick = () => {
   allRecords.push(...records);
   refreshModeView(allRecords);
 
+  /* ▼ 追加：暗号化保存＋バックアップ */
+  await saveAllRecords();
+  downloadBackup();
+
   modal.classList.remove("show");
 };
+
 </script>
 <script>
   document.querySelectorAll(".tabBtn").forEach(btn => {
@@ -772,6 +782,105 @@ saveRaceBtn.onclick = () => {
 /* ==========
    共通データ
 ========== */
+const secretKey = "MKWorldSecretKey2026";
+
+async function encrypt(text) {
+  const enc = new TextEncoder().encode(text);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secretKey),
+    "AES-GCM",
+    false,
+    ["encrypt"]
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc);
+  return btoa(JSON.stringify({ iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) }));
+}
+
+async function decrypt(base64) {
+  const { iv, data } = JSON.parse(atob(base64));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secretKey),
+    "AES-GCM",
+    false,
+    ["decrypt"]
+  );
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: new Uint8Array(iv) },
+    key,
+    new Uint8Array(data)
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+/* ▼ セーブデータ生成 */
+async function exportSaveData() {
+  const json = JSON.stringify(allRecords);
+  const encrypted = await encrypt(json);
+  return encrypted;
+}
+
+/* ▼ セーブデータ復元 */
+async function importSaveData(code) {
+  const json = await decrypt(code);
+  allRecords = JSON.parse(json);
+  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  localStorage.setItem("backup", code);
+  refreshModeView(allRecords);
+  renderRaceHistory();
+}
+
+/* ▼ 自動ダウンロードバックアップ */
+async function downloadBackup() {
+  const encrypted = await encrypt(JSON.stringify(allRecords));
+  const blob = new Blob([encrypted], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKWorld_backup.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+/* ▼ localStorage + backup 二重保存 */
+async function saveAllRecords() {
+  const json = JSON.stringify(allRecords);
+
+  // メイン保存
+  localStorage.setItem("loungeRecords", json);
+
+  // バックアップ保存（暗号化）
+  const encrypted = await encrypt(json);
+  localStorage.setItem("backup", encrypted);
+}
+
+/* ▼ データ読み込み（壊れていたらバックアップから復元） */
+async function loadAllRecords() {
+  try {
+    const main = localStorage.getItem("loungeRecords");
+    if (main) {
+      allRecords = JSON.parse(main);
+      return;
+    }
+
+    const backup = localStorage.getItem("backup");
+    if (backup) {
+      const json = await decrypt(backup);
+      allRecords = JSON.parse(json);
+      return;
+    }
+
+    allRecords = [];
+  } catch {
+    allRecords = [];
+  }
+}
+
+
 
 // Tier 一覧（ALL は分析用のみ）
 const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
@@ -787,29 +896,37 @@ let chart3D, chartScatter;
 /* ==========
    初期ロード
 ========== */
+window.addEventListener("load", async () => {
 
-window.addEventListener("load", () => {
-  const key = "loungeRecords";
-  try {
-    const stored = JSON.parse(localStorage.getItem(key) || "[]");
-    if (Array.isArray(stored)) {
-      allRecords = stored;
-    }
-  } catch (e) {
-    allRecords = [];
-  }
+  // ▼ 暗号化対応のロード処理
+  await loadAllRecords();
 
-  // Tier / Season / Course セレクタ初期化
+  // ▼ セレクタ初期化（あなたの既存処理）
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
 
-  // 初回描画
+  // ▼ 初回描画
   refreshModeView(allRecords);
-  
   renderRaceHistory();
-
 });
+
+document.getElementById("exportSaveBtn").onclick = async () => {
+  const code = await exportSaveData();
+  navigator.clipboard.writeText(code);
+  alert("セーブデータをコピーしました！");
+};
+
+document.getElementById("importSaveBtn").onclick = async () => {
+  const code = document.getElementById("importSaveInput").value.trim();
+  if (!code) {
+    alert("セーブデータを入力してください");
+    return;
+  }
+
+  await importSaveData(code);
+  alert("復元が完了しました！");
+};
 
 /* ==========
    ユーティリティ
