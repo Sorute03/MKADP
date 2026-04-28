@@ -789,13 +789,17 @@ saveRaceBtn.onclick = async () => {
 ========== */
 async function getAesKey() {
   let keyBase64 = localStorage.getItem("aesKey");
+
+  // 初回だけキーを生成
   if (!keyBase64) {
     const raw = crypto.getRandomValues(new Uint8Array(32)); // 256bit
     keyBase64 = btoa(String.fromCharCode(...raw));
     localStorage.setItem("aesKey", keyBase64);
   }
 
+  // Base64 → Uint8Array
   const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
+
   return crypto.subtle.importKey(
     "raw",
     raw,
@@ -823,7 +827,6 @@ async function encrypt(text) {
 
   return btoa(String.fromCharCode(...combined));
 }
-
 
 async function decrypt(base64) {
   const key = await getAesKey();
