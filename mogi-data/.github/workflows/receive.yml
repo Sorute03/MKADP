@@ -1,0 +1,35 @@
+name: Receive Race Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: "Race data JSON"
+        required: true
+        type: string
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode payload
+        run: |
+          echo '${{ github.event.inputs.payload }}' > payload.json
+
+      - name: Save file
+        run: |
+          mkdir -p data
+          FILE="data/${{ github.run_id }}.json"
+          cp payload.json "$FILE"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data
+          git commit -m "Add race data"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
