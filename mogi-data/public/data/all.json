@@ -1,0 +1,15 @@
+{
+  "races": [
+    {
+      "userId": "DUMMY_USER",
+      "batchId": "DUMMY_BATCH",
+      "mode": "lounge",
+      "tier": "S",
+      "season": "1",
+      "course": "Mario Circuit",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1700000000
+    }
+  ]
+}
