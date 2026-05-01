@@ -1300,21 +1300,26 @@ document.getElementById("importFileBtn").onclick = async () => {
       return;
     }
 
-    // ▼▼▼ 最重要：allRecords を “配列” としてセットする ▼▼▼
+    // ▼ allRecords を配列としてセット
     allRecords = races;
 
-    // ▼▼▼ 正しい保存処理（暗号化含む） ▼▼▼
-    await saveAllRecords();
+    // ▼ saveAllRecords() を呼ばずに直接保存（無限ループ防止）
+    const json = JSON.stringify(allRecords);
+    localStorage.setItem("loungeRecords", json);
+
+    // ▼ バックアップだけ暗号化して保存
+    const encrypted = await encrypt(json);
+    localStorage.setItem("backup", encrypted);
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
-    // ▼▼▼ 表示更新 ▼▼▼
     refreshModeView(allRecords);
     renderRaceHistory();
   };
 
   reader.readAsText(file);
 };
+
 
 
 // Chart.js インスタンス保持用
