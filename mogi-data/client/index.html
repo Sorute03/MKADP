@@ -1031,9 +1031,11 @@ saveRaceBtn.onclick = async () => {
   <canvas id="chartHeatmap" height="300"></canvas>
 </div>
 
-<!-- ▼ コースランキング -->
 <div class="section-block">
-  <h3>コースランキング</h3>
+  <h3>コースランキング（得意・苦手）</h3>
+
+  <label>最低走行回数：</label>
+  <input id="minRuns" type="number" value="3" min="1" max="100" step="1" onchange="updateRankingView()">
 
   <h4>得意コース TOP10</h4>
   <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
@@ -1042,17 +1044,6 @@ saveRaceBtn.onclick = async () => {
   <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 </div>
 
-<!-- ▼ AIコース評価 -->
-<div class="section-block">
-  <h3>AIコース評価</h3>
-
-  <label>コース：</label>
-  <select id="aiCourse" onchange="updateAICourseView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <div id="aiCourseResult" style="margin-top:16px;"></div>
-</div>
 
 <!-- ▼ 3D バブルチャート -->
 <div class="section-block">
