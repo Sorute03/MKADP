@@ -1103,12 +1103,15 @@ async function encrypt(text) {
   combined.set(iv, 0);
   combined.set(new Uint8Array(cipher), iv.length);
 
-  return btoa(String.fromCharCode(...combined));
+  // ★ ここを修正
+  return bytesToBase64(combined);
 }
 
 async function decrypt(base64) {
   const key = await getAesKey();
-  const data = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+  // ★ ここを修正
+  const data = base64ToBytes(base64);
 
   const iv = data.slice(0, 12);
   const cipher = data.slice(12);
@@ -1121,6 +1124,7 @@ async function decrypt(base64) {
 
   return new TextDecoder().decode(plain);
 }
+
 
 
 /* ▼ セーブデータ生成 */
@@ -1153,6 +1157,26 @@ async function downloadBackup() {
 
   URL.revokeObjectURL(url);
 }
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 
 /* ▼ localStorage + backup 二重保存 */
 async function saveAllRecords() {
