@@ -1491,11 +1491,9 @@ function calcStats(records) {
 ========== */
 
 function refreshModeView(records) {
-  // ▼ UI の選択値を取得（ALL 対応）
   const mode = document.getElementById("viewMode").value;
   const range = document.getElementById("viewRange").value;
 
-  // ▼ もし Season / Tier / Course のセレクタがあるなら取得
   const seasonSel = document.getElementById("growthSeason");
   const tierSel   = document.getElementById("growthTier");
   const courseSel = document.getElementById("growthCourse");
@@ -1504,7 +1502,6 @@ function refreshModeView(records) {
   const tier   = tierSel   ? tierSel.value   : "ALL";
   const course = courseSel ? courseSel.value : "ALL";
 
-  // ▼ すべての条件を filterByModeAndRange に渡す
   const filtered = filterByModeAndRange(records, {
     mode,
     season,
@@ -1513,7 +1510,7 @@ function refreshModeView(records) {
     range
   });
 
-  // ▼ 基本統計（ALL でも条件変更でも値が変わる）
+  // ▼ 基本統計
   const statsAll = calcStats(filtered);
   const statsLounge = calcStats(filtered.filter(r => r.mode === "lounge"));
   const statsTournament = calcStats(filtered.filter(r => r.mode === "tournament"));
@@ -1530,12 +1527,46 @@ function refreshModeView(records) {
        / 野良：${statsNora.count}</p>
   `;
 
-  // ▼ グラフ更新
-  updateWinRateGraph(filtered);
-  updateAvgRankGraph(filtered);
-  updateAvgScoreGraph(filtered);
+  // ▼ グラフ更新（あなたの元コードのまま）
+  // 勝率
+  const modes = ["lounge","tournament","nora"];
+  const labels = ["ラウンジ","大会","野良"];
+  const winRates = [];
+  const avgRanks = [];
+  const avgScores = [];
 
-  // ▼ 他のビューも更新
+  for (const m of modes) {
+    const s = calcStats(filtered.filter(r => r.mode === m));
+    winRates.push(s.winRate * 100);
+    avgRanks.push(s.avgRank || 0);
+    avgScores.push(s.avgScore || 0);
+  }
+
+  const ctxW = document.getElementById("chartWinRate").getContext("2d");
+  if (chartWinRate) chartWinRate.destroy();
+  chartWinRate = new Chart(ctxW, {
+    type: "bar",
+    data: { labels, datasets: [{ label: "勝率(%)", data: winRates, backgroundColor: "rgba(54,162,235,0.6)" }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+
+  const ctxR = document.getElementById("chartAvgRank").getContext("2d");
+  if (chartAvgRank) chartAvgRank.destroy();
+  chartAvgRank = new Chart(ctxR, {
+    type: "bar",
+    data: { labels, datasets: [{ label: "平均順位", data: avgRanks, backgroundColor: "rgba(255,159,64,0.6)" }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true, max: 12 } } }
+  });
+
+  const ctxS = document.getElementById("chartAvgScore").getContext("2d");
+  if (chartAvgScore) chartAvgScore.destroy();
+  chartAvgScore = new Chart(ctxS, {
+    type: "bar",
+    data: { labels, datasets: [{ label: "平均スコア", data: avgScores, backgroundColor: "rgba(75,192,192,0.6)" }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+
+  // ▼ 他のビュー更新
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
