@@ -1044,6 +1044,20 @@ saveRaceBtn.onclick = async () => {
   <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 </div>
 
+<!-- ▼ AIコース評価（旧AI BAN） -->
+<div class="section-block">
+  <h3>AIコース評価</h3>
+
+  <label>コース：</label>
+  <select id="aiCourse" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+    <!-- JS でコース一覧を追加 -->
+  </select>
+
+  <div id="aiCourseResult" style="margin-top:16px;">
+    <!-- JS で自動生成 -->
+  </div>
+</div>
 
 <!-- ▼ 3D バブルチャート -->
 <div class="section-block">
