@@ -1,0 +1,115 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777651085-371061",
+  "timestamp": 1777651085,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "キラーシップ→ヘイホーカーニバル",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "マリオブラザーズサーキット",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "シュポポコースター",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ワリオスタジアム",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "マリオサーキット",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ほねほねツイスター",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "おばけシネマ→ロゼッタてんもんだい",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ソルティータウン",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "どんぐりツリーハウス",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1777650728051
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "DE",
+      "course": "ノコノコビーチ",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777650728051
+    }
+  ]
+}
