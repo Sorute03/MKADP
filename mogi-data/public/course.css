@@ -1,0 +1,137 @@
+/* ===========================
+   全体
+=========================== */
+body {
+  font-family: "Noto Sans JP", sans-serif;
+  margin: 20px;
+  background: #f8fdf8;
+  color: #222;
+}
+
+/* ===========================
+   見出し
+=========================== */
+h1 {
+  font-size: 28px;
+  font-weight: bold;
+  color: #27ae60;
+  margin-bottom: 20px;
+}
+
+h2, h3 {
+  color: #27ae60;
+  margin-top: 28px;
+}
+
+/* ===========================
+   セクションブロック
+=========================== */
+.section-block {
+  padding: 16px;
+  margin-bottom: 24px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #d8f3dd;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ===========================
+   フィルター
+=========================== */
+.filterBox {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #d8f3dd;
+  border-radius: 10px;
+}
+
+.filterBox label {
+  margin-right: 6px;
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.filterBox select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-right: 10px;
+}
+
+.filterBox select:focus {
+  border-color: #27ae60;
+  outline: none;
+}
+
+/* ===========================
+   グラフ
+=========================== */
+canvas {
+  background: #fff;
+  border: 1px solid #d8f3dd;
+  border-radius: 8px;
+  margin-top: 12px;
+  padding: 8px;
+}
+
+/* ===========================
+   基本統計
+=========================== */
+.statsBox p {
+  margin: 6px 0;
+  font-size: 15px;
+}
+
+/* ===========================
+   レース一覧
+=========================== */
+.raceList {
+  margin-top: 10px;
+}
+
+.raceItem {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.raceItem strong {
+  color: #27ae60;
+}
+
+.raceItem span {
+  margin-left: 6px;
+}
+
+/* ===========================
+   戻るリンク
+=========================== */
+.backLink {
+  display: inline-block;
+  margin-top: 20px;
+  color: #2ecc71;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+/* ===========================
+   レスポンシブ
+=========================== */
+@media (max-width: 768px) {
+  .filterBox {
+    padding: 12px;
+  }
+
+  .filterBox select {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .raceItem {
+    font-size: 14px;
+  }
+}
