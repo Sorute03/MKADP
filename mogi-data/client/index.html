@@ -1249,7 +1249,7 @@ document.getElementById("importTSVBtn").onclick = () => {
 };
 
 
-document.getElementById("importFileBtn").onclick = () => {
+document.getElementById("importFileBtn").onclick = async () => {
   const file = document.getElementById("fileInput").files[0];
   if (!file) {
     alert("ファイルを選択してください");
@@ -1258,7 +1258,7 @@ document.getElementById("importFileBtn").onclick = () => {
 
   const reader = new FileReader();
 
-  reader.onload = () => {
+  reader.onload = async () => {
     const text = reader.result.trim();
 
     const lines = text.split(/\r?\n/);
@@ -1301,16 +1301,26 @@ document.getElementById("importFileBtn").onclick = () => {
       return;
     }
 
-    // ▼▼▼ ここが最重要：配布ページの仕様に合わせる ▼▼▼
     const saveObj = { races };
 
-    localStorage.setItem("allRecords", JSON.stringify(saveObj));
+    // ▼▼▼ 最重要：配布ページの仕様に合わせて保存 ▼▼▼
+    localStorage.setItem("loungeRecords", JSON.stringify(saveObj));
+
+    // バックアップも更新
+    const encrypted = await encrypt(JSON.stringify(saveObj));
+    localStorage.setItem("backup", encrypted);
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
+
+    // 即反映
+    await loadAllRecords();
+    refreshModeView(allRecords);
+    renderRaceHistory();
   };
 
   reader.readAsText(file);
 };
+
 
 
 // Chart.js インスタンス保持用
