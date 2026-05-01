@@ -978,10 +978,37 @@ saveRaceBtn.onclick = async () => {
 </div>
 
 <!-- ▼ 基本統計 -->
+<!-- ▼ モード別分析 -->
+<div class="section-block">
+  <h3>モード別分析</h3>
+
+  <label>モード：</label>
+  <select id="viewMode" onchange="refreshModeView(allRecords)">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label style="margin-left:16px;">直近 N レース：</label>
+  <select id="viewRange" onchange="refreshModeView(allRecords)">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="200">200</option>
+    <option value="300">300</option>
+    <option value="500">500</option>
+  </select>
+</div>
+
+<!-- ▼ 基本統計 -->
 <div class="section-block">
   <h3>基本統計</h3>
-  <div id="basicStats"></div>
+  <div id="basicStats">
+    <!-- JS で自動生成 -->
+  </div>
 </div>
+
 
 <!-- ▼ 勝率・平均順位・平均スコア グラフ -->
 <div class="section-block">
