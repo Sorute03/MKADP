@@ -19,19 +19,20 @@ jobs:
       - name: Prepare output directory
         run: mkdir -p mogi-data/public/data
 
-      - name: Aggregate all JSON files
+      - name: Merge all data/*.json into one array
         run: |
           echo "[]" > all_data.json
 
-          # data/*.json をすべて読み込んで配列に追加
           for file in data/*.json; do
             echo "Processing $file"
             jq -s '.[0] + [.[1]]' all_data.json "$file" > tmp.json
             mv tmp.json all_data.json
           done
 
-          # userId ごとにグループ化し、batchId 重複を排除
+      - name: Build ALL.json (flat races array)
+        run: |
           jq '
+            # userId ごとにまとめる
             group_by(.userId) |
             map({
               userId: .[0].userId,
@@ -39,7 +40,18 @@ jobs:
                 map({batchId, timestamp, races})
                 | unique_by(.batchId)
               )
-            })
+            }) as $users |
+
+            # races をフラットに展開
+            {
+              races: (
+                $users
+                | map(.batches)
+                | add
+                | map(.races)
+                | add
+              )
+            }
           ' all_data.json > mogi-data/public/data/all.json
 
       - name: Commit and push
