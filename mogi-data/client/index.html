@@ -954,27 +954,33 @@ saveRaceBtn.onclick = async () => {
 
 <!-- ▼ 分析 UI 全体 -->
 
-<!-- ▼ モード選択（ラウンジ / 大会 / 野良） -->
+<!-- ▼ モード選択（ラウンジ / 大会 / 野良 / ALL） -->
 <div class="section-block">
   <h3>モード別分析</h3>
+
   <label>モード：</label>
   <select id="viewMode" onchange="refreshModeView(allRecords)">
-    <option value="all">すべて</option>
+    <option value="ALL">ALL</option>
     <option value="lounge">ラウンジ</option>
     <option value="tournament">大会</option>
     <option value="nora">野良</option>
   </select>
 
   <label style="margin-left:16px;">直近 N レース：</label>
-  <input id="viewRange" type="number" value="50" min="5" max="500" step="5" onchange="refreshModeView(allRecords)">
+  <select id="viewRange" onchange="refreshModeView(allRecords)">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="200">200</option>
+    <option value="300">300</option>
+    <option value="500">500</option>
+  </select>
 </div>
 
 <!-- ▼ 基本統計 -->
 <div class="section-block">
   <h3>基本統計</h3>
-  <div id="basicStats">
-    <!-- JS で自動生成 -->
-  </div>
+  <div id="basicStats"></div>
 </div>
 
 <!-- ▼ 勝率・平均順位・平均スコア グラフ -->
@@ -991,29 +997,29 @@ saveRaceBtn.onclick = async () => {
 
   <label>Tier：</label>
   <select id="growthTier" onchange="updateGrowthView()">
-    <!-- JS で自動生成 -->
+    <option value="ALL">ALL</option>
   </select>
 
   <label style="margin-left:16px;">Season：</label>
   <select id="growthSeason" onchange="updateGrowthView()">
-    <!-- JS で自動生成 -->
+    <option value="ALL">ALL</option>
   </select>
 
   <label style="margin-left:16px;">Course：</label>
   <select id="growthCourse" onchange="updateGrowthView()">
-    <!-- JS で自動生成 -->
+    <option value="ALL">ALL</option>
   </select>
 
   <canvas id="chartGrowth" height="160" style="margin-top:20px;"></canvas>
 </div>
 
-<!-- ▼ コース別評価（レーダーチャート） -->
+<!-- ▼ コース別レーダー評価 -->
 <div class="section-block">
   <h3>コース別レーダー評価</h3>
 
   <label>コース：</label>
   <select id="radarCourse" onchange="updateRadarView()">
-    <!-- JS で自動生成 -->
+    <option value="ALL">ALL</option>
   </select>
 
   <canvas id="chartRadar" height="200" style="margin-top:20px;"></canvas>
@@ -1025,7 +1031,7 @@ saveRaceBtn.onclick = async () => {
   <canvas id="chartHeatmap" height="300"></canvas>
 </div>
 
-<!-- ▼ コースランキング（得意・苦手） -->
+<!-- ▼ コースランキング -->
 <div class="section-block">
   <h3>コースランキング</h3>
 
@@ -1036,31 +1042,30 @@ saveRaceBtn.onclick = async () => {
   <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 </div>
 
-<!-- ▼ AIコース評価（旧AI BAN） -->
+<!-- ▼ AIコース評価 -->
 <div class="section-block">
   <h3>AIコース評価</h3>
 
   <label>コース：</label>
   <select id="aiCourse" onchange="updateAICourseView()">
-    <!-- JS で自動生成 -->
+    <option value="ALL">ALL</option>
   </select>
 
-  <div id="aiCourseResult" style="margin-top:16px;">
-    <!-- JS で自動生成 -->
-  </div>
+  <div id="aiCourseResult" style="margin-top:16px;"></div>
 </div>
 
-<!-- ▼ 3D バブルチャート（強さ × 成長 × 使用率） -->
+<!-- ▼ 3D バブルチャート -->
 <div class="section-block">
   <h3>3D バブルチャート（強さ × 成長 × 使用率）</h3>
   <canvas id="chart3D" height="300"></canvas>
 </div>
 
-<!-- ▼ 散布図（強さ × 成長） -->
+<!-- ▼ 散布図 -->
 <div class="section-block">
   <h3>散布図（強さ × 成長）</h3>
   <canvas id="chartScatter" height="300"></canvas>
 </div>
+
 <script>
 /* ==========
    共通データ
@@ -1398,20 +1403,42 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function filterByModeAndRange(records) {
-  const mode = document.getElementById("viewMode").value;
-  const range = Number(document.getElementById("viewRange").value || 50);
+function filterByModeAndRange(records, {
+  mode = "ALL",
+  season = "ALL",
+  tier = "ALL",
+  course = "ALL",
+  range = "ALL"
+} = {}) {
 
   let filtered = records;
-  if (mode !== "all") {
+
+  // ▼ モード
+  if (mode !== "ALL") {
     filtered = filtered.filter(r => r.mode === mode);
   }
 
-  // 直近 N レース
-  filtered = clone(filtered).sort((a,b) => a.timestamp - b.timestamp);
-  if (filtered.length > range) {
-    filtered = filtered.slice(filtered.length - range);
+  // ▼ シーズン
+  if (season !== "ALL") {
+    filtered = filtered.filter(r => r.season === season);
   }
+
+  // ▼ ティア
+  if (tier !== "ALL") {
+    filtered = filtered.filter(r => r.tier === tier);
+  }
+
+  // ▼ コース
+  if (course !== "ALL") {
+    filtered = filtered.filter(r => r.course === course);
+  }
+
+  // ▼ レンジ（最後の N 件）
+  if (range !== "ALL") {
+    const n = Number(range);
+    filtered = filtered.slice(-n);
+  }
+
   return filtered;
 }
 
@@ -1435,7 +1462,7 @@ function calcStats(records) {
     };
   }
   const count = records.length;
-  const wins = records.filter(r => r.rank === 1).length;
+  const wins = records.filter(r => r.rank <= 3).length;
   const sumRank = records.reduce((s,r) => s + (r.rank || 0), 0);
   const sumScore = records.reduce((s,r) => s + (r.score || 0), 0);
 
@@ -1991,6 +2018,45 @@ function updateScatterView() {
       }
     }
   });
+}
+function getWinRate(filtered) {
+  if (!filtered.length) return 0;
+  const wins = filtered.filter(r => r.rank <= 3).length;
+  return wins / filtered.length;
+}
+
+function filterByModeAndRange(records, {
+  mode = "ALL",
+  season = "ALL",
+  tier = "ALL",
+  course = "ALL",
+  range = "ALL"
+} = {}) {
+
+  let filtered = records;
+
+  if (mode !== "ALL") {
+    filtered = filtered.filter(r => r.mode === mode);
+  }
+
+  if (season !== "ALL") {
+    filtered = filtered.filter(r => r.season === season);
+  }
+
+  if (tier !== "ALL") {
+    filtered = filtered.filter(r => r.tier === tier);
+  }
+
+  if (course !== "ALL") {
+    filtered = filtered.filter(r => r.course === course);
+  }
+
+  if (range !== "ALL") {
+    const n = Number(range);
+    filtered = filtered.slice(-n);
+  }
+
+  return filtered;
 }
 
 
