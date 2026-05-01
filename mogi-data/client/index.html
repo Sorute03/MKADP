@@ -1270,7 +1270,7 @@ document.getElementById("importFileBtn").onclick = () => {
     const delimiter = lines[0].includes("\t") ? "\t" : ",";
     const body = lines.slice(1);
 
-    const newRecords = [];
+    const races = [];
 
     for (const line of body) {
       if (!line.trim()) continue;
@@ -1285,7 +1285,7 @@ document.getElementById("importFileBtn").onclick = () => {
 
       if (!course || !rank) continue;
 
-      newRecords.push({
+      races.push({
         course,
         rank,
         score,
@@ -1296,22 +1296,21 @@ document.getElementById("importFileBtn").onclick = () => {
       });
     }
 
-    if (!newRecords.length) {
+    if (!races.length) {
       alert("有効なデータがありません");
       return;
     }
 
-    // ▼▼▼ 重要：配布ページの形式に合わせて races 配列で保存 ▼▼▼
-    const saveObj = { races: newRecords };
+    // ▼▼▼ ここが最重要：配布ページの仕様に合わせる ▼▼▼
+    const saveObj = { races };
 
     localStorage.setItem("allRecords", JSON.stringify(saveObj));
 
-    alert(`読み込んだデータ ${newRecords.length} 件を保存しました！`);
+    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
   };
 
   reader.readAsText(file);
 };
-
 
 
 // Chart.js インスタンス保持用
