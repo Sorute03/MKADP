@@ -475,8 +475,10 @@ document.getElementById("raceModal").addEventListener("click", (e) => {
 /* ▼ スコア計算 */
 function calcScore(rank) {
   const table = {
-    1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
-    7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1
+    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
+    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
+    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
+    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
   };
   return table[rank] || 0;
 }
@@ -545,7 +547,9 @@ function generateRaceInputs(count) {
         </select>
 
         <label>順位</label><br>
-        <input id="raceRank_${i}" type="number" min="1" max="12" style="width:100%; margin-bottom:8px;">
+        <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
+          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+        </select>
 
         <label>スコア（自動）</label><br>
         <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
@@ -557,11 +561,13 @@ function generateRaceInputs(count) {
     const rankInput = document.getElementById(`raceRank_${i}`);
     const scoreInput = document.getElementById(`raceScore_${i}`);
 
-    rankInput.oninput = () => {
+    rankInput.onchange = () => {
       scoreInput.value = calcScore(Number(rankInput.value));
     };
   }
 }
+
+
 
 /* ▼ モーダル開閉 */
 openModalBtn.onclick = () => {
