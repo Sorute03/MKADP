@@ -1801,7 +1801,8 @@ function updateHeatmapView() {
 ========== */
 
 function updateRankingView() {
-  const minRuns = Number(document.getElementById("minRuns")?.value || 3);
+  const minRunsInput = document.getElementById("minRuns");
+  const minRuns = Number(minRunsInput ? minRunsInput.value : 3);
 
   const records = filterByModeAndRange(allRecords);
   if (!records.length) {
@@ -1816,12 +1817,10 @@ function updateRankingView() {
   for (const c of Object.keys(byCourse)) {
     const rs = byCourse[c];
 
-    // ★ 最低走行回数フィルタ（既存の3回条件を置き換え）
     if (rs.length < minRuns) continue;
 
     const s = calcStats(rs);
 
-    // 得意・苦手スコア（勝率は calcStats で 3位以内に統一）
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
     const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
     const growth = strongScore - weakScore;
