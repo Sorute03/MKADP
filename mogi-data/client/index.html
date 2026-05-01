@@ -1258,7 +1258,7 @@ document.getElementById("importFileBtn").onclick = () => {
 
   const reader = new FileReader();
 
-  reader.onload = async () => {
+  reader.onload = () => {
     const text = reader.result.trim();
 
     const lines = text.split(/\r?\n/);
@@ -1308,21 +1308,21 @@ document.getElementById("importFileBtn").onclick = () => {
     const json = JSON.stringify(allRecords);
     localStorage.setItem("loungeRecords", json);
 
-    // ▼ バックアップ保存（暗号化）
-    // ※ encrypt() は reader.onload の外で呼ぶ
-    setTimeout(async () => {
-      const encrypted = await encrypt(json);
-      localStorage.setItem("backup", encrypted);
-    }, 0);
-
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
     refreshModeView(allRecords);
     renderRaceHistory();
+
+    // ▼ バックアップ暗号化は reader.onload の外で行う
+    queueMicrotask(async () => {
+      const encrypted = await encrypt(json);
+      localStorage.setItem("backup", encrypted);
+    });
   };
 
   reader.readAsText(file);
 };
+
 
 
 
