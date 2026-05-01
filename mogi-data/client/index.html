@@ -1248,7 +1248,8 @@ document.getElementById("importTSVBtn").onclick = () => {
   alert(`TSVから ${newRecords.length} 件を読み込みました！`);
 };
 
-document.getElementById("importFileBtn").onclick = async () => {
+  
+document.getElementById("importFileBtn").onclick = () => {
   const file = document.getElementById("fileInput").files[0];
   if (!file) {
     alert("ファイルを選択してください");
@@ -1303,13 +1304,16 @@ document.getElementById("importFileBtn").onclick = async () => {
     // ▼ allRecords を配列としてセット
     allRecords = races;
 
-    // ▼ saveAllRecords() を呼ばずに直接保存（無限ループ防止）
+    // ▼ メイン保存（暗号化しない）
     const json = JSON.stringify(allRecords);
     localStorage.setItem("loungeRecords", json);
 
-    // ▼ バックアップだけ暗号化して保存
-    const encrypted = await encrypt(json);
-    localStorage.setItem("backup", encrypted);
+    // ▼ バックアップ保存（暗号化）
+    // ※ encrypt() は reader.onload の外で呼ぶ
+    setTimeout(async () => {
+      const encrypted = await encrypt(json);
+      localStorage.setItem("backup", encrypted);
+    }, 0);
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
