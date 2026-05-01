@@ -585,6 +585,10 @@ courseList.push(
   <button id="importSaveBtn">セーブデータ復元</button>
   <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
 </div>
+<h3>TSV読み込み（スプシコピー対応）</h3>
+<textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
+<button id="importTSVBtn">TSVを読み込む</button>
+
 
 <!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
@@ -1180,6 +1184,68 @@ async function loadAllRecords() {
   }
 }
 
+function normalizeSeason(raw) {
+  if (!raw) return "";
+
+  // 数字だけ抽出
+  const num = raw.replace(/[^0-9]/g, "");
+
+  if (!num) return "";
+
+  return "S" + Number(num);
+}
+ 
+
+
+document.getElementById("importTSVBtn").onclick = () => {
+  const text = document.getElementById("tsvInput").value.trim();
+  if (!text) {
+    alert("TSVが空です");
+    return;
+  }
+
+  const lines = text.split("\n").map(l => l.trim());
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
+
+  const body = lines.slice(1);
+  const newRecords = [];
+
+  for (const line of body) {
+    const cols = line.split("\t");
+
+    const course = cols[0] || "";
+    const rank = Number(cols[1] || 0);
+    const score = Number(cols[2] || 0);
+    const totalScore = Number(cols[3] || 0);
+
+    // ▼ season を S形式に変換
+    const season = normalizeSeason(cols[4] || "");
+
+    const tier = cols[5] || "";
+
+    if (!course || !rank) continue;
+
+    newRecords.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: null
+    });
+  }
+
+  const old = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  const merged = old.concat(newRecords);
+
+  localStorage.setItem("allRecords", JSON.stringify(merged));
+
+  alert(`TSVから ${newRecords.length} 件を読み込みました！`);
+};
 
 
 
