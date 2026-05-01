@@ -1527,8 +1527,7 @@ function refreshModeView(records) {
        / 野良：${statsNora.count}</p>
   `;
 
-  // ▼ グラフ更新（あなたの元コードのまま）
-  // 勝率
+  // ▼ モード別グラフ（あなたの元コードのまま）
   const modes = ["lounge","tournament","nora"];
   const labels = ["ラウンジ","大会","野良"];
   const winRates = [];
@@ -1575,6 +1574,7 @@ function refreshModeView(records) {
   update3DView();
   updateScatterView();
 }
+
 
 
 /* ==========
