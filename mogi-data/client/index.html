@@ -752,8 +752,17 @@ const modalRaceInputs = document.getElementById("modalRaceInputs");
 
 /* ▼ 初期化 */
 function initModalSelectors() {
-  modalTier.innerHTML = loungeTiers.filter(t => t !== "ALL").map(t => `<option>${t}</option>`).join("");
-  modalSeason.innerHTML = ["S20","S21","S22","S23"].map(s => `<option>${s}</option>`).join("");
+  // Tier（既存）
+  modalTier.innerHTML = loungeTiers
+    .filter(t => t !== "ALL")
+    .map(t => `<option value="${t}">${t}</option>`)
+    .join("");
+
+  // Season（S1〜S30）
+  modalSeason.innerHTML = Array.from({ length: 30 }, (_, i) => {
+    const s = i + 1;
+    return `<option value="S${s}">S${s}</option>`;
+  }).join("");
 }
 
 /* ▼ モード切替 */
