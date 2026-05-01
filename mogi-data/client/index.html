@@ -1301,23 +1301,21 @@ document.getElementById("importFileBtn").onclick = async () => {
       return;
     }
 
-    const saveObj = { races };
-
-    // ▼▼▼ 最重要：allRecords を更新する ▼▼▼
-    allRecords = saveObj;
+    // ▼▼▼ 最重要：allRecords は「配列」である必要がある ▼▼▼
+    allRecords = races;
 
     // ▼ 正しい保存処理（暗号化含む）
     await saveAllRecords();
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
-    // 即反映
     refreshModeView(allRecords);
     renderRaceHistory();
   };
 
   reader.readAsText(file);
 };
+
 
 
 
