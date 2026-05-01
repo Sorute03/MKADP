@@ -1267,10 +1267,9 @@ document.getElementById("importFileBtn").onclick = () => {
       return;
     }
 
-    // 区切り文字を自動判定（TSV優先）
     const delimiter = lines[0].includes("\t") ? "\t" : ",";
-
     const body = lines.slice(1);
+
     const newRecords = [];
 
     for (const line of body) {
@@ -1281,10 +1280,7 @@ document.getElementById("importFileBtn").onclick = () => {
       const course = cols[0] || "";
       const rank = Number(cols[1] || 0);
       const score = Number(cols[2] || 0);
-
-      // season → S形式
       const season = normalizeSeason(cols[4] || "");
-
       const tier = cols[5] || "";
 
       if (!course || !rank) continue;
@@ -1305,8 +1301,10 @@ document.getElementById("importFileBtn").onclick = () => {
       return;
     }
 
-    // ▼▼▼ ここが重要：読み込んだデータをそのまま保存 ▼▼▼
-    localStorage.setItem("allRecords", JSON.stringify(newRecords));
+    // ▼▼▼ 重要：配布ページの形式に合わせて races 配列で保存 ▼▼▼
+    const saveObj = { races: newRecords };
+
+    localStorage.setItem("allRecords", JSON.stringify(saveObj));
 
     alert(`読み込んだデータ ${newRecords.length} 件を保存しました！`);
   };
