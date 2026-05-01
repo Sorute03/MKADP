@@ -1454,17 +1454,15 @@ function groupBy(records, keyFn) {
 
 function calcStats(records) {
   if (!records.length) {
-    return {
-      count: 0,
-      winRate: 0,
-      avgRank: 0,
-      avgScore: 0
-    };
+    return { count: 0, winRate: 0, avgRank: 0, avgScore: 0 };
   }
   const count = records.length;
+
+  // ★ 勝利条件：3位以内
   const wins = records.filter(r => r.rank <= 3).length;
-  const sumRank = records.reduce((s,r) => s + (r.rank || 0), 0);
-  const sumScore = records.reduce((s,r) => s + (r.score || 0), 0);
+
+  const sumRank = records.reduce((s,r) => s + r.rank, 0);
+  const sumScore = records.reduce((s,r) => s + r.score, 0);
 
   return {
     count,
@@ -1474,14 +1472,24 @@ function calcStats(records) {
   };
 }
 
+
+
 /* ==========
    基本統計 & モード別グラフ
 ========== */
 
-function refreshModeView(records) {
-  const filtered = filterByModeAndRange(records);
+ffunction refreshModeView(records) {
+  // ▼ UI から選択値を取得（ALL 対応）
+  const mode = document.getElementById("viewMode").value;
+  const range = document.getElementById("viewRange").value;
 
-  // 基本統計
+  // ▼ ALL を含むフィルタリング
+  const filtered = filterByModeAndRange(records, {
+    mode,
+    range
+  });
+
+  // ▼ 基本統計（ALL でも項目を減らさない）
   const statsAll = calcStats(filtered);
   const statsLounge = calcStats(filtered.filter(r => r.mode === "lounge"));
   const statsTournament = calcStats(filtered.filter(r => r.mode === "tournament"));
@@ -1490,13 +1498,17 @@ function refreshModeView(records) {
   const basicDiv = document.getElementById("basicStats");
   basicDiv.innerHTML = `
     <p>対象レース数：${statsAll.count}</p>
-    <p>勝率：${(statsAll.winRate*100).toFixed(1)}% / 平均順位：${statsAll.avgRank.toFixed(2)} / 平均スコア：${statsAll.avgScore.toFixed(2)}</p>
-    <p>ラウンジ：${statsLounge.count} / 大会：${statsTournament.count} / 野良：${statsNora.count}</p>
+    <p>勝率（3位以内）：${(statsAll.winRate * 100).toFixed(1)}%
+       / 平均順位：${statsAll.avgRank.toFixed(2)}
+       / 平均スコア：${statsAll.avgScore.toFixed(2)}</p>
+    <p>ラウンジ：${statsLounge.count}
+       / 大会：${statsTournament.count}
+       / 野良：${statsNora.count}</p>
   `;
 
-  // モード別集計
-  const modes = ["lounge","tournament","nora"];
-  const labels = ["ラウンジ","大会","野良"];
+  // ▼ モード別集計（ALL のときも表示項目は減らさない）
+  const modes = ["lounge", "tournament", "nora"];
+  const labels = ["ラウンジ", "大会", "野良"];
   const winRates = [];
   const avgRanks = [];
   const avgScores = [];
@@ -1508,7 +1520,7 @@ function refreshModeView(records) {
     avgScores.push(s.avgScore || 0);
   }
 
-  // 勝率
+  // ▼ 勝率グラフ（3位以内勝率）
   const ctxW = document.getElementById("chartWinRate").getContext("2d");
   if (chartWinRate) chartWinRate.destroy();
   chartWinRate = new Chart(ctxW, {
@@ -1516,20 +1528,18 @@ function refreshModeView(records) {
     data: {
       labels,
       datasets: [{
-        label: "勝率(%)",
+        label: "勝率(3位以内, %)",
         data: winRates,
         backgroundColor: "rgba(54, 162, 235, 0.6)"
       }]
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true, max: 100 }
-      }
+      scales: { y: { beginAtZero: true, max: 100 } }
     }
   });
 
-  // 平均順位
+  // ▼ 平均順位グラフ
   const ctxR = document.getElementById("chartAvgRank").getContext("2d");
   if (chartAvgRank) chartAvgRank.destroy();
   chartAvgRank = new Chart(ctxR, {
@@ -1544,13 +1554,11 @@ function refreshModeView(records) {
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true, max: 12 }
-      }
+      scales: { y: { beginAtZero: true, max: 12 } }
     }
   });
 
-  // 平均スコア
+  // ▼ 平均スコアグラフ
   const ctxS = document.getElementById("chartAvgScore").getContext("2d");
   if (chartAvgScore) chartAvgScore.destroy();
   chartAvgScore = new Chart(ctxS, {
@@ -1565,13 +1573,11 @@ function refreshModeView(records) {
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      }
+      scales: { y: { beginAtZero: true } }
     }
   });
 
-  // 以降のビューも更新
+  // ▼ すべてのビュー更新（ALL 対応済み）
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
@@ -1580,6 +1586,7 @@ function refreshModeView(records) {
   update3DView();
   updateScatterView();
 }
+
 
 /* ==========
    成長スコア（Tier × Season × Course）
@@ -1678,29 +1685,43 @@ function updateGrowthView() {
 
 function initRadarSelector() {
   const sel = document.getElementById("radarCourse");
-  sel.innerHTML = courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML = `
+    <option value="ALL">ALL</option>
+    ${courseList.map(c => `<option value="${c}">${c}</option>`).join("")}
+  `;
 }
+
 
 function updateRadarView() {
   const course = document.getElementById("radarCourse").value;
   if (!course) return;
 
-  const records = filterByModeAndRange(allRecords).filter(r => r.course === course);
+  // ▼ ALL を含むフィルタリング
+  const baseFiltered = filterByModeAndRange(allRecords);
+
+  // ▼ ALL のときは全コースのデータを使う
+  const records = (course === "ALL")
+    ? baseFiltered
+    : baseFiltered.filter(r => r.course === course);
+
   if (!records.length) {
     if (chartRadar) chartRadar.destroy();
     return;
   }
 
+  // ▼ 統計（勝率は calcStats で 3 位以内に統一）
   const s = calcStats(records);
 
-  // 指標：勝率, 平均スコア, 使用数, 平均順位(逆転)
-  const labels = ["勝率(%)","平均スコア","使用数","平均順位(逆転)"];
+  // ▼ レーダー項目（ALL でも項目数は絶対に減らさない）
+  const labels = ["勝率(%)", "平均スコア", "使用数", "平均順位(逆転)"];
   const data = [
-    s.winRate * 100,
-    s.avgScore,
-    records.length,
-    12 - (s.avgRank || 12)
+    s.winRate * 100,          // 3位以内勝率
+    s.avgScore,               // 平均スコア
+    records.length,           // 使用数
+    12 - (s.avgRank || 12)    // 平均順位の逆転値
   ];
+
+  const label = (course === "ALL") ? "ALL（全コース）" : course;
 
   const ctx = document.getElementById("chartRadar").getContext("2d");
   if (chartRadar) chartRadar.destroy();
@@ -1709,7 +1730,7 @@ function updateRadarView() {
     data: {
       labels,
       datasets: [{
-        label: course,
+        label,
         data,
         backgroundColor: "rgba(153, 102, 255, 0.2)",
         borderColor: "rgba(153, 102, 255, 1)"
@@ -1723,6 +1744,7 @@ function updateRadarView() {
     }
   });
 }
+
 
 /* ==========
    ヒートマップ（コース × 指標）
@@ -1861,22 +1883,34 @@ function initAISelector() {
 function updateAICourseView() {
   const course = document.getElementById("aiCourse").value;
   const div = document.getElementById("aiCourseResult");
+
   if (!course) {
     div.innerHTML = "";
     return;
   }
 
-  const records = filterByModeAndRange(allRecords).filter(r => r.course === course);
+  // ▼ ALL を含むフィルタリング
+  const baseFiltered = filterByModeAndRange(allRecords);
+
+  // ▼ ALL の場合は「全コースの総合評価」
+  const records = (course === "ALL")
+    ? baseFiltered
+    : baseFiltered.filter(r => r.course === course);
+
   if (!records.length) {
     div.innerHTML = "<p>データがありません。</p>";
     return;
   }
 
+  // ▼ 統計（勝率は 3 位以内）
   const s = calcStats(records);
+
+  // ▼ 得意・苦手・成長スコア（項目数は減らさない）
   const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
   const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
   const growth = strongScore - weakScore;
 
+  // ▼ 判定文（ALL でも表示）
   let verdict = "";
   if (strongScore > 140) verdict = "かなり得意なコースです。積極的に選んで良さそう。";
   else if (strongScore > 100) verdict = "得意寄りのコースです。状況次第で選択候補。";
@@ -1884,10 +1918,15 @@ function updateAICourseView() {
   else if (weakScore > 90) verdict = "やや苦手なコースです。慎重に扱いたい。";
   else verdict = "まだ評価が分かれるコースです。データを増やして判断しましょう。";
 
+  // ▼ ALL のときも項目数は完全に同じ
+  const title = (course === "ALL")
+    ? "全コース総合評価"
+    : `コース：${course}`;
+
   div.innerHTML = `
-    <p><strong>コース：</strong>${course}</p>
+    <p><strong>${title}</strong></p>
     <p><strong>試行回数：</strong>${records.length}</p>
-    <p><strong>勝率：</strong>${(s.winRate*100).toFixed(1)}%</p>
+    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
     <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
     <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
     <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
