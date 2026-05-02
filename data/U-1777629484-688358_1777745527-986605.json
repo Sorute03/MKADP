@@ -1,0 +1,61 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777745527-986605",
+  "timestamp": 1777745527,
+  "races": [
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "キノピオファクトリー",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1777724297865
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "キノピオファクトリー→ショーニューロード",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1777724297865
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ショーニューロード→アイスビルディング",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1777725160428
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "アイスビルディング→ソルティータウン",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1777725160428
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1777725178587
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "DKスノーマウンテン→ワリオシップ",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1777725457545
+    }
+  ]
+}
