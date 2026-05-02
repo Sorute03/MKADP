@@ -1,0 +1,25 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777723914-470055",
+  "timestamp": 1777723914,
+  "races": [
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "シュポポコースター→マリオブラザーズサーキット",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777723723845
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ワリオスタジアム",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1777723723845
+    }
+  ]
+}
