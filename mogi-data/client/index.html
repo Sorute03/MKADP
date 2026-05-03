@@ -585,16 +585,7 @@ courseList.push(
   <button id="importSaveBtn">セーブデータ復元</button>
   <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
 </div>
-<h3>TSV読み込み（スプシコピー対応）</h3>
-<textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
-<button id="importTSVBtn">TSVを読み込む</button>
-
-<h3>CSV / TSV 読み込み（セーブデータとして保存）</h3>
-<input type="file" id="fileInput" accept=".csv,.tsv,.txt">
-<button id="importFileBtn">読み込んで保存</button>
-<script>
-  
-<div class="section-block">
+  <div class="section-block">
   <h3>OBS オーバーレイ生成</h3>
 
   <label>モード：</label>
@@ -623,6 +614,16 @@ courseList.push(
     オーバーレイ生成
   </button>
 </div>
+<h3>TSV読み込み（スプシコピー対応）</h3>
+<textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
+<button id="importTSVBtn">TSVを読み込む</button>
+
+<h3>CSV / TSV 読み込み（セーブデータとして保存）</h3>
+<input type="file" id="fileInput" accept=".csv,.tsv,.txt">
+<button id="importFileBtn">読み込んで保存</button>
+<script>
+  
+
   
 function buildOverlayHTMLFile(mode, season, course) {
   return `
