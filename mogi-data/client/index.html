@@ -870,6 +870,30 @@ window.addEventListener("load", () => {
 </div>
   
 <script>
+// ▼ 次のコースを取得
+function getNextCourseFromModal() {
+  const scores = document.querySelectorAll("[id^='raceScore_']");
+  for (let i = 0; i < scores.length; i++) {
+    if (!scores[i].value) {
+      const index = i + 1;
+      const courseSelect = document.getElementById(`raceCourse_${index}`);
+      return courseSelect ? courseSelect.value : null;
+    }
+  }
+  return null;
+}
+
+// ▼ 次のコースを保存
+function saveNextCourse() {
+  const nextCourse = getNextCourseFromModal();
+  if (nextCourse) {
+    localStorage.setItem("nextCourse", nextCourse);
+
+    const obsCourse = document.getElementById("obsCourse");
+    if (obsCourse) obsCourse.value = nextCourse;
+  }
+}
+  
 document.getElementById("openModalBtn").addEventListener("click", () => {
   document.getElementById("raceModal").classList.add("show");
 });
@@ -996,6 +1020,7 @@ function generateRaceInputs(count) {
 
     rankInput.onchange = () => {
       scoreInput.value = calcScore(Number(rankInput.value));
+      saveNextCourse();
     };
   }
 }
@@ -1007,6 +1032,7 @@ openModalBtn.onclick = () => {
   initModalSelectors();
   updateModalMode();
   modal.classList.add("show");
+  saveNextCourse();
 };
 
 closeModalBtn.onclick = () => {
