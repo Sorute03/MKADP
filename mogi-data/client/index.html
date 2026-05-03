@@ -988,10 +988,14 @@ saveRaceBtn.onclick = async () => {
 
 // ▼ スコアが空欄の行の「一番上のコース」を取得
 function getFirstUnusedCourse() {
+  const registeredCourses = JSON.parse(localStorage.getItem("registeredCourses") || "[]");
+
   const empty = registeredCourses.filter(r => !r.score || r.score === "");
   if (empty.length === 0) return null;
+
   return empty[0].course;
 }
+
 
 // ▼ OBS オーバーレイ生成 UI のコース選択を courseList と同期
 window.addEventListener("load", () => {
@@ -2318,6 +2322,9 @@ function shouldSendNow() {
 /* ============================================================
    ▼ Cloudflare Worker に送信（6時間に1回）
    ============================================================ */
+/* ============================================================
+   ▼ Cloudflare Worker に送信（6時間に1回）
+   ============================================================ */
 async function sendDataToWorker() {
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   if (!queue.length) return;
@@ -2327,7 +2334,7 @@ async function sendDataToWorker() {
     return;
   }
 
-  const payload = f
+  const payload = {
     userId: getUserCopyId(),
     batchId: generateBatchId(),
     timestamp: Math.floor(Date.now() / 1000),
@@ -2354,6 +2361,7 @@ async function sendDataToWorker() {
     console.error(e);
   }
 }
+
 
 /* ============================================================
    ▼ 自動送信チェック（5分ごと）
