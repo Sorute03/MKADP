@@ -1647,6 +1647,29 @@ function calcStats(records) {
   };
 }
 
+// ▼ Season セレクタを S1〜S30 + ALL に統一する共通関数
+function buildSeasonOptions() {
+  const arr = ["ALL"];
+  for (let i = 1; i <= 30; i++) {
+    arr.push(`S${i}`);
+  }
+  return arr.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+
+// ▼ 成長スコアのセレクタ初期化
+function initGrowthSelectors() {
+  const tierSel = document.getElementById("growthTier");
+  const seasonSel = document.getElementById("growthSeason");
+  const courseSel = document.getElementById("growthCourse");
+
+  tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+
+  // ★ ここを S1〜S30 に統一
+  seasonSel.innerHTML = buildSeasonOptions();
+
+  courseSel.innerHTML = ["ALL"].concat(courseList)
+    .map(c => `<option value="${c}">${c}</option>`).join("");
+}
 
 
 /* ==========
@@ -1750,7 +1773,8 @@ function initGrowthSelectors() {
   const courseSel = document.getElementById("growthCourse");
 
   tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
-  seasonSel.innerHTML = ["ALL","S20","S21","S22","S23"].map(s => `<option value="${s}">${s}</option>`).join("");
+  seasonSel.innerHTML = buildSeasonOptions();
+
 
   // courseList は②で定義される前提
   courseSel.innerHTML = ["ALL"].concat(courseList).map(c => `<option value="${c}">${c}</option>`).join("");
@@ -2303,7 +2327,7 @@ async function sendDataToWorker() {
     return;
   }
 
-  const payload = {
+  const payload = f
     userId: getUserCopyId(),
     batchId: generateBatchId(),
     timestamp: Math.floor(Date.now() / 1000),
