@@ -1,0 +1,115 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777788275-846810",
+  "timestamp": 1777788275,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ソルティータウン",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "プクプクフォールズ",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "リバーサイドサファリ",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "キノピオファクトリー→どんぐりツリーハウス",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ディノディノジャングル→リバーサイドサファリ",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "マリオサーキット",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ワリオスタジアム",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "リバーサイドサファリ→ディノディノジャングル",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ほねほねツイスター",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1777788110642
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ハテナしんでん",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1777788110642
+    }
+  ]
+}
