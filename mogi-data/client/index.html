@@ -636,102 +636,93 @@ courseList.push(
 function buildOverlayHTMLFile(mode, season, course) {
   return `
 <!DOCTYPE html>
-  <html>
-  <head>
-  <meta charset="UTF-8">
-  <style>
-  body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    overflow: hidden;
-    font-family: sans-serif;
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+#overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 8px 12px;
+  font-size: 22px;
+  border-radius: 6px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay">読み込み中...</div>
+
+<scr` + `ipt>
+const MODE = "${mode}";
+const SEASON = "${season}";
+const COURSE = "${course}";
+
+function getFilteredRecords() {
+  let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
+  if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
+  if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
+  if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
+  return records;
+}
+
+function getCurrentCourse(records) {
+  if (!records.length) return null;
+  return records[records.length - 1].course;
+}
+
+function calcStats(records) {
+  const count = records.length;
+  const avgRank = records.reduce((a,b)=>a+b.rank,0) / count;
+  const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
+  const winRate = records.filter(r => r.rank <= 3).length / count;
+  return { count, avgRank, avgScore, winRate };
+}
+
+function buildHTML(course, stats) {
+  return \`
+    <b>\${course}</b> ｜ 
+    平均順位 \${stats.avgRank.toFixed(2)}位 ｜ 
+    平均得点 \${stats.avgScore.toFixed(2)}点 ｜ 
+    試行回数 \${stats.count}回<br>
+    上位率 \${(stats.winRate * 100).toFixed(1)}%
+  \`;
+}
+
+function updateOverlay() {
+  const records = getFilteredRecords();
+  const course = getCurrentCourse(records);
+  if (!course) {
+    document.getElementById("overlay").innerHTML = "データなし";
+    return;
   }
-  #overlay {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: rgba(0,0,0,0.5);
-    color: white;
-    padding: 8px 12px;
-    font-size: 22px;
-    border-radius: 6px;
-    line-height: 1.6;
-  }
-  </style>
-  </head>
-  <body>
-  
-  <div id="overlay">読み込み中...</div>
-  
-  <script>
-  // ▼ 条件（配布ページ側で埋め込まれる）
-  const MODE = "${mode}";
-  const SEASON = "${season}";
-  const COURSE = "${course}";
-  
-  // ▼ データ取得
-  function getFilteredRecords() {
-    let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
-  
-    if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
-    if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
-    if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
-  
-    return records;
-  }
-  
-  // ▼ 最新コース
-  function getCurrentCourse(records) {
-    if (!records.length) return null;
-    return records[records.length - 1].course;
-  }
-  
-  // ▼ 統計
-  function calcStats(records) {
-    const count = records.length;
-    const avgRank = records.reduce((a,b)=>a+b.rank,0) / count;
-    const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
-    const winRate = records.filter(r => r.rank <= 3).length / count;
-    return { count, avgRank, avgScore, winRate };
-  }
-  
-  // ▼ HTML
-  function buildHTML(course, stats) {
-    return `
-      <b>${course}</b> ｜ 
-      平均順位 ${stats.avgRank.toFixed(2)}位 ｜ 
-      平均得点 ${stats.avgScore.toFixed(2)}点 ｜ 
-      試行回数 ${stats.count}回<br>
-      上位率 ${(stats.winRate * 100).toFixed(1)}%
-    `;
-  }
-  
-  // ▼ 更新
-  function updateOverlay() {
-    const records = getFilteredRecords();
-    const course = getCurrentCourse(records);
-  
-    if (!course) {
-      document.getElementById("overlay").innerHTML = "データなし";
-      return;
-    }
-  
-    const stats = calcStats(records.filter(r => r.course === course));
-    document.getElementById("overlay").innerHTML = buildHTML(course, stats);
-  }
-  
-  window.addEventListener("load", () => {
-    updateOverlay();
-    setInterval(updateOverlay, 5000);
-  });
-  </script>
-  
-  </body>
-  </html>
-  `;
-  }
+  const stats = calcStats(records.filter(r => r.course === course));
+  document.getElementById("overlay").innerHTML = buildHTML(course, stats);
+}
+
+window.addEventListener("load", () => {
+  updateOverlay();
+  setInterval(updateOverlay, 5000);
+});
+</scr` + `ipt>
+
+</body>
+</html>
+`;
+}
 </script>
+
 
   
   
