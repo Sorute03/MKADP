@@ -632,11 +632,10 @@ courseList.push(
   </button>
 </div>
 
-<script>   <!-- ★★★ ここで再び script を開く ★★★ -->
-
-  function buildOverlayHTMLFile(mode, season, course) {
-    return `
-  <!DOCTYPE html>
+<script>
+function buildOverlayHTMLFile(mode, season, course) {
+  return `
+<!DOCTYPE html>
   <html>
   <head>
   <meta charset="UTF-8">
@@ -1545,6 +1544,8 @@ document.getElementById("importSaveBtn").onclick = async () => {
 /* ==========
    ユーティリティ
 ========== */
+</script>   <!-- ★★★ 必須 ★★★ -->
+
 <script>
 function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
@@ -1565,7 +1566,7 @@ function generateOBSOverlay() {
 }
 </script>
 
-  
+<script>
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
