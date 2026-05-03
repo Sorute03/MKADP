@@ -661,15 +661,29 @@ body {
 <div id="overlay">読み込み中...</div>
 
 <scr` + `ipt>
-
-// ▼ フィルタ条件
+// ▼ フィルタ条件（index.html から埋め込まれる）
 const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ 全レコード取得
+// ▼ courseList（index.html と同じものを overlay 側にも持つ）
+const courseList = ${JSON.stringify(courseList)};
+
+// ▼ 全レコード取得（courseList に正規化）
 function getFilteredRecords() {
   let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
+
+  // ▼ courseList に存在するコース名に正規化
+  records = records.map(r => {
+    if (courseList.includes(r.course)) return r;
+
+    // 複合名の前半一致
+    const base = r.course.split("→")[0];
+    const match = courseList.find(c => c === base);
+    if (match) return { ...r, course: match };
+
+    return r;
+  });
 
   if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
   if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
@@ -718,7 +732,7 @@ function buildHTML(course, stats) {
 function updateOverlay() {
   const records = getFilteredRecords();
 
-  // ▼ nextCourse があれば優先
+  // ▼ nextCourse があれば最優先
   const nextCourse = getNextCourse();
   if (nextCourse) {
     const filtered = records.filter(r => r.course === nextCourse);
@@ -743,7 +757,6 @@ window.addEventListener("load", () => {
   updateOverlay();
   setInterval(updateOverlay, 5000);
 });
-
 </scr` + `ipt>
 
 </body>
