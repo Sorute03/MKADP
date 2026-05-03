@@ -616,10 +616,7 @@ courseList.push(
   <label style="margin-left:16px;">シーズン：</label>
   <select id="obsSeason">
     <option value="ALL">ALL</option>
-    <option value="S20">S20</option>
-    <option value="S21">S21</option>
-    <option value="S22">S22</option>
-    <option value="S23">S23</option>
+    ${Array.from({length: 30}, (_, i) => `<option value="S${i+1}">S${i+1}</option>`).join("")}
   </select>
 
   <label style="margin-left:16px;">コース：</label>
@@ -631,6 +628,7 @@ courseList.push(
     オーバーレイ生成
   </button>
 </div>
+
 
 <script>
 function buildOverlayHTMLFile(mode, season, course) {
@@ -651,9 +649,9 @@ body {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0,0,0,0.55);
   color: white;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 22px;
   border-radius: 6px;
   line-height: 1.6;
@@ -666,32 +664,49 @@ body {
 
 <scr` + `ipt>
 
+// ▼ フィルタ条件
 const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
+// ▼ 全レコード取得
 function getFilteredRecords() {
   let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
+
   if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
   if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
   if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
+
   return records;
 }
 
+// ▼ index.html が保存した “次のコース”
+function getNextCourse() {
+  return localStorage.getItem("nextCourse") || null;
+}
+
+// ▼ 最新コース（fallback）
 function getCurrentCourse(records) {
   if (!records.length) return null;
   return records[records.length - 1].course;
 }
 
+// ▼ 統計
 function calcStats(records) {
   const count = records.length;
+  if (count === 0) return null;
+
   const avgRank = records.reduce((a,b)=>a+b.rank,0) / count;
   const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
   const winRate = records.filter(r => r.rank <= 3).length / count;
+
   return { count, avgRank, avgScore, winRate };
 }
 
+// ▼ HTML
 function buildHTML(course, stats) {
+  if (!stats) return \`${course} ｜ データなし\`;
+
   return \`
     <b>\${course}</b> ｜ 
     平均順位 \${stats.avgRank.toFixed(2)}位 ｜ 
@@ -701,21 +716,36 @@ function buildHTML(course, stats) {
   \`;
 }
 
+// ▼ 更新
 function updateOverlay() {
   const records = getFilteredRecords();
+
+  // ▼ nextCourse があれば優先
+  const nextCourse = getNextCourse();
+  if (nextCourse) {
+    const filtered = records.filter(r => r.course === nextCourse);
+    const stats = calcStats(filtered);
+    document.getElementById("overlay").innerHTML = buildHTML(nextCourse, stats);
+    return;
+  }
+
+  // ▼ fallback：最新コース
   const course = getCurrentCourse(records);
   if (!course) {
     document.getElementById("overlay").innerHTML = "データなし";
     return;
   }
+
   const stats = calcStats(records.filter(r => r.course === course));
   document.getElementById("overlay").innerHTML = buildHTML(course, stats);
 }
 
+// ▼ 初期化
 window.addEventListener("load", () => {
   updateOverlay();
   setInterval(updateOverlay, 5000);
 });
+
 </scr` + `ipt>
 
 </body>
@@ -723,6 +753,7 @@ window.addEventListener("load", () => {
 `;
 }
 </script>
+
 
 
   
