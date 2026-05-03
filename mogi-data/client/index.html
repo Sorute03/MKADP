@@ -614,10 +614,8 @@ courseList.push(
   </select>
 
   <label style="margin-left:16px;">シーズン：</label>
-  <select id="obsSeason">
-    <option value="ALL">ALL</option>
-    ${Array.from({length: 30}, (_, i) => `<option value="S${i+1}">S${i+1}</option>`).join("")}
-  </select>
+  <select id="obsSeason"></select>
+
 
   <label style="margin-left:16px;">コース：</label>
   <select id="obsCourse">
@@ -915,6 +913,17 @@ const modalSeason = document.getElementById("modalSeason");
 const modalRaceCount = document.getElementById("modalRaceCount");
 const modalRaceInputs = document.getElementById("modalRaceInputs");
 
+function initOBSSeasonSelector() {
+  const obsSeason = document.getElementById("obsSeason");
+  obsSeason.innerHTML =
+    `<option value="ALL">ALL</option>` +
+    Array.from({ length: 30 }, (_, i) => {
+      const s = i + 1;
+      return `<option value="S${s}">S${s}</option>`;
+    }).join("");
+}
+
+  
 /* ▼ 初期化 */
 function initModalSelectors() {
   // Tier（既存）
