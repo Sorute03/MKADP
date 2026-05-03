@@ -592,6 +592,137 @@ courseList.push(
 <h3>CSV / TSV 読み込み（セーブデータとして保存）</h3>
 <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 <button id="importFileBtn">読み込んで保存</button>
+<script>
+  
+<div class="section-block">
+  <h3>OBS オーバーレイ生成</h3>
+
+  <label>モード：</label>
+  <select id="obsMode">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label style="margin-left:16px;">シーズン：</label>
+  <select id="obsSeason">
+    <option value="ALL">ALL</option>
+    <option value="S20">S20</option>
+    <option value="S21">S21</option>
+    <option value="S22">S22</option>
+    <option value="S23">S23</option>
+  </select>
+
+  <label style="margin-left:16px;">コース：</label>
+  <select id="obsCourse">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <button onclick="generateOBSOverlay()" style="margin-left:16px;">
+    オーバーレイ生成
+  </button>
+</div>
+  
+function buildOverlayHTMLFile(mode, season, course) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+#overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 8px 12px;
+  font-size: 22px;
+  border-radius: 6px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay">読み込み中...</div>
+
+<script>
+// ▼ 条件
+const MODE = "${mode}";
+const SEASON = "${season}";
+const COURSE = "${course}";
+
+// ▼ データ取得
+function getFilteredRecords() {
+  let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
+
+  if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
+  if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
+  if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
+
+  return records;
+}
+
+// ▼ 最新コース
+function getCurrentCourse(records) {
+  if (!records.length) return null;
+  return records[records.length - 1].course;
+}
+
+// ▼ 統計
+function calcStats(records) {
+  const count = records.length;
+  const avgRank = records.reduce((a,b)=>a+b.rank,0) / count;
+  const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
+  const winRate = records.filter(r => r.rank <= 3).length / count;
+  return { count, avgRank, avgScore, winRate };
+}
+
+// ▼ HTML
+function buildHTML(course, stats) {
+  return \`
+    <b>\${course}</b> ｜ 
+    平均順位 \${stats.avgRank.toFixed(2)}位 ｜ 
+    平均得点 \${stats.avgScore.toFixed(2)}点 ｜ 
+    試行回数 \${stats.count}回<br>
+    上位率 \${(stats.winRate * 100).toFixed(1)}%
+  \`;
+}
+
+// ▼ 更新
+function updateOverlay() {
+  const records = getFilteredRecords();
+  const course = getCurrentCourse(records);
+
+  if (!course) {
+    document.getElementById("overlay").innerHTML = "データなし";
+    return;
+  }
+
+  const stats = calcStats(records.filter(r => r.course === course));
+  document.getElementById("overlay").innerHTML = buildHTML(course, stats);
+}
+
+window.addEventListener("load", () => {
+  updateOverlay();
+  setInterval(updateOverlay, 5000);
+});
+</script>
+
+</body>
+</html>
+`;
+}
+</script>
 
 
 <!-- ▼ タブボタン -->
@@ -947,174 +1078,6 @@ saveRaceBtn.onclick = async () => {
     refreshModeView(allRecords);
     renderRaceHistory();
   }
-</script>
-
-<div class="section-block">
-  <h3>OBS オーバーレイ生成</h3>
-
-  <label>モード：</label>
-  <select id="obsMode">
-    <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
-  </select>
-
-  <label style="margin-left:16px;">シーズン：</label>
-  <select id="obsSeason">
-    <option value="ALL">ALL</option>
-    <option value="S20">S20</option>
-    <option value="S21">S21</option>
-    <option value="S22">S22</option>
-    <option value="S23">S23</option>
-  </select>
-
-  <label style="margin-left:16px;">コース：</label>
-  <select id="obsCourse">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <button onclick="generateOBSOverlay()" style="margin-left:16px;">
-    オーバーレイ生成
-  </button>
-</div>
-<script>
-// ▼ 登録コースモーダルのデータ例
-// registeredCourses = [
-//   { course: "Mario Circuit", score: 123 },
-//   { course: "DK Jungle", score: "" },
-//   ...
-// ];
-
-// ▼ スコアが空欄の行の「一番上のコース」を取得
-function getFirstUnusedCourse() {
-  const registeredCourses = JSON.parse(localStorage.getItem("registeredCourses") || "[]");
-
-  const empty = registeredCourses.filter(r => !r.score || r.score === "");
-  if (empty.length === 0) return null;
-
-  return empty[0].course;
-}
-
-
-// ▼ OBS オーバーレイ生成 UI のコース選択を courseList と同期
-window.addEventListener("load", () => {
-  const sel = document.getElementById("obsCourse");
-  if (!sel) return;
-
-  // courseList を全部追加
-  courseList.forEach(c => {
-    const op = document.createElement("option");
-    op.value = c;
-    op.textContent = c;
-    sel.appendChild(op);
-  });
-
-  // ▼ デフォルト値を「スコア空欄の一番上のコース」にする
-  const firstUnused = getFirstUnusedCourse();
-  if (firstUnused) sel.value = firstUnused;
-});
-</script>
-
-<script>
-function buildOverlayHTMLFile(mode, season, course) {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body {
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  overflow: hidden;
-  font-family: sans-serif;
-}
-#overlay {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: rgba(0,0,0,0.5);
-  color: white;
-  padding: 8px 12px;
-  font-size: 22px;
-  border-radius: 6px;
-  line-height: 1.6;
-}
-</style>
-</head>
-<body>
-
-<div id="overlay">読み込み中...</div>
-
-<script>
-// ▼ 条件
-const MODE = "${mode}";
-const SEASON = "${season}";
-const COURSE = "${course}";
-
-// ▼ データ取得
-function getFilteredRecords() {
-  let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
-
-  if (MODE !== "ALL") records = records.filter(r => r.mode === MODE);
-  if (SEASON !== "ALL") records = records.filter(r => r.season === SEASON);
-  if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
-
-  return records;
-}
-
-// ▼ 最新コース
-function getCurrentCourse(records) {
-  if (!records.length) return null;
-  return records[records.length - 1].course;
-}
-
-// ▼ 統計
-function calcStats(records) {
-  const count = records.length;
-  const avgRank = records.reduce((a,b)=>a+b.rank,0) / count;
-  const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
-  const winRate = records.filter(r => r.rank <= 3).length / count;
-  return { count, avgRank, avgScore, winRate };
-}
-
-// ▼ HTML
-function buildHTML(course, stats) {
-  return \`
-    <b>\${course}</b> ｜ 
-    平均順位 \${stats.avgRank.toFixed(2)}位 ｜ 
-    平均得点 \${stats.avgScore.toFixed(2)}点 ｜ 
-    試行回数 \${stats.count}回<br>
-    上位率 \${(stats.winRate * 100).toFixed(1)}%
-  \`;
-}
-
-// ▼ 更新
-function updateOverlay() {
-  const records = getFilteredRecords();
-  const course = getCurrentCourse(records);
-
-  if (!course) {
-    document.getElementById("overlay").innerHTML = "データなし";
-    return;
-  }
-
-  const stats = calcStats(records.filter(r => r.course === course));
-  document.getElementById("overlay").innerHTML = buildHTML(course, stats);
-}
-
-window.addEventListener("load", () => {
-  updateOverlay();
-  setInterval(updateOverlay, 5000);
-});
-</script>
-
-</body>
-</html>
-`;
-}
 </script>
 
 
@@ -1577,7 +1540,27 @@ document.getElementById("importSaveBtn").onclick = async () => {
 /* ==========
    ユーティリティ
 ========== */
+<script>
+function generateOBSOverlay() {
+  const mode = document.getElementById("obsMode").value;
+  const season = document.getElementById("obsSeason").value;
+  const course = document.getElementById("obsCourse").value;
 
+  const html = buildOverlayHTMLFile(mode, season, course);
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "overlay.html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+</script>
+
+  
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
