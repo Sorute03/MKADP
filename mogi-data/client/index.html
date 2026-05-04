@@ -883,7 +883,11 @@ window.addEventListener("load", () => {
 </div>
   
 <script>
-// ▼ 次のコースを取得
+/* ---------------------------------------------------------
+   ▼ 1. 次のコース（nextCourse）関連
+--------------------------------------------------------- */
+
+// ▼ 未入力の最初のレースのコースを取得
 function getNextCourseFromModal() {
   const scores = document.querySelectorAll("[id^='raceScore_']");
   for (let i = 0; i < scores.length; i++) {
@@ -896,7 +900,7 @@ function getNextCourseFromModal() {
   return null;
 }
 
-// ▼ 次のコースを保存
+// ▼ nextCourse を保存
 function saveNextCourse() {
   const nextCourse = getNextCourseFromModal();
   if (nextCourse) {
@@ -906,78 +910,82 @@ function saveNextCourse() {
     if (obsCourse) obsCourse.value = nextCourse;
   }
 }
-  
-document.getElementById("openModalBtn").addEventListener("click", () => {
-  document.getElementById("raceModal").classList.add("show");
-});
 
-document.getElementById("closeModalBtn").addEventListener("click", () => {
-  document.getElementById("raceModal").classList.remove("show");
-});
 
-document.getElementById("raceModal").addEventListener("click", (e) => {
-  if (e.target.id === "raceModal") {
-    document.getElementById("raceModal").classList.remove("show");
-  }
-});
-</script>
-<script>
-/* ▼ スコア計算 */
-function calcScore(rank) {
-  const table = {
-    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
-    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
-    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
-    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
+/* ---------------------------------------------------------
+   ▼ 2. モーダルドラフト保存（保存 or モード変更まで保持）
+--------------------------------------------------------- */
+
+// ▼ モーダル内容を保存
+function saveModalDraft() {
+  const draft = {
+    mode: modalMode.value,
+    season: modalSeason.value,
+    tier: modalTier.value,
+    raceCount: modalRaceCount.value,
+    inputs: []
   };
-  return table[rank] || 0;
+
+  const scores = document.querySelectorAll("[id^='raceScore_']");
+  for (let i = 0; i < scores.length; i++) {
+    const index = i + 1;
+    draft.inputs.push({
+      course: document.getElementById(`raceCourse_${index}`).value,
+      rank: document.getElementById(`raceRank_${index}`).value,
+      score: document.getElementById(`raceScore_${index}`).value
+    });
+  }
+
+  localStorage.setItem("modalDraft", JSON.stringify(draft));
 }
 
-/* ▼ モーダル要素 */
-const modal = document.getElementById("raceModal");
-const openModalBtn = document.getElementById("openModalBtn");
-const closeModalBtn = document.getElementById("closeModalBtn");
-const saveRaceBtn = document.getElementById("saveRaceBtn");
+// ▼ モーダル内容を復元
+function loadModalDraft() {
+  const draft = JSON.parse(localStorage.getItem("modalDraft") || "null");
+  if (!draft) return;
 
-const modalMode = document.getElementById("modalMode");
-const modalTierBlock = document.getElementById("modalTierBlock");
-const modalSeasonBlock = document.getElementById("modalSeasonBlock");
-const modalRaceCountBlock = document.getElementById("modalRaceCountBlock");
-const modalLoungeInfo = document.getElementById("modalLoungeInfo");
+  modalMode.value = draft.mode;
+  modalSeason.value = draft.season;
+  modalTier.value = draft.tier;
+  modalRaceCount.value = draft.raceCount;
 
-const modalTier = document.getElementById("modalTier");
-const modalSeason = document.getElementById("modalSeason");
-const modalRaceCount = document.getElementById("modalRaceCount");
-const modalRaceInputs = document.getElementById("modalRaceInputs");
+  updateModalMode(); // 入力欄を生成
 
-function initOBSSeasonSelector() {
-  const obsSeason = document.getElementById("obsSeason");
-  obsSeason.innerHTML =
-    `<option value="ALL">ALL</option>` +
-    Array.from({ length: 30 }, (_, i) => {
-      const s = i + 1;
-      return `<option value="S${s}">S${s}</option>`;
-    }).join("");
+  draft.inputs.forEach((d, i) => {
+    const index = i + 1;
+    document.getElementById(`raceCourse_${index}`).value = d.course;
+    document.getElementById(`raceRank_${index}`).value = d.rank;
+    document.getElementById(`raceScore_${index}`).value = d.score;
+  });
 }
 
-  
-/* ▼ 初期化 */
+// ▼ モード変更時はドラフト削除
+modalMode.addEventListener("change", () => {
+  localStorage.removeItem("modalDraft");
+  updateModalMode();
+});
+
+
+/* ---------------------------------------------------------
+   ▼ 3. モーダルセレクタ初期化
+--------------------------------------------------------- */
+
 function initModalSelectors() {
-  // Tier（既存）
   modalTier.innerHTML = loungeTiers
     .filter(t => t !== "ALL")
     .map(t => `<option value="${t}">${t}</option>`)
     .join("");
 
-  // Season（S1〜S30）
   modalSeason.innerHTML = Array.from({ length: 30 }, (_, i) => {
     const s = i + 1;
     return `<option value="S${s}">S${s}</option>`;
   }).join("");
 }
 
-/* ▼ モード切替 */
-modalMode.onchange = () => updateModalMode();
+
+/* ---------------------------------------------------------
+   ▼ 4. モード切替
+--------------------------------------------------------- */
 
 function updateModalMode() {
   const mode = modalMode.value;
@@ -997,12 +1005,11 @@ function updateModalMode() {
   }
 }
 
-/* ▼ レース数変更（大会・野良） */
-modalRaceCount.onchange = () => {
-  generateRaceInputs(Number(modalRaceCount.value));
-};
 
-/* ▼ レース入力欄生成 */
+/* ---------------------------------------------------------
+   ▼ 5. レース入力欄生成（nextCourse + ドラフト保存対応）
+--------------------------------------------------------- */
+
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
 
@@ -1027,23 +1034,36 @@ function generateRaceInputs(count) {
     `;
   }
 
+  // ▼ イベント設定
   for (let i = 1; i <= count; i++) {
     const rankInput = document.getElementById(`raceRank_${i}`);
     const scoreInput = document.getElementById(`raceScore_${i}`);
+    const courseSelect = document.getElementById(`raceCourse_${i}`);
 
     rankInput.onchange = () => {
       scoreInput.value = calcScore(Number(rankInput.value));
+      saveModalDraft();
+      saveNextCourse();
+    };
+
+    courseSelect.onchange = () => {
+      saveModalDraft();
       saveNextCourse();
     };
   }
+
+  saveNextCourse();
 }
 
 
+/* ---------------------------------------------------------
+   ▼ 6. モーダル開閉
+--------------------------------------------------------- */
 
-/* ▼ モーダル開閉 */
 openModalBtn.onclick = () => {
   initModalSelectors();
   updateModalMode();
+  loadModalDraft();   // ★ 前回の入力を復元
   modal.classList.add("show");
   saveNextCourse();
 };
@@ -1052,7 +1072,11 @@ closeModalBtn.onclick = () => {
   modal.classList.remove("show");
 };
 
-/* ▼ 保存処理 */
+
+/* ---------------------------------------------------------
+   ▼ 7. 保存ボタン
+--------------------------------------------------------- */
+
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
@@ -1088,71 +1112,17 @@ saveRaceBtn.onclick = async () => {
 
   allRecords.push(...records);
   refreshModeView(allRecords);
-  
 
-  /* ▼ 追加：暗号化保存＋バックアップ */
   await saveAllRecords();
   downloadBackup();
-  // ▼ 送信キューに追加（未送信データだけを1時間後に送る）
+
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...records);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
+  localStorage.removeItem("modalDraft"); // ★ ドラフト削除
   modal.classList.remove("show");
 };
-
-</script>
-<script>
-  document.querySelectorAll(".tabBtn").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-  
-      const target = btn.dataset.tab;
-      document.querySelectorAll(".tabContent").forEach(tab => {
-        tab.style.display = (tab.id === target) ? "block" : "none";
-      });
-    };
-  });
-</script>
-<script>
-  function renderRaceHistory() {
-    const box = document.getElementById("raceHistoryList");
-    box.innerHTML = "";
-  
-    allRecords
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .forEach(r => {
-        const div = document.createElement("div");
-        div.style = "padding:8px; border-bottom:1px solid #ddd;";
-  
-        div.innerHTML = `
-          <strong>${r.course}</strong>
-          (${r.rank}位 / ${r.score}点 / ${r.mode})
-          <button data-ts="${r.timestamp}" style="margin-left:10px;">削除</button>
-        `;
-  
-        box.appendChild(div);
-      });
-  
-    document.querySelectorAll("#raceHistoryList button").forEach(btn => {
-      btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
-    });
-  }
-</script>
-<script>
-  function deleteRecord(ts) {
-    const key = "loungeRecords";
-  
-    const old = JSON.parse(localStorage.getItem(key) || "[]");
-    const filtered = old.filter(r => r.timestamp !== ts);
-    localStorage.setItem(key, JSON.stringify(filtered));
-  
-    allRecords = allRecords.filter(r => r.timestamp !== ts);
-  
-    refreshModeView(allRecords);
-    renderRaceHistory();
-  }
 </script>
 
 
@@ -1163,6 +1133,8 @@ saveRaceBtn.onclick = async () => {
 
 <!-- ▼ 基本統計 -->
 <!-- ▼ モード別分析 -->
+
+  
 <div class="section-block">
   <h3>モード別分析</h3>
 
