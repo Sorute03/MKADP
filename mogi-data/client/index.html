@@ -883,11 +883,39 @@ window.addEventListener("load", () => {
 </div>
   
 <script>
-/* ---------------------------------------------------------
-   ▼ 1. 次のコース（nextCourse）関連
---------------------------------------------------------- */
+/* ▼ モーダル要素（最初に定義しないと onclick が壊れる） */
+const modal = document.getElementById("raceModal");
+const openModalBtn = document.getElementById("openModalBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const saveRaceBtn = document.getElementById("saveRaceBtn");
 
-// ▼ 未入力の最初のレースのコースを取得
+const modalMode = document.getElementById("modalMode");
+const modalTierBlock = document.getElementById("modalTierBlock");
+const modalSeasonBlock = document.getElementById("modalSeasonBlock");
+const modalRaceCountBlock = document.getElementById("modalRaceCountBlock");
+const modalLoungeInfo = document.getElementById("modalLoungeInfo");
+
+const modalTier = document.getElementById("modalTier");
+const modalSeason = document.getElementById("modalSeason");
+const modalRaceCount = document.getElementById("modalRaceCount");
+const modalRaceInputs = document.getElementById("modalRaceInputs");
+</script>
+
+<script>
+function initOBSSeasonSelector() {
+  const obsSeason = document.getElementById("obsSeason");
+  obsSeason.innerHTML =
+    `<option value="ALL">ALL</option>` +
+    Array.from({ length: 30 }, (_, i) => {
+      const s = i + 1;
+      return `<option value="S${s}">S${s}</option>`;
+    }).join("");
+}
+</script>
+
+
+<script>
+// ▼ 次のコースを取得
 function getNextCourseFromModal() {
   const scores = document.querySelectorAll("[id^='raceScore_']");
   for (let i = 0; i < scores.length; i++) {
@@ -900,7 +928,7 @@ function getNextCourseFromModal() {
   return null;
 }
 
-// ▼ nextCourse を保存
+// ▼ 次のコースを保存
 function saveNextCourse() {
   const nextCourse = getNextCourseFromModal();
   if (nextCourse) {
@@ -910,13 +938,8 @@ function saveNextCourse() {
     if (obsCourse) obsCourse.value = nextCourse;
   }
 }
-
-
-/* ---------------------------------------------------------
-   ▼ 2. モーダルドラフト保存（保存 or モード変更まで保持）
---------------------------------------------------------- */
-
-// ▼ モーダル内容を保存
+</script>
+<script>
 function saveModalDraft() {
   const draft = {
     mode: modalMode.value,
@@ -939,7 +962,6 @@ function saveModalDraft() {
   localStorage.setItem("modalDraft", JSON.stringify(draft));
 }
 
-// ▼ モーダル内容を復元
 function loadModalDraft() {
   const draft = JSON.parse(localStorage.getItem("modalDraft") || "null");
   if (!draft) return;
@@ -949,7 +971,7 @@ function loadModalDraft() {
   modalTier.value = draft.tier;
   modalRaceCount.value = draft.raceCount;
 
-  updateModalMode(); // 入力欄を生成
+  updateModalMode();
 
   draft.inputs.forEach((d, i) => {
     const index = i + 1;
@@ -958,18 +980,8 @@ function loadModalDraft() {
     document.getElementById(`raceScore_${index}`).value = d.score;
   });
 }
-
-// ▼ モード変更時はドラフト削除
-modalMode.addEventListener("change", () => {
-  localStorage.removeItem("modalDraft");
-  updateModalMode();
-});
-
-
-/* ---------------------------------------------------------
-   ▼ 3. モーダルセレクタ初期化
---------------------------------------------------------- */
-
+</script>
+<script>
 function initModalSelectors() {
   modalTier.innerHTML = loungeTiers
     .filter(t => t !== "ALL")
@@ -981,11 +993,12 @@ function initModalSelectors() {
     return `<option value="S${s}">S${s}</option>`;
   }).join("");
 }
-
-
-/* ---------------------------------------------------------
-   ▼ 4. モード切替
---------------------------------------------------------- */
+</script>
+<script>
+modalMode.onchange = () => {
+  localStorage.removeItem("modalDraft");
+  updateModalMode();
+};
 
 function updateModalMode() {
   const mode = modalMode.value;
@@ -1004,12 +1017,9 @@ function updateModalMode() {
     generateRaceInputs(Number(modalRaceCount.value));
   }
 }
+</script>
 
-
-/* ---------------------------------------------------------
-   ▼ 5. レース入力欄生成（nextCourse + ドラフト保存対応）
---------------------------------------------------------- */
-
+<script>
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
 
@@ -1034,7 +1044,6 @@ function generateRaceInputs(count) {
     `;
   }
 
-  // ▼ イベント設定
   for (let i = 1; i <= count; i++) {
     const rankInput = document.getElementById(`raceRank_${i}`);
     const scoreInput = document.getElementById(`raceScore_${i}`);
@@ -1054,38 +1063,18 @@ function generateRaceInputs(count) {
 
   saveNextCourse();
 }
-
-
-/* ---------------------------------------------------------
-   ▼ 6. モーダル開閉
---------------------------------------------------------- */
-
-openModalBtn.onclick = () => {
-  initModalSelectors();
-  updateModalMode();
-  loadModalDraft();   // ★ 前回の入力を復元
-  modal.classList.add("show");
-  saveNextCourse();
-};
-
-closeModalBtn.onclick = () => {
-  modal.classList.remove("show");
-};
-
-
-/* ---------------------------------------------------------
-   ▼ 7. 保存ボタン
---------------------------------------------------------- */
-
+</script>
+/* ▼ 保存処理 */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
 
   const records = [];
 
+  // ▼ 入力されたレースを収集
   for (let i = 1; i <= count; i++) {
     const rank = Number(document.getElementById(`raceRank_${i}`).value);
-    if (!rank) continue;
+    if (!rank) continue; // 未入力はスキップ
 
     const course = document.getElementById(`raceCourse_${i}`).value;
 
@@ -1105,25 +1094,37 @@ saveRaceBtn.onclick = async () => {
     return;
   }
 
+  // ▼ localStorage に保存
   const key = "loungeRecords";
   const old = JSON.parse(localStorage.getItem(key) || "[]");
   const merged = [...old, ...records];
   localStorage.setItem(key, JSON.stringify(merged));
 
+  // ▼ メモリ側にも反映
   allRecords.push(...records);
-  refreshModeView(allRecords);
 
+  // ▼ UI 更新
+  refreshModeView(allRecords);
+  renderRaceHistory();
+
+  // ▼ 暗号化保存（あなたの既存関数）
   await saveAllRecords();
+
+  // ▼ 自動バックアップ（あなたの既存関数）
   downloadBackup();
 
+  // ▼ 送信キューに追加（未送信データ）
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...records);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
-  localStorage.removeItem("modalDraft"); // ★ ドラフト削除
+  // ▼ モーダルドラフト削除
+  localStorage.removeItem("modalDraft");
+
+  // ▼ モーダル閉じる
   modal.classList.remove("show");
 };
-</script>
+
 
 
 
