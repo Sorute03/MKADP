@@ -1,0 +1,115 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777877931-775308",
+  "timestamp": 1777877931,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "どんぐりツリーハウス",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ショーニューロード",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "シュポポコースター",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ソルティータウン",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ロゼッタてんもんだい",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ほねほねツイスター",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ピーチスタジアム→モーモーカントリー",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "プクプクフォールズ",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "プクプクフォールズ→チョコマウンテン",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1777877706648
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ワリオスタジアム",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1777877706648
+    }
+  ]
+}
