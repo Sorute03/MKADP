@@ -1,0 +1,115 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1777960352-117646",
+  "timestamp": 1777960352,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "キラーシップ",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "どんぐりツリーハウス",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "クッパキャッスル",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ほねほねツイスター→マリオサーキット",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ソルティータウン",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "アイスビルディング",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "リバーサイドサファリ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "ヘイホーカーニバル",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "マリオサーキット",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1777960245919
+    },
+    {
+      "mode": "lounge",
+      "season": "S2",
+      "tier": "E",
+      "course": "シュポポコースター",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1777960245919
+    }
+  ]
+}
