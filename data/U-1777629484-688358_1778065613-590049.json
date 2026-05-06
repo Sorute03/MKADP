@@ -1,0 +1,160 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1778065613-590049",
+  "timestamp": 1778065613,
+  "races": [
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "マリオブラザーズサーキット",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1778043755372
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "マリオブラザーズサーキット",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778044283021
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "クッパキャッスル",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1778044553235
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ロゼッタてんもんだい→おばけシネマ",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1778045110661
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "アイスビルディング",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1778045337074
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ノコノコビーチ",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778045574094
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ワリオスタジアム",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778045879228
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "キノピオファクトリー→キラーシップ",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778046375438
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ロゼッタてんもんだい",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1778046680028
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ロゼッタてんもんだい→マリオサーキット",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778046956065
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "マリオサーキット→クッパキャッスル",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1778047250223
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ショーニューロード",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1778047814210
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "ショーニューロード→どんぐりツリーハウス",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1778048123912
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "クッパキャッスル",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1778048410245
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "おばけシネマ",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1778048648634
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "アイスビルディング",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1778048873959
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "アイスビルディング→ソルティータウン",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1778049182469
+    }
+  ]
+}
