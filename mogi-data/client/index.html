@@ -2083,15 +2083,31 @@ function refreshModeView(records) {
   chartAvgRank = new Chart(ctxR, {
     type: "bar",
     data: { labels, datasets: [{ label: "平均順位", data: avgRanks, backgroundColor: "rgba(255,159,64,0.6)" }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true, max: 12 } } }
+    options: { responsive: true, scales: { y: { beginAtZero: true, max: 24 } } }
   });
 
   const ctxS = document.getElementById("chartAvgScore").getContext("2d");
   if (chartAvgScore) chartAvgScore.destroy();
   chartAvgScore = new Chart(ctxS, {
     type: "bar",
-    data: { labels, datasets: [{ label: "平均スコア", data: avgScores, backgroundColor: "rgba(75,192,192,0.6)" }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    data: {
+      labels,
+      datasets: [{
+        label: "平均スコア",
+        data: avgScores,
+        backgroundColor: "rgba(75,192,192,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 15,     // ★ 最大値を15に固定
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
   });
 
   // ▼ 他のビュー更新
