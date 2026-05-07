@@ -595,18 +595,28 @@ courseList.push(
 <button id="importFileBtn">読み込んで保存</button>
 
 </script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
-<!-- ▼ レース一覧タブ -->
-<div id="historyTab" class="tabContent" style="display:none;">
-  <h3>登録済みレース一覧</h3>
-  <div id="raceHistoryList"></div>
-</div>
+
 
 <!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
   <button class="tabBtn active" data-tab="analysisTab">分析</button>
   <button class="tabBtn" data-tab="historyTab">レース一覧</button>
 </div>
+  
+<!-- ▼ レース一覧タブ -->
+<div id="historyTab" class="tabContent" style="display:none;">
+  <h3>登録済みレース一覧</h3>
 
+  <!-- ▼ 分析タブに戻るボタン -->
+  <button id="backToAnalysisBtn" style="margin-bottom:12px;">
+    ← 分析タブに戻る
+  </button>
+
+  <div id="raceHistoryList"></div>
+</div>
+
+
+  
 <div class="section-block">
   <h3>OBS オーバーレイ生成</h3>
 
@@ -1363,6 +1373,25 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 });
 </script>
 
+<script>
+document.getElementById("backToAnalysisBtn").onclick = () => {
+  // ▼ 全タブ非表示
+  document.querySelectorAll(".tabContent").forEach(tab => {
+    tab.style.display = "none";
+  });
+
+  // ▼ 全タブボタンの active を外す
+  document.querySelectorAll(".tabBtn").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  // ▼ 分析タブを表示
+  document.getElementById("analysisTab").style.display = "block";
+
+  // ▼ 分析タブボタンを active に
+  document.querySelector('[data-tab="analysisTab"]').classList.add("active");
+};
+</script>
 
 
 
