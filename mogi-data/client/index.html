@@ -805,8 +805,9 @@ window.addEventListener("load", () => {
 ">＋ レース登録</button>
 
 <!-- ▼ モーダル本体 -->
-<div id="raceModal" style="
-  display:none;
+<style>
+#raceModal {
+  display: none;
   position: fixed;
   top:0; left:0;
   width:100%; height:100%;
@@ -815,7 +816,15 @@ window.addEventListener("load", () => {
   justify-content:center;
   align-items:center;
   z-index:9998;
-">
+}
+
+#raceModal.show {
+  display: flex !important;
+}
+</style>
+
+<!-- ★★★ ここから raceModal の中身 ★★★ -->
+<div id="raceModal">
   <div style="
     background:#fff;
     padding:24px;
@@ -881,9 +890,9 @@ window.addEventListener("load", () => {
     </div>
   </div>
 </div>
-  
+
+<!-- ★★★ ここから全部の JS ★★★ -->
 <script>
-/* ▼ モーダル要素（最初に定義しないと onclick が壊れる） */
 const modal = document.getElementById("raceModal");
 const openModalBtn = document.getElementById("openModalBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
@@ -900,6 +909,22 @@ const modalSeason = document.getElementById("modalSeason");
 const modalRaceCount = document.getElementById("modalRaceCount");
 const modalRaceInputs = document.getElementById("modalRaceInputs");
 </script>
+
+<script>
+openModalBtn.onclick = () => {
+  initModalSelectors();
+  updateModalMode();
+  loadModalDraft();
+  modal.classList.add("show");
+};
+
+closeModalBtn.onclick = () => {
+  modal.classList.remove("show");
+};
+</script>
+
+<!-- 以下すべての JS をここに置く -->
+
 
 <script>
 function initOBSSeasonSelector() {
