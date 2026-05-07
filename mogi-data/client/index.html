@@ -949,81 +949,68 @@ function renderRaceHistory() {
 
   box.innerHTML = "";
 
-  // ▼ timestamp でグループ化（1セット＝複数レース）
-  const groups = {};
-  for (const r of allRecords) {
-    if (!groups[r.timestamp]) groups[r.timestamp] = [];
-    groups[r.timestamp].push(r);
-  }
+  // ▼ 新しい順に並べる
+  const sorted = [...allRecords].sort((a, b) => b.timestamp - a.timestamp);
 
-  // ▼ 新しい順
-  const sortedKeys = Object.keys(groups).sort((a,b)=> b - a);
-
-  sortedKeys.forEach(ts => {
-    const races = groups[ts];
-    const first = races[0];
-
+  sorted.forEach(r => {
     const div = document.createElement("div");
-    div.style = "padding:10px; border-bottom:1px solid #ddd;";
+    div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
     div.innerHTML = `
-      <strong>${first.mode}</strong>
-      （${races.length}レース）
-      <button class="editSetBtn" data-ts="${ts}" style="margin-left:10px;">編集</button>
-      <button class="deleteSetBtn" data-ts="${ts}" style="margin-left:10px;">削除</button>
+      <strong>${r.course}</strong>
+      (${r.rank}位 / ${r.score}点 / ${r.mode})
+      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;">編集</button>
+      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;">削除</button>
     `;
 
     box.appendChild(div);
   });
 
   // ▼ 編集ボタン
-  document.querySelectorAll(".editSetBtn").forEach(btn => {
-    btn.onclick = () => openEditSet(Number(btn.dataset.ts));
+  document.querySelectorAll(".editBtn").forEach(btn => {
+    btn.onclick = () => openEditRecord(Number(btn.dataset.ts));
   });
 
   // ▼ 削除ボタン
-  document.querySelectorAll(".deleteSetBtn").forEach(btn => {
-    btn.onclick = () => deleteSet(Number(btn.dataset.ts));
+  document.querySelectorAll(".deleteBtn").forEach(btn => {
+    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
   });
 }
 </script>
+
 
 <script>
 let editingTimestamp = null;
 
-function openEditSet(ts) {
-  const races = allRecords.filter(r => r.timestamp === ts);
-  if (races.length === 0) return;
+function openEditRecord(ts) {
+  const r = allRecords.find(x => x.timestamp === ts);
+  if (!r) return;
 
   editingTimestamp = ts;
 
-  const first = races[0];
-
   // ▼ モード設定
-  modalMode.value = first.mode;
+  modalMode.value = r.mode;
   updateModalMode();
 
-  if (first.mode === "lounge") {
-    modalTier.value = first.tier;
-    modalSeason.value = first.season;
+  if (r.mode === "lounge") {
+    modalTier.value = r.tier;
+    modalSeason.value = r.season;
   } else {
-    modalRaceCount.value = races.length;
+    modalRaceCount.value = 1;
   }
 
-  // ▼ 入力欄生成
-  generateRaceInputs(races.length);
+  // ▼ 入力欄生成（1レース）
+  generateRaceInputs(1);
 
-  // ▼ 各レースをセット
-  races.forEach((r, i) => {
-    const idx = i + 1;
-    document.getElementById(`raceCourse_${idx}`).value = r.course;
-    document.getElementById(`raceRank_${idx}`).value = r.rank;
-    document.getElementById(`raceScore_${idx}`).value = r.score;
-  });
+  // ▼ 値をセット
+  document.getElementById("raceCourse_1").value = r.course;
+  document.getElementById("raceRank_1").value = r.rank;
+  document.getElementById("raceScore_1").value = r.score;
 
   modal.classList.add("show");
 }
 </script>
+
 
 <script>
 function deleteSet(ts) {
@@ -1262,35 +1249,7 @@ function generateRaceInputs(count) {
 }
 </script>
 
-<script>
-function renderRaceHistory() {
-  const box = document.getElementById("raceHistoryList");
-  if (!box) return; // raceHistoryList が無いページでは何もしない
 
-  box.innerHTML = "";
-
-  // ▼ 新しい順に並べる
-  const sorted = [...allRecords].sort((a, b) => b.timestamp - a.timestamp);
-
-  sorted.forEach(r => {
-    const div = document.createElement("div");
-    div.style = "padding:8px; border-bottom:1px solid #ddd;";
-
-    div.innerHTML = `
-      <strong>${r.course}</strong>
-      (${r.rank}位 / ${r.score}点 / ${r.mode})
-      <button data-ts="${r.timestamp}" style="margin-left:10px;">削除</button>
-    `;
-
-    box.appendChild(div);
-  });
-
-  // ▼ 削除ボタン
-  document.querySelectorAll("#raceHistoryList button").forEach(btn => {
-    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
-  });
-}
-</script>
   
 <script>
 function deleteRecord(ts) {
@@ -1316,7 +1275,7 @@ function deleteRecord(ts) {
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
-
+  
   const records = [];
 
   // ▼ 入力されたレースを収集
