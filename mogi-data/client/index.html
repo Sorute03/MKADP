@@ -1064,6 +1064,7 @@ function generateRaceInputs(count) {
   saveNextCourse();
 }
 </script>
+<script>
 /* ▼ 保存処理 */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
@@ -1074,7 +1075,7 @@ saveRaceBtn.onclick = async () => {
   // ▼ 入力されたレースを収集
   for (let i = 1; i <= count; i++) {
     const rank = Number(document.getElementById(`raceRank_${i}`).value);
-    if (!rank) continue; // 未入力はスキップ
+    if (!rank) continue;
 
     const course = document.getElementById(`raceCourse_${i}`).value;
 
@@ -1107,13 +1108,13 @@ saveRaceBtn.onclick = async () => {
   refreshModeView(allRecords);
   renderRaceHistory();
 
-  // ▼ 暗号化保存（あなたの既存関数）
+  // ▼ 暗号化保存
   await saveAllRecords();
 
-  // ▼ 自動バックアップ（あなたの既存関数）
+  // ▼ 自動バックアップ
   downloadBackup();
 
-  // ▼ 送信キューに追加（未送信データ）
+  // ▼ 送信キューに追加
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...records);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
@@ -1124,6 +1125,8 @@ saveRaceBtn.onclick = async () => {
   // ▼ モーダル閉じる
   modal.classList.remove("show");
 };
+</script>
+
 
 
 
