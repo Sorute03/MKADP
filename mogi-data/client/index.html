@@ -938,6 +938,36 @@ closeModalBtn.onclick = () => {
 
 <!-- 以下すべての JS をここに置く -->
 <script>
+// ▼ タブ切り替え
+document.querySelectorAll(".tabBtn").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.tab;
+
+    // ▼ 全タブ非表示
+    document.querySelectorAll(".tabContent").forEach(tab => {
+      tab.style.display = "none";
+    });
+
+    // ▼ 全ボタンの active を外す
+    document.querySelectorAll(".tabBtn").forEach(b => {
+      b.classList.remove("active");
+    });
+
+    // ▼ 対象タブを表示
+    document.getElementById(target).style.display = "block";
+
+    // ▼ ボタンを active に
+    btn.classList.add("active");
+
+    // ▼ レース一覧タブを開いたときは一覧を再描画
+    if (target === "historyTab") {
+      renderRaceHistory();
+    }
+  };
+});
+</script>
+
+<script>
 function renderRaceHistory() {
   const box = document.getElementById("raceHistoryList");
   if (!box) return;
