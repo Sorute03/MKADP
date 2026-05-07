@@ -1064,6 +1064,56 @@ function generateRaceInputs(count) {
   saveNextCourse();
 }
 </script>
+
+<script>
+function renderRaceHistory() {
+  const box = document.getElementById("raceHistoryList");
+  if (!box) return; // raceHistoryList が無いページでは何もしない
+
+  box.innerHTML = "";
+
+  // ▼ 新しい順に並べる
+  const sorted = [...allRecords].sort((a, b) => b.timestamp - a.timestamp);
+
+  sorted.forEach(r => {
+    const div = document.createElement("div");
+    div.style = "padding:8px; border-bottom:1px solid #ddd;";
+
+    div.innerHTML = `
+      <strong>${r.course}</strong>
+      (${r.rank}位 / ${r.score}点 / ${r.mode})
+      <button data-ts="${r.timestamp}" style="margin-left:10px;">削除</button>
+    `;
+
+    box.appendChild(div);
+  });
+
+  // ▼ 削除ボタン
+  document.querySelectorAll("#raceHistoryList button").forEach(btn => {
+    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
+  });
+}
+</script>
+  
+<script>
+function deleteRecord(ts) {
+  const key = "loungeRecords";
+
+  // ▼ localStorage から削除
+  const old = JSON.parse(localStorage.getItem(key) || "[]");
+  const filtered = old.filter(r => r.timestamp !== ts);
+  localStorage.setItem(key, JSON.stringify(filtered));
+
+  // ▼ メモリ側から削除
+  allRecords = allRecords.filter(r => r.timestamp !== ts);
+
+  // ▼ UI 更新
+  refreshModeView(allRecords);
+  renderRaceHistory();
+}
+</script>
+
+
 <script>
 /* ▼ 保存処理 */
 saveRaceBtn.onclick = async () => {
@@ -1106,7 +1156,7 @@ saveRaceBtn.onclick = async () => {
 
   // ▼ UI 更新
   refreshModeView(allRecords);
-  renderRaceHistory();
+  renderRaceHistory();   // ← ここが動くようになる
 
   // ▼ 暗号化保存
   await saveAllRecords();
@@ -1126,6 +1176,7 @@ saveRaceBtn.onclick = async () => {
   modal.classList.remove("show");
 };
 </script>
+
 
 
 
