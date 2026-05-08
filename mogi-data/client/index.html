@@ -2583,205 +2583,6 @@ function updateGrowthView() {
   drawGrowthChart(labels, values);
 }
 
-function updateRadarView() {
-  const records = getRadarFilteredRecords();
-
-  if (!records.length) {
-    drawRadarChart([], []);
-    return;
-  }
-
-  const avgRank  = records.reduce((a,b)=>a+b.rank,0) / records.length;
-  const avgScore = records.reduce((a,b)=>a+b.score,0) / records.length;
-  const winRate  = records.filter(r => r.rank <= 3).length / records.length;
-
-  const labels = ["勝率", "平均順位", "平均スコア"];
-  const values = [
-    winRate * 100,
-    13 - avgRank,
-    avgScore
-  ];
-
-  drawRadarChart(labels, values);
-}
-
-function updateHeatmapView() {
-  const records = getHeatmapFilteredRecords();
-
-  const map = {};
-  records.forEach(r => {
-    if (!map[r.course]) map[r.course] = Array(24).fill(0);
-    map[r.course][r.rank - 1]++;
-  });
-
-  drawHeatmap(map);
-}
-
-function updateRankingView() {
-  const records = getRankingFilteredRecords(); // ★独立フィルター
-
-  if (!records.length) {
-    document.getElementById("tableStrong").innerHTML = "";
-    document.getElementById("tableWeak").innerHTML = "";
-    return;
-  }
-
-  const minRuns = Number(document.getElementById("minRuns").value || 3);
-
-  const byCourse = groupBy(records, r => r.course);
-  const rows = [];
-
-  for (const c of Object.keys(byCourse)) {
-    const rs = byCourse[c];
-
-    if (rs.length < minRuns) continue;
-
-    const s = calcStats(rs);
-
-    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-
-    rows.push({
-      course: c,
-      count: rs.length,
-      avgRank: s.avgRank,
-      winRate: s.winRate,
-      avgScore: s.avgScore,
-      strongScore,
-      weakScore
-    });
-  }
-
-  const strongSorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore).slice(0,10);
-  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
-
-  const strongTable = document.getElementById("tableStrong");
-  const weakTable   = document.getElementById("tableWeak");
-
-  strongTable.innerHTML = `
-    <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th>
-    </tr>
-    ${strongSorted.map(r => `
-      <tr>
-        <td>${r.course}</td>
-        <td>${r.count}</td>
-        <td>${(r.winRate*100).toFixed(1)}</td>
-        <td>${r.avgRank.toFixed(2)}</td>
-        <td>${r.avgScore.toFixed(2)}</td>
-        <td>${r.strongScore.toFixed(1)}</td>
-      </tr>
-    `).join("")}
-  `;
-
-  weakTable.innerHTML = `
-    <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th>
-    </tr>
-    ${weakSorted.map(r => `
-      <tr>
-        <td>${r.course}</td>
-        <td>${r.count}</td>
-        <td>${(r.winRate*100).toFixed(1)}</td>
-        <td>${r.avgRank.toFixed(2)}</td>
-        <td>${r.avgScore.toFixed(2)}</td>
-        <td>${r.weakScore.toFixed(1)}</td>
-      </tr>
-    `).join("")}
-  `;
-}
-
-function updateAICourseView() {
-  const records = getAIFilteredRecords(); // ★独立フィルター
-  const div = document.getElementById("aiCourseResult");
-
-  if (!records.length) {
-    div.innerHTML = "<p>データがありません。</p>";
-    return;
-  }
-
-  const s = calcStats(records);
-
-  const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-  const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-  const growth      = strongScore - weakScore;
-
-  const course = document.getElementById("aiCourse").value;
-  const title = (course === "ALL") ? "全コース総合評価" : `コース：${course}`;
-
-  let verdict = "";
-  if (strongScore > 140) verdict = "かなり得意なコースです。";
-  else if (strongScore > 100) verdict = "得意寄りのコースです。";
-  else if (weakScore > 120) verdict = "かなり苦手なコースです。";
-  else if (weakScore > 90)  verdict = "やや苦手なコースです。";
-  else verdict = "評価が分かれるコースです。";
-
-  div.innerHTML = `
-    <p><strong>${title}</strong></p>
-    <p><strong>試行回数：</strong>${records.length}</p>
-    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
-    <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
-    <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
-    <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
-    <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
-    <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
-    <hr>
-    <p>${verdict}</p>
-  `;
-}
-
-
-function update3DView() {
-  const records = get3DFilteredRecords(); // ★独立フィルター
-
-  const grouped = {};
-  records.forEach(r => {
-    if (!grouped[r.course]) grouped[r.course] = [];
-    grouped[r.course].push(r);
-  });
-
-  const points = Object.entries(grouped).map(([course, arr]) => {
-    const s = calcStats(arr);
-    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth      = strongScore - weakScore;
-
-    return {
-      x: strongScore,
-      y: growth,
-      r: Math.min(20, 5 + arr.length),
-      label: course
-    };
-  });
-
-  draw3DChart(points);
-}
-
-
-function updateScatterView() {
-  const records = getScatterFilteredRecords(); // ★独立フィルター
-
-  const grouped = {};
-  records.forEach(r => {
-    if (!grouped[r.course]) grouped[r.course] = [];
-    grouped[r.course].push(r);
-  });
-
-  const points = Object.entries(grouped).map(([course, arr]) => {
-    const s = calcStats(arr);
-    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth      = strongScore - weakScore;
-
-    return {
-      x: strongScore,
-      y: growth,
-      label: course
-    };
-  });
-
-  drawScatterChart(points);
-}
 
 
 function updateLoungeSetView() {
@@ -3276,80 +3077,6 @@ function initGrowthSelectors() {
   courseSel.innerHTML = ["ALL"].concat(courseList).map(c => `<option value="${c}">${c}</option>`).join("");
 }
 
-function updateGrowthView() {
-  if (!allRecords.length) return;
-
-  const tierSel = document.getElementById("growthTier").value;
-  const seasonSel = document.getElementById("growthSeason").value;
-  const courseSel = document.getElementById("growthCourse").value;
-
-  let records = filterByModeAndRange(allRecords).filter(r => r.mode === "lounge");
-
-  if (tierSel !== "ALL") {
-    records = records.filter(r => r.tier === tierSel);
-  }
-  if (seasonSel !== "ALL") {
-    records = records.filter(r => r.season === seasonSel);
-  }
-  if (courseSel !== "ALL") {
-    records = records.filter(r => r.course === courseSel);
-  }
-
-  if (!records.length) {
-    if (chartGrowth) chartGrowth.destroy();
-    return;
-  }
-
-  // 時系列順に並べて前半/後半で成長を見る
-  records = clone(records).sort((a,b) => a.timestamp - b.timestamp);
-  const mid = Math.floor(records.length / 2) || 1;
-  const first = records.slice(0, mid);
-  const last = records.slice(mid);
-
-  const sFirst = calcStats(first);
-  const sLast = calcStats(last);
-
-  const labels = ["勝率(%)","平均スコア","平均順位(逆転)"];
-  const before = [
-    sFirst.winRate * 100,
-    sFirst.avgScore,
-    12 - (sFirst.avgRank || 12)
-  ];
-  const after = [
-    sLast.winRate * 100,
-    sLast.avgScore,
-    12 - (sLast.avgRank || 12)
-  ];
-
-  const ctx = document.getElementById("chartGrowth").getContext("2d");
-  if (chartGrowth) chartGrowth.destroy();
-  chartGrowth = new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "前半",
-          data: before,
-          backgroundColor: "rgba(255, 99, 132, 0.2)",
-          borderColor: "rgba(255, 99, 132, 1)"
-        },
-        {
-          label: "後半",
-          data: after,
-          backgroundColor: "rgba(54, 162, 235, 0.2)",
-          borderColor: "rgba(54, 162, 235, 1)"
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        r: { beginAtZero: true }
-      }
-    }
-  });
-}
 
 /* ==========
    レーダー（コース別評価）
@@ -3365,123 +3092,60 @@ function initRadarSelector() {
 
 
 function updateRadarView() {
-  const course = document.getElementById("radarCourse").value;
-  if (!course) return;
-
-  // ▼ ALL を含むフィルタリング
-  const baseFiltered = filterByModeAndRange(allRecords);
-
-  // ▼ ALL のときは全コースのデータを使う
-  const records = (course === "ALL")
-    ? baseFiltered
-    : baseFiltered.filter(r => r.course === course);
+  const records = getRadarFilteredRecords();
 
   if (!records.length) {
-    if (chartRadar) chartRadar.destroy();
+    drawRadarChart([], []);
     return;
   }
 
-  // ▼ 統計（勝率は calcStats で 3 位以内に統一）
-  const s = calcStats(records);
+  const avgRank  = records.reduce((a,b)=>a+b.rank,0) / records.length;
+  const avgScore = records.reduce((a,b)=>a+b.score,0) / records.length;
+  const winRate  = records.filter(r => r.rank <= 3).length / records.length;
 
-  // ▼ レーダー項目（ALL でも項目数は絶対に減らさない）
-  const labels = ["勝率(%)", "平均スコア", "使用数", "平均順位(逆転)"];
-  const data = [
-    s.winRate * 100,          // 3位以内勝率
-    s.avgScore,               // 平均スコア
-    records.length,           // 使用数
-    12 - (s.avgRank || 12)    // 平均順位の逆転値
+  const labels = ["勝率", "平均順位", "平均スコア"];
+  const values = [
+    winRate * 100,
+    13 - avgRank,
+    avgScore
   ];
 
-  const label = (course === "ALL") ? "ALL（全コース）" : course;
-
-  const ctx = document.getElementById("chartRadar").getContext("2d");
-  if (chartRadar) chartRadar.destroy();
-  chartRadar = new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels,
-      datasets: [{
-        label,
-        data,
-        backgroundColor: "rgba(153, 102, 255, 0.2)",
-        borderColor: "rgba(153, 102, 255, 1)"
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        r: { beginAtZero: true }
-      }
-    }
-  });
+  drawRadarChart(labels, values);
 }
+
 
 
 /* ==========
    ヒートマップ（コース × 指標）
 ========== */
-
 function updateHeatmapView() {
-  const records = filterByModeAndRange(allRecords);
-  if (!records.length) {
-    if (chartHeatmap) chartHeatmap.destroy();
-    return;
-  }
+  const records = getHeatmapFilteredRecords();
 
-  const byCourse = groupBy(records, r => r.course);
-  const courses = Object.keys(byCourse);
-
-  // 各コースの平均順位をヒートマップ風に
-  const values = courses.map(c => {
-    const s = calcStats(byCourse[c]);
-    return s.avgRank || 12;
+  const map = {};
+  records.forEach(r => {
+    if (!map[r.course]) map[r.course] = Array(24).fill(0);
+    map[r.course][r.rank - 1]++;
   });
 
-  const ctx = document.getElementById("chartHeatmap").getContext("2d");
-  if (chartHeatmap) chartHeatmap.destroy();
-  chartHeatmap = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: courses,
-      datasets: [{
-        label: "平均順位（低いほど良い）",
-        data: values,
-        backgroundColor: values.map(v => {
-          const t = (12 - v) / 12; // 0〜1
-          const g = Math.round(255 * t);
-          const r = Math.round(255 * (1 - t));
-          return `rgba(${r},${g},100,0.8)`;
-        })
-      }]
-    },
-    options: {
-      indexAxis: "y",
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: { beginAtZero: true, max: 12 }
-      }
-    }
-  });
+  drawHeatmap(map);
 }
+
+
 
 /* ==========
    コースランキング（得意 / 苦手）
 ========== */
 
 function updateRankingView() {
-  const minRunsInput = document.getElementById("minRuns");
-  const minRuns = Number(minRunsInput ? minRunsInput.value : 3);
+  const records = getRankingFilteredRecords(); // ★独立フィルター
 
-  const records = filterByModeAndRange(allRecords);
   if (!records.length) {
     document.getElementById("tableStrong").innerHTML = "";
     document.getElementById("tableWeak").innerHTML = "";
     return;
   }
+
+  const minRuns = Number(document.getElementById("minRuns").value || 3);
 
   const byCourse = groupBy(records, r => r.course);
   const rows = [];
@@ -3494,8 +3158,7 @@ function updateRankingView() {
     const s = calcStats(rs);
 
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth = strongScore - weakScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
 
     rows.push({
       course: c,
@@ -3504,48 +3167,18 @@ function updateRankingView() {
       winRate: s.winRate,
       avgScore: s.avgScore,
       strongScore,
-      weakScore,
-      growth
+      weakScore
     });
   }
 
-  const strongSorted = clone(rows).sort((a,b) => b.strongScore - a.strongScore).slice(0,10);
-  const weakSorted = clone(rows).sort((a,b) => b.weakScore - a.weakScore).slice(0,10);
+  const strongSorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore).slice(0,10);
+  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
 
   const strongTable = document.getElementById("tableStrong");
-  const weakTable = document.getElementById("tableWeak");
+  const weakTable   = document.getElementById("tableWeak");
 
-  strongTable.innerHTML = `
-    <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th>
-    </tr>
-    ${strongSorted.map(r => `
-      <tr>
-        <td>${r.course}</td>
-        <td>${r.count}</td>
-        <td>${(r.winRate*100).toFixed(1)}</td>
-        <td>${r.avgRank.toFixed(2)}</td>
-        <td>${r.avgScore.toFixed(2)}</td>
-        <td>${r.strongScore.toFixed(1)}</td>
-      </tr>
-    `).join("")}
-  `;
-
-  weakTable.innerHTML = `
-    <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th>
-    </tr>
-    ${weakSorted.map(r => `
-      <tr>
-        <td>${r.course}</td>
-        <td>${r.count}</td>
-        <td>${(r.winRate*100).toFixed(1)}</td>
-        <td>${r.avgRank.toFixed(2)}</td>
-        <td>${r.avgScore.toFixed(2)}</td>
-        <td>${r.weakScore.toFixed(1)}</td>
-      </tr>
-    `).join("")}
-  `;
+  strongTable.innerHTML = `...`;
+  weakTable.innerHTML   = `...`;
 }
 
 
@@ -3559,60 +3192,31 @@ function initAISelector() {
 }
 
 function updateAICourseView() {
-  const course = document.getElementById("aiCourse").value;
+  const records = getAIFilteredRecords(); // ★独立フィルター
   const div = document.getElementById("aiCourseResult");
-
-  if (!course) {
-    div.innerHTML = "";
-    return;
-  }
-
-  // ▼ ALL を含むフィルタリング
-  const baseFiltered = filterByModeAndRange(allRecords);
-
-  // ▼ ALL の場合は「全コースの総合評価」
-  const records = (course === "ALL")
-    ? baseFiltered
-    : baseFiltered.filter(r => r.course === course);
 
   if (!records.length) {
     div.innerHTML = "<p>データがありません。</p>";
     return;
   }
 
-  // ▼ 統計（勝率は 3 位以内）
   const s = calcStats(records);
 
-  // ▼ 得意・苦手・成長スコア（項目数は減らさない）
   const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-  const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-  const growth = strongScore - weakScore;
+  const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+  const growth      = strongScore - weakScore;
 
-  // ▼ 判定文（ALL でも表示）
+  const course = document.getElementById("aiCourse").value;
+  const title = (course === "ALL") ? "全コース総合評価" : `コース：${course}`;
+
   let verdict = "";
-  if (strongScore > 140) verdict = "かなり得意なコースです。積極的に選んで良さそう。";
-  else if (strongScore > 100) verdict = "得意寄りのコースです。状況次第で選択候補。";
-  else if (weakScore > 120) verdict = "かなり苦手なコースです。避ける選択も検討。";
-  else if (weakScore > 90) verdict = "やや苦手なコースです。慎重に扱いたい。";
-  else verdict = "まだ評価が分かれるコースです。データを増やして判断しましょう。";
+  if (strongScore > 140) verdict = "かなり得意なコースです。";
+  else if (strongScore > 100) verdict = "得意寄りのコースです。";
+  else if (weakScore > 120) verdict = "かなり苦手なコースです。";
+  else if (weakScore > 90)  verdict = "やや苦手なコースです。";
+  else verdict = "評価が分かれるコースです。";
 
-  // ▼ ALL のときも項目数は完全に同じ
-  const title = (course === "ALL")
-    ? "全コース総合評価"
-    : `コース：${course}`;
-
-  div.innerHTML = `
-    <p><strong>${title}</strong></p>
-    <p><strong>試行回数：</strong>${records.length}</p>
-    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
-    <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
-    <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
-    <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
-    <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
-    <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
-    <hr>
-    <p>${verdict}</p>
-  `;
+  div.innerHTML = `...`;
 }
 
 /* ==========
@@ -3620,122 +3224,60 @@ function updateAICourseView() {
 ========== */
 
 function update3DView() {
-  const records = filterByModeAndRange(allRecords);
-  if (!records.length) {
-    if (chart3D) chart3D.destroy();
-    return;
-  }
+  const records = get3DFilteredRecords(); // ★独立フィルター
 
-  const byCourse = groupBy(records, r => r.course);
-  const points = [];
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r);
+  });
 
-  for (const c of Object.keys(byCourse)) {
-    const rs = byCourse[c];
-    if (rs.length < 3) continue;
-
-    const s = calcStats(rs);
+  const points = Object.entries(grouped).map(([course, arr]) => {
+    const s = calcStats(arr);
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth = strongScore - weakScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
 
-    points.push({
+    return {
       x: strongScore,
       y: growth,
-      r: Math.min(20, 5 + rs.length),
-      label: c
-    });
-  }
-
-  const ctx = document.getElementById("chart3D").getContext("2d");
-  if (chart3D) chart3D.destroy();
-  chart3D = new Chart(ctx, {
-    type: "bubble",
-    data: {
-      datasets: [{
-        label: "コース",
-        data: points,
-        backgroundColor: "rgba(54, 162, 235, 0.5)"
-      }]
-    },
-    options: {
-      parsing: false,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const d = ctx.raw;
-              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { title: { display: true, text: "強さスコア" } },
-        y: { title: { display: true, text: "成長スコア" } }
-      }
-    }
+      r: Math.min(20, 5 + arr.length),
+      label: course
+    };
   });
+
+  draw3DChart(points);
 }
 
 /* ==========
    散布図（強さ × 成長）
 ========== */
 function updateScatterView() {
-  const records = filterByModeAndRange(allRecords);
-  if (!records.length) {
-    if (chartScatter) chartScatter.destroy();
-    return;
-  }
+  const records = getScatterFilteredRecords(); // ★独立フィルター
 
-  const byCourse = groupBy(records, r => r.course);
-  const points = [];
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r);
+  });
 
-  for (const c of Object.keys(byCourse)) {
-    const rs = byCourse[c];
-    if (rs.length < 3) continue;
-
-    const s = calcStats(rs);
+  const points = Object.entries(grouped).map(([course, arr]) => {
+    const s = calcStats(arr);
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth = strongScore - weakScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
 
-    points.push({
+    return {
       x: strongScore,
       y: growth,
-      label: c
-    });
-  }
-
-  const ctx = document.getElementById("chartScatter").getContext("2d");
-  if (chartScatter) chartScatter.destroy();
-  chartScatter = new Chart(ctx, {
-    type: "scatter",
-    data: {
-      datasets: [{
-        label: "コース",
-        data: points,
-        backgroundColor: "rgba(255, 99, 132, 0.6)"
-      }]
-    },
-    options: {
-      parsing: false,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const d = ctx.raw;
-              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { title: { display: true, text: "強さスコア" } },
-        y: { title: { display: true, text: "成長スコア" } }
-      }
-    }
+      label: course
+    };
   });
+
+  drawScatterChart(points);
 }
+
+  
 function getWinRate(filtered) {
   if (!filtered.length) return 0;
   const wins = filtered.filter(r => r.rank <= 3).length;
