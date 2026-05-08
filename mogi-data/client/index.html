@@ -1537,12 +1537,11 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 
 
-
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
   <h3>基本統計 / 勝率・平均順位・平均スコア</h3>
 
-  <label>モード：</label>
+  <label for="statsMode">モード：</label>
   <select id="statsMode" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
     <option value="lounge">ラウンジ</option>
@@ -1550,7 +1549,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="nora">野良</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="statsRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="statsRangeSelect" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1559,6 +1558,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="statsRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="statsRangeInput"
     type="number"
@@ -1568,12 +1568,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     oninput="updateStatsView()"
   >
 
-  <label style="margin-left:16px;">Season：</label>
+  <label for="statsSeason" style="margin-left:16px;">Season：</label>
   <select id="statsSeason" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="statsTier" style="margin-left:16px;">Tier：</label>
   <select id="statsTier" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
   </select>
@@ -1587,26 +1587,27 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartAvgScore" height="120" style="margin-top:20px;"></canvas>
 </div>
 
+
 <!-- ▼ 成長スコア -->
 <div class="section-block">
   <h3>成長スコア（Tier × Season × Course）</h3>
 
-  <label>Tier：</label>
+  <label for="growthTier">Tier：</label>
   <select id="growthTier" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Season：</label>
+  <label for="growthSeason" style="margin-left:16px;">Season：</label>
   <select id="growthSeason" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Course：</label>
+  <label for="growthCourse" style="margin-left:16px;">Course：</label>
   <select id="growthCourse" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="growthRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="growthRangeSelect" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1614,6 +1615,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="growthRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="growthRangeInput"
     type="number"
@@ -1626,26 +1628,27 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartGrowth" height="160" style="margin-top:20px;"></canvas>
 </div>
 
-<!-- ▼ レーダー -->
+
+
 <div class="section-block">
   <h3>コース別レーダー評価</h3>
 
-  <label>Course：</label>
+  <label for="radarCourse">Course：</label>
   <select id="radarCourse" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Season：</label>
+  <label for="radarSeason" style="margin-left:16px;">Season：</label>
   <select id="radarSeason" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="radarTier" style="margin-left:16px;">Tier：</label>
   <select id="radarTier" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="radarRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="radarRangeSelect" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1653,6 +1656,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="radarRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="radarRangeInput"
     type="number"
@@ -1669,7 +1673,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div class="section-block">
   <h3>コース別ヒートマップ</h3>
 
-  <label>モード：</label>
+  <label for="heatmapMode">モード：</label>
   <select id="heatmapMode" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
     <option value="lounge">ラウンジ</option>
@@ -1677,22 +1681,22 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="nora">野良</option>
   </select>
 
-  <label style="margin-left:16px;">Season：</label>
+  <label for="heatmapSeason" style="margin-left:16px;">Season：</label>
   <select id="heatmapSeason" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="heatmapTier" style="margin-left:16px;">Tier：</label>
   <select id="heatmapTier" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Course：</label>
+  <label for="heatmapCourse" style="margin-left:16px;">Course：</label>
   <select id="heatmapCourse" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="heatmapRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="heatmapRangeSelect" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1700,6 +1704,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="heatmapRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="heatmapRangeInput"
     type="number"
@@ -1712,21 +1717,22 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartHeatmap" height="300" style="margin-top:20px;"></canvas>
 </div>
 
+
 <!-- ▼ ランキング -->
 <div class="section-block">
   <h3>コースランキング（得意・苦手）</h3>
 
-  <label>Season：</label>
+  <label for="rankSeason">Season：</label>
   <select id="rankSeason" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="rankTier" style="margin-left:16px;">Tier：</label>
   <select id="rankTier" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="rankRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="rankRangeSelect" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1734,6 +1740,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="rankRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="rankRangeInput"
     type="number"
@@ -1743,8 +1750,16 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     oninput="updateRankingView()"
   >
 
-  <label style="margin-left:16px;">最低走行回数：</label>
-  <input id="minRuns" type="number" value="3" min="1" max="100" step="1" onchange="updateRankingView()">
+  <label for="minRuns" style="margin-left:16px;">最低走行回数：</label>
+  <input
+    id="minRuns"
+    type="number"
+    value="3"
+    min="1"
+    max="100"
+    step="1"
+    onchange="updateRankingView()"
+  >
 
   <h4>得意コース TOP10</h4>
   <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
@@ -1757,22 +1772,22 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div class="section-block">
   <h3>AIコース評価</h3>
 
-  <label>Course：</label>
+  <label for="aiCourse">Course：</label>
   <select id="aiCourse" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Season：</label>
+  <label for="aiSeason" style="margin-left:16px;">Season：</label>
   <select id="aiSeason" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="aiTier" style="margin-left:16px;">Tier：</label>
   <select id="aiTier" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="aiRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="aiRangeSelect" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1780,6 +1795,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="aiRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="aiRangeInput"
     type="number"
@@ -1796,17 +1812,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div class="section-block">
   <h3>3D バブルチャート</h3>
 
-  <label>Season：</label>
+  <label for="bubbleSeason">Season：</label>
   <select id="bubbleSeason" onchange="update3DView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="bubbleTier" style="margin-left:16px;">Tier：</label>
   <select id="bubbleTier" onchange="update3DView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="bubbleRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="bubbleRangeSelect" onchange="update3DView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1814,6 +1830,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="bubbleRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="bubbleRangeInput"
     type="number"
@@ -1830,17 +1847,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div class="section-block">
   <h3>散布図（強さ × 成長）</h3>
 
-  <label>Season：</label>
+  <label for="scatterSeason">Season：</label>
   <select id="scatterSeason" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="scatterTier" style="margin-left:16px;">Tier：</label>
   <select id="scatterTier" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">直近 N：</label>
+  <label for="scatterRangeSelect" style="margin-left:16px;">直近 N：</label>
   <select id="scatterRangeSelect" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1848,6 +1865,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
+  <label for="scatterRangeInput" style="margin-left:16px;">カスタム：</label>
   <input
     id="scatterRangeInput"
     type="number"
@@ -1860,16 +1878,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartScatter" height="300" style="margin-top:20px;"></canvas>
 </div>
 
+
 <!-- ▼ ラウンジ12Rセット -->
 <div class="section-block">
   <h3>ラウンジ 12レースセット一覧</h3>
 
-  <label>Season：</label>
+  <label for="loungeSetSeason">Season：</label>
   <select id="loungeSetSeason" onchange="updateLoungeSetView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label style="margin-left:16px;">Tier：</label>
+  <label for="loungeSetTier" style="margin-left:16px;">Tier：</label>
   <select id="loungeSetTier" onchange="updateLoungeSetView()">
     <option value="ALL">ALL</option>
   </select>
