@@ -2577,21 +2577,14 @@ function getRankingFilteredRecords() {
   const season = rankSeason.value;
   const tier   = rankTier.value;
 
-  // ▼ season フィルタ
+  // ▼ Season（ALL のときは完全スルー）
   if (season !== "ALL") {
-    // Sxx のとき → seasonN を除外
     r = r.filter(x => x.season === season);
-  } else {
-    // ALL のとき → seasonN を含めるが、空文字は除外
-    r = r.filter(x => x.season && x.season !== "");
   }
 
-  // ▼ tier フィルタ
+  // ▼ Tier（ALL のときは完全スルー）
   if (tier !== "ALL") {
     r = r.filter(x => x.tier === tier);
-  } else {
-    // ALL のとき → tierN を含めるが、空文字は除外
-    r = r.filter(x => x.tier && x.tier !== "");
   }
 
   // ▼ 直近 N
@@ -2614,6 +2607,7 @@ function getRankingFilteredRecords() {
   return r;
 }
 
+
 function getAIFilteredRecords() {
   let r = [...allRecords];
 
@@ -2626,21 +2620,14 @@ function getAIFilteredRecords() {
     r = r.filter(x => x.course === course);
   }
 
-  // ▼ season
+  // ▼ season（ALL のときは完全スルー）
   if (season !== "ALL") {
-    // Sxx のとき → seasonN を除外
     r = r.filter(x => x.season === season);
-  } else {
-    // ALL のとき → seasonN を含めるが、空文字は除外
-    r = r.filter(x => x.season && x.season !== "");
   }
 
-  // ▼ tier
+  // ▼ tier（ALL のときは完全スルー）
   if (tier !== "ALL") {
     r = r.filter(x => x.tier === tier);
-  } else {
-    // ALL のとき → tierN を含めるが、空文字は除外
-    r = r.filter(x => x.tier && x.tier !== "");
   }
 
   // ▼ 直近 N
@@ -2652,6 +2639,7 @@ function getAIFilteredRecords() {
 
   return r;
 }
+
 
 
 function get3DFilteredRecords() {
