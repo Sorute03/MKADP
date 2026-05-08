@@ -2294,29 +2294,29 @@ let chart3D, chartScatter;
 ========== */
 window.addEventListener("load", async () => {
 
-  // ▼ 暗号化対応のロード処理
   await loadAllRecords();
 
-  // ▼ セレクタ初期化（独立フィルター方式）
+  // ★ これを追加（最重要）
+  populateSeasonAndTierOptions();
+
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
 
-  // ▼ 初回描画（各機能を独立して更新）
-  updateStatsView();        // 基本統計＋3グラフ
-  updateGrowthView();       // 成長スコア
-  updateRadarView();        // レーダー
-  updateHeatmapView();      // ヒートマップ
-  updateRankingView();      // ランキング
-  updateAICourseView();     // AI評価
-  update3DView();           // 3Dバブル
-  updateScatterView();      // 散布図
-  updateLoungeSetView();    // 12Rセット
+  updateStatsView();
+  updateGrowthView();
+  updateRadarView();
+  updateHeatmapView();
+  updateRankingView();
+  updateAICourseView();
+  update3DView();
+  updateScatterView();
+  updateLoungeSetView();
 
-  // ▼ レース履歴（これは独立）
   renderRaceHistory();
 });
+
 
 
 document.getElementById("exportSaveBtn").onclick = async () => {
@@ -3477,6 +3477,48 @@ document.getElementById("exportSaveFileBtn").onclick = async () => {
   alert("セーブデータをファイルとして出力しました！");
 };
 
+
+function populateSeasonAndTierOptions() {
+  // ▼ Season（S1〜S30）
+  const seasons = [];
+  for (let i = 1; i <= 30; i++) {
+    seasons.push("S" + i);
+  }
+
+  // ▼ Tier（固定リスト）
+  const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
+  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
+
+  // ▼ Season を持つ全セレクト
+  const seasonSelects = [
+    statsSeason, growthSeason, radarSeason, heatmapSeason,
+    rankSeason, aiSeason, bubbleSeason, scatterSeason,
+    loungeSetSeason
+  ];
+
+  // ▼ Tier を持つ全セレクト
+  const tierSelects = [
+    statsTier, growthTier, radarTier, heatmapTier,
+    rankTier, aiTier, bubbleTier, scatterTier,
+    loungeSetTier
+  ];
+
+  // ▼ Season を流し込む
+  for (const sel of seasonSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    seasons.forEach(s => {
+      sel.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+  }
+
+  // ▼ Tier を流し込む
+  for (const sel of tierSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    tiers.forEach(t => {
+      sel.innerHTML += `<option value="${t}">${t}</option>`;
+    });
+  }
+}
 
 
 /* ============================================================
