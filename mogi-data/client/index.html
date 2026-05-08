@@ -2447,8 +2447,9 @@ function getRankingFilteredRecords() {
     if (N > 0) r = r.slice(-N);
   }
 
-  // ▼ 最低走行回数
-  const min = Number(minRuns.value || 0);
+  // ▼ 最低走行回数（★修正ポイント）
+  const min = Number(document.getElementById("minRuns").value || 0);
+
   if (min > 0) {
     const grouped = {};
     r.forEach(x => {
@@ -2459,6 +2460,7 @@ function getRankingFilteredRecords() {
 
   return r;
 }
+
 
 
 function getAIFilteredRecords() {
@@ -3188,8 +3190,11 @@ function updateRankingView() {
 
 function initAISelector() {
   const sel = document.getElementById("aiCourse");
-  sel.innerHTML = courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML =
+    `<option value="ALL">ALL</option>` +
+    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
 }
+
 
 function updateAICourseView() {
   const records = getAIFilteredRecords(); // ★独立フィルター
