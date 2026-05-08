@@ -3413,7 +3413,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
     alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
   }
 };
-
+  
 document.getElementById("importSaveFileBtn").onclick = async () => {
   const file = document.getElementById("importSaveFile").files[0];
   if (!file) {
@@ -3423,10 +3423,12 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
 
   const text = await file.text();
 
-  // ★★★ 最重要：改行・空白・タブ・BOM を完全除去 ★★★
+  // ★★★ 最強のクリーン処理（不可視文字も全部除去） ★★★
   const code = text
-    .replace(/^\uFEFF/, "")   // BOM除去
-    .replace(/\s+/g, "");     // 改行・空白・タブを全部除去
+    .replace(/^\uFEFF/, "")        // BOM除去
+    .replace(/[\u0000-\u001F]/g, "") // 制御文字除去
+    .replace(/[\u200B-\u200F]/g, "") // ゼロ幅スペース除去
+    .replace(/\s+/g, "");          // 改行・空白・タブ除去
 
   try {
     const json = await decrypt(code);
