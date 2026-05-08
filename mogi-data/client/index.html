@@ -2285,9 +2285,17 @@ document.getElementById("importTSVBtn").onclick = () => {
 
 
 // Chart.js インスタンス保持用
-let chartWinRate, chartAvgRank, chartAvgScore;
-let chartGrowth, chartRadar, chartHeatmap;
-let chart3D, chartScatter;
+let chartWinRate   = null;
+let chartAvgRank   = null;
+let chartAvgScore  = null;
+
+let chartGrowth    = null;
+let chartRadar     = null;
+let chartHeatmap   = null;
+
+let chart3D        = null;
+let chartScatter   = null;
+
 
 /* ==========
    初期ロード
