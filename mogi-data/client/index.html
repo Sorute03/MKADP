@@ -3616,6 +3616,48 @@ async function importSaveDataWithPassword(saveText, password) {
   alert("復元が完了しました！");
 }
 
+// ▼ パスワード付きバックアップ保存
+document.getElementById("downloadBackupWithPasswordBtn").onclick = async () => {
+  const password = document.getElementById("backupPassword").value.trim();
+  if (!password) {
+    alert("パスワードを入力してください");
+    return;
+  }
+
+  const saveText = await exportSaveDataWithPassword(password);
+
+  const blob = new Blob([saveText], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKWorld_backup.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  alert("バックアップを保存しました！");
+};
+
+
+// ▼ パスワード付きバックアップ復元
+document.getElementById("restoreBackupWithPasswordBtn").onclick = async () => {
+  const password = document.getElementById("restorePassword").value.trim();
+  if (!password) {
+    alert("パスワードを入力してください");
+    return;
+  }
+
+  const fileInput = document.getElementById("restoreFileInput");
+  if (!fileInput.files.length) {
+    alert("復元するファイルを選択してください");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const text = await file.text();
+
+  await importSaveDataWithPassword(text, password);
+};
 
 
 /* ============================================================
