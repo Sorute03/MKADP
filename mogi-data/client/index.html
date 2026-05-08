@@ -2296,14 +2296,16 @@ window.addEventListener("load", async () => {
 
   await loadAllRecords();
 
-  // ★ これを追加（最重要）
+  // ★ 最初に Season/Tier を UI に入れる
   populateSeasonAndTierOptions();
 
+  // その後に各セレクタ初期化
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
 
+  // そして初回描画
   updateStatsView();
   updateGrowthView();
   updateRadarView();
@@ -2316,7 +2318,6 @@ window.addEventListener("load", async () => {
 
   renderRaceHistory();
 });
-
 
 
 document.getElementById("exportSaveBtn").onclick = async () => {
