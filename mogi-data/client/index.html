@@ -2806,10 +2806,17 @@ function updateLoungeSetView() {
 
 function drawWinRateChart(records) {
   const ctx = document.getElementById("chartWinRate").getContext("2d");
-  if (window.chartWinRate) window.chartWinRate.destroy();
+
+  // ▼ destroy を安全に呼ぶ
+  if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
+    window.chartWinRate.destroy();
+  }
 
   if (!records.length) {
-    window.chartWinRate = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
+    window.chartWinRate = new Chart(ctx, {
+      type: "bar",
+      data: { labels: [], datasets: [] }
+    });
     return;
   }
 
@@ -2836,7 +2843,10 @@ function drawWinRateChart(records) {
 
 function drawGrowthChart(labels, values) {
   const ctx = document.getElementById("chartGrowth").getContext("2d");
-  if (window.chartGrowth) window.chartGrowth.destroy();
+
+  if (window.chartGrowth && typeof window.chartGrowth.destroy === "function") {
+    window.chartGrowth.destroy();
+  }
 
   window.chartGrowth = new Chart(ctx, {
     type: "bar",
@@ -2858,7 +2868,10 @@ function drawGrowthChart(labels, values) {
 
 function drawRadarChart(labels, values) {
   const ctx = document.getElementById("chartRadar").getContext("2d");
-  if (window.chartRadar) window.chartRadar.destroy();
+
+  if (window.chartRadar && typeof window.chartRadar.destroy === "function") {
+    window.chartRadar.destroy();
+  }
 
   window.chartRadar = new Chart(ctx, {
     type: "radar",
@@ -2879,9 +2892,13 @@ function drawRadarChart(labels, values) {
 }
 
 
+
 function drawHeatmap(map) {
   const ctx = document.getElementById("chartHeatmap").getContext("2d");
-  if (window.chartHeatmap) window.chartHeatmap.destroy();
+
+  if (window.chartHeatmap && typeof window.chartHeatmap.destroy === "function") {
+    window.chartHeatmap.destroy();
+  }
 
   const courses = Object.keys(map);
   const values = courses.map(c => {
@@ -2916,9 +2933,13 @@ function drawHeatmap(map) {
 }
 
 
+
 function drawAvgRankChart(records) {
   const ctx = document.getElementById("chartAvgRank").getContext("2d");
-  if (window.chartAvgRank) window.chartAvgRank.destroy();
+
+  if (window.chartAvgRank && typeof window.chartAvgRank.destroy === "function") {
+    window.chartAvgRank.destroy();
+  }
 
   if (!records.length) {
     window.chartAvgRank = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
@@ -2948,7 +2969,10 @@ function drawAvgRankChart(records) {
 
 function drawAvgScoreChart(records) {
   const ctx = document.getElementById("chartAvgScore").getContext("2d");
-  if (window.chartAvgScore) window.chartAvgScore.destroy();
+
+  if (window.chartAvgScore && typeof window.chartAvgScore.destroy === "function") {
+    window.chartAvgScore.destroy();
+  }
 
   if (!records.length) {
     window.chartAvgScore = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
@@ -2978,9 +3002,13 @@ function drawAvgScoreChart(records) {
   });
 }
 
+
 function drawScatterChart(points) {
   const ctx = document.getElementById("chartScatter").getContext("2d");
-  if (window.chartScatter) window.chartScatter.destroy();
+
+  if (window.chartScatter && typeof window.chartScatter.destroy === "function") {
+    window.chartScatter.destroy();
+  }
 
   window.chartScatter = new Chart(ctx, {
     type: "scatter",
@@ -3013,9 +3041,13 @@ function drawScatterChart(points) {
 
 
 
+
 function draw3DChart(points) {
   const ctx = document.getElementById("chart3D").getContext("2d");
-  if (window.chart3D) window.chart3D.destroy();
+
+  if (window.chart3D && typeof window.chart3D.destroy === "function") {
+    window.chart3D.destroy();
+  }
 
   window.chart3D = new Chart(ctx, {
     type: "bubble",
