@@ -615,7 +615,31 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
- <div style="margin: 20px 0;">
+ 
+  <!-- ▼ パスワード付きバックアップ UI ▼ -->
+<div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>バックアップ（パスワード付き）</h3>
+
+  <!-- セーブ（出力） -->
+  <div style="margin-bottom:15px;">
+    <label>デバイス間データ移行バックアップファイル用パスワード：</label>
+    <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
+    <button id="downloadBackupWithPasswordBtn">バックアップを保存</button>
+  </div>
+
+  <hr>
+
+  <!-- 復元（インポート） -->
+  <div>
+    <label>デバイス間データ移行復元パスワード：</label>
+    <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
+    <input id="restoreFileInput" type="file" accept=".txt">
+    <button id="restoreBackupWithPasswordBtn">復元する</button>
+  </div>
+</div>
+<!-- ▲ パスワード付きバックアップ UI ▲ -->
+  
+<div style="margin: 20px 0;">
     <button id="exportSaveFileBtn">セーブデータをファイル出力</button>
     <button id="exportSaveBtn">セーブデータ出力</button>
     <button id="importSaveBtn">セーブデータ復元</button>
@@ -3447,6 +3471,150 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
   }
 };
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function deriveKeyFromPassword(password, saltBytes) {
+  const enc = new TextEncoder();
+  const pwKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    pwKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptWithPassword(text, password) {
+  const enc = new TextEncoder();
+  const data = enc.encode(text);
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+
+  const cipherBytes = new Uint8Array(cipher);
+  const combined = new Uint8Array(salt.length + iv.length + cipherBytes.length);
+  combined.set(salt, 0);
+  combined.set(iv, salt.length);
+  combined.set(cipherBytes, salt.length + iv.length);
+
+  return bytesToBase64(combined);
+}
+
+async function decryptWithPassword(base64, password) {
+  const combined = base64ToBytes(base64);
+
+  const salt = combined.slice(0, 16);
+  const iv   = combined.slice(16, 28);
+  const cipher = combined.slice(28);
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+async function encryptPasswordForCheck(password) {
+  return await encryptWithPassword(password, password);
+}
+
+async function verifyPassword(encryptedPassword, inputPassword) {
+  try {
+    const decrypted = await decryptWithPassword(encryptedPassword, inputPassword);
+    return decrypted === inputPassword;
+  } catch {
+    return false;
+  }
+}
+
+async function exportSaveDataWithPassword(password) {
+  const json = JSON.stringify(allRecords);
+
+  // データ本体（あなたの既存 encrypt）
+  const encryptedData = await encrypt(json);
+
+  // aesKey をパスワードで暗号化
+  const aesKeyBase64 = localStorage.getItem("aesKey");
+  const encryptedKey = await encryptWithPassword(aesKeyBase64, password);
+
+  // パスワード照合用
+  const encryptedPassword = await encryptPasswordForCheck(password);
+
+  return JSON.stringify({
+    p: encryptedPassword, // パスワード照合用
+    k: encryptedKey,      // aesKey
+    d: encryptedData      // allRecords
+  });
+}
+
+async function importSaveDataWithPassword(saveText, password) {
+  const obj = JSON.parse(saveText);
+
+  // パスワード照合
+  const ok = await verifyPassword(obj.p, password);
+  if (!ok) {
+    alert("パスワードが違います");
+    return;
+  }
+
+  // aesKey を復元
+  const aesKeyBase64 = await decryptWithPassword(obj.k, password);
+  localStorage.setItem("aesKey", aesKeyBase64);
+
+  // データ本体を復元
+  const json = await decrypt(obj.d);
+  allRecords = JSON.parse(json);
+
+  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  localStorage.setItem("backup", obj.d);
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert("復元が完了しました！");
+}
 
 
 
