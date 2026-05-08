@@ -3838,7 +3838,9 @@ document.getElementById("importFileBtn").onclick = () => {
       setId++;
     }
 
+    // ▼ 最重要：allRecords を更新
     allRecords = final;
+
     localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
 
     refreshAllAnalysisViews();
@@ -3849,6 +3851,7 @@ document.getElementById("importFileBtn").onclick = () => {
 
   reader.readAsText(file);
 };
+
 
 document.getElementById("importTSVBtn").onclick = () => {
   const text = document.getElementById("tsvInput").value.trim();
@@ -3927,7 +3930,9 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
+  // ▼ ここが最重要：allRecords を更新
   allRecords = final;
+
   localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
 
   refreshAllAnalysisViews();
