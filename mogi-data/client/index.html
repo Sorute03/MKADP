@@ -3421,8 +3421,11 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
     return;
   }
 
-  const text = await file.text(); // ← ファイルの中身をそのまま取得
-  const code = text.trim();
+  const text = await file.text();
+
+  // ★★★ ここが最重要 ★★★
+  // 改行・空白・タブなどをすべて除去して Base64 を純粋な1行にする
+  const code = text.replace(/\s+/g, "");
 
   try {
     const json = await decrypt(code);
