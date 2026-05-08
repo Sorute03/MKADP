@@ -619,6 +619,9 @@ courseList.push(
   <button id="exportSaveBtn">セーブデータ出力</button>
   <button id="importSaveBtn">セーブデータ復元</button>
   <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
+  <input type="file" id="importSaveFile">
+  <button id="importBackupBtn">バックアップから復元</button>
+  <button id="importSaveFileBtn">ファイルから復元</button>
 </div>
 
 <h3>TSV読み込み（スプシコピー対応）</h3>
@@ -3367,6 +3370,58 @@ async function sendDataToWorker() {
     console.error(e);
   }
 }
+
+document.getElementById("importBackupBtn").onclick = async () => {
+  const code = localStorage.getItem("backup");
+
+  if (!code) {
+    alert("バックアップがありません");
+    return;
+  }
+
+  try {
+    const json = await decrypt(code);
+    allRecords = JSON.parse(json);
+
+    localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("バックアップから復元しました！");
+  } catch (e) {
+    console.error(e);
+    alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
+  }
+};
+
+document.getElementById("importSaveFileBtn").onclick = async () => {
+  const file = document.getElementById("importSaveFile").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const text = await file.text(); // ← ファイルの中身をそのまま取得
+  const code = text.trim();
+
+  try {
+    const json = await decrypt(code);
+    allRecords = JSON.parse(json);
+
+    localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+    localStorage.setItem("backup", code);
+
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("ファイルから復元が完了しました！");
+  } catch (e) {
+    console.error(e);
+    alert("復元に失敗しました。ファイルが壊れている可能性があります。");
+  }
+};
+
 
 
 /* ============================================================
