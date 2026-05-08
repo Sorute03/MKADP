@@ -2558,8 +2558,22 @@ function getRankingFilteredRecords() {
   const season = rankSeason.value;
   const tier   = rankTier.value;
 
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+  // ▼ season フィルタ
+  if (season !== "ALL") {
+    // Sxx のとき → seasonN を除外
+    r = r.filter(x => x.season === season);
+  } else {
+    // ALL のとき → seasonN を含めるが、空文字は除外
+    r = r.filter(x => x.season && x.season !== "");
+  }
+
+  // ▼ tier フィルタ
+  if (tier !== "ALL") {
+    r = r.filter(x => x.tier === tier);
+  } else {
+    // ALL のとき → tierN を含めるが、空文字は除外
+    r = r.filter(x => x.tier && x.tier !== "");
+  }
 
   // ▼ 直近 N
   const sel = rankRangeSelect.value;
@@ -2568,9 +2582,8 @@ function getRankingFilteredRecords() {
     if (N > 0) r = r.slice(-N);
   }
 
-  // ▼ 最低走行回数（★修正ポイント）
+  // ▼ 最低走行回数
   const min = Number(document.getElementById("minRuns").value || 0);
-
   if (min > 0) {
     const grouped = {};
     r.forEach(x => {
@@ -2582,8 +2595,6 @@ function getRankingFilteredRecords() {
   return r;
 }
 
-
-
 function getAIFilteredRecords() {
   let r = [...allRecords];
 
@@ -2591,9 +2602,27 @@ function getAIFilteredRecords() {
   const season = aiSeason.value;
   const tier   = aiTier.value;
 
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+  // ▼ course
+  if (course !== "ALL") {
+    r = r.filter(x => x.course === course);
+  }
+
+  // ▼ season
+  if (season !== "ALL") {
+    // Sxx のとき → seasonN を除外
+    r = r.filter(x => x.season === season);
+  } else {
+    // ALL のとき → seasonN を含めるが、空文字は除外
+    r = r.filter(x => x.season && x.season !== "");
+  }
+
+  // ▼ tier
+  if (tier !== "ALL") {
+    r = r.filter(x => x.tier === tier);
+  } else {
+    // ALL のとき → tierN を含めるが、空文字は除外
+    r = r.filter(x => x.tier && x.tier !== "");
+  }
 
   // ▼ 直近 N
   const sel = aiRangeSelect.value;
@@ -2604,6 +2633,7 @@ function getAIFilteredRecords() {
 
   return r;
 }
+
 
 function get3DFilteredRecords() {
   let r = [...allRecords];
