@@ -748,7 +748,7 @@ const courseList = ${JSON.stringify(courseList)};
 
 // ▼ 全レコード取得（courseList に正規化）
 function getFilteredRecords() {
-  let records = JSON.parse(localStorage.getItem("loungeRecords") || "[]");
+  let records = JSON.parse(localStorage.getItem("allRecords") || "[]");
 
   // ▼ courseList に存在するコース名に正規化
   records = records.map(r => {
@@ -1142,14 +1142,13 @@ function openEditRecord(ts) {
 
 <script>
 function deleteSet(ts) {
-  const key = "loungeRecords";
-
-  const old = JSON.parse(localStorage.getItem(key) || "[]");
-  const filtered = old.filter(r => r.timestamp !== ts);
-  localStorage.setItem(key, JSON.stringify(filtered));
-
+  // ▼ allRecords から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
+  // ▼ localStorage も allRecords に統一
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+
+  // ▼ UI 更新
   refreshAllAnalysisViews();
   renderRaceHistory();
 }
@@ -1957,7 +1956,8 @@ async function importSaveData(code) {
   const json = await decrypt(code);
   allRecords = JSON.parse(json);
 
-  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  // ★ allRecords に統一
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
   localStorage.setItem("backup", code);
 
   refreshAllAnalysisViews();
@@ -2000,33 +2000,41 @@ function base64ToBytes(base64) {
 
 
 /* ▼ localStorage + backup 二重保存 */
-async function saveAllRecords() {
-  const json = JSON.stringify(allRecords);
+async function importSaveData(code) {
+  const json = await decrypt(code);
+  allRecords = JSON.parse(json);
 
-  // メイン保存
-  localStorage.setItem("loungeRecords", json);
+  // ★ allRecords に統一
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  localStorage.setItem("backup", code);
 
-  // バックアップ保存（暗号化）
-  const encrypted = await encrypt(json);
-  localStorage.setItem("backup", encrypted);
+  refreshAllAnalysisViews();
+  renderRaceHistory();
 }
+
 
 /* ▼ データ読み込み（壊れていたらバックアップから復元） */
 async function loadAllRecords() {
   try {
-    const main = localStorage.getItem("loungeRecords");
+    // ▼ まず allRecords を読む（統一後の正しい保存先）
+    const main = localStorage.getItem("allRecords");
     if (main) {
       allRecords = JSON.parse(main);
       return;
     }
 
+    // ▼ main が無い場合は backup を decrypt して復元
     const backup = localStorage.getItem("backup");
     if (backup) {
       const json = await decrypt(backup);
       allRecords = JSON.parse(json);
+
+      // ★ 復元したら allRecords に保存（統一）
+      localStorage.setItem("allRecords", JSON.stringify(allRecords));
       return;
     }
 
+    // ▼ どちらも無ければ空
     allRecords = [];
   } catch {
     allRecords = [];
@@ -2146,16 +2154,16 @@ document.getElementById("importFileBtn").onclick = () => {
       return;
     }
 
-    // ▼ allRecords を配列としてセット
+    // ▼ allRecords にセット
     allRecords = races;
 
-    // ▼ メイン保存
+    // ▼ メイン保存（allRecords に統一）
     const json = JSON.stringify(allRecords);
-    localStorage.setItem("loungeRecords", json);
+    localStorage.setItem("allRecords", json);
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
-    // ▼ 全分析機能を再描画（独立フィルター方式）
+    // ▼ 全分析機能を再描画
     refreshAllAnalysisViews();
     renderRaceHistory();
 
@@ -2246,15 +2254,15 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
+  // ▼ allRecords に統一
   allRecords = final;
-  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
-
 
 
 // Chart.js インスタンス保持用
@@ -3511,7 +3519,8 @@ document.getElementById("importBackupBtn").onclick = async () => {
     const json = await decrypt(code);
     allRecords = JSON.parse(json);
 
-    localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+    // ★ allRecords に統一
+    localStorage.setItem("allRecords", JSON.stringify(allRecords));
 
     refreshAllAnalysisViews();
     renderRaceHistory();
@@ -3522,6 +3531,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
     alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
   }
 };
+
   
 document.getElementById("importSaveFileBtn").onclick = async () => {
   const file = document.getElementById("importSaveFile").files[0];
@@ -3532,18 +3542,18 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
 
   const text = await file.text();
 
-  // ★★★ 最強のクリーン処理（不可視文字も全部除去） ★★★
   const code = text
-    .replace(/^\uFEFF/, "")        // BOM除去
-    .replace(/[\u0000-\u001F]/g, "") // 制御文字除去
-    .replace(/[\u200B-\u200F]/g, "") // ゼロ幅スペース除去
-    .replace(/\s+/g, "");          // 改行・空白・タブ除去
+    .replace(/^\uFEFF/, "")
+    .replace(/[\u0000-\u001F]/g, "")
+    .replace(/[\u200B-\u200F]/g, "")
+    .replace(/\s+/g, "");
 
   try {
     const json = await decrypt(code);
     allRecords = JSON.parse(json);
 
-    localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+    // ★ allRecords に統一
+    localStorage.setItem("allRecords", JSON.stringify(allRecords));
     localStorage.setItem("backup", code);
 
     refreshAllAnalysisViews();
@@ -3692,20 +3702,20 @@ async function importSaveDataWithPassword(saveText, password) {
   const json = await decrypt(obj.d);
   allRecords = JSON.parse(json);
 
-  // ▼ 壊れたレコードを除去（これが最重要）
+  // ▼ 壊れたレコードを除去（必要なら残す）
   allRecords = allRecords.filter(r =>
-    r.mode === "lounge" &&
-    r.season && r.season !== "" &&
-    r.tier && r.tier !== "" &&
-    r.timestamp !== null
+    r.mode &&
+    r.season &&
+    r.tier &&
+    r.timestamp != null
   );
 
-  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  // ★★★ 保存先を allRecords に統一 ★★★
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
   localStorage.setItem("backup", obj.d);
 
   // ▼ UI 初期化
   initAISelector();
-
   refreshAllAnalysisViews();
   renderRaceHistory();
 
@@ -3841,7 +3851,8 @@ document.getElementById("importFileBtn").onclick = () => {
     // ▼ 最重要：allRecords を更新
     allRecords = final;
 
-    localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+    // ★★★ 統一保存先 ★★★
+    localStorage.setItem("allRecords", JSON.stringify(allRecords));
 
     refreshAllAnalysisViews();
     renderRaceHistory();
@@ -3930,17 +3941,17 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
-  // ▼ ここが最重要：allRecords を更新
+  // ▼ 最重要：allRecords を更新
   allRecords = final;
 
-  localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
+  // ★★★ 統一保存先 ★★★
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
-
 
 
 /* ============================================================
