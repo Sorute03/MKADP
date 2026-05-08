@@ -1116,18 +1116,16 @@ function openEditRecord(ts) {
 function deleteSet(ts) {
   const key = "loungeRecords";
 
-  // ▼ localStorage から削除
   const old = JSON.parse(localStorage.getItem(key) || "[]");
   const filtered = old.filter(r => r.timestamp !== ts);
   localStorage.setItem(key, JSON.stringify(filtered));
 
-  // ▼ メモリ側から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ UI 更新
-  refreshModeView(allRecords);
+  refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 </script>
 
 <script>
@@ -1930,11 +1928,14 @@ async function exportSaveData() {
 async function importSaveData(code) {
   const json = await decrypt(code);
   allRecords = JSON.parse(json);
+
   localStorage.setItem("loungeRecords", JSON.stringify(allRecords));
   localStorage.setItem("backup", code);
-  refreshModeView(allRecords);
+
+  refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 
 /* ▼ 自動ダウンロードバックアップ */
 async function downloadBackup() {
@@ -2120,16 +2121,17 @@ document.getElementById("importFileBtn").onclick = () => {
     // ▼ allRecords を配列としてセット
     allRecords = races;
 
-    // ▼ メイン保存（暗号化しない）
+    // ▼ メイン保存
     const json = JSON.stringify(allRecords);
     localStorage.setItem("loungeRecords", json);
 
     alert(`読み込んだデータ ${races.length} 件を保存しました！`);
 
-    refreshModeView(allRecords);
+    // ▼ 全分析機能を再描画（独立フィルター方式）
+    refreshAllAnalysisViews();
     renderRaceHistory();
 
-    // ▼ バックアップ暗号化は reader.onload の外で行う
+    // ▼ バックアップ暗号化
     queueMicrotask(async () => {
       const encrypted = await encrypt(json);
       localStorage.setItem("backup", encrypted);
@@ -2155,18 +2157,27 @@ window.addEventListener("load", async () => {
   // ▼ 暗号化対応のロード処理
   await loadAllRecords();
 
-  // ▼ セレクタ初期化（あなたの既存処理）
+  // ▼ セレクタ初期化（独立フィルター方式）
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
-
-
   initOBSSeasonSelector();
 
-  // ▼ 初回描画
-  refreshModeView(allRecords);
+  // ▼ 初回描画（各機能を独立して更新）
+  updateStatsView();        // 基本統計＋3グラフ
+  updateGrowthView();       // 成長スコア
+  updateRadarView();        // レーダー
+  updateHeatmapView();      // ヒートマップ
+  updateRankingView();      // ランキング
+  updateAICourseView();     // AI評価
+  update3DView();           // 3Dバブル
+  updateScatterView();      // 散布図
+  updateLoungeSetView();    // 12Rセット
+
+  // ▼ レース履歴（これは独立）
   renderRaceHistory();
 });
+
 
 document.getElementById("exportSaveBtn").onclick = async () => {
   const code = await exportSaveData();
@@ -2191,36 +2202,17 @@ document.getElementById("importSaveBtn").onclick = async () => {
 </script>   <!-- ★★★ 必須 ★★★ -->
 
 <script>
-function getGloballyFilteredRecords() {
-  let filtered = [...allRecords];
-
-  // ▼ モード
-  const mode = document.getElementById("viewMode").value;
-  if (mode !== "ALL") {
-    filtered = filtered.filter(r => r.mode === mode);
-  }
-
-  // ▼ 直近 N
-  const range = document.getElementById("viewRange").value;
-  if (range !== "ALL") {
-    filtered = filtered.slice(-Number(range));
-  }
-
-  // ▼ Season
-  const season = document.getElementById("filterSeason").value;
-  if (season !== "ALL") {
-    filtered = filtered.filter(r => r.season == season);
-  }
-
-  // ▼ Tier
-  const tier = document.getElementById("filterTier").value;
-  if (tier !== "ALL") {
-    filtered = filtered.filter(r => r.tier == tier);
-  }
-
-  return filtered;
+function refreshAllAnalysisViews() {
+  updateStatsView();
+  updateGrowthView();
+  updateRadarView();
+  updateHeatmapView();
+  updateRankingView();
+  updateAICourseView();
+  update3DView();
+  updateScatterView();
+  updateLoungeSetView();
 }
-
 
 
 function generateOBSOverlay() {
@@ -3055,27 +3047,6 @@ function draw3DChart(points) {
 }
 
 
-function refreshModeView() {
-
-  // ▼ 共通フィルターを適用
-  const filtered = getGloballyFilteredRecords();
-
-  // ▼ 基本統計
-  updateBasicStats(filtered);
-
-  // ▼ モード別グラフ（勝率・平均順位・平均スコア）
-  updateModeGraphs(filtered);
-
-  // ▼ 各機能（それぞれが独自フィルターを持つ）
-  updateGrowthView(filtered);
-  updateRadarView(filtered);
-  updateHeatmapView(filtered);
-  updateRankingView(filtered);
-  updateAICourseView(filtered);
-  update3DView(filtered);
-  updateScatterView(filtered);
-  renderLoungeSets(filtered);
-}
 
 function updateBasicStats(records) {
 
