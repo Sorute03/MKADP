@@ -745,7 +745,9 @@ const COURSE = "${course}";
 
 // ▼ courseList（index.html と同じものを overlay 側にも持つ）
 const courseList = [
-${courseList.map(c => `  "${c.replace(/"/g, '\\"')}"`).join(",\n")}
+${courseList
+  .map(c => `  "${c.replace(/"/g, '\\"').replace(/\r?\n/g, '')}"`)
+  .join(",\n")}
 ];
 
 
