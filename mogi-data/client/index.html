@@ -737,7 +737,7 @@ body {
 
 <div id="overlay">読み込み中...</div>
 
-<script>
+<scr` + `ipt>
 // ▼ index.html から埋め込まれるフィルタ条件
 const MODE = "${mode}";
 const SEASON = "${season}";
@@ -750,7 +750,6 @@ const courseList = ${JSON.stringify(courseList)};
 function getFilteredRecords() {
   let records = JSON.parse(localStorage.getItem("allRecords") || "[]");
 
-  // ▼ courseList に存在するコース名に正規化
   records = records.map(r => {
     if (courseList.includes(r.course)) return r;
 
@@ -768,18 +767,15 @@ function getFilteredRecords() {
   return records;
 }
 
-// ▼ index.html が保存した “次のコース”
 function getNextCourse() {
   return localStorage.getItem("nextCourse") || null;
 }
 
-// ▼ fallback：最新コース
 function getCurrentCourse(records) {
   if (!records.length) return null;
   return records[records.length - 1].course;
 }
 
-// ▼ 統計
 function calcStats(records) {
   const count = records.length;
   if (count === 0) return null;
@@ -791,7 +787,6 @@ function calcStats(records) {
   return { count, avgRank, avgScore, winRate };
 }
 
-// ▼ HTML
 function buildHTML(course, stats) {
   if (!stats) return \`${course} ｜ データなし\`;
 
@@ -804,11 +799,9 @@ function buildHTML(course, stats) {
   \`;
 }
 
-// ▼ 更新
 function updateOverlay() {
   const records = getFilteredRecords();
 
-  // ▼ nextCourse があれば最優先
   const nextCourse = getNextCourse();
   if (nextCourse) {
     const filtered = records.filter(r => r.course === nextCourse);
@@ -817,7 +810,6 @@ function updateOverlay() {
     return;
   }
 
-  // ▼ fallback：最新コース
   const course = getCurrentCourse(records);
   if (!course) {
     document.getElementById("overlay").innerHTML = "データなし";
@@ -828,12 +820,11 @@ function updateOverlay() {
   document.getElementById("overlay").innerHTML = buildHTML(course, stats);
 }
 
-// ▼ 初期化
 window.addEventListener("load", () => {
   updateOverlay();
   setInterval(updateOverlay, 5000);
 });
-</script>
+</scr` + `ipt>
 
 </body>
 </html>
