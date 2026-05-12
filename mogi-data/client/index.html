@@ -1903,21 +1903,26 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 
 <!-- ▼ ラウンジ12Rセット -->
-<div class="section-block">
-  <h3>ラウンジ 12レースセット一覧</h3>
+<button id="toggleLoungeSetBtn">12レースセット一覧を表示</button>
 
-  <label for="loungeSetSeason">Season：</label>
-  <select id="loungeSetSeason" onchange="updateLoungeSetView()">
-    <option value="ALL">ALL</option>
-  </select>
+<div id="loungeSetSection" style="display:none;">
+  <div class="section-block">
+    <h3>ラウンジ 12レースセット一覧</h3>
 
-  <label for="loungeSetTier" style="margin-left:16px;">Tier：</label>
-  <select id="loungeSetTier" onchange="updateLoungeSetView()">
-    <option value="ALL">ALL</option>
-  </select>
+    <label>Season：</label>
+    <select id="loungeSetSeason" onchange="updateLoungeSetView()">
+      <option value="ALL">ALL</option>
+    </select>
 
-  <div id="loungeSetView" style="margin-top:20px;"></div>
+    <label style="margin-left:16px;">Tier：</label>
+    <select id="loungeSetTier" onchange="updateLoungeSetView()">
+      <option value="ALL">ALL</option>
+    </select>
+
+    <div id="loungeSetView" style="margin-top:20px;"></div>
+  </div>
 </div>
+
 
 
 <script>
@@ -2429,7 +2434,21 @@ window.addEventListener("load", async () => {
   renderRaceHistory();
 });
 
+document.getElementById("toggleLoungeSetBtn").onclick = () => {
+  const sec = document.getElementById("loungeSetSection");
+  const btn = document.getElementById("toggleLoungeSetBtn");
 
+  if (sec.style.display === "none") {
+    sec.style.display = "block";
+    btn.textContent = "12レースセット一覧を非表示";
+    updateLoungeSetView(); // 表示した瞬間に更新
+  } else {
+    sec.style.display = "none";
+    btn.textContent = "12レースセット一覧を表示";
+  }
+};
+
+  
 document.getElementById("exportSaveBtn").onclick = async () => {
   const code = await exportSaveData();
   navigator.clipboard.writeText(code);
