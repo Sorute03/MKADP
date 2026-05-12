@@ -2395,6 +2395,48 @@ function refreshAllAnalysisViews() {
 }
 
 
+function populateSeasonAndTierOptions() {
+  // ▼ Season（S1〜S30）
+  const seasons = [];
+  for (let i = 1; i <= 30; i++) {
+    seasons.push("S" + i);
+  }
+
+  // ▼ Tier（固定リスト）
+  
+  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
+
+  // ▼ Season を持つ全セレクト
+  const seasonSelects = [
+    statsSeason, growthSeason, radarSeason, heatmapSeason,
+    rankSeason, aiSeason, bubbleSeason, scatterSeason,
+    loungeSetSeason
+  ];
+
+  // ▼ Tier を持つ全セレクト
+  const tierSelects = [
+    statsTier, growthTier, radarTier, heatmapTier,
+    rankTier, aiTier, bubbleTier, scatterTier,
+    loungeSetTier
+  ];
+
+  // ▼ Season を流し込む
+  for (const sel of seasonSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    seasons.forEach(s => {
+      sel.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+  }
+
+  // ▼ Tier を流し込む
+  for (const sel of tierSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    tiers.forEach(t => {
+      sel.innerHTML += `<option value="${t}">${t}</option>`;
+    });
+  }
+}
+
 function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
   const season = document.getElementById("obsSeason").value;
@@ -3501,8 +3543,6 @@ function updateRankingView() {
   const strongSorted = sorted.slice(0,10);
   const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10); // 苦手は固定でOK
 
-  const strongSorted = sorted.slice(0,10);
-  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
   
   strongTable.innerHTML = `
     <tr>
@@ -3802,47 +3842,7 @@ document.getElementById("exportSaveFileBtn").onclick = async () => {
 };
 
 
-function populateSeasonAndTierOptions() {
-  // ▼ Season（S1〜S30）
-  const seasons = [];
-  for (let i = 1; i <= 30; i++) {
-    seasons.push("S" + i);
-  }
 
-  // ▼ Tier（固定リスト）
-  
-  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
-
-  // ▼ Season を持つ全セレクト
-  const seasonSelects = [
-    statsSeason, growthSeason, radarSeason, heatmapSeason,
-    rankSeason, aiSeason, bubbleSeason, scatterSeason,
-    loungeSetSeason
-  ];
-
-  // ▼ Tier を持つ全セレクト
-  const tierSelects = [
-    statsTier, growthTier, radarTier, heatmapTier,
-    rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier
-  ];
-
-  // ▼ Season を流し込む
-  for (const sel of seasonSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    seasons.forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-  }
-
-  // ▼ Tier を流し込む
-  for (const sel of tierSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    tiers.forEach(t => {
-      sel.innerHTML += `<option value="${t}">${t}</option>`;
-    });
-  }
-}
 
 
 /* ============================================================
