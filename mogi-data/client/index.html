@@ -2382,6 +2382,15 @@ function populateSeasonAndTierOptions() {
   }
 }
 
+function buildSeasonOptions() {
+  const arr = ["ALL"];
+  for (let i = 1; i <= 30; i++) {
+    arr.push(`S${i}`);
+  }
+  return arr.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+ 
+
 /* ==========
    初期ロード
 ========== */
