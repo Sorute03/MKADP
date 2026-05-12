@@ -839,6 +839,24 @@ window.addEventListener("load", () => {
 </html>
 `;
 }
+
+function generateOBSOverlay() {
+  const mode = document.getElementById("obsMode").value;
+  const season = document.getElementById("obsSeason").value;
+  const course = document.getElementById("obsCourse").value;
+
+  const html = buildOverlayHTMLFile(mode, season, course);
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "overlay.html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
 </script>
 
 
@@ -2494,23 +2512,6 @@ function refreshAllAnalysisViews() {
 }
 
 
-function generateOBSOverlay() {
-  const mode = document.getElementById("obsMode").value;
-  const season = document.getElementById("obsSeason").value;
-  const course = document.getElementById("obsCourse").value;
-
-  const html = buildOverlayHTMLFile(mode, season, course);
-
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "overlay.html";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
 
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
