@@ -797,7 +797,6 @@ function calcStats(records) {
 
   const count = records.length;
 
-  // ▼ 基本統計
   const wins = records.filter(r => r.rank <= 3).length;
   const sumRank = records.reduce((s, r) => s + r.rank, 0);
   const sumScore = records.reduce((s, r) => s + r.score, 0);
@@ -805,33 +804,25 @@ function calcStats(records) {
   const avgRank = sumRank / count;
   const avgScore = sumScore / count;
 
-  // ▼ 12レース合計スコア（ラウンジセットのみ）
   const loungeSets = records.filter(r => r.totalScore12 != null);
   const avgTotalScore12 =
     loungeSets.length > 0
       ? loungeSets.reduce((s, r) => s + r.totalScore12, 0) / loungeSets.length
       : 0;
 
-  // ▼ 安定度（順位の標準偏差）
   const stdRank = Math.sqrt(
     records.reduce((a, r) => a + Math.pow(r.rank - avgRank, 2), 0) / count
   );
 
-  // ▼ 爆発力（1位率）
   const firstRate = records.filter(r => r.rank === 1).length / count;
 
-  // ▼ ★ 新しい順位分布
+  // ▼ ランキングと同じ順位分布
   const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
   const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
   const bottomRate = records.filter(r => r.rank >= 16).length / count;
 
-  // ▼ 下位回避率（1 - 下位率）
   const avoidBottomRate = 1 - bottomRate;
-
-  // ▼ 順位逆数スコア（高いほど良い）
   const rankScore = 12 - avgRank;
-
-  // ▼ スコア効率（平均スコア ÷ 平均順位）
   const efficiency = avgScore / avgRank;
 
   return {
@@ -865,7 +856,6 @@ function buildHTML(course, stats) {
     下位率 ${ (stats.bottomRate * 100).toFixed(1) }%
   `;
 }
-
 
 function updateOverlay() {
   const records = getFilteredRecords();
