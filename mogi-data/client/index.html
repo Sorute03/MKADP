@@ -1730,6 +1730,11 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="winRate">勝率</option>
     <option value="avgRank">平均順位</option>
     <option value="avgScore">平均スコア</option>
+    <option value="stdRank">安定度（順位のブレ）</option>
+    <option value="firstRate">爆発力（1位率）</option>
+    <option value="avoidBottom">下位回避率</option>
+    <option value="rankScore">順位逆数スコア</option>
+    <option value="efficiency">スコア効率</option>
   </select>
 
   <label for="rankSeason">Season：</label>
@@ -1781,17 +1786,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <!-- ▼ AI評価 -->
 <div class="section-block">
   <h3>AIコース評価</h3>
-
-  <label>基準：</label>
-  <select id="aiMetric">
-    <option value="strong">得意スコア</option>
-    <option value="weak">苦手スコア</option>
-    <option value="growth">成長スコア</option>
-    <option value="winRate">勝率</option>
-    <option value="avgRank">平均順位</option>
-    <option value="avgScore">平均スコア</option>
-  </select>
-
   
   <label>Mode：</label>
   <select id="aiMode">
@@ -2443,57 +2437,72 @@ function calcStats(records) {
       winRate: 0,
       avgRank: 0,
       avgScore: 0,
-      avgTotalScore12: 0   // ★ 追加
+      avgTotalScore12: 0,
+      stdRank: 0,
+      firstRate: 0,
+      avoidBottomRate: 0,
+      rankScore: 0,
+      efficiency: 0,
+      topRate: 0,
+      midRate: 0,
+      bottomRate: 0
     };
   }
 
   const count = records.length;
 
-  // ★ 勝利条件：3位以内
+  // ▼ 基本統計
   const wins = records.filter(r => r.rank <= 3).length;
-
   const sumRank = records.reduce((s, r) => s + r.rank, 0);
   const sumScore = records.reduce((s, r) => s + r.score, 0);
 
-  // ★ 12レース合計スコアの平均（ラウンジセットのみ）
+  const avgRank = sumRank / count;
+  const avgScore = sumScore / count;
+
+  // ▼ 12レース合計スコア（ラウンジセットのみ）
   const loungeSets = records.filter(r => r.totalScore12 != null);
   const avgTotalScore12 =
     loungeSets.length > 0
       ? loungeSets.reduce((s, r) => s + r.totalScore12, 0) / loungeSets.length
       : 0;
 
+  // ▼ 安定度（順位の標準偏差）
+  const stdRank = Math.sqrt(
+    records.reduce((a, r) => a + Math.pow(r.rank - avgRank, 2), 0) / count
+  );
+
+  // ▼ 爆発力（1位率）
+  const firstRate = records.filter(r => r.rank === 1).length / count;
+
+  // ▼ ★ 新しい順位分布
+  const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
+  const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
+  const bottomRate = records.filter(r => r.rank >= 16).length / count;
+
+  // ▼ 下位回避率（1 - 下位率）
+  const avoidBottomRate = 1 - bottomRate;
+
+  // ▼ 順位逆数スコア（高いほど良い）
+  const rankScore = 12 - avgRank;
+
+  // ▼ スコア効率（平均スコア ÷ 平均順位）
+  const efficiency = avgScore / avgRank;
+
   return {
     count,
     winRate: wins / count,
-    avgRank: sumRank / count,
-    avgScore: sumScore / count,
-    avgTotalScore12   // ★ 追加
+    avgRank,
+    avgScore,
+    avgTotalScore12,
+    stdRank,
+    firstRate,
+    avoidBottomRate,
+    rankScore,
+    efficiency,
+    topRate,
+    midRate,
+    bottomRate
   };
-}
-
-
-// ▼ Season セレクタを S1〜S30 + ALL に統一する共通関数
-function buildSeasonOptions() {
-  const arr = ["ALL"];
-  for (let i = 1; i <= 30; i++) {
-    arr.push(`S${i}`);
-  }
-  return arr.map(s => `<option value="${s}">${s}</option>`).join("");
-}
-
-// ▼ 成長スコアのセレクタ初期化
-function initGrowthSelectors() {
-  const tierSel = document.getElementById("growthTier");
-  const seasonSel = document.getElementById("growthSeason");
-  const courseSel = document.getElementById("growthCourse");
-
-  tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
-
-  // ★ ここを S1〜S30 に統一
-  seasonSel.innerHTML = buildSeasonOptions();
-
-  courseSel.innerHTML = ["ALL"].concat(courseList)
-    .map(c => `<option value="${c}">${c}</option>`).join("");
 }
 
 
@@ -3387,6 +3396,21 @@ function updateRankingView() {
       avgRank: s.avgRank,
       winRate: s.winRate,
       avgScore: s.avgScore,
+      avgTotalScore12: s.avgTotalScore12,
+    
+      // ▼ 安定度・爆発力・下位回避など
+      stdRank: s.stdRank,
+      firstRate: s.firstRate,
+      avoidBottom: s.avoidBottomRate,
+      rankScore: s.rankScore,
+      efficiency: s.efficiency,
+    
+      // ▼ ★ 新しい順位分布（1〜5 / 6〜15 / 16〜24）
+      topRate: s.topRate,       // 上位率（1〜5）
+      midRate: s.midRate,       // 中位率（6〜15）
+      bottomRate: s.bottomRate, // 下位率（16〜24）
+    
+      // ▼ 得意・苦手・成長スコア
       strongScore,
       weakScore,
       growth
@@ -3394,34 +3418,103 @@ function updateRankingView() {
   }
 
   // ▼ 基準に応じてソート切り替え（★ここが今回の本体）
+    // ▼ 基準に応じてソート切り替え（★完全版）
   let sorted;
   switch (metric) {
+
+    // ▼ 既存
     case "strong":
       sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
       break;
+  
     case "weak":
       sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore);
       break;
+  
     case "growth":
       sorted = [...rows].sort((a,b)=>b.growth - a.growth);
       break;
+  
     case "winRate":
       sorted = [...rows].sort((a,b)=>b.winRate - a.winRate);
       break;
+  
     case "avgRank":
-      sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank); // 低い方が良い
+      sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank);
       break;
+  
     case "avgScore":
       sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
       break;
+  
+    case "avgTotalScore12":
+      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12);
+      break;
+  
+    // ▼ 安定度（低いほど良い）
+    case "stdRank":
+      sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank);
+      break;
+  
+    // ▼ 爆発力（1位率）
+    case "firstRate":
+      sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate);
+      break;
+  
+    // ▼ 下位回避率（高いほど良い）
+    case "avoidBottom":
+      sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom);
+      break;
+  
+    // ▼ 順位逆数スコア
+    case "rankScore":
+      sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore);
+      break;
+  
+    // ▼ スコア効率
+    case "efficiency":
+      sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency);
+      break;
+  
+    // ▼ ★ 上位率（1〜5）
+    case "topRate":
+      sorted = [...rows].sort((a,b)=>b.topRate - a.topRate);
+      break;
+  
+    // ▼ ★ 中位率（6〜15）
+    case "midRate":
+      sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
+      break;
+  
+    // ▼ ★ 下位率（16〜24）
+    case "bottomRate":
+      sorted = [...rows].sort((a,b)=>b.bottomRate - a.bottomRate);
+      break;
+  
+    // ▼ デフォルト（得意スコア）
+    default:
+      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
+      break;
   }
+
 
   const strongSorted = sorted.slice(0,10);
   const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10); // 苦手は固定でOK
 
+  const strongSorted = sorted.slice(0,10);
+  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
+  
   strongTable.innerHTML = `
     <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th>
+      <th>コース</th>
+      <th>回数</th>
+      <th>勝率%</th>
+      <th>平均順位</th>
+      <th>平均スコア</th>
+      <th>上位率%</th>
+      <th>中位率%</th>
+      <th>下位率%</th>
+      <th>得意スコア</th>
     </tr>
     ${
       strongSorted.length
@@ -3432,16 +3525,27 @@ function updateRankingView() {
             <td>${(r.winRate*100).toFixed(1)}</td>
             <td>${r.avgRank.toFixed(2)}</td>
             <td>${r.avgScore.toFixed(2)}</td>
+            <td>${(r.topRate*100).toFixed(1)}</td>
+            <td>${(r.midRate*100).toFixed(1)}</td>
+            <td>${(r.bottomRate*100).toFixed(1)}</td>
             <td>${r.strongScore.toFixed(1)}</td>
           </tr>
         `).join("")
-        : `<tr><td colspan="6">条件に合うコースがありません</td></tr>`
+        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
     }
   `;
 
   weakTable.innerHTML = `
     <tr>
-      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th>
+      <th>コース</th>
+      <th>回数</th>
+      <th>勝率%</th>
+      <th>平均順位</th>
+      <th>平均スコア</th>
+      <th>上位率%</th>
+      <th>中位率%</th>
+      <th>下位率%</th>
+      <th>苦手スコア</th>
     </tr>
     ${
       weakSorted.length
@@ -3452,10 +3556,13 @@ function updateRankingView() {
             <td>${(r.winRate*100).toFixed(1)}</td>
             <td>${r.avgRank.toFixed(2)}</td>
             <td>${r.avgScore.toFixed(2)}</td>
+            <td>${(r.topRate*100).toFixed(1)}</td>
+            <td>${(r.midRate*100).toFixed(1)}</td>
+            <td>${(r.bottomRate*100).toFixed(1)}</td>
             <td>${r.weakScore.toFixed(1)}</td>
           </tr>
         `).join("")
-        : `<tr><td colspan="6">条件に合うコースがありません</td></tr>`
+        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
     }
   `;
 }
@@ -3498,29 +3605,33 @@ function updateAICourseView() {
   const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
   const growth      = strongScore - weakScore;
 
-  // ▼ 基準項目（★追加）
-  const metric = document.getElementById("aiMetric").value;
+  // ▼ ★ AI 基準セレクタ
+  const metric = document.getElementById("aiMetric")?.value || "strong";
 
-  let mainScore;
+  // ▼ ★ 基準に応じて mainScore を切り替え
+  let mainScore = 0;
+
   switch (metric) {
-    case "strong":
-      mainScore = strongScore;
-      break;
-    case "weak":
-      mainScore = weakScore;
-      break;
-    case "growth":
-      mainScore = growth;
-      break;
-    case "winRate":
-      mainScore = s.winRate * 100;
-      break;
-    case "avgRank":
-      mainScore = -s.avgRank; // 低い方が良いので反転
-      break;
-    case "avgScore":
-      mainScore = s.avgScore;
-      break;
+    case "strong": mainScore = strongScore; break;
+    case "weak": mainScore = -weakScore; break; // 苦手は低いほど悪いので反転
+    case "growth": mainScore = growth; break;
+
+    case "winRate": mainScore = s.winRate * 100; break;
+    case "avgRank": mainScore = -s.avgRank; break; // 低いほど良い
+    case "avgScore": mainScore = s.avgScore; break;
+    case "avgTotalScore12": mainScore = s.avgTotalScore12; break;
+
+    case "stdRank": mainScore = -s.stdRank; break; // 低いほど良い
+    case "firstRate": mainScore = s.firstRate * 100; break;
+    case "avoidBottom": mainScore = s.avoidBottomRate * 100; break;
+    case "rankScore": mainScore = s.rankScore; break;
+    case "efficiency": mainScore = s.efficiency; break;
+
+    case "topRate": mainScore = s.topRate * 100; break;
+    case "midRate": mainScore = s.midRate * 100; break;
+    case "bottomRate": mainScore = -(s.bottomRate * 100); break; // 低いほど良い
+
+    default: mainScore = strongScore; break;
   }
 
   const course = document.getElementById("aiCourse").value;
@@ -3532,21 +3643,79 @@ function updateAICourseView() {
   else if (weakScore > 120) verdict = "かなり苦手なコースです。";
   else if (weakScore > 90)  verdict = "やや苦手なコースです。";
   else verdict = "評価が分かれるコースです。";
+  // ▼ サブ評価コメントをまとめる
+    let subComments = [];
+    
+    // 安定度
+    if (s.stdRank < 4) subComments.push("順位のブレが小さく非常に安定しています。");
+    else if (s.stdRank < 7) subComments.push("順位の安定度は平均的です。");
+    else subComments.push("順位のブレが大きめです。");
+    
+    // 上位率
+    if (s.topRate > 0.40) subComments.push("上位に入りやすい傾向があります。");
+    else if (s.topRate > 0.25) subComments.push("上位率は平均的です。");
+    else subComments.push("上位に入りにくい傾向があります。");
+    
+    // 中位率
+    if (s.midRate > 0.60) subComments.push("中位に安定しやすいコースです。");
+    
+    // 下位率
+    if (s.bottomRate > 0.35) subComments.push("下位を取りやすい危険なコースです。");
+    else if (s.bottomRate < 0.20) subComments.push("下位を取りにくい安定したコースです。");
+    
+    // 下位回避率
+    if (s.avoidBottomRate > 0.90) subComments.push("下位をほとんど取らない安定型です。");
+    
+    // 爆発力
+    if (s.firstRate > 0.15) subComments.push("1位を多く取れる爆発力があります。");
+    
+    // スコア効率
+    if (s.efficiency > 1.0) subComments.push("順位に対してスコア効率が非常に良いです。");
+    
+    // 順位逆数スコア
+    if (s.rankScore > 7) subComments.push("順位スコアが高く安定しています。");
+    
+    // 12レース平均スコア
+    if (s.avgTotalScore12 > 90) subComments.push("ラウンジセットの成績が非常に良いです。");
+    
+    // ▼ HTML に追加
+    const subCommentHTML = subComments.map(c => `<p>・${c}</p>`).join("");
+    
 
   div.innerHTML = `
     <p><strong>${title}</strong></p>
     <p><strong>試行回数：</strong>${records.length}</p>
+  
+    <p><strong>AI 基準スコア：</strong>${mainScore.toFixed(2)}</p>
+  
     <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
     <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
     <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
+    <p><strong>12レース平均スコア：</strong>${s.avgTotalScore12.toFixed(1)}</p>
+  
+    <p><strong>上位率（1〜5位）：</strong>${(s.topRate * 100).toFixed(1)}%</p>
+    <p><strong>中位率（6〜15位）：</strong>${(s.midRate * 100).toFixed(1)}%</p>
+    <p><strong>下位率（16〜24位）：</strong>${(s.bottomRate * 100).toFixed(1)}%</p>
+    <p><strong>下位回避率：</strong>${(s.avoidBottomRate * 100).toFixed(1)}%</p>
+  
+    <p><strong>安定度（順位のブレ）：</strong>${s.stdRank.toFixed(2)}</p>
+    <p><strong>爆発力（1位率）：</strong>${(s.firstRate * 100).toFixed(1)}%</p>
+  
+    <p><strong>順位逆数スコア：</strong>${s.rankScore.toFixed(2)}</p>
+    <p><strong>スコア効率：</strong>${s.efficiency.toFixed(3)}</p>
+  
     <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
     <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
     <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
+  
     <hr>
-    <p><strong>基準スコア：</strong>${mainScore.toFixed(1)}</p>
     <p>${verdict}</p>
+  
+    <h4>項目別評価</h4>
+    ${subCommentHTML}
   `;
 }
+
 
 
 /* ==========
