@@ -777,27 +777,95 @@ function getCurrentCourse(records) {
 }
 
 function calcStats(records) {
+  if (!records.length) {
+    return {
+      count: 0,
+      winRate: 0,
+      avgRank: 0,
+      avgScore: 0,
+      avgTotalScore12: 0,
+      stdRank: 0,
+      firstRate: 0,
+      avoidBottomRate: 0,
+      rankScore: 0,
+      efficiency: 0,
+      topRate: 0,
+      midRate: 0,
+      bottomRate: 0
+    };
+  }
+
   const count = records.length;
-  if (count === 0) return null;
 
-  const avgRank  = records.reduce((a,b)=>a+b.rank,0) / count;
-  const avgScore = records.reduce((a,b)=>a+b.score,0) / count;
-  const winRate  = records.filter(r => r.rank <= 3).length / count;
+  // ▼ 基本統計
+  const wins = records.filter(r => r.rank <= 3).length;
+  const sumRank = records.reduce((s, r) => s + r.rank, 0);
+  const sumScore = records.reduce((s, r) => s + r.score, 0);
 
-  return { count, avgRank, avgScore, winRate };
+  const avgRank = sumRank / count;
+  const avgScore = sumScore / count;
+
+  // ▼ 12レース合計スコア（ラウンジセットのみ）
+  const loungeSets = records.filter(r => r.totalScore12 != null);
+  const avgTotalScore12 =
+    loungeSets.length > 0
+      ? loungeSets.reduce((s, r) => s + r.totalScore12, 0) / loungeSets.length
+      : 0;
+
+  // ▼ 安定度（順位の標準偏差）
+  const stdRank = Math.sqrt(
+    records.reduce((a, r) => a + Math.pow(r.rank - avgRank, 2), 0) / count
+  );
+
+  // ▼ 爆発力（1位率）
+  const firstRate = records.filter(r => r.rank === 1).length / count;
+
+  // ▼ ★ 新しい順位分布
+  const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
+  const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
+  const bottomRate = records.filter(r => r.rank >= 16).length / count;
+
+  // ▼ 下位回避率（1 - 下位率）
+  const avoidBottomRate = 1 - bottomRate;
+
+  // ▼ 順位逆数スコア（高いほど良い）
+  const rankScore = 12 - avgRank;
+
+  // ▼ スコア効率（平均スコア ÷ 平均順位）
+  const efficiency = avgScore / avgRank;
+
+  return {
+    count,
+    winRate: wins / count,
+    avgRank,
+    avgScore,
+    avgTotalScore12,
+    stdRank,
+    firstRate,
+    avoidBottomRate,
+    rankScore,
+    efficiency,
+    topRate,
+    midRate,
+    bottomRate
+  };
 }
 
 function buildHTML(course, stats) {
-  if (!stats) return \`${course} ｜ データなし\`;
+  if (!stats) return `${course} ｜ データなし`;
 
-  return \`
-    <b>\${course}</b> ｜ 
-    平均順位 \${stats.avgRank.toFixed(2)}位 ｜ 
-    平均得点 \${stats.avgScore.toFixed(2)}点 ｜ 
-    試行回数 \${stats.count}回<br>
-    上位率 \${(stats.winRate * 100).toFixed(1)}%
-  \`;
+  return `
+    <b>${course}</b> ｜ 
+    平均順位 ${stats.avgRank.toFixed(2)}位 ｜ 
+    平均得点 ${stats.avgScore.toFixed(2)}点 ｜ 
+    試行回数 ${stats.count}回<br>
+    勝率 ${ (stats.winRate  * 100).toFixed(1) }% ｜ 
+    上位率 ${ (stats.topRate * 100).toFixed(1) }% ｜ 
+    中位率 ${ (stats.midRate * 100).toFixed(1) }% ｜ 
+    下位率 ${ (stats.bottomRate * 100).toFixed(1) }%
+  `;
 }
+
 
 function updateOverlay() {
   const records = getFilteredRecords();
