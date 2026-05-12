@@ -2321,26 +2321,26 @@ window.addEventListener("load", async () => {
   initAISelector();
   initOBSSeasonSelector();
   
+  // ★ AI セレクタの onchange をここで登録（重要）
+  aiCourse.onchange = updateAICourseView;
+  aiSeason.onchange = updateAICourseView;
+  aiTier.onchange   = updateAICourseView;
+  aiMode.onchange   = updateAICourseView;
+  aiRangeSelect.onchange = updateAICourseView;
+  aiRangeInput.oninput   = updateAICourseView;
+
   // そして初回描画
   updateStatsView();
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
   updateRankingView();
-  updateAICourseView();
+  updateAICourseView();   // ← ここで初めて正しく動く
   update3DView();
   updateScatterView();
   updateLoungeSetView();
 
   renderRaceHistory();
-
-  // ▼ AI コース評価：セレクタ変更時に更新（★追加）
-  document.getElementById("aiCourse").onchange = updateAICourseView;
-  document.getElementById("aiSeason").onchange = updateAICourseView;
-  document.getElementById("aiTier").onchange   = updateAICourseView;
-  document.getElementById("aiMode").onchange   = updateAICourseView;
-  document.getElementById("aiRangeSelect").onchange = updateAICourseView;
-  document.getElementById("aiRangeInput").oninput   = updateAICourseView;
 });
 
 
