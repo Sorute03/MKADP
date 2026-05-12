@@ -1722,6 +1722,16 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div class="section-block">
   <h3>コースランキング（得意・苦手）</h3>
 
+  <label>基準：</label>
+  <select id="rankMetric">
+    <option value="strong">得意スコア</option>
+    <option value="weak">苦手スコア</option>
+    <option value="growth">成長スコア</option>
+    <option value="winRate">勝率</option>
+    <option value="avgRank">平均順位</option>
+    <option value="avgScore">平均スコア</option>
+  </select>
+
   <label for="rankSeason">Season：</label>
   <select id="rankSeason" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
@@ -1771,6 +1781,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <!-- ▼ AI評価 -->
 <div class="section-block">
   <h3>AIコース評価</h3>
+
+  <label>基準：</label>
+  <select id="aiMetric">
+    <option value="strong">得意スコア</option>
+    <option value="weak">苦手スコア</option>
+    <option value="growth">成長スコア</option>
+    <option value="winRate">勝率</option>
+    <option value="avgRank">平均順位</option>
+    <option value="avgScore">平均スコア</option>
+  </select>
+
   
   <label>Mode：</label>
   <select id="aiMode">
@@ -3327,12 +3348,11 @@ function updateHeatmapView() {
 ========== */
 
 function updateRankingView() {
-  const records = getRankingFilteredRecords(); // ★独立フィルター
+  const records = getRankingFilteredRecords();
 
   const strongTable = document.getElementById("tableStrong");
   const weakTable   = document.getElementById("tableWeak");
 
-  // ▼ データが無い場合はテーブルを空にして終了
   if (!records || !records.length) {
     strongTable.innerHTML = `
       <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th></tr>
@@ -3346,19 +3366,20 @@ function updateRankingView() {
   }
 
   const minRuns = Number(document.getElementById("minRuns").value || 3);
+  const metric  = document.getElementById("rankMetric").value; // ★追加
 
   const byCourse = groupBy(records, r => r.course);
   const rows = [];
 
   for (const c of Object.keys(byCourse)) {
     const rs = byCourse[c];
-
     if (rs.length < minRuns) continue;
 
     const s = calcStats(rs);
 
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
     const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
 
     rows.push({
       course: c,
@@ -3367,13 +3388,36 @@ function updateRankingView() {
       winRate: s.winRate,
       avgScore: s.avgScore,
       strongScore,
-      weakScore
+      weakScore,
+      growth
     });
   }
 
-  // ▼ rows が 0 件でも安全に処理
-  const strongSorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore).slice(0,10);
-  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
+  // ▼ 基準に応じてソート切り替え（★ここが今回の本体）
+  let sorted;
+  switch (metric) {
+    case "strong":
+      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
+      break;
+    case "weak":
+      sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore);
+      break;
+    case "growth":
+      sorted = [...rows].sort((a,b)=>b.growth - a.growth);
+      break;
+    case "winRate":
+      sorted = [...rows].sort((a,b)=>b.winRate - a.winRate);
+      break;
+    case "avgRank":
+      sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank); // 低い方が良い
+      break;
+    case "avgScore":
+      sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
+      break;
+  }
+
+  const strongSorted = sorted.slice(0,10);
+  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10); // 苦手は固定でOK
 
   strongTable.innerHTML = `
     <tr>
@@ -3416,7 +3460,6 @@ function updateRankingView() {
   `;
 }
 
-
 /* ==========
    AIコース評価
 ========== */
@@ -3441,7 +3484,7 @@ function initAISelector() {
 
 
 function updateAICourseView() {
-  const records = getAIFilteredRecords(); // ★独立フィルター
+  const records = getAIFilteredRecords();
   const div = document.getElementById("aiCourseResult");
 
   if (!records.length) {
@@ -3455,6 +3498,31 @@ function updateAICourseView() {
   const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
   const growth      = strongScore - weakScore;
 
+  // ▼ 基準項目（★追加）
+  const metric = document.getElementById("aiMetric").value;
+
+  let mainScore;
+  switch (metric) {
+    case "strong":
+      mainScore = strongScore;
+      break;
+    case "weak":
+      mainScore = weakScore;
+      break;
+    case "growth":
+      mainScore = growth;
+      break;
+    case "winRate":
+      mainScore = s.winRate * 100;
+      break;
+    case "avgRank":
+      mainScore = -s.avgRank; // 低い方が良いので反転
+      break;
+    case "avgScore":
+      mainScore = s.avgScore;
+      break;
+  }
+
   const course = document.getElementById("aiCourse").value;
   const title = (course === "ALL") ? "全コース総合評価" : `コース：${course}`;
 
@@ -3466,19 +3534,20 @@ function updateAICourseView() {
   else verdict = "評価が分かれるコースです。";
 
   div.innerHTML = `
-  <p><strong>${title}</strong></p>
-  <p><strong>試行回数：</strong>${records.length}</p>
-  <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
-  <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
-  <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
-  <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
-  <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
-  <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
-  <hr>
-  <p>${verdict}</p>
-`;
-
+    <p><strong>${title}</strong></p>
+    <p><strong>試行回数：</strong>${records.length}</p>
+    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
+    <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
+    <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
+    <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
+    <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
+    <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
+    <hr>
+    <p><strong>基準スコア：</strong>${mainScore.toFixed(1)}</p>
+    <p>${verdict}</p>
+  `;
 }
+
 
 /* ==========
    3D バブル（強さ × 成長 × 使用数）
