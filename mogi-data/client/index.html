@@ -744,7 +744,10 @@ const SEASON = "${season}";
 const COURSE = "${course}";
 
 // ▼ courseList（index.html と同じものを overlay 側にも持つ）
-const courseList = ${JSON.stringify(courseList)};
+const courseList = [
+${courseList.map(c => `  "${c.replace(/"/g, '\\"')}"`).join(",\n")}
+];
+
 
 // ▼ 全レコード取得（allRecords を参照）
 function getFilteredRecords() {
