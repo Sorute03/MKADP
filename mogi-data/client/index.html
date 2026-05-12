@@ -2623,8 +2623,14 @@ function getAIFilteredRecords() {
   const course = aiCourse.value;
   const season = aiSeason.value;
   const tier   = aiTier.value;
+  const mode   = aiMode.value;  // ★追加
 
-  // ▼ course
+  // ▼ mode（ALL のときは完全スルー）
+  if (mode !== "ALL") {
+    r = r.filter(x => x.mode === mode);
+  }
+
+  // ▼ course（ALL のときは完全スルー）
   if (course !== "ALL") {
     r = r.filter(x => x.course === course);
   }
@@ -2648,7 +2654,6 @@ function getAIFilteredRecords() {
 
   return r;
 }
-
 
 
 function get3DFilteredRecords() {
