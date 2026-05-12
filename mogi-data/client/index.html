@@ -3308,9 +3308,19 @@ function updateHeatmapView() {
 function updateRankingView() {
   const records = getRankingFilteredRecords(); // ★独立フィルター
 
-  if (!records.length) {
-    document.getElementById("tableStrong").innerHTML = "";
-    document.getElementById("tableWeak").innerHTML = "";
+  const strongTable = document.getElementById("tableStrong");
+  const weakTable   = document.getElementById("tableWeak");
+
+  // ▼ データが無い場合はテーブルを空にして終了
+  if (!records || !records.length) {
+    strongTable.innerHTML = `
+      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th></tr>
+      <tr><td colspan="6">データがありません</td></tr>
+    `;
+    weakTable.innerHTML = `
+      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th></tr>
+      <tr><td colspan="6">データがありません</td></tr>
+    `;
     return;
   }
 
@@ -3340,14 +3350,49 @@ function updateRankingView() {
     });
   }
 
+  // ▼ rows が 0 件でも安全に処理
   const strongSorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore).slice(0,10);
   const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10);
 
-  const strongTable = document.getElementById("tableStrong");
-  const weakTable   = document.getElementById("tableWeak");
+  strongTable.innerHTML = `
+    <tr>
+      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th>
+    </tr>
+    ${
+      strongSorted.length
+        ? strongSorted.map(r => `
+          <tr>
+            <td>${r.course}</td>
+            <td>${r.count}</td>
+            <td>${(r.winRate*100).toFixed(1)}</td>
+            <td>${r.avgRank.toFixed(2)}</td>
+            <td>${r.avgScore.toFixed(2)}</td>
+            <td>${r.strongScore.toFixed(1)}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="6">条件に合うコースがありません</td></tr>`
+    }
+  `;
 
-  strongTable.innerHTML = `...`;
-  weakTable.innerHTML   = `...`;
+  weakTable.innerHTML = `
+    <tr>
+      <th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th>
+    </tr>
+    ${
+      weakSorted.length
+        ? weakSorted.map(r => `
+          <tr>
+            <td>${r.course}</td>
+            <td>${r.count}</td>
+            <td>${(r.winRate*100).toFixed(1)}</td>
+            <td>${r.avgRank.toFixed(2)}</td>
+            <td>${r.avgScore.toFixed(2)}</td>
+            <td>${r.weakScore.toFixed(1)}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="6">条件に合うコースがありません</td></tr>`
+    }
+  `;
 }
 
 
