@@ -1771,6 +1771,14 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <!-- ▼ AI評価 -->
 <div class="section-block">
   <h3>AIコース評価</h3>
+  
+  <label>Mode：</label>
+  <select id="aiMode">
+    <option value="ALL">ALL</option>
+    <option value="lounge">lounge</option>
+    <option value="nora">nora</option>
+    <option value="tournament">tournament</option>
+  </select>
 
   <label for="aiCourse">Course：</label>
   <select id="aiCourse" onchange="updateAICourseView()">
@@ -2312,7 +2320,7 @@ window.addEventListener("load", async () => {
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
-
+  
   // そして初回描画
   updateStatsView();
   updateGrowthView();
@@ -2325,6 +2333,14 @@ window.addEventListener("load", async () => {
   updateLoungeSetView();
 
   renderRaceHistory();
+
+  // ▼ AI コース評価：セレクタ変更時に更新（★追加）
+  document.getElementById("aiCourse").onchange = updateAICourseView;
+  document.getElementById("aiSeason").onchange = updateAICourseView;
+  document.getElementById("aiTier").onchange   = updateAICourseView;
+  document.getElementById("aiMode").onchange   = updateAICourseView;
+  document.getElementById("aiRangeSelect").onchange = updateAICourseView;
+  document.getElementById("aiRangeInput").oninput   = updateAICourseView;
 });
 
 
@@ -3406,11 +3422,22 @@ function updateRankingView() {
 ========== */
 
 function initAISelector() {
-  const sel = document.getElementById("aiCourse");
-  sel.innerHTML =
+  // ▼ コース
+  const selCourse = document.getElementById("aiCourse");
+  selCourse.innerHTML =
     `<option value="ALL">ALL</option>` +
     courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  // ▼ モード（★追加）
+  const selMode = document.getElementById("aiMode");
+  selMode.innerHTML = `
+    <option value="ALL">ALL</option>
+    <option value="lounge">lounge</option>
+    <option value="nora">nora</option>
+    <option value="tournament">tournament</option>
+  `;
 }
+
 
 
 function updateAICourseView() {
