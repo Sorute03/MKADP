@@ -3465,7 +3465,19 @@ function updateAICourseView() {
   else if (weakScore > 90)  verdict = "やや苦手なコースです。";
   else verdict = "評価が分かれるコースです。";
 
-  div.innerHTML = `...`;
+  div.innerHTML = `
+  <p><strong>${title}</strong></p>
+  <p><strong>試行回数：</strong>${records.length}</p>
+  <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
+  <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
+  <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
+  <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
+  <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
+  <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
+  <hr>
+  <p>${verdict}</p>
+`;
+
 }
 
 /* ==========
