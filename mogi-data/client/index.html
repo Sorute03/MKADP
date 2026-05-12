@@ -1587,6 +1587,127 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartAvgScore" height="120" style="margin-top:20px;"></canvas>
 </div>
 
+<!-- ▼ ランキング -->
+<div class="section-block">
+  <h3>コースランキング（得意・苦手）</h3>
+
+  <label>基準：</label>
+  <select id="rankMetric">
+    <option value="strong">得意スコア</option>
+    <option value="weak">苦手スコア</option>
+    <option value="growth">成長スコア</option>
+    <option value="winRate">勝率</option>
+    <option value="avgRank">平均順位</option>
+    <option value="avgScore">平均スコア</option>
+    <option value="stdRank">安定度（順位のブレ）</option>
+    <option value="firstRate">爆発力（1位率）</option>
+    <option value="avoidBottom">下位回避率</option>
+    <option value="rankScore">順位逆数スコア</option>
+    <option value="efficiency">スコア効率</option>
+  </select>
+
+  <label for="rankSeason">Season：</label>
+  <select id="rankSeason" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="rankTier" style="margin-left:16px;">Tier：</label>
+  <select id="rankTier" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="rankRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="rankRangeSelect" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="rankRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="rankRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateRankingView()"
+  >
+
+  <label for="minRuns" style="margin-left:16px;">最低走行回数：</label>
+  <input
+    id="minRuns"
+    type="number"
+    value="3"
+    min="1"
+    max="100"
+    step="1"
+    onchange="updateRankingView()"
+  >
+
+  <label>表示件数：</label>
+  <select id="rankLimit" onchange="updateRankingView()">
+    <option value="5">5</option>
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+  </select>
+
+  <h4>得意コース TOP10</h4>
+  <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
+
+  <h4 style="margin-top:20px;">苦手コース TOP10</h4>
+  <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
+</div>
+
+<!-- ▼ AI評価 -->
+<div class="section-block">
+  <h3>AIコース評価</h3>
+  
+  <label>Mode：</label>
+  <select id="aiMode">
+    <option value="ALL">ALL</option>
+    <option value="lounge">lounge</option>
+    <option value="nora">nora</option>
+    <option value="tournament">tournament</option>
+  </select>
+
+  <label for="aiCourse">Course：</label>
+  <select id="aiCourse" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiSeason" style="margin-left:16px;">Season：</label>
+  <select id="aiSeason" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiTier" style="margin-left:16px;">Tier：</label>
+  <select id="aiTier" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="aiRangeSelect" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="aiRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="aiRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateAICourseView()"
+  >
+
+  <div id="aiCourseResult" style="margin-top:16px;"></div>
+</div>
 
 <!-- ▼ 成長スコア -->
 <div class="section-block">
@@ -1718,127 +1839,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 
-<!-- ▼ ランキング -->
-<div class="section-block">
-  <h3>コースランキング（得意・苦手）</h3>
-
-  <label>基準：</label>
-  <select id="rankMetric">
-    <option value="strong">得意スコア</option>
-    <option value="weak">苦手スコア</option>
-    <option value="growth">成長スコア</option>
-    <option value="winRate">勝率</option>
-    <option value="avgRank">平均順位</option>
-    <option value="avgScore">平均スコア</option>
-    <option value="stdRank">安定度（順位のブレ）</option>
-    <option value="firstRate">爆発力（1位率）</option>
-    <option value="avoidBottom">下位回避率</option>
-    <option value="rankScore">順位逆数スコア</option>
-    <option value="efficiency">スコア効率</option>
-  </select>
-
-  <label for="rankSeason">Season：</label>
-  <select id="rankSeason" onchange="updateRankingView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <label for="rankTier" style="margin-left:16px;">Tier：</label>
-  <select id="rankTier" onchange="updateRankingView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <label for="rankRangeSelect" style="margin-left:16px;">直近 N：</label>
-  <select id="rankRangeSelect" onchange="updateRankingView()">
-    <option value="ALL">ALL</option>
-    <option value="50">50</option>
-    <option value="100">100</option>
-    <option value="CUSTOM">カスタム</option>
-  </select>
-
-  <label for="rankRangeInput" style="margin-left:16px;">カスタム：</label>
-  <input
-    id="rankRangeInput"
-    type="number"
-    min="1"
-    placeholder="任意の数"
-    style="width:80px; margin-left:8px;"
-    oninput="updateRankingView()"
-  >
-
-  <label for="minRuns" style="margin-left:16px;">最低走行回数：</label>
-  <input
-    id="minRuns"
-    type="number"
-    value="3"
-    min="1"
-    max="100"
-    step="1"
-    onchange="updateRankingView()"
-  >
-
-  <label>表示件数：</label>
-  <select id="rankLimit" onchange="updateRankingView()">
-    <option value="5">5</option>
-    <option value="10" selected>10</option>
-    <option value="20">20</option>
-    <option value="30">30</option>
-    <option value="50">50</option>
-  </select>
-
-  <h4>得意コース TOP10</h4>
-  <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
-
-  <h4 style="margin-top:20px;">苦手コース TOP10</h4>
-  <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
-</div>
-
-<!-- ▼ AI評価 -->
-<div class="section-block">
-  <h3>AIコース評価</h3>
-  
-  <label>Mode：</label>
-  <select id="aiMode">
-    <option value="ALL">ALL</option>
-    <option value="lounge">lounge</option>
-    <option value="nora">nora</option>
-    <option value="tournament">tournament</option>
-  </select>
-
-  <label for="aiCourse">Course：</label>
-  <select id="aiCourse" onchange="updateAICourseView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <label for="aiSeason" style="margin-left:16px;">Season：</label>
-  <select id="aiSeason" onchange="updateAICourseView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <label for="aiTier" style="margin-left:16px;">Tier：</label>
-  <select id="aiTier" onchange="updateAICourseView()">
-    <option value="ALL">ALL</option>
-  </select>
-
-  <label for="aiRangeSelect" style="margin-left:16px;">直近 N：</label>
-  <select id="aiRangeSelect" onchange="updateAICourseView()">
-    <option value="ALL">ALL</option>
-    <option value="50">50</option>
-    <option value="100">100</option>
-    <option value="CUSTOM">カスタム</option>
-  </select>
-
-  <label for="aiRangeInput" style="margin-left:16px;">カスタム：</label>
-  <input
-    id="aiRangeInput"
-    type="number"
-    min="1"
-    placeholder="任意の数"
-    style="width:80px; margin-left:8px;"
-    oninput="updateAICourseView()"
-  >
-
-  <div id="aiCourseResult" style="margin-top:16px;"></div>
-</div>
 
 <!-- ▼ 3Dバブル -->
 <div class="section-block">
