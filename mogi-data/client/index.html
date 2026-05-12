@@ -2317,8 +2317,70 @@ let chartRadar     = null;
 let chartHeatmap   = null;
 
 let chart3D        = null;
-let chartScatter   = null;
+let chartScatter   = null
 
+const statsSeason = document.getElementById("statsSeason");
+const growthSeason = document.getElementById("growthSeason");
+const radarSeason = document.getElementById("radarSeason");
+const heatmapSeason = document.getElementById("heatmapSeason");
+const rankSeason = document.getElementById("rankSeason");
+const aiSeason = document.getElementById("aiSeason");
+const bubbleSeason = document.getElementById("bubbleSeason");
+const scatterSeason = document.getElementById("scatterSeason");
+const loungeSetSeason = document.getElementById("loungeSetSeason");
+
+const statsTier = document.getElementById("statsTier");
+const growthTier = document.getElementById("growthTier");
+const radarTier = document.getElementById("radarTier");
+const heatmapTier = document.getElementById("heatmapTier");
+const rankTier = document.getElementById("rankTier");
+const aiTier = document.getElementById("aiTier");
+const bubbleTier = document.getElementById("bubbleTier");
+const scatterTier = document.getElementById("scatterTier");
+const loungeSetTier = document.getElementById("loungeSetTier");
+
+  
+function populateSeasonAndTierOptions() {
+  // ▼ Season（S1〜S30）
+  const seasons = [];
+  for (let i = 1; i <= 30; i++) {
+    seasons.push("S" + i);
+  }
+
+  // ▼ Tier（固定リスト）
+  
+  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
+
+  // ▼ Season を持つ全セレクト
+  const seasonSelects = [
+    statsSeason, growthSeason, radarSeason, heatmapSeason,
+    rankSeason, aiSeason, bubbleSeason, scatterSeason,
+    loungeSetSeason
+  ];
+
+  // ▼ Tier を持つ全セレクト
+  const tierSelects = [
+    statsTier, growthTier, radarTier, heatmapTier,
+    rankTier, aiTier, bubbleTier, scatterTier,
+    loungeSetTier
+  ];
+
+  // ▼ Season を流し込む
+  for (const sel of seasonSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    seasons.forEach(s => {
+      sel.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+  }
+
+  // ▼ Tier を流し込む
+  for (const sel of tierSelects) {
+    sel.innerHTML = `<option value="ALL">ALL</option>`;
+    tiers.forEach(t => {
+      sel.innerHTML += `<option value="${t}">${t}</option>`;
+    });
+  }
+}
 
 /* ==========
    初期ロード
@@ -2412,9 +2474,7 @@ function generateOBSOverlay() {
 
   URL.revokeObjectURL(url);
 }
-</script>
 
-<script>
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
@@ -4326,47 +4386,7 @@ document.getElementById("importTSVBtn").onclick = () => {
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
 
-function populateSeasonAndTierOptions() {
-  // ▼ Season（S1〜S30）
-  const seasons = [];
-  for (let i = 1; i <= 30; i++) {
-    seasons.push("S" + i);
-  }
 
-  // ▼ Tier（固定リスト）
-  
-  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
-
-  // ▼ Season を持つ全セレクト
-  const seasonSelects = [
-    statsSeason, growthSeason, radarSeason, heatmapSeason,
-    rankSeason, aiSeason, bubbleSeason, scatterSeason,
-    loungeSetSeason
-  ];
-
-  // ▼ Tier を持つ全セレクト
-  const tierSelects = [
-    statsTier, growthTier, radarTier, heatmapTier,
-    rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier
-  ];
-
-  // ▼ Season を流し込む
-  for (const sel of seasonSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    seasons.forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-  }
-
-  // ▼ Tier を流し込む
-  for (const sel of tierSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    tiers.forEach(t => {
-      sel.innerHTML += `<option value="${t}">${t}</option>`;
-    });
-  }
-}
 
   
 /* ============================================================
