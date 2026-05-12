@@ -1776,6 +1776,15 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     onchange="updateRankingView()"
   >
 
+  <label>表示件数：</label>
+  <select id="rankLimit" onchange="updateRankingView()">
+    <option value="5">5</option>
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+  </select>
+
   <h4>得意コース TOP10</h4>
   <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 
@@ -3586,8 +3595,11 @@ function updateRankingView() {
   }
 
 
-  const strongSorted = sorted.slice(0,10);
-  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0,10); // 苦手は固定でOK
+  const maxRank = Number(document.getElementById("rankLimit").value || 10);
+  
+  const strongSorted = sorted.slice(0, maxRank);
+  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0, maxRank);
+
 
   
   strongTable.innerHTML = `
