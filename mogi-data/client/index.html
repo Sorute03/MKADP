@@ -4543,13 +4543,16 @@ window.addEventListener("load", () => {
 window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
 
-    // ▼ 1. すべての要素を非表示にする
+    const frame = document.getElementById("overlayFrame");
+
+    // ▼ 1. iframe 以外の要素をすべて非表示にする
     document.body.querySelectorAll("*").forEach(el => {
-      el.style.display = "none";
+      if (el !== frame && !frame.contains(el)) {
+        el.style.display = "none";
+      }
     });
 
-    // ▼ 2. iframe だけ再表示する
-    const frame = document.getElementById("overlayFrame");
+    // ▼ 2. iframe を全画面に
     if (frame) {
       frame.style.display = "block";
       frame.style.position = "fixed";
@@ -4560,10 +4563,12 @@ window.addEventListener("load", () => {
       frame.style.zIndex = "9999";
       frame.style.background = "transparent";
     }
+
+    // ▼ 3. body の余白を完全に消す
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
   }
 });
-
-
 </script>
 </body>
 </html>
