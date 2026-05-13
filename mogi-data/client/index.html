@@ -704,9 +704,13 @@ courseList.push(
     オーバーレイ生成
   </button>
 </div>
+<iframe id="overlayFrame"
+        style="width:100%; height:100%; border:none; background:transparent;">
+</iframe>
+
   
 <script>
-function buildOverlayHTMLFile(mode, season, course) {
+function buildOverlayHTMLFile(mode, season, course, allRecords) {
   return `
 <!DOCTYPE html>
 <html>
@@ -738,13 +742,16 @@ body {
 <div id="overlay">読み込み中...</div>
 
 <script>
-// ▼ index.html から埋め込まれるフィルタ条件
+// ▼ フィルタ条件
 const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ ★ allRecords を直接埋め込む（localStorage を使わない）
+// ▼ allRecords を埋め込む
 const ALL_RECORDS = ${allRecords};
+
+// ▼ コース一覧（index.html と同じものを埋め込む）
+const courseList = ${JSON.stringify(courseList)};
 
 // ▼ 全レコード取得
 function getFilteredRecords() {
@@ -899,21 +906,19 @@ function generateOBSOverlay() {
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  // ★ ここで allRecords を取り出す（文字列のまま）
+  // localStorage のデータを取得
   const allRecords = localStorage.getItem("allRecords") || "[]";
 
-  // ★ buildOverlayHTMLFile に allRecords を渡す
+  // overlay HTML を生成
   const html = buildOverlayHTMLFile(mode, season, course, allRecords);
 
+  // Blob URL を作成
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "overlay.html";
-  a.click();
-
-  URL.revokeObjectURL(url);
+  // iframe に流し込む
+  const frame = document.getElementById("overlayFrame");
+  frame.src = url;
 }
 
 </script>
