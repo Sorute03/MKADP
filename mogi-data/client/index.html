@@ -4543,18 +4543,15 @@ window.addEventListener("load", () => {
 window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
 
-    // すべての section-block を非表示
-    document.querySelectorAll(".section-block").forEach(el => {
+    // ▼ 1. すべての要素を非表示にする
+    document.body.querySelectorAll("*").forEach(el => {
       el.style.display = "none";
     });
 
-    // Blob URL 表示欄も非表示
-    const urlBox = document.getElementById("obsUrlBox");
-    if (urlBox) urlBox.style.display = "none";
-
-    // iframe を全画面に
+    // ▼ 2. iframe だけ再表示する
     const frame = document.getElementById("overlayFrame");
     if (frame) {
+      frame.style.display = "block";
       frame.style.position = "fixed";
       frame.style.top = "0";
       frame.style.left = "0";
