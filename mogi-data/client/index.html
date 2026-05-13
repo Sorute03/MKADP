@@ -704,10 +704,28 @@ courseList.push(
     オーバーレイ生成
   </button>
 </div>
+  
+<div style="margin-top:16px;">
+  <label>
+    <input type="radio" name="obsModeType" value="blob" checked>
+    OBS に Blob URL を貼る（推奨）
+  </label>
+  <br>
+  <label>
+    <input type="radio" name="obsModeType" value="obs">
+    index.html?obs を OBS に読み込む
+  </label>
+</div>
+
+<div id="obsUrlBox" style="margin-top:12px; display:none;">
+  <h4>OBS 用 URL</h4>
+  <input id="obsUrlOutput" style="width:100%;" readonly>
+  <p>↑ この URL を OBS のブラウザソースに貼る</p>
+</div>
+
 <iframe id="overlayFrame"
         style="width:100%; height:100%; border:none; background:transparent;">
 </iframe>
-
   
 <script>
 function buildOverlayHTMLFile(mode, season, course, allRecords) {
@@ -906,7 +924,6 @@ function generateOBSOverlay() {
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  // localStorage のデータを取得
   const allRecords = localStorage.getItem("allRecords") || "[]";
 
   // overlay HTML を生成
@@ -916,9 +933,24 @@ function generateOBSOverlay() {
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  // iframe に流し込む
-  const frame = document.getElementById("overlayFrame");
-  frame.src = url;
+  // ▼ どちらの方式か選択
+  const type = document.querySelector('input[name="obsModeType"]:checked').value;
+
+  if (type === "blob") {
+    // ① Blob URL を OBS に貼る方式
+    document.getElementById("overlayFrame").src = url;
+
+    // OBS 用 URL を表示
+    document.getElementById("obsUrlBox").style.display = "block";
+    document.getElementById("obsUrlOutput").value = url;
+
+  } else {
+    // ② index.html?obs を OBS に読み込む方式
+    alert("OBS には index.html?obs を読み込ませてください。\n\noverlay は iframe に表示されます。");
+
+    // iframe にプレビュー
+    document.getElementById("overlayFrame").src = url;
+  }
 }
 
 </script>
@@ -4500,6 +4532,22 @@ document.getElementById("importTSVBtn").onclick = () => {
 setInterval(() => {
   sendDataToWorker();
 }, 5 * 60 * 1000); // 5分ごとにチェック
+
+window.addEventListener("load", () => {
+  if (location.search.includes("obs")) {
+    // UI を全部隠す
+    document.querySelector(".section-block").style.display = "none";
+    document.getElementById("obsUrlBox").style.display = "none";
+
+    // iframe を全画面に
+    const frame = document.getElementById("overlayFrame");
+    frame.style.position = "fixed";
+    frame.style.top = "0";
+    frame.style.left = "0";
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+  }
+});
 
 </script>
 </body>
