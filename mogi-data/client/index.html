@@ -4520,6 +4520,26 @@ setInterval(() => {
 }, 5 * 60 * 1000); // 5分ごとにチェック
 
 window.addEventListener("load", () => {
+  const isLocal = location.protocol === "file:";
+
+  if (isLocal) {
+    // 方式選択を無効化
+    const select = document.getElementById("obsModeType");
+    select.disabled = true;
+
+    // Blob 方式も ?obs 方式も使えないので警告
+    alert(
+      "OBS で使用するには、ローカルファイル (file://) ではなく\n" +
+      "ローカルWebサーバー (http://localhost) で開く必要があります。\n\n" +
+      "例:\n" +
+      "・VSCode の Live Server\n" +
+      "・python -m http.server\n" +
+      "・Web Server for Chrome\n"
+    );
+  }
+});
+
+window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
     // UI を全部隠す
     document.querySelector(".section-block").style.display = "none";
@@ -4535,6 +4555,8 @@ window.addEventListener("load", () => {
     frame.style.height = "100%";
   }
 });
+
+
 
 </script>
 </body>
