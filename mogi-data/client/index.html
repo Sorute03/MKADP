@@ -4539,23 +4539,33 @@ window.addEventListener("load", () => {
   }
 });
 
+<script>
 window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
-    // UI を全部隠す
-    document.querySelector(".section-block").style.display = "none";
+
+    // すべての section-block を非表示
+    document.querySelectorAll(".section-block").forEach(el => {
+      el.style.display = "none";
+    });
+
+    // Blob URL 表示欄も非表示
     const urlBox = document.getElementById("obsUrlBox");
     if (urlBox) urlBox.style.display = "none";
 
     // iframe を全画面に
     const frame = document.getElementById("overlayFrame");
-    frame.style.position = "fixed";
-    frame.style.top = "0";
-    frame.style.left = "0";
-    frame.style.width = "100%";
-    frame.style.height = "100%";
+    if (frame) {
+      frame.style.position = "fixed";
+      frame.style.top = "0";
+      frame.style.left = "0";
+      frame.style.width = "100%";
+      frame.style.height = "100%";
+      frame.style.zIndex = "9999";
+      frame.style.background = "transparent";
+    }
   }
 });
-
+</script>
 
 
 </script>
