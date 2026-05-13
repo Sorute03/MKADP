@@ -4540,19 +4540,21 @@ window.addEventListener("load", () => {
 });
 
 
+
 window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
 
-    const frame = document.getElementById("overlayFrame");
-
-    // ▼ 1. iframe 以外の要素をすべて非表示にする
-    document.body.querySelectorAll("*").forEach(el => {
-      if (el !== frame && !frame.contains(el)) {
-        el.style.display = "none";
-      }
+    // ▼ 1. section-block を全部消す
+    document.querySelectorAll(".section-block").forEach(el => {
+      el.style.display = "none";
     });
 
-    // ▼ 2. iframe を全画面に
+    // ▼ 2. Blob URL 表示欄も消す
+    const urlBox = document.getElementById("obsUrlBox");
+    if (urlBox) urlBox.style.display = "none";
+
+    // ▼ 3. iframe を全画面に
+    const frame = document.getElementById("overlayFrame");
     if (frame) {
       frame.style.display = "block";
       frame.style.position = "fixed";
@@ -4564,7 +4566,7 @@ window.addEventListener("load", () => {
       frame.style.background = "transparent";
     }
 
-    // ▼ 3. body の余白を完全に消す
+    // ▼ 4. body の余白を消す
     document.body.style.margin = "0";
     document.body.style.padding = "0";
   }
