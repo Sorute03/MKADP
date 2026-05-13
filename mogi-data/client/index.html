@@ -4540,36 +4540,40 @@ window.addEventListener("load", () => {
 });
 
 
-
 window.addEventListener("load", () => {
-  if (location.search.includes("obs")) {
+  if (!location.search.includes("obs")) return;
 
-    // ▼ 1. section-block を全部消す
-    document.querySelectorAll(".section-block").forEach(el => {
-      el.style.display = "none";
-    });
+  const frame = document.getElementById("overlayFrame");
+  if (!frame) return;
 
-    // ▼ 2. Blob URL 表示欄も消す
-    const urlBox = document.getElementById("obsUrlBox");
-    if (urlBox) urlBox.style.display = "none";
-
-    // ▼ 3. iframe を全画面に
-    const frame = document.getElementById("overlayFrame");
-    if (frame) {
-      frame.style.display = "block";
-      frame.style.position = "fixed";
-      frame.style.top = "0";
-      frame.style.left = "0";
-      frame.style.width = "100%";
-      frame.style.height = "100%";
-      frame.style.zIndex = "9999";
-      frame.style.background = "transparent";
-    }
-
-    // ▼ 4. body の余白を消す
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
+  /* ▼ 1. iframe の祖先要素をすべて取得（iframe → 親 → 親 → body） */
+  const keep = new Set();
+  let node = frame;
+  while (node) {
+    keep.add(node);
+    node = node.parentElement;
   }
+
+  /* ▼ 2. body 内のすべての要素をチェックし、iframe とその祖先以外を消す */
+  document.body.querySelectorAll("*").forEach(el => {
+    if (!keep.has(el)) {
+      el.style.display = "none";
+    }
+  });
+
+  /* ▼ 3. iframe を全画面に */
+  frame.style.display = "block";
+  frame.style.position = "fixed";
+  frame.style.top = "0";
+  frame.style.left = "0";
+  frame.style.width = "100%";
+  frame.style.height = "100%";
+  frame.style.zIndex = "9999";
+  frame.style.background = "transparent";
+
+  /* ▼ 4. body の余白を消す */
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
 });
 </script>
 </body>
