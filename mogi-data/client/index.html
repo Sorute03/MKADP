@@ -743,14 +743,12 @@ const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ courseList（index.html と同じものを overlay 側にも持つ）
-const courseList = ${JSON.stringify(courseList)};
+// ▼ ★ allRecords を直接埋め込む（localStorage を使わない）
+const ALL_RECORDS = ${allRecords};
 
-
-
-// ▼ 全レコード取得（allRecords を参照）
+// ▼ 全レコード取得
 function getFilteredRecords() {
-  let records = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  let records = ALL_RECORDS;  // ★ localStorage を使わない
 
   records = records.map(r => {
     if (courseList.includes(r.course)) return r;
@@ -901,7 +899,11 @@ function generateOBSOverlay() {
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  const html = buildOverlayHTMLFile(mode, season, course);
+  // ★ ここで allRecords を取り出す（文字列のまま）
+  const allRecords = localStorage.getItem("allRecords") || "[]";
+
+  // ★ buildOverlayHTMLFile に allRecords を渡す
+  const html = buildOverlayHTMLFile(mode, season, course, allRecords);
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
@@ -913,6 +915,7 @@ function generateOBSOverlay() {
 
   URL.revokeObjectURL(url);
 }
+
 </script>
 
 
