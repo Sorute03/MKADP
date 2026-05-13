@@ -678,8 +678,6 @@ courseList.push(
   <div id="raceHistoryList"></div>
 </div>
 
-
-  
 <div class="section-block">
   <h3>OBS オーバーレイ生成</h3>
 
@@ -694,38 +692,37 @@ courseList.push(
   <label style="margin-left:16px;">シーズン：</label>
   <select id="obsSeason"></select>
 
-
   <label style="margin-left:16px;">コース：</label>
   <select id="obsCourse">
     <option value="ALL">ALL</option>
   </select>
 
-  <button onclick="generateOBSOverlay()" style="margin-left:16px;">
+  <!-- ▼ 方式選択（ここに入れるのが最適） -->
+  <div style="margin-top:16px;">
+    <label>OBS 表示方式：</label>
+    <select id="obsModeType">
+      <option value="blob">Blob URL を OBS に貼る（推奨）</option>
+      <option value="obs">index.html?obs を OBS に読み込む</option>
+    </select>
+  </div>
+
+  <button onclick="generateOBSOverlay()" style="margin-left:16px; margin-top:12px;">
     オーバーレイ生成
   </button>
 </div>
-  
-<div style="margin-top:16px;">
-  <label>
-    <input type="radio" name="obsModeType" value="blob" checked>
-    OBS に Blob URL を貼る（推奨）
-  </label>
-  <br>
-  <label>
-    <input type="radio" name="obsModeType" value="obs">
-    index.html?obs を OBS に読み込む
-  </label>
-</div>
 
+<!-- ▼ Blob URL 方式のときだけ表示される -->
 <div id="obsUrlBox" style="margin-top:12px; display:none;">
   <h4>OBS 用 URL</h4>
   <input id="obsUrlOutput" style="width:100%;" readonly>
   <p>↑ この URL を OBS のブラウザソースに貼る</p>
 </div>
 
+<!-- ▼ overlay プレビュー -->
 <iframe id="overlayFrame"
-        style="width:100%; height:100%; border:none; background:transparent;">
+        style="width:100%; height:300px; border:none; background:transparent;">
 </iframe>
+
   
 <script>
 function buildOverlayHTMLFile(mode, season, course, allRecords) {
@@ -918,7 +915,6 @@ window.addEventListener("load", () => {
 `;
 }
 
-
 function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
   const season = document.getElementById("obsSeason").value;
@@ -926,29 +922,19 @@ function generateOBSOverlay() {
 
   const allRecords = localStorage.getItem("allRecords") || "[]";
 
-  // overlay HTML を生成
   const html = buildOverlayHTMLFile(mode, season, course, allRecords);
 
-  // Blob URL を作成
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  // ▼ どちらの方式か選択
-  const type = document.querySelector('input[name="obsModeType"]:checked').value;
+  const type = document.getElementById("obsModeType").value;
 
   if (type === "blob") {
-    // ① Blob URL を OBS に貼る方式
     document.getElementById("overlayFrame").src = url;
-
-    // OBS 用 URL を表示
     document.getElementById("obsUrlBox").style.display = "block";
     document.getElementById("obsUrlOutput").value = url;
-
   } else {
-    // ② index.html?obs を OBS に読み込む方式
     alert("OBS には index.html?obs を読み込ませてください。\n\noverlay は iframe に表示されます。");
-
-    // iframe にプレビュー
     document.getElementById("overlayFrame").src = url;
   }
 }
@@ -4537,7 +4523,8 @@ window.addEventListener("load", () => {
   if (location.search.includes("obs")) {
     // UI を全部隠す
     document.querySelector(".section-block").style.display = "none";
-    document.getElementById("obsUrlBox").style.display = "none";
+    const urlBox = document.getElementById("obsUrlBox");
+    if (urlBox) urlBox.style.display = "none";
 
     // iframe を全画面に
     const frame = document.getElementById("overlayFrame");
