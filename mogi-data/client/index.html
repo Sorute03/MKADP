@@ -4540,14 +4540,19 @@ window.addEventListener("load", () => {
 });
 
 
-
 window.addEventListener("load", () => {
   const isOBS = location.search.includes("obs");
   const frame = document.getElementById("overlayFrame");
 
   if (isOBS) {
 
-    /* ▼ 1. iframe の祖先要素を残す（UI 全消し対策） */
+    /* ▼ 1. まず localStorage の allRecords を読み込む（重要） */
+    const stored = localStorage.getItem("allRecords");
+    if (!stored || stored === "[]") {
+      console.warn("OBS モード：allRecords が空です。データを読み込んでください。");
+    }
+
+    /* ▼ 2. iframe の祖先要素だけ残す */
     const keep = new Set();
     let node = frame;
     while (node) {
@@ -4561,7 +4566,7 @@ window.addEventListener("load", () => {
       }
     });
 
-    /* ▼ 2. iframe を全画面に */
+    /* ▼ 3. iframe を全画面に */
     frame.style.display = "block";
     frame.style.position = "fixed";
     frame.style.top = "0";
@@ -4573,7 +4578,7 @@ window.addEventListener("load", () => {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
 
-    /* ▼ 3. OBS モードでは自動で overlay を生成する */
+    /* ▼ 4. データを読み込んだ状態で overlay を生成 */
     generateOBSOverlay();
   }
 });
