@@ -921,8 +921,8 @@ function generateOBSOverlay() {
     mode,
     season,
     course,
-    JSON.stringify(allRecords), // ★ 配列を JSON 文字列で渡す
-    nextCourse                  // ★ OBS では localStorage が使えないので埋め込む
+    JSON.stringify(allRecords), // ★ 配列を JSON 文字列にして渡す
+    nextCourse                  // ★ OBS では localStorage が空なので埋め込む
   );
 
   const blob = new Blob([html], { type: "text/html" });
