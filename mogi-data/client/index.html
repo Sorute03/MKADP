@@ -725,7 +725,7 @@ courseList.push(
 
   
 <script>
-function buildOverlayHTMLFile(mode, season, course, allRecords) {
+function buildOverlayHTMLFile(mode, season, course, allRecords, nextCourse) {
   return `
 <!DOCTYPE html>
 <html>
@@ -762,15 +762,18 @@ const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ allRecords を埋め込む
+// ▼ index.html から埋め込む（OBS の localStorage を使わない）
+const NEXT_COURSE = ${JSON.stringify(nextCourse)};
+
+// ▼ allRecords を埋め込む（配列）
 const ALL_RECORDS = ${allRecords};
 
-// ▼ コース一覧（index.html と同じものを埋め込む）
+// ▼ コース一覧
 const courseList = ${JSON.stringify(courseList)};
 
 // ▼ 全レコード取得
 function getFilteredRecords() {
-  let records = ALL_RECORDS;  // ★ localStorage を使わない
+  let records = ALL_RECORDS;
 
   records = records.map(r => {
     if (courseList.includes(r.course)) return r;
@@ -787,10 +790,6 @@ function getFilteredRecords() {
   if (COURSE !== "ALL") records = records.filter(r => r.course === COURSE);
 
   return records;
-}
-
-function getNextCourse() {
-  return localStorage.getItem("nextCourse") || null;
 }
 
 function getCurrentCourse(records) {
@@ -838,7 +837,6 @@ function calcStats(records) {
 
   const firstRate = records.filter(r => r.rank === 1).length / count;
 
-  // ▼ ランキングと同じ順位分布
   const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
   const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
   const bottomRate = records.filter(r => r.rank >= 16).length / count;
@@ -879,17 +877,13 @@ function buildHTML(course, stats) {
   );
 }
 
-
-
-
 function updateOverlay() {
   const records = getFilteredRecords();
 
-  const nextCourse = getNextCourse();
-  if (nextCourse) {
-    const filtered = records.filter(r => r.course === nextCourse);
+  if (NEXT_COURSE) {
+    const filtered = records.filter(r => r.course === NEXT_COURSE);
     const stats = calcStats(filtered);
-    document.getElementById("overlay").innerHTML = buildHTML(nextCourse, stats);
+    document.getElementById("overlay").innerHTML = buildHTML(NEXT_COURSE, stats);
     return;
   }
 
@@ -907,7 +901,6 @@ window.addEventListener("load", () => {
   updateOverlay();
   setInterval(updateOverlay, 5000);
 });
-
 <\/script>
 
 </body>
@@ -915,20 +908,22 @@ window.addEventListener("load", () => {
 `;
 }
 
+
 function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
   const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  const nextCourse = localStorage.getItem("nextCourse") || "";
 
   const html = buildOverlayHTMLFile(
     mode,
     season,
     course,
-    JSON.stringify(allRecords)
+    JSON.stringify(allRecords), // ★ 配列を JSON 文字列で渡す
+    nextCourse                  // ★ OBS では localStorage が使えないので埋め込む
   );
-
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
@@ -944,7 +939,6 @@ function generateOBSOverlay() {
     document.getElementById("overlayFrame").src = url;
   }
 }
-
 </script>
 
 
