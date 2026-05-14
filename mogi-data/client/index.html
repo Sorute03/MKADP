@@ -763,7 +763,7 @@ const SEASON = "${season}";
 const COURSE = "${course}";
 
 // ▼ allRecords を埋め込む
-const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+const ALL_RECORDS = ${allRecords};
 
 // ▼ コース一覧（index.html と同じものを埋め込む）
 const courseList = ${JSON.stringify(courseList)};
@@ -920,7 +920,7 @@ function generateOBSOverlay() {
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  const allRecords = localStorage.getItem("allRecords") || "[]";
+  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
 
   const html = buildOverlayHTMLFile(mode, season, course, allRecords);
 
