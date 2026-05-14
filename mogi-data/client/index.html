@@ -763,7 +763,7 @@ const SEASON = "${season}";
 const COURSE = "${course}";
 
 // ▼ allRecords を埋め込む
-const ALL_RECORDS = ${allRecords};
+const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
 
 // ▼ コース一覧（index.html と同じものを埋め込む）
 const courseList = ${JSON.stringify(courseList)};
