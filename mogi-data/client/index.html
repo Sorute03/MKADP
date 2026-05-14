@@ -725,38 +725,6 @@ courseList.push(
 
   
 <script>
-function generateOBSOverlay() {
-  const mode = document.getElementById("obsMode").value;
-  const season = document.getElementById("obsSeason").value;
-  const course = document.getElementById("obsCourse").value;
-
-  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
-  const nextCourse = localStorage.getItem("nextCourse") || "";
-
-  // overlay HTML（データなし）を生成
-  const html = buildOverlayHTMLFile(mode, season, course);
-
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-
-  const frame = document.getElementById("overlayFrame");
-  frame.src = url;
-
-  // OBS は load が遅いので 200ms 待つと確実
-  frame.onload = () => {
-    setTimeout(() => {
-      frame.contentWindow.postMessage(
-        {
-          type: "initData",
-          allRecords,
-          nextCourse
-        },
-        "*"
-      );
-    }, 200);
-  };
-}
-
 
 function buildOverlayHTMLFile(mode, season, course) {
   return `
@@ -948,6 +916,38 @@ function updateOverlay() {
 </body>
 </html>
 `;
+}
+
+function generateOBSOverlay() {
+  const mode = document.getElementById("obsMode").value;
+  const season = document.getElementById("obsSeason").value;
+  const course = document.getElementById("obsCourse").value;
+
+  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  // overlay HTML（データなし）を生成
+  const html = buildOverlayHTMLFile(mode, season, course);
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const frame = document.getElementById("overlayFrame");
+  frame.src = url;
+
+  // OBS は load が遅いので 200ms 待つと確実
+  frame.onload = () => {
+    setTimeout(() => {
+      frame.contentWindow.postMessage(
+        {
+          type: "initData",
+          allRecords,
+          nextCourse
+        },
+        "*"
+      );
+    }, 200);
+  };
 }
 </script>
 
