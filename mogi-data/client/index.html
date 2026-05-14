@@ -4542,39 +4542,40 @@ window.addEventListener("load", () => {
 
 
 window.addEventListener("load", () => {
-  if (!location.search.includes("obs")) return;
-
+  const isOBS = location.search.includes("obs");
   const frame = document.getElementById("overlayFrame");
-  if (!frame) return;
 
-  /* ▼ 1. iframe の祖先要素をすべて取得（iframe → 親 → 親 → body） */
-  const keep = new Set();
-  let node = frame;
-  while (node) {
-    keep.add(node);
-    node = node.parentElement;
-  }
+  if (isOBS) {
 
-  /* ▼ 2. body 内のすべての要素をチェックし、iframe とその祖先以外を消す */
-  document.body.querySelectorAll("*").forEach(el => {
-    if (!keep.has(el)) {
-      el.style.display = "none";
+    /* ▼ 1. iframe の祖先要素を残す（UI 全消し対策） */
+    const keep = new Set();
+    let node = frame;
+    while (node) {
+      keep.add(node);
+      node = node.parentElement;
     }
-  });
 
-  /* ▼ 3. iframe を全画面に */
-  frame.style.display = "block";
-  frame.style.position = "fixed";
-  frame.style.top = "0";
-  frame.style.left = "0";
-  frame.style.width = "100%";
-  frame.style.height = "100%";
-  frame.style.zIndex = "9999";
-  frame.style.background = "transparent";
+    document.body.querySelectorAll("*").forEach(el => {
+      if (!keep.has(el)) {
+        el.style.display = "none";
+      }
+    });
 
-  /* ▼ 4. body の余白を消す */
-  document.body.style.margin = "0";
-  document.body.style.padding = "0";
+    /* ▼ 2. iframe を全画面に */
+    frame.style.display = "block";
+    frame.style.position = "fixed";
+    frame.style.top = "0";
+    frame.style.left = "0";
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+    frame.style.zIndex = "9999";
+
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+
+    /* ▼ 3. OBS モードでは自動で overlay を生成する */
+    generateOBSOverlay();
+  }
 });
 </script>
 </body>
