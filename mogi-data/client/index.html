@@ -725,6 +725,39 @@ courseList.push(
 
   
 <script>
+function generateOBSOverlay() {
+  const mode = document.getElementById("obsMode").value;
+  const season = document.getElementById("obsSeason").value;
+  const course = document.getElementById("obsCourse").value;
+
+  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  // overlay HTML（データなし）を生成
+  const html = buildOverlayHTMLFile(mode, season, course);
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const frame = document.getElementById("overlayFrame");
+  frame.src = url;
+
+  // OBS は load が遅いので 200ms 待つと確実
+  frame.onload = () => {
+    setTimeout(() => {
+      frame.contentWindow.postMessage(
+        {
+          type: "initData",
+          allRecords,
+          nextCourse
+        },
+        "*"
+      );
+    }, 200);
+  };
+}
+
+
 function buildOverlayHTMLFile(mode, season, course) {
   return `
 <!DOCTYPE html>
@@ -766,15 +799,21 @@ const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ コース一覧（index.html と同じものを埋め込む）
+// ▼ コース一覧
 const courseList = ${JSON.stringify(courseList)};
 
-// ▼ index.html → overlay へデータ受信
+// ▼ postMessage 受信（OBS でも確実に動く版）
 window.addEventListener("message", (event) => {
-  if (event.data.type === "initData") {
-    ALL_RECORDS = event.data.allRecords;
-    NEXT_COURSE = event.data.nextCourse;
-    updateOverlay();
+  try {
+    if (!event.data) return;
+
+    if (Array.isArray(event.data.allRecords)) {
+      ALL_RECORDS = event.data.allRecords;
+      NEXT_COURSE = event.data.nextCourse || "";
+      updateOverlay();
+    }
+  } catch (e) {
+    console.log("message error", e);
   }
 });
 
@@ -904,43 +943,11 @@ function updateOverlay() {
   document.getElementById("overlay").innerHTML = buildHTML(course, stats);
 }
 
-window.addEventListener("load", () => {
-  // データは postMessage で来るのでここでは何もしない
-});
 <\/script>
 
 </body>
 </html>
 `;
-}
-
-
-function generateOBSOverlay() {
-  const mode = document.getElementById("obsMode").value;
-  const season = document.getElementById("obsSeason").value;
-  const course = document.getElementById("obsCourse").value;
-
-  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
-  const nextCourse = localStorage.getItem("nextCourse") || "";
-
-  const html = buildOverlayHTMLFile(mode, season, course);
-
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-
-  const frame = document.getElementById("overlayFrame");
-  frame.src = url;
-
-  frame.onload = () => {
-    frame.contentWindow.postMessage(
-      {
-        type: "initData",
-        allRecords,
-        nextCourse
-      },
-      "*"
-    );
-  };
 }
 </script>
 
