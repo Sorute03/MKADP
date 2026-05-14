@@ -922,7 +922,13 @@ function generateOBSOverlay() {
 
   const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
 
-  const html = buildOverlayHTMLFile(mode, season, course, allRecords);
+  const html = buildOverlayHTMLFile(
+    mode,
+    season,
+    course,
+    JSON.stringify(allRecords)
+  );
+
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
