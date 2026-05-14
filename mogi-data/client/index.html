@@ -725,7 +725,7 @@ courseList.push(
 
   
 <script>
-function buildOverlayHTMLFile(mode, season, course, allRecords, nextCourse) {
+function buildOverlayHTMLFile(mode, season, course) {
   return `
 <!DOCTYPE html>
 <html>
@@ -757,19 +757,26 @@ body {
 <div id="overlay">読み込み中...</div>
 
 <script>
+// ▼ index.html から postMessage で送られてくる
+let ALL_RECORDS = [];
+let NEXT_COURSE = "";
+
 // ▼ フィルタ条件
 const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
 
-// ▼ index.html から埋め込む（OBS の localStorage を使わない）
-const NEXT_COURSE = ${JSON.stringify(nextCourse)};
-
-// ▼ allRecords を埋め込む（配列）
-const ALL_RECORDS = ${allRecords};
-
-// ▼ コース一覧
+// ▼ コース一覧（index.html と同じものを埋め込む）
 const courseList = ${JSON.stringify(courseList)};
+
+// ▼ index.html → overlay へデータ受信
+window.addEventListener("message", (event) => {
+  if (event.data.type === "initData") {
+    ALL_RECORDS = event.data.allRecords;
+    NEXT_COURSE = event.data.nextCourse;
+    updateOverlay();
+  }
+});
 
 // ▼ 全レコード取得
 function getFilteredRecords() {
@@ -898,8 +905,7 @@ function updateOverlay() {
 }
 
 window.addEventListener("load", () => {
-  updateOverlay();
-  setInterval(updateOverlay, 5000);
+  // データは postMessage で来るのでここでは何もしない
 });
 <\/script>
 
@@ -917,27 +923,24 @@ function generateOBSOverlay() {
   const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
-  const html = buildOverlayHTMLFile(
-    mode,
-    season,
-    course,
-    JSON.stringify(allRecords), // ★ 配列を JSON 文字列にして渡す
-    nextCourse                  // ★ OBS では localStorage が空なので埋め込む
-  );
+  const html = buildOverlayHTMLFile(mode, season, course);
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  const type = document.getElementById("obsModeType").value;
+  const frame = document.getElementById("overlayFrame");
+  frame.src = url;
 
-  if (type === "blob") {
-    document.getElementById("overlayFrame").src = url;
-    document.getElementById("obsUrlBox").style.display = "block";
-    document.getElementById("obsUrlOutput").value = url;
-  } else {
-    alert("OBS には index.html?obs を読み込ませてください。\n\noverlay は iframe に表示されます。");
-    document.getElementById("overlayFrame").src = url;
-  }
+  frame.onload = () => {
+    frame.contentWindow.postMessage(
+      {
+        type: "initData",
+        allRecords,
+        nextCourse
+      },
+      "*"
+    );
+  };
 }
 </script>
 
