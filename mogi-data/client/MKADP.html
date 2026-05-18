@@ -639,15 +639,7 @@ courseList.push(
 </div>
 <!-- ▲ パスワード付きバックアップ UI ▲ -->
   
-<div style="margin: 20px 0;">
-    <button id="exportSaveFileBtn">セーブデータをファイル出力</button>
-    <button id="exportSaveBtn">セーブデータ出力</button>
-    <button id="importSaveBtn">セーブデータ復元</button>
-    <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
-    <input type="file" id="importSaveFile">
-    <button id="importBackupBtn">バックアップから復元</button>
-    <button id="importSaveFileBtn">ファイルから復元</button>
-  </div>
+
 
 <h3>TSV読み込み（スプシコピー対応）</h3>
 <textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
@@ -658,6 +650,40 @@ courseList.push(
 <button id="importFileBtn">読み込んで保存</button>
 
 </script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
+
+<!-- ▼ 旧データ取り込みセクション -->
+<div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
+
+  <!-- 方法2：旧JSONを読み込む -->
+  <div style="margin-bottom:15px;">
+    <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+    <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
+    <button id="importOldJsonBtn" style="margin-left:10px;">旧JSONを取り込む</button>
+  </div>
+
+  <hr>
+
+  <!-- 方法3：旧HTMLを読み込む -->
+  <div style="margin-top:15px;">
+    <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+    <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
+    <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
+  </div>
+
+  <p style="margin-top:15px; font-size:13px; color:#666;">
+    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
+    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
+  </p>
+</div>
+
+<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>重複データの整理</h3>
+  <button id="removeDupBtn">重複データを自動削除する</button>
+  <p style="font-size:13px; color:#666; margin-top:10px;">
+    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+  </p>
+</div>
 
 
 <!-- ▼ タブボタン -->
@@ -918,15 +944,18 @@ function updateOverlay() {
 `;
 }
 
-function generateOBSOverlay() {
+async function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  // ▼ ★ DB から最新データを取得（localStorage は使わない）
+  const allRecords = await getAllRecords();
+
+  // ▼ nextCourse は UI 状態なので localStorage のままで OK
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
-  // overlay HTML（データなし）を生成
+  // ▼ overlay HTML（データなし）を生成
   const html = buildOverlayHTMLFile(mode, season, course);
 
   const blob = new Blob([html], { type: "text/html" });
@@ -1108,15 +1137,14 @@ openModalBtn.onclick = () => {
   editingTimestamp = null;          // 新規モード
   initModalSelectors();
   updateModalMode();
-  loadModalDraft();
   modal.classList.add("show");
 };
 
 closeModalBtn.onclick = () => {
   modal.classList.remove("show");
   editingTimestamp = null;
-  localStorage.removeItem("modalDraft");
 };
+
 
 </script>
 
@@ -1133,11 +1161,8 @@ function renderRaceHistory(records) {
   // ▼ 共通フィルター済み records が渡される前提
   let list = records || [];
 
-  // ▼ timestamp がある場合は新しい順に並べる
-  list = clone(list).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return b.timestamp - a.timestamp;
-  });
+  // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
+  list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
 
   if (!list.length) {
     box.innerHTML = "<p>レース履歴がありません。</p>";
@@ -1151,9 +1176,7 @@ function renderRaceHistory(records) {
     div.className = "race-history-item";
     div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
-    const date = r.timestamp
-      ? new Date(r.timestamp).toLocaleString()
-      : "日時なし";
+    const date = new Date(r.timestamp).toLocaleString();
 
     div.innerHTML = `
       <strong>${r.course}</strong>
@@ -1182,7 +1205,6 @@ function renderRaceHistory(records) {
     btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
   });
 }
-
 </script>
 
 
@@ -1190,7 +1212,7 @@ function renderRaceHistory(records) {
 
 let editingTimestamp = null;
 
-function openEditRecord(ts) {
+async function openEditRecord(ts) {
   const r = allRecords.find(x => x.timestamp === ts);
   if (!r) {
     alert("データが見つかりません");
@@ -1215,7 +1237,7 @@ function openEditRecord(ts) {
   document.getElementById("raceRank_1").value = r.rank;
   document.getElementById("raceScore_1").value = r.score;
 
-  saveRaceBtn.onclick = () => {
+  saveRaceBtn.onclick = async () => {
     const course = document.getElementById("raceCourse_1").value;
     const rank   = Number(document.getElementById("raceRank_1").value);
     const score  = Number(document.getElementById("raceScore_1").value);
@@ -1225,6 +1247,7 @@ function openEditRecord(ts) {
       return;
     }
 
+    // ▼ レコード更新
     r.course = course;
     r.rank   = rank;
     r.score  = score;
@@ -1235,8 +1258,14 @@ function openEditRecord(ts) {
       r.season = modalSeason.value;
     }
 
-    saveAllRecords();
+    // ▼ DB に保存
+    await updateRecord(r);
 
+    // ▼ メモリ側も更新
+    const idx = allRecords.findIndex(x => x.timestamp === ts);
+    if (idx >= 0) allRecords[idx] = r;
+
+    // ▼ UI 更新
     const filtered = getGloballyFilteredRecords();
     refreshModeView();
     renderRaceHistory(filtered);
@@ -1251,17 +1280,18 @@ function openEditRecord(ts) {
 
 
 <script>
-function deleteSet(ts) {
-  // ▼ allRecords から削除
-  allRecords = allRecords.filter(r => r.timestamp !== ts);
+async function deleteSet(ts) {
+  // ▼ DB から削除
+  await deleteRecord(ts);
 
-  // ▼ localStorage も allRecords に統一
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ メモリ側から削除
+  allRecords = allRecords.filter(r => r.timestamp !== ts);
 
   // ▼ UI 更新
   refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 
 </script>
 
@@ -1295,10 +1325,13 @@ saveRaceBtn.onclick = async () => {
   }
 
   /* ==========
-     編集モード処理
+     編集モード処理（DB版）
   ========== */
   if (editingTimestamp) {
-    // ▼ 古いレコードを削除
+    // ▼ DB から削除
+    await deleteRecord(editingTimestamp);
+
+    // ▼ メモリ側から削除
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
@@ -1311,22 +1344,24 @@ saveRaceBtn.onclick = async () => {
   }
 
   /* ==========
-     新規レコードを追加
+     DB に保存（新規レコード）
   ========== */
-  allRecords = [...allRecords, ...newRecords];
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
 
   /* ==========
-     保存（localStorage + backup）
+     メモリ側 allRecords に反映
   ========== */
-  await saveAllRecords();
+  allRecords.push(...newRecords);
 
   /* ==========
      UI 再描画（共通フィルター適用）
   ========== */
   const filtered = getGloballyFilteredRecords();
 
-  refreshModeView();          // 全機能更新
-  renderRaceHistory(filtered); // 履歴更新
+  refreshModeView();
+  renderRaceHistory(filtered);
 
   /* ==========
      後処理
@@ -1345,7 +1380,13 @@ function initOBSSeasonSelector() {
 
   // ▼ 共通の S1〜S30 + ALL を使う
   obsSeason.innerHTML = buildSeasonOptions();
+
+  // ▼ Season 変更時に overlay を再生成（任意）
+  obsSeason.onchange = () => {
+    generateOBSOverlay();
+  };
 }
+
 </script>
 
 
@@ -1366,7 +1407,7 @@ function getNextCourseFromModal() {
 }
 
 /* ============================================================
-   ▼ 次のコースを保存
+   ▼ 次のコースを保存（localStorage のままで正しい）
 ============================================================ */
 function saveNextCourse() {
   const nextCourse = getNextCourseFromModal();
@@ -1379,53 +1420,6 @@ function saveNextCourse() {
 }
 
 /* ============================================================
-   ▼ モーダルドラフト保存
-============================================================ */
-function saveModalDraft() {
-  const draft = {
-    mode: modalMode.value,
-    season: modalSeason.value,
-    tier: modalTier.value,
-    raceCount: modalRaceCount.value,
-    inputs: []
-  };
-
-  const scores = document.querySelectorAll("[id^='raceScore_']");
-  for (let i = 0; i < scores.length; i++) {
-    const index = i + 1;
-    draft.inputs.push({
-      course: document.getElementById(`raceCourse_${index}`).value,
-      rank: document.getElementById(`raceRank_${index}`).value,
-      score: document.getElementById(`raceScore_${index}`).value
-    });
-  }
-
-  localStorage.setItem("modalDraft", JSON.stringify(draft));
-}
-
-/* ============================================================
-   ▼ モーダルドラフト読み込み
-============================================================ */
-function loadModalDraft() {
-  const draft = JSON.parse(localStorage.getItem("modalDraft") || "null");
-  if (!draft) return;
-
-  modalMode.value = draft.mode;
-  modalSeason.value = draft.season;
-  modalTier.value = draft.tier;
-  modalRaceCount.value = draft.raceCount;
-
-  updateModalMode();
-
-  draft.inputs.forEach((d, i) => {
-    const index = i + 1;
-    document.getElementById(`raceCourse_${index}`).value = d.course;
-    document.getElementById(`raceRank_${index}`).value = d.rank;
-    document.getElementById(`raceScore_${index}`).value = d.score;
-  });
-}
-
-/* ============================================================
    ▼ モーダルセレクタ初期化
 ============================================================ */
 function initModalSelectors() {
@@ -1434,14 +1428,13 @@ function initModalSelectors() {
     .map(t => `<option value="${t}">${t}</option>`)
     .join("");
 
-  modalSeason.innerHTML = buildSeasonOptions(); // ← 統一
+  modalSeason.innerHTML = buildSeasonOptions();
 }
 
 /* ============================================================
    ▼ モード変更
 ============================================================ */
 modalMode.onchange = () => {
-  localStorage.removeItem("modalDraft");
   updateModalMode();
 };
 
@@ -1464,7 +1457,7 @@ function updateModalMode() {
 }
 
 /* ============================================================
-   ▼ レース入力欄生成
+   ▼ レース入力欄生成（modalDraft 削除済み）
 ============================================================ */
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
@@ -1497,38 +1490,37 @@ function generateRaceInputs(count) {
 
     rankInput.onchange = () => {
       scoreInput.value = calcScore(Number(rankInput.value));
-      saveModalDraft();
       saveNextCourse();
     };
 
     courseSelect.onchange = () => {
-      saveModalDraft();
       saveNextCourse();
     };
   }
 
   saveNextCourse();
 }
+
 </script>
 
 
   
 <script>
-function deleteRecord(ts) {
+async function deleteRecord(ts) {
   if (!confirm("このレースを削除しますか？")) return;
+
+  // ▼ DB から削除
+  await deleteRecordFromDB(ts);
 
   // ▼ メモリ側から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ localStorage 保存（暗号化バックアップも更新）
-  saveAllRecords();
-
-  // ▼ 共通フィルターを適用して再描画
+  // ▼ UI 更新
   const filtered = getGloballyFilteredRecords();
-
-  refreshModeView();          // 全機能を更新（内部で filtered を使う）
-  renderRaceHistory(filtered); // 履歴だけは filtered を渡す
+  refreshModeView();
+  renderRaceHistory(filtered);
 }
+
 </script>
 
 
@@ -1573,31 +1565,32 @@ saveRaceBtn.onclick = async () => {
     newRecords.forEach(r => (r.totalScore12 = totalScore12));
   }
 
-  /* ▼ 編集モードなら古いレコードを削除 */
+  /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
   if (editingTimestamp) {
+    await deleteRecordFromDB(editingTimestamp);
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
-  /* ▼ 新規レコードを追加 */
-  allRecords = [...allRecords, ...newRecords];
+  /* ▼ 新規レコードを DB に保存 */
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
 
-  /* ▼ 保存（localStorage + backup） */
-  await saveAllRecords();
+  /* ▼ メモリ側 allRecords に反映 */
+  allRecords.push(...newRecords);
 
-  /* ▼ 送信キューに追加 */
+  /* ▼ 送信キューに追加（localStorage のままで正しい） */
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...newRecords);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
-  /* ▼ 共通フィルターを適用して再描画 */
+  /* ▼ UI 再描画 */
   const filtered = getGloballyFilteredRecords();
-
-  refreshModeView();          // 全機能更新
-  renderRaceHistory(filtered); // 履歴更新
+  refreshModeView();
+  renderRaceHistory(filtered);
 
   /* ▼ 後処理 */
   editingTimestamp = null;
-  localStorage.removeItem("modalDraft");
   modal.classList.remove("show");
 };
 
@@ -1621,7 +1614,11 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
     btn.classList.add("active");
 
     if (target === "historyTab") {
+      // ▼ 最新データで履歴を描画
       renderRaceHistory(getGloballyFilteredRecords());
+    } else if (target === "analysisTab") {
+      // ▼ 分析タブを開いたときも最新化
+      refreshModeView();
     }
   };
 });
@@ -1640,9 +1637,9 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   document.getElementById("analysisTab").style.display = "block";
   document.querySelector('[data-tab="analysisTab"]').classList.add("active");
 
+  // ▼ 分析タブを最新化
   refreshModeView();
 };
-
 </script>
 
 
@@ -2045,6 +2042,102 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 
 <script>
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("records")) {
+        db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+      }
+    };
+
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+
+async function addRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").add(record);
+  await tx.done;
+}
+
+async function clearRecords() {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").clear();
+  await tx.done;
+}
+
+
+async function updateRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").put(record);
+  await tx.done;
+}
+
+async function deleteRecord(id) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").delete(id);
+  await tx.done;
+}
+
+async function getAllRecords() {
+  const db = await openDB();
+  return await db.transaction("records").objectStore("records").getAll();
+}
+
+function buildRecordKey(r) {
+  return [
+    r.course,
+    r.rank,
+    r.score,
+    r.season,
+    r.tier,
+    r.mode,
+    r.timestamp ?? "noTS"
+  ].join("|");
+}
+
+async function removeDuplicateRecords() {
+  const records = await getAllRecords();
+
+  const seen = new Set();
+  const unique = [];
+
+  for (const r of records) {
+    const key = buildRecordKey(r);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  }
+
+  // DB を初期化して unique のみ保存
+  await clearRecords();
+  for (const r of unique) {
+    await addRecord(r);
+  }
+
+  allRecords = unique;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert(`重複データを削除しました！\n${records.length} → ${unique.length} 件`);
+}
+
+document.getElementById("removeDupBtn").onclick = async () => {
+  await removeDuplicateRecords();
+};
+
 /* ==========
    共通データ
 ========== */
@@ -2112,23 +2205,37 @@ async function decrypt(base64) {
 
 /* ▼ セーブデータ生成 */
 async function exportSaveData() {
-  const json = JSON.stringify(allRecords);
+  const records = await getAllRecords(); // ← IndexedDB から取得
+  const json = JSON.stringify(records);
   const encrypted = await encrypt(json);
   return encrypted;
 }
 
+
 /* ▼ セーブデータ復元 */
 async function importSaveData(code) {
   const json = await decrypt(code);
-  allRecords = JSON.parse(json);
+  const records = JSON.parse(json);
 
-  // ★ allRecords に統一
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-  localStorage.setItem("backup", code);
+  // DB を初期化（全削除）
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
+
+  // 全削除
+  const clearReq = store.clear();
+  await new Promise(res => clearReq.onsuccess = res);
+
+  // 全件追加
+  for (const r of records) {
+    store.add(r);
+  }
+  await tx.done;
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 
 
 /* ▼ 自動ダウンロードバックアップ */
@@ -2182,30 +2289,94 @@ async function importSaveData(code) {
 /* ▼ データ読み込み（壊れていたらバックアップから復元） */
 async function loadAllRecords() {
   try {
-    // ▼ まず allRecords を読む（統一後の正しい保存先）
-    const main = localStorage.getItem("allRecords");
-    if (main) {
-      allRecords = JSON.parse(main);
+    // ▼ ① まず IndexedDB から読み込む
+    let records = await getAllRecords();
+
+    if (records.length > 0) {
+      // ★ timestamp 補正（旧データ対策）
+      let base = Date.now();
+      records.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1; // 1ms ずつずらす
+        }
+      });
+
+      allRecords = records;
       return;
     }
 
-    // ▼ main が無い場合は backup を decrypt して復元
+    // ▼ ② DB が空 → 過去の localStorage データがあるか確認
+    const legacy = localStorage.getItem("allRecords");
+    if (legacy) {
+      const arr = JSON.parse(legacy);
+
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ ③ IndexedDB に移行
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      // ▼ ④ localStorage の allRecords を削除（移行完了）
+      localStorage.removeItem("allRecords");
+
+      // ▼ ⑤ メモリ側にも反映
+      allRecords = arr;
+      return;
+    }
+
+    // ▼ ⑥ localStorage に backup がある場合（暗号化データ）
     const backup = localStorage.getItem("backup");
     if (backup) {
       const json = await decrypt(backup);
-      allRecords = JSON.parse(json);
+      const arr = JSON.parse(json);
 
-      // ★ 復元したら allRecords に保存（統一）
-      localStorage.setItem("allRecords", JSON.stringify(allRecords));
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ DB に復元
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      allRecords = arr;
       return;
     }
 
-    // ▼ どちらも無ければ空
+    // ▼ ⑦ 何もなければ空
     allRecords = [];
-  } catch {
+
+  } catch (e) {
+    console.error("loadAllRecords error", e);
     allRecords = [];
   }
 }
+
+
 
 function normalizeSeason(raw) {
   if (!raw) return "";
@@ -2214,136 +2385,10 @@ function normalizeSeason(raw) {
   return "S" + Number(num);
 }
 
- 
 
 
-document.getElementById("importTSVBtn").onclick = () => {
-  const text = document.getElementById("tsvInput").value.trim();
-  if (!text) {
-    alert("TSVが空です");
-    return;
-  }
 
-  const lines = text.split("\n").map(l => l.trim());
-  if (lines.length <= 1) {
-    alert("データがありません");
-    return;
-  }
-
-  const body = lines.slice(1);
-  const newRecords = [];
-
-  for (const line of body) {
-    const cols = line.split("\t");
-
-    const course = cols[0] || "";
-    const rank = Number(cols[1] || 0);
-    const score = Number(cols[2] || 0);
-    const totalScore = Number(cols[3] || 0);
-
-    // ▼ season を S形式に変換
-    const season = normalizeSeason(cols[4] || "");
-
-    const tier = cols[5] || "";
-
-    if (!course || !rank) continue;
-
-    newRecords.push({
-      course,
-      rank,
-      score,
-      season,
-      tier,
-      mode: "lounge",
-      timestamp: null
-    });
-  }
-
-  const old = JSON.parse(localStorage.getItem("allRecords") || "[]");
-  const merged = old.concat(newRecords);
-
-  localStorage.setItem("allRecords", JSON.stringify(merged));
-
-  alert(`TSVから ${newRecords.length} 件を読み込みました！`);
-};
-
-  
-document.getElementById("importFileBtn").onclick = () => {
-  const file = document.getElementById("fileInput").files[0];
-  if (!file) {
-    alert("ファイルを選択してください");
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    const text = reader.result.trim();
-
-    const lines = text.split(/\r?\n/);
-    if (lines.length <= 1) {
-      alert("データがありません");
-      return;
-    }
-
-    const delimiter = lines[0].includes("\t") ? "\t" : ",";
-    const body = lines.slice(1);
-
-    const races = [];
-
-    for (const line of body) {
-      if (!line.trim()) continue;
-
-      const cols = line.split(delimiter);
-
-      const course = cols[0] || "";
-      const rank = Number(cols[1] || 0);
-      const score = Number(cols[2] || 0);
-      const season = normalizeSeason(cols[4] || "");
-      const tier = cols[5] || "";
-
-      if (!course || !rank) continue;
-
-      races.push({
-        course,
-        rank,
-        score,
-        season,
-        tier,
-        mode: "lounge",
-        timestamp: null
-      });
-    }
-
-    if (!races.length) {
-      alert("有効なデータがありません");
-      return;
-    }
-
-    // ▼ allRecords にセット
-    allRecords = races;
-
-    // ▼ メイン保存（allRecords に統一）
-    const json = JSON.stringify(allRecords);
-    localStorage.setItem("allRecords", json);
-
-    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
-
-    // ▼ 全分析機能を再描画
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    // ▼ バックアップ暗号化
-    queueMicrotask(async () => {
-      const encrypted = await encrypt(json);
-      localStorage.setItem("backup", encrypted);
-    });
-  };
-
-  reader.readAsText(file);
-};
-
-document.getElementById("importTSVBtn").onclick = () => {
+document.getElementById("importTSVBtn").onclick = async () => {
   const text = document.getElementById("tsvInput").value.trim();
   if (!text) {
     alert("TSVが空です");
@@ -2356,28 +2401,24 @@ document.getElementById("importTSVBtn").onclick = () => {
     return;
   }
 
-  const delimiter = "\t";
   const body = lines.slice(1);
-
-  const raw = [];
   const now = Date.now();
+  const raw = [];
 
   for (const line of body) {
-    const cols = line.split(delimiter).map(c => c.trim());
+    const cols = line.split("\t").map(c => c.trim());
     if (cols.length < 3) continue;
 
     const course = cols[0];
     const rank = Number(cols[1]);
     const score = Number(cols[2]);
 
-    // ▼ season 正規化
     let season = "seasonN";
     if (cols[4]) {
       const num = cols[4].replace(/[^0-9]/g, "");
       if (num) season = "S" + num;
     }
 
-    // ▼ tier 正規化
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
@@ -2420,15 +2461,165 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
-  // ▼ allRecords に統一
-  allRecords = final;
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
-  refreshAllAnalysisViews();
-  renderRaceHistory();
+  // ▼ IndexedDB(B方式) に保存
+  await clearRecords(); // 全削除
+  for (const r of final) {
+    await addRecord(r);
+  }
 
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
+
+  // ▼ 再読み込み
+  allRecords = await getAllRecords();
+  refreshAllAnalysisViews();
+  renderRaceHistory();
 };
+
+
+  
+document.getElementById("importFileBtn").onclick = () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    const text = reader.result.trim();
+    const lines = text.split(/\r?\n/);
+    if (lines.length <= 1) {
+      alert("データがありません");
+      return;
+    }
+
+    const delimiter = lines[0].includes("\t") ? "\t" : ",";
+    const body = lines.slice(1);
+
+    const races = [];
+
+    for (const line of body) {
+      if (!line.trim()) continue;
+
+      const cols = line.split(delimiter);
+
+      const course = cols[0] || "";
+      const rank = Number(cols[1] || 0);
+      const score = Number(cols[2] || 0);
+      const season = normalizeSeason(cols[4] || "");
+      const tier = cols[5] || "";
+
+      if (!course || !rank) continue;
+
+      races.push({
+        course,
+        rank,
+        score,
+        season,
+        tier,
+        mode: "lounge",
+        timestamp: null
+      });
+    }
+
+    if (!races.length) {
+      alert("有効なデータがありません");
+      return;
+    }
+
+    // ▼ IndexedDB に保存
+    await clearRecords();
+    for (const r of races) {
+      await addRecord(r);
+    }
+
+    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    // ▼ バックアップ暗号化
+    queueMicrotask(async () => {
+      const encrypted = await encrypt(JSON.stringify(allRecords));
+      localStorage.setItem("backup", encrypted);
+    });
+  };
+
+  reader.readAsText(file);
+};
+
+document.getElementById("importOldJsonBtn").onclick = () => {
+  const file = document.getElementById("oldJsonInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const json = reader.result;
+    const arr = JSON.parse(json);
+
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("旧JSONデータを取り込みました！");
+  };
+
+  reader.readAsText(file);
+};
+
+
+document.getElementById("importOldHtmlBtn").onclick = () => {
+  const file = document.getElementById("oldHtmlInput").files[0];
+  if (!file) {
+    alert("HTMLファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    const html = reader.result;
+
+    // ▼ localStorage.setItem("allRecords", "....") を抽出
+    const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
+
+    if (!match) {
+      alert("HTML内に allRecords が見つかりませんでした");
+      return;
+    }
+
+    const json = match[1];
+    const arr = JSON.parse(json);
+
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("旧HTMLからデータを取り込みました！");
+  };
+
+  reader.readAsText(file);
+};
+
+
+
+
+
 
 
 // Chart.js インスタンス保持用
@@ -2465,16 +2656,6 @@ const loungeSetTier = document.getElementById("loungeSetTier");
 
   
 function populateSeasonAndTierOptions() {
-  // ▼ Season（S1〜S30）
-  const seasons = [];
-  for (let i = 1; i <= 30; i++) {
-    seasons.push("S" + i);
-  }
-
-  // ▼ Tier（固定リスト）
-  
-  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
-
   // ▼ Season を持つ全セレクト
   const seasonSelects = [
     statsSeason, growthSeason, radarSeason, heatmapSeason,
@@ -2489,22 +2670,25 @@ function populateSeasonAndTierOptions() {
     loungeSetTier
   ];
 
-  // ▼ Season を流し込む
+  // ▼ Season（buildSeasonOptions に統一）
+  const seasonHTML = buildSeasonOptions();
   for (const sel of seasonSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    seasons.forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
+    sel.innerHTML = seasonHTML;
   }
 
-  // ▼ Tier を流し込む
+  // ▼ Tier（ALL + loungeTiers）
+  const tierHTML =
+    `<option value="ALL">ALL</option>` +
+    loungeTiers
+      .filter(t => t !== "ALL")
+      .map(t => `<option value="${t}">${t}</option>`)
+      .join("");
+
   for (const sel of tierSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    tiers.forEach(t => {
-      sel.innerHTML += `<option value="${t}">${t}</option>`;
-    });
+    sel.innerHTML = tierHTML;
   }
 }
+
 
 function buildSeasonOptions() {
   const arr = ["ALL"];
@@ -2516,22 +2700,23 @@ function buildSeasonOptions() {
  
 
 /* ==========
-   初期ロード
+   初期ロード（IndexedDB版）
 ========== */
 window.addEventListener("load", async () => {
 
+  // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
   await loadAllRecords();
 
-  // ★ 最初に Season/Tier を UI に入れる
+  // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
 
-  // その後に各セレクタ初期化
+  // ▼ 各セレクタ初期化
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
-  
-  // ★ AI セレクタの onchange をここで登録（重要）
+
+  // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
   aiSeason.onchange = updateAICourseView;
   aiTier.onchange   = updateAICourseView;
@@ -2539,13 +2724,13 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
-  // そして初回描画
+  // ▼ 初回描画（DBから読み込んだ allRecords を使う）
   updateStatsView();
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
   updateRankingView();
-  updateAICourseView();   // ← ここで初めて正しく動く
+  updateAICourseView();
   update3DView();
   updateScatterView();
   updateLoungeSetView();
@@ -2560,19 +2745,22 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
   if (sec.style.display === "none") {
     sec.style.display = "block";
     btn.textContent = "12レースセット一覧を非表示";
-    updateLoungeSetView(); // 表示した瞬間に更新
+    updateLoungeSetView();
   } else {
     sec.style.display = "none";
     btn.textContent = "12レースセット一覧を表示";
   }
 };
 
+
   
 document.getElementById("exportSaveBtn").onclick = async () => {
-  const code = await exportSaveData();
+  const records = await getAllRecords();   // DBから取得
+  const code = await encrypt(JSON.stringify(records));
   navigator.clipboard.writeText(code);
   alert("セーブデータをコピーしました！");
 };
+
 
 document.getElementById("importSaveBtn").onclick = async () => {
   const code = document.getElementById("importSaveInput").value.trim();
@@ -2581,7 +2769,7 @@ document.getElementById("importSaveBtn").onclick = async () => {
     return;
   }
 
-  await importSaveData(code);
+  await importSaveData(code);  // DB版の importSaveData を呼ぶ
   alert("復元が完了しました！");
 };
 
@@ -2715,7 +2903,7 @@ function getStatsFilteredRecords() {
   // ▼ Tier
   if (tier !== "ALL") r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const rangeSel = statsRangeSelect.value;
   if (rangeSel !== "ALL") {
     let N = 0;
@@ -2724,11 +2912,17 @@ function getStatsFilteredRecords() {
     } else {
       N = Number(rangeSel);
     }
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版では timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 function getGrowthFilteredRecords() {
   let r = [...allRecords];
@@ -2741,11 +2935,16 @@ function getGrowthFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (course !== "ALL") r = r.filter(x => x.course === course);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = growthRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(growthRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
@@ -2762,36 +2961,21 @@ function getRadarFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = radarRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
 
-function getRadarFilteredRecords() {
-  let r = [...allRecords];
-
-  const course = radarCourse.value;
-  const season = radarSeason.value;
-  const tier   = radarTier.value;
-
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ▼ 直近 N
-  const sel = radarRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
-  }
-
-  return r;
-}
 
 function getHeatmapFilteredRecords() {
   let r = [...allRecords];
@@ -2806,11 +2990,16 @@ function getHeatmapFilteredRecords() {
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
   if (course !== "ALL") r = r.filter(x => x.course === course);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = heatmapRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(heatmapRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
@@ -2832,11 +3021,16 @@ function getRankingFilteredRecords() {
     r = r.filter(x => x.tier === tier);
   }
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = rankRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   // ▼ 最低走行回数
@@ -2853,13 +3047,14 @@ function getRankingFilteredRecords() {
 }
 
 
+
 function getAIFilteredRecords() {
   let r = [...allRecords];
 
   const course = aiCourse.value;
   const season = aiSeason.value;
   const tier   = aiTier.value;
-  const mode   = aiMode.value;  // ★追加
+  const mode   = aiMode.value;
 
   // ▼ mode（ALL のときは完全スルー）
   if (mode !== "ALL") {
@@ -2881,15 +3076,21 @@ function getAIFilteredRecords() {
     r = r.filter(x => x.tier === tier);
   }
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = aiRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(aiRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 
 function get3DFilteredRecords() {
@@ -2901,15 +3102,21 @@ function get3DFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = bubbleRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(bubbleRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 function getLoungeSetFilteredRecords() {
   let r = [...allRecords];
@@ -2920,8 +3127,12 @@ function getLoungeSetFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
+  // ★ DB版：セット表示は timestamp 順が自然
+  r.sort((a, b) => (a.setTimestamp || a.timestamp || 0) - (b.setTimestamp || b.timestamp || 0));
+
   return r;
 }
+
 
 
 function getScatterFilteredRecords() {
@@ -2933,16 +3144,20 @@ function getScatterFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = scatterRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(scatterRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
-
 
 function updateStatsView() {
   const records = getStatsFilteredRecords();
@@ -3341,11 +3556,8 @@ function updateModeGraphs(records) {
     return;
   }
 
-  // ▼ 時系列順に並べる（timestamp が null の場合はそのまま）
-  const sorted = clone(records).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return a.timestamp - b.timestamp;
-  });
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(records).sort((a, b) => a.timestamp - b.timestamp);
 
   // ▼ ラベル（レース番号）
   const labels = sorted.map((_, i) => `#${i + 1}`);
@@ -3429,6 +3641,7 @@ function updateModeGraphs(records) {
   });
 }
 
+
 function renderLoungeSets(records) {
   const div = document.getElementById("loungeSetView");
   if (!div) return;
@@ -3443,18 +3656,13 @@ function renderLoungeSets(records) {
     return;
   }
 
-  // ▼ timestamp がある場合は時系列順に並べる
-  const sorted = clone(sets).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return a.timestamp - b.timestamp;
-  });
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(sets).sort((a, b) => a.timestamp - b.timestamp);
 
   // ▼ HTML生成
   div.innerHTML = sorted
     .map((s, i) => {
-      const date = s.timestamp
-        ? new Date(s.timestamp).toLocaleString()
-        : "日時なし";
+      const date = new Date(s.timestamp).toLocaleString();
 
       return `
         <div class="lounge-set-card">
@@ -4083,10 +4291,16 @@ document.getElementById("importBackupBtn").onclick = async () => {
 
   try {
     const json = await decrypt(code);
-    allRecords = JSON.parse(json);
+    const arr = JSON.parse(json);
 
-    // ★ allRecords に統一
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
 
     refreshAllAnalysisViews();
     renderRaceHistory();
@@ -4097,6 +4311,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
     alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
   }
 };
+
 
   
 document.getElementById("importSaveFileBtn").onclick = async () => {
@@ -4116,10 +4331,18 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
 
   try {
     const json = await decrypt(code);
-    allRecords = JSON.parse(json);
+    const arr = JSON.parse(json);
 
-    // ★ allRecords に統一
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
+
+    // ▼ backup だけは localStorage に保存してOK
     localStorage.setItem("backup", code);
 
     refreshAllAnalysisViews();
@@ -4131,6 +4354,7 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
     alert("復元に失敗しました。ファイルが壊れている可能性があります。");
   }
 };
+
 
 function bytesToBase64(bytes) {
   let binary = "";
@@ -4266,18 +4490,26 @@ async function importSaveDataWithPassword(saveText, password) {
 
   // データ本体を復元
   const json = await decrypt(obj.d);
-  allRecords = JSON.parse(json);
+  let arr = JSON.parse(json);
 
-  // ▼ 壊れたレコードを除去（必要なら残す）
-  allRecords = allRecords.filter(r =>
+  // ▼ 壊れたレコードを除去
+  arr = arr.filter(r =>
     r.mode &&
     r.season &&
     r.tier &&
     r.timestamp != null
   );
 
-  // ★★★ 保存先を allRecords に統一 ★★★
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ DB を初期化して保存
+  await clearRecords();
+  for (const r of arr) {
+    await addRecord(r);
+  }
+
+  // ▼ メモリ側にも反映
+  allRecords = arr;
+
+  // ▼ backup だけは localStorage に保存してOK
   localStorage.setItem("backup", obj.d);
 
   // ▼ UI 初期化
@@ -4332,105 +4564,103 @@ document.getElementById("restoreBackupWithPasswordBtn").onclick = async () => {
   await importSaveDataWithPassword(text, password);
 };
 
-document.getElementById("importFileBtn").onclick = () => {
+document.getElementById("importFileBtn").onclick = async () => {
   const file = document.getElementById("fileInput").files[0];
   if (!file) {
     alert("ファイルを選択してください");
     return;
   }
 
-  const reader = new FileReader();
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
 
-  reader.onload = () => {
-    const text = reader.result.trim();
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
 
-    if (lines.length <= 1) {
-      alert("データがありません");
-      return;
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const body = lines.slice(1);
+
+  const raw = [];
+  const now = Date.now();
+
+  for (const line of body) {
+    const cols = line.split(delimiter).map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const course = cols[0];
+    const rank = Number(cols[1]);
+    const score = Number(cols[2]);
+
+    // ▼ season 正規化
+    let season = "seasonN";
+    if (cols[4]) {
+      const num = cols[4].replace(/[^0-9]/g, "");
+      if (num) season = "S" + num;
     }
 
-    const delimiter = lines[0].includes("\t") ? "\t" : ",";
-    const body = lines.slice(1);
+    // ▼ tier 正規化
+    let tier = "tierN";
+    if (cols[5]) tier = cols[5].toUpperCase();
 
-    const raw = [];
-    const now = Date.now();
+    if (!course || !rank || rank < 1 || rank > 24) continue;
 
-    for (const line of body) {
-      const cols = line.split(delimiter).map(c => c.trim());
-      if (cols.length < 3) continue;
+    raw.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: now - raw.length * 1000
+    });
+  }
 
-      const course = cols[0];
-      const rank = Number(cols[1]);
-      const score = Number(cols[2]);
+  if (!raw.length) {
+    alert("有効なデータがありません");
+    return;
+  }
 
-      // ▼ season 正規化
-      let season = "seasonN";
-      if (cols[4]) {
-        const num = cols[4].replace(/[^0-9]/g, "");
-        if (num) season = "S" + num;
-      }
+  // ▼ 12レースごとに totalScore12 を付与
+  const final = [];
+  let setId = 1;
 
-      // ▼ tier 正規化
-      let tier = "tierN";
-      if (cols[5]) tier = cols[5].toUpperCase();
+  for (let i = 0; i < raw.length; i += 12) {
+    const set = raw.slice(i, i + 12);
+    if (set.length < 12) break;
 
-      if (!course || !rank || rank < 1 || rank > 24) continue;
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
 
-      raw.push({
-        course,
-        rank,
-        score,
-        season,
-        tier,
-        mode: "lounge",
-        timestamp: now - raw.length * 1000
-      });
-    }
+    set.forEach(r => {
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+      final.push(r);
+    });
 
-    if (!raw.length) {
-      alert("有効なデータがありません");
-      return;
-    }
+    setId++;
+  }
 
-    // ▼ 12レースごとに totalScore12 を付与
-    const final = [];
-    let setId = 1;
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();          // DB 初期化
+  for (const r of final) {
+    await addRecord(r);          // 全件追加
+  }
 
-    for (let i = 0; i < raw.length; i += 12) {
-      const set = raw.slice(i, i + 12);
-      if (set.length < 12) break;
+  // ▼ メモリ側も更新
+  allRecords = final;
 
-      const totalScore12 = set.reduce((s, r) => s + r.score, 0);
-      const setTimestamp = set[0].timestamp;
+  refreshAllAnalysisViews();
+  renderRaceHistory();
 
-      set.forEach(r => {
-        r.totalScore12 = totalScore12;
-        r.setId = setId;
-        r.setTimestamp = setTimestamp;
-        final.push(r);
-      });
-
-      setId++;
-    }
-
-    // ▼ 最重要：allRecords を更新
-    allRecords = final;
-
-    // ★★★ 統一保存先 ★★★
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
-  };
-
-  reader.readAsText(file);
+  alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
 };
 
 
-document.getElementById("importTSVBtn").onclick = () => {
+
+document.getElementById("importTSVBtn").onclick = async () => {
   const text = document.getElementById("tsvInput").value.trim();
   if (!text) {
     alert("TSVが空です");
@@ -4507,11 +4737,14 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
-  // ▼ 最重要：allRecords を更新
-  allRecords = final;
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();
+  for (const r of final) {
+    await addRecord(r);
+  }
 
-  // ★★★ 統一保存先 ★★★
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ メモリ側も更新
+  allRecords = final;
 
   refreshAllAnalysisViews();
   renderRaceHistory();
@@ -4550,48 +4783,50 @@ window.addEventListener("load", () => {
 });
 
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   const isOBS = location.search.includes("obs");
   const frame = document.getElementById("overlayFrame");
 
-  if (isOBS) {
+  if (!isOBS) return;
 
-    /* ▼ 1. まず localStorage の allRecords を読み込む（重要） */
-    const stored = localStorage.getItem("allRecords");
-    if (!stored || stored === "[]") {
-      console.warn("OBS モード：allRecords が空です。データを読み込んでください。");
-    }
+  /* ▼ 1. IndexedDB からデータを読み込む */
+  const records = await getAllRecords();
+  allRecords = records;
 
-    /* ▼ 2. iframe の祖先要素だけ残す */
-    const keep = new Set();
-    let node = frame;
-    while (node) {
-      keep.add(node);
-      node = node.parentElement;
-    }
-
-    document.body.querySelectorAll("*").forEach(el => {
-      if (!keep.has(el)) {
-        el.style.display = "none";
-      }
-    });
-
-    /* ▼ 3. iframe を全画面に */
-    frame.style.display = "block";
-    frame.style.position = "fixed";
-    frame.style.top = "0";
-    frame.style.left = "0";
-    frame.style.width = "100%";
-    frame.style.height = "100%";
-    frame.style.zIndex = "9999";
-
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-
-    /* ▼ 4. データを読み込んだ状態で overlay を生成 */
-    generateOBSOverlay();
+  if (!records.length) {
+    console.warn("OBS モード：DB にデータがありません。");
   }
+
+  /* ▼ 2. iframe の祖先要素だけ残す */
+  const keep = new Set();
+  let node = frame;
+  while (node) {
+    keep.add(node);
+    node = node.parentElement;
+  }
+
+  document.body.querySelectorAll("*").forEach(el => {
+    if (!keep.has(el)) {
+      el.style.display = "none";
+    }
+  });
+
+  /* ▼ 3. iframe を全画面に */
+  frame.style.display = "block";
+  frame.style.position = "fixed";
+  frame.style.top = "0";
+  frame.style.left = "0";
+  frame.style.width = "100%";
+  frame.style.height = "100%";
+  frame.style.zIndex = "9999";
+
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+
+  /* ▼ 4. DB のデータを使って overlay を生成 */
+  generateOBSOverlay();
 });
+
 </script>
 </body>
 </html>
