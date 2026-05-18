@@ -2753,25 +2753,6 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
 };
 
 
-  
-document.getElementById("exportSaveBtn").onclick = async () => {
-  const records = await getAllRecords();   // DBから取得
-  const code = await encrypt(JSON.stringify(records));
-  navigator.clipboard.writeText(code);
-  alert("セーブデータをコピーしました！");
-};
-
-
-document.getElementById("importSaveBtn").onclick = async () => {
-  const code = document.getElementById("importSaveInput").value.trim();
-  if (!code) {
-    alert("セーブデータを入力してください");
-    return;
-  }
-
-  await importSaveData(code);  // DB版の importSaveData を呼ぶ
-  alert("復元が完了しました！");
-};
 
 /* ==========
    ユーティリティ
