@@ -877,6 +877,23 @@ async function generateOBSOverlay() {
 
   <!-- ここにグラフや分析UIが続く -->
 </div>
+  
+<!-- ▼ レース登録ボタン（右下固定） -->
+<button id="openModalBtn" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
+">＋ レース登録</button>
+
 <!-- ▼ レース登録モーダル -->
 <div id="raceModal">
   <div class="modal-inner" style="
@@ -889,17 +906,12 @@ async function generateOBSOverlay() {
     max-height: 90%;
     overflow-y: auto;
     overscroll-behavior: contain;
-
-    /* ★ 保存ボタンの absolute の基準になる */
     position: relative;
-
-    /* ★ 保存ボタンと重ならない余白 */
     padding-bottom: 90px;
   ">
 
     <h3>レース登録</h3>
 
-    <!-- ▼ モード選択 -->
     <label>モード</label><br>
     <select id="modalMode" style="width:100%; margin-bottom:12px;">
       <option value="lounge">ラウンジ</option>
@@ -907,19 +919,16 @@ async function generateOBSOverlay() {
       <option value="nora">野良</option>
     </select>
 
-    <!-- ▼ Tier（ラウンジのみ） -->
     <div id="modalTierBlock">
       <label>Tier</label><br>
       <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
-    <!-- ▼ Season（ラウンジのみ） -->
     <div id="modalSeasonBlock">
       <label>Season</label><br>
       <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
-    <!-- ▼ レース数（大会・野良） -->
     <div id="modalRaceCountBlock">
       <label>レース数</label><br>
       <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
@@ -938,15 +947,12 @@ async function generateOBSOverlay() {
       </select>
     </div>
 
-    <!-- ▼ ラウンジ説明 -->
     <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
       ※ ラウンジは最大12レース（途中中断OK）
     </div>
 
-    <!-- ▼ レース入力エリア -->
     <div id="modalRaceInputs"></div>
 
-    <!-- ▼ キャンセルボタン（通常位置） -->
     <div style="text-align:right; margin-top:20px;">
       <button id="closeModalBtn" style="
         padding:8px 16px;
@@ -956,7 +962,6 @@ async function generateOBSOverlay() {
       ">キャンセル</button>
     </div>
 
-    <!-- ▼ 保存ボタン（モーダル右下固定） -->
     <button id="saveRaceBtn" style="
       position:absolute;
       bottom:16px;
@@ -972,6 +977,7 @@ async function generateOBSOverlay() {
 
   </div>
 </div>
+
 
 <!-- ★★★ ここから全部の JS ★★★ -->
 <script>
