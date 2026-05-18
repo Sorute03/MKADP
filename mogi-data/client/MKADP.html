@@ -845,13 +845,9 @@ async function generateOBSOverlay() {
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  // ▼ ★ DB から最新データを取得（localStorage は使わない）
   const allRecords = await getAllRecords();
-
-  // ▼ nextCourse は UI 状態なので localStorage のままで OK
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
-  // ▼ overlay HTML（データなし）を生成
   const html = buildOverlayHTMLFile(mode, season, course);
 
   const blob = new Blob([html], { type: "text/html" });
@@ -860,13 +856,14 @@ async function generateOBSOverlay() {
   const frame = document.getElementById("overlayFrame");
   frame.src = url;
 
-  // OBS は load が遅いので 200ms 待つと確実
   frame.onload = () => {
     setTimeout(() => {
+      const safeRecords = JSON.parse(JSON.stringify(allRecords));
+
       frame.contentWindow.postMessage(
         {
           type: "initData",
-          allRecords,
+          allRecords: safeRecords,
           nextCourse
         },
         "*"
@@ -874,6 +871,7 @@ async function generateOBSOverlay() {
     }, 200);
   };
 }
+
 </script>
 
 
