@@ -615,6 +615,24 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
+
+<script>
+function exportOldData() {
+  const data = localStorage.getItem("allRecords") || "[]";
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "oldData.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+</script>
+
+<button onclick="exportOldData()">データをエクスポート</button>
+
  
   <!-- ▼ パスワード付きバックアップ UI ▼ -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
