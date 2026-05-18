@@ -4163,23 +4163,7 @@ function getWinRate(filtered) {
   return wins / filtered.length;
 }
 
-async function exportSaveDataFile() {
-  const encrypted = await exportSaveData(); // 暗号化済み Base64
-  const blob = new Blob([encrypted], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "MKWorld_save.txt"; // 好きな名前でOK
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("exportSaveFileBtn").onclick = async () => {
-  await exportSaveDataFile();
-  alert("セーブデータをファイルとして出力しました！");
-};
 
 
 
