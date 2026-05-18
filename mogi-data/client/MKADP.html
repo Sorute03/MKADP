@@ -1396,17 +1396,13 @@ function generateRaceInputs(count) {
 async function deleteRecord(ts) {
   if (!confirm("このレースを削除しますか？")) return;
 
-  // ▼ DB から削除
   await deleteRecordFromDB(ts);
-
-  // ▼ メモリ側から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ UI 更新
-  const filtered = getGloballyFilteredRecords();
-  refreshModeView();
-  renderRaceHistory(filtered);
+  // ▼ 新構造：タブに応じたフィルターで再描画
+  renderRaceHistory(getFilteredRecords());
 }
+
 
 </script>
 
@@ -1473,8 +1469,8 @@ saveRaceBtn.onclick = async () => {
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
   /* ▼ UI 再描画（新構造） */
-  refreshModeView(allRecords);   // ← 分析タブ更新
-  renderRaceHistory(allRecords); // ← 履歴タブ更新
+  renderRaceHistory(getFilteredRecords());
+
 
   /* ▼ 後処理 */
   editingTimestamp = null;
@@ -1488,17 +1484,11 @@ saveRaceBtn.onclick = async () => {
 <script>
 
 function getFilteredRecords() {
-  // ▼ 今アクティブなタブを取得
   const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
 
   switch (activeTab) {
 
-    case "analysisTab":
-      // ▼ 分析タブ → モード別のビューが複数あるので refreshModeView が使う
-      return allRecords; // 分析タブは内部で個別フィルターを使う
-
     case "historyTab":
-      // ▼ 履歴タブ → ランキング用フィルターを使う
       return getRankingFilteredRecords();
 
     case "aiTab":
@@ -1523,6 +1513,7 @@ function getFilteredRecords() {
       return allRecords;
   }
 }
+
   
   
 document.querySelectorAll(".tabBtn").forEach(btn => {
