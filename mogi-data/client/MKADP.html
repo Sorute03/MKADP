@@ -1413,6 +1413,7 @@ async function deleteRecord(ts) {
 
 <script>
 /* ▼ 保存処理（新構造対応・編集モード対応） */
+/* ▼ 保存処理（新構造対応・編集モード対応） */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
@@ -1466,20 +1467,20 @@ saveRaceBtn.onclick = async () => {
   /* ▼ メモリ側 allRecords に反映 */
   allRecords.push(...newRecords);
 
-  /* ▼ 送信キューに追加（localStorage のままで正しい） */
+  /* ▼ 送信キューに追加 */
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...newRecords);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
-  /* ▼ UI 再描画 */
-  const filtered = getGloballyFilteredRecords();
-  refreshModeView();
-  renderRaceHistory(filtered);
+  /* ▼ UI 再描画（新構造） */
+  refreshModeView(allRecords);   // ← 分析タブ更新
+  renderRaceHistory(allRecords); // ← 履歴タブ更新
 
   /* ▼ 後処理 */
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+
 
 </script>
 
