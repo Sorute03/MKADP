@@ -877,26 +877,6 @@ async function generateOBSOverlay() {
 
   <!-- ここにグラフや分析UIが続く -->
 </div>
-<!-- ▼ レース登録ボタン（右下固定） -->
-<button id="openModalBtn" style="
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  padding: 14px 20px;
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 50px;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 9999;
-">＋ レース登録</button>
-
-<!-- ▼ モーダル本体 -->
-
-
-<!-- ▼ レース登録モーダル -->
 <!-- ▼ レース登録モーダル -->
 <div id="raceModal">
   <div class="modal-inner" style="
@@ -968,7 +948,12 @@ async function generateOBSOverlay() {
 
     <!-- ▼ キャンセルボタン（通常位置） -->
     <div style="text-align:right; margin-top:20px;">
-      <button id="closeModalBtn" style="padding:8px 16px; margin-right:8px;">キャンセル</button>
+      <button id="closeModalBtn" style="
+        padding:8px 16px;
+        margin-right:8px;
+        background:#ccc;
+        border-radius:6px;
+      ">キャンセル</button>
     </div>
 
     <!-- ▼ 保存ボタン（モーダル右下固定） -->
@@ -987,8 +972,6 @@ async function generateOBSOverlay() {
 
   </div>
 </div>
-
-
 
 <!-- ★★★ ここから全部の JS ★★★ -->
 <script>
