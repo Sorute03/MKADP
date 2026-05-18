@@ -211,10 +211,10 @@
     #closeModalBtn,
    /* ▼ 保存ボタンを右下に固定 */
     #saveRaceBtn {
-      position: fixed;
-      bottom: 32px;
-      right: 32px;
-      z-index: 10000;
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 20;
       padding: 14px 22px;
       font-size: 16px;
       border-radius: 8px;
@@ -224,14 +224,11 @@
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    
-    #saveRaceBtn:hover {
-      background: #27ae60;
-    }
+
     
     /* ▼ モーダル内部のスクロール領域がボタンと重ならないように余白を追加 */
     #raceModal > div {
-      padding-bottom: 100px; /* ← これが重要！ */
+      padding-bottom: 90px; /* ← 保存ボタンの高さ分の余白 */
     }
 
     
