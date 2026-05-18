@@ -1486,6 +1486,45 @@ saveRaceBtn.onclick = async () => {
 
 
 <script>
+
+function getFilteredRecords() {
+  // ▼ 今アクティブなタブを取得
+  const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
+
+  switch (activeTab) {
+
+    case "analysisTab":
+      // ▼ 分析タブ → モード別のビューが複数あるので refreshModeView が使う
+      return allRecords; // 分析タブは内部で個別フィルターを使う
+
+    case "historyTab":
+      // ▼ 履歴タブ → ランキング用フィルターを使う
+      return getRankingFilteredRecords();
+
+    case "aiTab":
+      return getAIFilteredRecords();
+
+    case "bubble3dTab":
+      return get3DFilteredRecords();
+
+    case "scatterTab":
+      return getScatterFilteredRecords();
+
+    case "heatmapTab":
+      return getHeatmapFilteredRecords();
+
+    case "radarTab":
+      return getRadarFilteredRecords();
+
+    case "growthTab":
+      return getGrowthFilteredRecords();
+
+    default:
+      return allRecords;
+  }
+}
+  
+  
 document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
     const target = btn.dataset.tab;
