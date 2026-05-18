@@ -856,10 +856,11 @@ async function generateOBSOverlay() {
   const frame = document.getElementById("overlayFrame");
   frame.src = url;
 
-  frame.onload = () => {
-    setTimeout(() => {
-      const safeRecords = JSON.parse(JSON.stringify(allRecords));
+  // ▼ OBS では onload が発火しないことがあるのでポーリング
+  const safeRecords = JSON.parse(JSON.stringify(allRecords));
 
+  const sendData = () => {
+    try {
       frame.contentWindow.postMessage(
         {
           type: "initData",
@@ -868,8 +869,21 @@ async function generateOBSOverlay() {
         },
         "*"
       );
-    }, 200);
+      console.log("OBS overlay にデータ送信成功");
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
+
+  // ▼ 100ms 間隔で最大 30 回試す（3 秒）
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (sendData() || tries > 30) {
+      clearInterval(timer);
+    }
+    tries++;
+  }, 100);
 }
 
 </script>
