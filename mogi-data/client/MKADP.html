@@ -803,7 +803,7 @@ function buildHTML(course, stats) {
   if (!stats) return course + " ｜ データなし";
 
   return (
-    "<b>" + course + "</b> ｜<br> " +
+    "<b>" + course + "</b><br> " +
     "平均順位 " + stats.avgRank.toFixed(2) + "位 ｜ " +
     "平均得点 " + stats.avgScore.toFixed(2) + "点 ｜ " +
     "試行回数 " + stats.count + "回<br>" +
