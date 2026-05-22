@@ -672,6 +672,7 @@ body {
   font-size: 22px;
   border-radius: 6px;
   line-height: 1.6;
+  white-space: normal; 
 }
 </style>
 </head>
@@ -799,18 +800,29 @@ function calcStats(records) {
 }
 
 function buildHTML(course, stats) {
-  if (!stats) return course + " ｜ データなし";
+  if (!stats) {
+    return `
+      <div><b>${course}</b></div>
+      <div>データなし</div>
+    `;
+  }
 
-  return (
-    "<b>" + course + "</b> ｜ " +
-    "平均順位 " + stats.avgRank.toFixed(2) + "位 ｜ " +
-    "平均得点 " + stats.avgScore.toFixed(2) + "点 ｜ " +
-    "試行回数 " + stats.count + "回<br>" +
-    "勝率 " + (stats.winRate * 100).toFixed(1) + "% ｜ " +
-    "上位率 " + (stats.topRate * 100).toFixed(1) + "% ｜ " +
-    "中位率 " + (stats.midRate * 100).toFixed(1) + "% ｜ " +
-    "下位率 " + (stats.bottomRate * 100).toFixed(1) + "%"
-  );
+  return `
+    <div><b>${course}</b></div>
+
+    <div>
+      平均順位 ${stats.avgRank.toFixed(2)}位 ｜ 
+      平均得点 ${stats.avgScore.toFixed(2)}点 ｜ 
+      試行回数 ${stats.count}回
+    </div>
+
+    <div>
+      勝率 ${(stats.winRate * 100).toFixed(1)}% ｜ 
+      上位率 ${(stats.topRate * 100).toFixed(1)}% ｜ 
+      中位率 ${(stats.midRate * 100).toFixed(1)}% ｜ 
+      下位率 ${(stats.bottomRate * 100).toFixed(1)}%
+    </div>
+  `;
 }
 
 function updateOverlay() {
