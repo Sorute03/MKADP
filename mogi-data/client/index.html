@@ -507,7 +507,8 @@ courseList.push(
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
- 
+<button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
+
   <!-- ▼ パスワード付きバックアップ UI ▼ -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>バックアップ（パスワード付き）</h3>
@@ -4600,6 +4601,55 @@ document.getElementById("importFileBtn").onclick = async () => {
   alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
 };
 
+
+document.getElementById("migrateLocalStorageBtn").onclick = async () => {
+  // ▼ localStorage に過去データがあるか確認
+  const old = localStorage.getItem("allRecords");
+  if (!old) {
+    alert("localStorage に過去データがありません。");
+    return;
+  }
+
+  let oldRecords;
+  try {
+    oldRecords = JSON.parse(old);
+  } catch (e) {
+    alert("localStorage のデータが壊れています。");
+    return;
+  }
+
+  if (!Array.isArray(oldRecords) || oldRecords.length === 0) {
+    alert("移行するデータがありません。");
+    return;
+  }
+
+  // ▼ すでに DB にあるデータを取得
+  const dbRecords = await getAllRecords();
+
+  // ▼ 重複チェック用 Set
+  const seen = new Set(dbRecords.map(r => buildRecordKey(r)));
+
+  let added = 0;
+
+  for (const r of oldRecords) {
+    const key = buildRecordKey(r);
+
+    // ▼ すでに DB にあるならスキップ
+    if (seen.has(key)) continue;
+
+    // ▼ timestamp が無い古いデータは補完
+    if (!r.timestamp) {
+      r.timestamp = Date.now() + Math.random();
+    }
+
+    // ▼ DB に追加
+    await addRecord(r);
+
+    added++;
+  }
+
+  alert(`移行完了！\n${added} 件を IndexedDB に追加しました。`);
+};
 
 
 document.getElementById("importTSVBtn").onclick = async () => {
