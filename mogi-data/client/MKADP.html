@@ -655,24 +655,7 @@ function buildOverlayHTMLFile(mode, season, course) {
 <head>
 <meta charset="UTF-8">
 <style>
-body {
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  overflow: hidden;
-  font-family: sans-serif;
-}
-#overlay {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: rgba(0,0,0,0.55);
-  color: white;
-  padding: 10px 14px;
-  font-size: 22px;
-  border-radius: 6px;
-  line-height: 1.6;
-}
+  body { margin:0; background:transparent; }
 </style>
 </head>
 <body>
@@ -680,24 +663,27 @@ body {
 <div id="overlay">読み込み中...</div>
 
 <script>
-// ▼ index.html から postMessage で送られてくる
+${overlayScript(mode, season, course)}
+</scr` + `ipt>
+
+</body>
+</html>
+`;
+}
+
+function overlayScript(mode, season, course) {
+  return `
 let ALL_RECORDS = [];
 let NEXT_COURSE = "";
 
-// ▼ フィルタ条件
 const MODE = "${mode}";
 const SEASON = "${season}";
 const COURSE = "${course}";
-
-// ▼ コース一覧
 const courseList = ${JSON.stringify(courseList)};
 
-// ▼ postMessage 受信（OBS でも確実に動く版）
 window.addEventListener("message", (event) => {
   try {
-    if (!event.data) return;
-
-    if (Array.isArray(event.data.allRecords)) {
+    if (event.data?.allRecords) {
       ALL_RECORDS = event.data.allRecords;
       NEXT_COURSE = event.data.nextCourse || "";
       updateOverlay();
@@ -706,6 +692,16 @@ window.addEventListener("message", (event) => {
     console.log("message error", e);
   }
 });
+
+${getFilteredRecords.toString()}
+${getCurrentCourse.toString()}
+${calcStats.toString()}
+${buildHTML.toString()}
+${updateOverlay.toString()}
+`;
+}
+
+
 
 // ▼ 全レコード取得
 function getFilteredRecords() {
@@ -832,11 +828,6 @@ function updateOverlay() {
   const stats = calcStats(records.filter(r => r.course === course));
   document.getElementById("overlay").innerHTML = buildHTML(course, stats);
 }
-
-</scr` + `ipt>
-
-</body>
-</html>
 `;
 }
 
@@ -885,7 +876,6 @@ async function generateOBSOverlay() {
     tries++;
   }, 100);
 }
-
 </script>
 
 
