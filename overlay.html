@@ -66,11 +66,15 @@ select {
 // ▼ IndexedDB を開く
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open("MKADP_DB", 1);
+    const req = indexedDB.open("mogi_DB", 1); // ★ version=1 が必須
+    req.onupgradeneeded = () => {
+      // ここは空でOK（overlay側でストアを作らない）
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
+
 
 // ▼ 全レコード取得
 async function getAllRecords() {
