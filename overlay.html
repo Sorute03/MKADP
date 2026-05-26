@@ -11,9 +11,17 @@
     color: white;
   }
   #overlayBox {
-    padding: 10px;
-    font-size: 20px;
-    background: rgba(0,0,0,0.6);
+    position: fixed;
+    top: 90px;       /* UI の高さ + 余白（ここが重要） */
+    left: 10px;
+    background: rgba(0,0,0,0.55);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 22px;
+    line-height: 1.6;
+    color: white;
+    white-space: nowrap;
+    z-index: 9999;
   }
   #uiBox {
     position: fixed;
