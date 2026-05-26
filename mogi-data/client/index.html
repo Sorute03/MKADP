@@ -4758,13 +4758,14 @@ function openOverlay() {
 }
 
 // ▼ OBS に送信（overlayWindow があればそちらへ）
-function sendToOverlay() {
-  const records = exportRecords(); // ← あなたの関数
+async function sendToOverlay() {
+  // ★ Promise を解決する（必須）
+  const records = await exportRecords();  
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
   const payload = {
     type: "records",
-    records,
+    records,      // ← ここは純粋な配列になる
     nextCourse
   };
 
@@ -4776,6 +4777,7 @@ function sendToOverlay() {
   // OBS 用：常に postMessage を飛ばす
   window.postMessage(payload, "*");
 }
+
 
 // 1秒ごとに送信
 setInterval(sendToOverlay, 1000);
