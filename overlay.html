@@ -479,24 +479,28 @@ window.addEventListener("message", (event) => {
   updateOverlay();
 });
 
-async function sendToAppsScript() {
-  const records = await exportRecords();
-  const nextCourse = localStorage.getItem("nextCourse") || "";
-
-  const payload = {
-    records,
-    nextCourse
-  };
-
-  await fetch("https://script.google.com/macros/s/AKfycbxxNUnHQ3z8DXcc6vpKOBlmZdPKdWGtQz2GjzFRw3uGkQl4gRr2QWZp4SgWFVy8Jb_jOw/exec", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
 // 1秒ごとに送信
-setInterval(sendToAppsScript, 1000);
 
+let latestRecords = [];
+let latestNextCourse = "";
+
+async function fetchOverlayData() {
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbxxNUnHQ3z8DXcc6vpKOBlmZdPKdWGtQz2GjzFRw3uGkQl4gRr2QWZp4SgWFVy8Jb_jOw/exec");
+    const data = await res.json();
+
+    latestRecords = data.records || [];
+    latestNextCourse = data.nextCourse || "";
+
+    updateOverlay();
+  } catch (e) {
+    console.log("FETCH ERROR:", e);
+  }
+}
+
+// 1秒ごとに取得
+setInterval(fetchOverlayData, 1000);
 
 
 </script>
