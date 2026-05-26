@@ -60,7 +60,7 @@ const bc = new BroadcastChannel("mkadp_channel");
 let latestRecords = [];
 let latestNextCourse = "";
 
-// 受信
+// 受信（※ここでだけ updateOverlay を呼ぶ）
 bc.onmessage = (event) => {
   const data = event.data;
   if (!data || data.type !== "records") return;
@@ -83,7 +83,7 @@ seasonSel.onchange = updateOverlay;
 courseSel.onchange = updateOverlay;
 
 // ======================================================
-// ▼ コースリスト（index.html と同じものを入れる）
+// ▼ コースリスト（index.html と同じ）
 // ======================================================
 const courseList = [
   "マリオブラザーズサーキット",
@@ -342,7 +342,7 @@ courseList.forEach(c => {
 });
 
 // ======================================================
-// ▼ あなたの buildHTML（そのまま使用）
+// ▼ buildHTML（あなたの表示形式を完全維持）
 // ======================================================
 function buildHTML(course, stats) {
   if (!stats) return `<b>${course}</b><br>データなし`;
@@ -360,7 +360,7 @@ function buildHTML(course, stats) {
 }
 
 // ======================================================
-// ▼ あなたの filterRecords（そのまま使用）
+// ▼ filterRecords（あなたのロジックを完全維持）
 // ======================================================
 function filterRecords(records) {
   let r = [...records];
@@ -394,12 +394,6 @@ function calcStats(records) {
       winRate: 0,
       avgRank: 0,
       avgScore: 0,
-      avgTotalScore12: 0,
-      stdRank: 0,
-      firstRate: 0,
-      avoidBottomRate: 0,
-      rankScore: 0,
-      efficiency: 0,
       topRate: 0,
       midRate: 0,
       bottomRate: 0
@@ -431,7 +425,7 @@ function calcStats(records) {
 }
 
 // ======================================================
-// ▼ overlay 更新（あなたの updateOverlay を BroadcastChannel 用に最適化）
+// ▼ updateOverlay（あなたの表示形式を完全維持）
 // ======================================================
 function updateOverlay() {
   const overlayBox = document.getElementById("overlayBox");
