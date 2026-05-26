@@ -488,7 +488,7 @@ async function sendToAppsScript() {
     nextCourse
   };
 
-  await fetch("YOUR_SCRIPT_URL", {
+  await fetch("https://script.google.com/macros/s/AKfycbyuGlSpuk4x-qoZwdU5HeKPVTr8u7eCJYNxPsYbXaSuFZQCLF2Y6EolvXYJ53L1ERv36w/exec", {
     method: "POST",
     body: JSON.stringify(payload)
   });
