@@ -601,6 +601,8 @@ courseList.push(
   <div id="raceHistoryList"></div>
 </div>
 
+<button onclick="openOverlay()">Overlay を開く</button>
+
 <div class="section-block">
   <h3>OBS オーバーレイ生成</h3>
 
@@ -4744,6 +4746,39 @@ document.getElementById("importTSVBtn").onclick = async () => {
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
 
+
+let overlayWindow = null;
+
+// ▼ overlay.html を別ウィンドウで開く（OBS では不要）
+function openOverlay() {
+  overlayWindow = window.open(
+    "https://sorute03.github.io/MKADP/overlay.html",
+    "mkadp_overlay"
+  );
+}
+
+// ▼ OBS に送信（overlayWindow があればそちらへ）
+function sendToOverlay() {
+  const records = exportRecords(); // ← あなたの関数
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  const payload = {
+    type: "records",
+    records,
+    nextCourse
+  };
+
+  // Web で overlayWindow が開いている場合
+  if (overlayWindow && !overlayWindow.closed) {
+    overlayWindow.postMessage(payload, "*");
+  }
+
+  // OBS 用：常に postMessage を飛ばす
+  window.postMessage(payload, "*");
+}
+
+// 1秒ごとに送信
+setInterval(sendToOverlay, 1000);
                           
 // ▼ OBS と通信する BroadcastChannel
 const bc = new BroadcastChannel("mkadp_channel");
@@ -4863,5 +4898,6 @@ window.addEventListener("load", async () => {
 });
 
 </script>
+
 </body>
 </html>
