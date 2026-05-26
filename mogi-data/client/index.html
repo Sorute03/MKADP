@@ -4767,6 +4767,7 @@ async function exportRecords() {
   });
 }
 
+
 // ▼ OBS に送信
 async function sendToOBS() {
   const records = await exportRecords();
@@ -4777,7 +4778,10 @@ async function sendToOBS() {
     records,
     nextCourse
   });
+
+  console.log("SEND:", records.length, "件");
 }
+
 
 // ▼ 2秒ごとに送信
 setInterval(sendToOBS, 2000);
