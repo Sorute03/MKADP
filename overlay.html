@@ -63,6 +63,9 @@ let latestNextCourse = "";
 // 受信（ここでだけ updateOverlay を呼ぶ）
 bc.onmessage = (event) => {
   const data = event.data;
+
+  console.log("RECEIVED:", data.records?.length, "件", "NEXT:", data.nextCourse);
+
   if (!data || data.type !== "records") return;
 
   latestRecords = data.records || [];
