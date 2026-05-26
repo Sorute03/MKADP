@@ -4744,6 +4744,45 @@ document.getElementById("importTSVBtn").onclick = async () => {
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
 
+                          
+// ▼ OBS と通信する BroadcastChannel
+const bc = new BroadcastChannel("mkadp_channel");
+
+// ▼ IndexedDB → JSON
+async function exportRecords() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("records", "readonly");
+      const store = tx.objectStore("records");
+      const getAll = store.getAll();
+
+      getAll.onsuccess = () => resolve(getAll.result);
+      getAll.onerror = () => reject(getAll.error);
+    };
+
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ▼ OBS に送信
+async function sendToOBS() {
+  const records = await exportRecords();
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  bc.postMessage({
+    type: "records",
+    records,
+    nextCourse
+  });
+}
+
+// ▼ 2秒ごとに送信
+setInterval(sendToOBS, 2000);
+
+
 
 
   
