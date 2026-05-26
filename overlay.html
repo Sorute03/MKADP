@@ -369,14 +369,6 @@ function buildHTML(course, stats) {
 function filterRecords(records) {
   let r = [...records];
 
-  // コース名揺れ補正
-  r = r.map(rec => {
-    if (courseList.includes(rec.course)) return rec;
-    const base = rec.course.split("→")[0];
-    const match = courseList.find(c => c === base);
-    return match ? { ...rec, course: match } : rec;
-  });
-
   const mode   = modeSel.value;
   const season = seasonSel.value;
   const course = courseSel.value;
@@ -387,6 +379,7 @@ function filterRecords(records) {
 
   return r;
 }
+
 
 // ======================================================
 // ▼ calcStats（あなたの overlay 用に最適化）
@@ -446,7 +439,7 @@ function updateOverlay() {
     return;
   }
 
-  // NEXT_COURSE 優先
+  // NEXT_COURSE 優先（そのまま一致）
   if (latestNextCourse) {
     const filtered = records.filter(r => r.course === latestNextCourse);
     const stats = calcStats(filtered);
@@ -454,13 +447,14 @@ function updateOverlay() {
     return;
   }
 
-  // 最新コース
+  // 最新コース（そのまま）
   const last = records[records.length - 1];
   const course = last.course;
 
   const stats = calcStats(records.filter(r => r.course === course));
   overlayBox.innerHTML = buildHTML(course, stats);
 }
+
 </script>
 
 </body>
