@@ -479,6 +479,26 @@ window.addEventListener("message", (event) => {
   updateOverlay();
 });
 
+async function sendToAppsScript() {
+  const records = await exportRecords();
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  const payload = {
+    records,
+    nextCourse
+  };
+
+  await fetch("YOUR_SCRIPT_URL", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+// 1秒ごとに送信
+setInterval(sendToAppsScript, 1000);
+
+
+
 </script>
 
 </body>
