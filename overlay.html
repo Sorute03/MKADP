@@ -464,6 +464,23 @@ function updateOverlay() {
   overlayBox.innerHTML = buildHTML(course, stats);
 }
 
+let latestRecords = [];
+let latestNextCourse = "";
+
+// ▼ OBS でも Web でも確実に受信できる
+window.addEventListener("message", (event) => {
+  const data = event.data;
+
+  console.log("RECEIVED:", data);
+
+  if (!data || data.type !== "records") return;
+
+  latestRecords = data.records || [];
+  latestNextCourse = data.nextCourse || "";
+
+  updateOverlay();
+});
+
 </script>
 
 </body>
