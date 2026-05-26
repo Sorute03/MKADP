@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: sans-serif;
+  color: white;
+}
+
+#overlayBox {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(0,0,0,0.55);
+  padding: 10px 14px;
+  font-size: 22px;
+  border-radius: 6px;
+  line-height: 1.6;
+  white-space: normal;
+}
+
+#controlBox {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.55);
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+select {
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ▼ UI（モード / シーズン / コース） -->
+<div id="controlBox">
+  モード：
+  <select id="modeSel">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="nora">野良</option>
+    <option value="tournament">大会</option>
+  </select>
+
+  シーズン：
+  <select id="seasonSel"></select>
+
+  コース：
+  <select id="courseSel">
+    <option value="ALL">ALL</option>
+  </select>
+</div>
+
+<!-- ▼ 表示エリア -->
+<div id="overlayBox">読み込み中...</div>
+
+<script>
+// ▼ IndexedDB を開く
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("MKADP_DB", 1);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ▼ 全レコード取得
+async function getAllRecords() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("records", "readonly");
+    const store = tx.objectStore("records");
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ▼ コース一覧（あなたの courseList をここに全部貼る）
+const courseList = const courseList = [
+  "マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "ほねほねツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+  "レインボーロード",
+
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "サンサンさばく→マリオブラザーズサーキット",
+  "シュポポコースター→マリオブラザーズサーキット",
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ワリオスタジアム→マリオブラザーズサーキット",
+
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "シュポポコースター→トロフィーシティ",
+  "DKうちゅうセンター→トロフィーシティ",
+  "サンサンさばく→トロフィーシティ",
+  "ワリオスタジアム→トロフィーシティ",
+  "ノコノコビーチ→トロフィーシティ",
+  "リバーサイドサファリ→トロフィーシティ",
+  "モーモーカントリー→トロフィーシティ",
+  "ピーチスタジアム→トロフィーシティ",
+
+  "マリオブラザーズサーキット→シュポポコースター",
+  "トロフィーシティ→シュポポコースター",
+  "DKうちゅうセンター→シュポポコースター",
+  "サンサンさばく→シュポポコースター",
+  "チョコマウンテン→シュポポコースター",
+
+  "マリオブラザーズサーキット→サンサンさばく",
+  "トロフィーシティ→サンサンさばく",
+  "シュポポコースター→サンサンさばく",
+  "DKうちゅうセンター→サンサンさばく",
+  "ヘイホーカーニバル→サンサンさばく",
+
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "サンサンさばく→ヘイホーカーニバル",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "キラーシップ→ヘイホーカーニバル",
+  "チョコマウンテン→ヘイホーカーニバル",
+
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "トロフィーシティ→ワリオスタジアム",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "キラーシップ→ワリオスタジアム",
+  "チョコマウンテン→ワリオスタジアム",
+  "キノピオファクトリー→ワリオスタジアム",
+  "クッパキャッスル→ワリオスタジアム",
+
+  "ヘイホーカーニバル→キラーシップ",
+  "ワリオスタジアム→キラーシップ",
+  "キノピオファクトリー→キラーシップ",
+  "クッパキャッスル→キラーシップ",
+  "ホネホネツイスター→キラーシップ",
+
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "おばけシネマ→ロゼッタてんもんだい",
+  "マリオサーキット→ロゼッタてんもんだい",
+
+  "DKスノーマウンテン→アイスビルディング",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ワリオシップ→アイスビルディング",
+  "ショーニューロード→アイスビルディング",
+
+  "DKスノーマウンテン→ワリオシップ",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "アイスビルディング→ワリオシップ",
+  "ピーチビーチ→ワリオシップ",
+  "ソルティータウン→ワリオシップ",
+  "プクプクフォールズ→ワリオシップ",
+
+  "トロフィーシティ→ノコノコビーチ",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "サンサンさばく→ノコノコビーチ",
+  "シュポポコースター→ノコノコビーチ",
+  "ディノディノジャングル→ノコノコビーチ",
+  "ハテナしんでん→ノコノコビーチ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "リバーサイドサファリ→ノコノコビーチ",
+
+  "トロフィーシティ→リバーサイドサファリ",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "ピーチスタジアム→リバーサイドサファリ",
+
+  "ワリオシップ→ピーチビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "ソルティータウン→ピーチビーチ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ハテナしんでん→ピーチビーチ",
+
+  "DKスノーマウンテン→ソルティータウン",
+  "アイスビルディング→ソルティータウン",
+  "ワリオシップ→ソルティータウン",
+  "ピーチビーチ→ソルティータウン",
+  "プクプクフォールズ→ソルティータウン",
+  "リバーサイドサファリ→ソルティータウン",
+  "ディノディノジャングル→ソルティータウン",
+  "ハテナしんでん→ソルティータウン",
+
+  "ノコノコビーチ→ディノディノジャングル",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "ピーチビーチ→ディノディノジャングル",
+  "ソルティータウン→ディノディノジャングル",
+  "ハテナしんでん→ディノディノジャングル",
+
+  "リバーサイドサファリ→ハテナしんでん",
+  "ピーチビーチ→ハテナしんでん",
+  "ソルティータウン→ハテナしんでん",
+  "ディノディノジャングル→ハテナしんでん",
+
+  "DKスノーマウンテン→プクプクフォールズ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ワリオシップ→プクプクフォールズ",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "ソルティータウン→プクプクフォールズ",
+  "ショーニューロード→プクプクフォールズ",
+  "モーモーカントリー→プクプクフォールズ",
+  "チョコマウンテン→プクプクフォールズ",
+  "ピーチスタジアム→プクプクフォールズ",
+
+  "DKスノーマウンテン→ショーニューロード",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "アイスビルディング→ショーニューロード",
+  "プクプクフォールズ→ショーニューロード",
+  "おばけシネマ→ショーニューロード",
+  "モーモーカントリー→ショーニューロード",
+  "キノピオファクトリー→ショーニューロード",
+  "どんぐりツリーハウス→ショーニューロード",
+  "マリオサーキット→ショーニューロード",
+
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ショーニューロード→おばけシネマ",
+  "ホネホネツイスター→おばけシネマ",
+  "どんぐりツリーハウス→おばけシネマ",
+  "マリオサーキット→おばけシネマ",
+
+  "ワリオスタジアム→ホネホネツイスター",
+  "キラーシップ→ホネホネツイスター",
+  "おばけシネマ→ホネホネツイスター",
+  "モーモーカントリー→ホネホネツイスター",
+  "キノピオファクトリー→ホネホネツイスター",
+  "クッパキャッスル→ホネホネツイスター",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "マリオサーキット→ホネホネツイスター",
+
+  "DKスノーマウンテン→モーモーカントリー",
+  "ショーニューロード→モーモーカントリー",
+  "プクプクフォールズ→モーモーカントリー",
+  "ホネホネツイスター→モーモーカントリー",
+  "チョコマウンテン→モーモーカントリー",
+  "キノピオファクトリー→モーモーカントリー",
+  "マリオサーキット→モーモーカントリー",
+  "ピーチスタジアム→モーモーカントリー",
+
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "トロフィーシティ→チョコマウンテン",
+  "シュポポコースター→チョコマウンテン",
+  "ヘイホーカーニバル→チョコマウンテン",
+  "ワリオスタジアム→チョコマウンテン",
+  "プクプクフォールズ→チョコマウンテン",
+  "モーモーカントリー→チョコマウンテン",
+  "キノピオファクトリー→チョコマウンテン",
+  "クッパキャッスル→チョコマウンテン",
+
+  "マリオブラザーズサーキット→キノピオファクトリー",
+  "ワリオスタジアム→キノピオファクトリー",
+  "キラーシップ→キノピオファクトリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "モーモーカントリー→キノピオファクトリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "クッパキャッスル→キノピオファクトリー",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "マリオサーキット→キノピオファクトリー",
+  "ピーチスタジアム→キノピオファクトリー",
+
+  "ワリオスタジアム→クッパキャッスル",
+  "キラーシップ→クッパキャッスル",
+  "ホネホネツイスター→クッパキャッスル",
+  "チョコマウンテン→クッパキャッスル",
+  "キノピオファクトリー→クッパキャッスル",
+  "マリオサーキット→クッパキャッスル",
+
+  "ショーニューロード→どんぐりツリーハウス",
+  "おばけシネマ→どんぐりツリーハウス",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "マリオサーキット→どんぐりツリーハウス",
+
+  "ロゼッタてんもんだい→マリオサーキット",
+  "ショーニューロード→マリオサーキット",
+  "おばけシネマ→マリオサーキット",
+  "ホネホネツイスター→マリオサーキット",
+  "モーモーカントリー→マリオサーキット",
+  "キノピオファクトリー→マリオサーキット",
+  "クッパキャッスル→マリオサーキット",
+  "どんぐりツリーハウス→マリオサーキット",
+
+  "トロフィーシティ→ピーチスタジアム",
+  "ノコノコビーチ→ピーチスタジアム",
+  "リバーサイドサファリ→ピーチスタジアム",
+  "プクプクフォールズ→ピーチスタジアム",
+  "モーモーカントリー→ピーチスタジアム",
+  "チョコマウンテン→ピーチスタジアム",
+  "キノピオファクトリー→ピーチスタジアム",
+  "マリオサーキット→ピーチスタジアム",
+
+  "ピーチスタジアム→レインボーロード"
+];
+
+
+// ▼ シーズン一覧生成
+const seasonSel = document.getElementById("seasonSel");
+seasonSel.innerHTML = `<option value="ALL">ALL</option>`;
+for (let i = 1; i <= 20; i++) {
+  seasonSel.innerHTML += `<option value="S${i}">S${i}</option>`;
+}
+
+// ▼ コース一覧生成
+const courseSel = document.getElementById("courseSel");
+courseList.forEach(c => {
+  courseSel.innerHTML += `<option value="${c}">${c}</option>`;
+});
+
+// ▼ URL パラメータを取得
+const params = new URLSearchParams(location.search);
+
+// ▼ UI 初期値（URL → localStorage → デフォルト の優先順位）
+function loadUI() {
+  modeSel.value   = params.get("mode")   || localStorage.getItem("overlay_mode")   || "ALL";
+  seasonSel.value = params.get("season") || localStorage.getItem("overlay_season") || "ALL";
+  courseSel.value = params.get("course") || localStorage.getItem("overlay_course") || "ALL";
+}
+loadUI();
+
+// ▼ UI 変更時に localStorage に保存
+function saveUI() {
+  localStorage.setItem("overlay_mode", modeSel.value);
+  localStorage.setItem("overlay_season", seasonSel.value);
+  localStorage.setItem("overlay_course", courseSel.value);
+}
+modeSel.onchange = saveUI;
+seasonSel.onchange = saveUI;
+courseSel.onchange = saveUI;
+
+// ▼ 統計計算
+function calcStats(records) {
+  if (!records.length) return null;
+
+  const count = records.length;
+  const wins = records.filter(r => r.rank <= 3).length;
+  const sumRank = records.reduce((s, r) => s + r.rank, 0);
+  const sumScore = records.reduce((s, r) => s + r.score, 0);
+
+  const avgRank = sumRank / count;
+  const avgScore = sumScore / count;
+
+  const topRate    = records.filter(r => r.rank <= 5).length / count;
+  const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
+  const bottomRate = records.filter(r => r.rank >= 16).length / count;
+
+  return {
+    count,
+    avgRank,
+    avgScore,
+    winRate: wins / count,
+    topRate,
+    midRate,
+    bottomRate
+  };
+}
+
+// ▼ HTML 生成
+function buildHTML(course, stats) {
+  if (!stats) return `<b>${course}</b><br>データなし`;
+
+  return `
+    <b>${course}</b><br>
+    平均順位 ${stats.avgRank.toFixed(2)}位 ｜ 
+    平均得点 ${stats.avgScore.toFixed(2)}点 ｜ 
+    試行回数 ${stats.count}回<br>
+    勝率 ${(stats.winRate * 100).toFixed(1)}% ｜ 
+    上位率 ${(stats.topRate * 100).toFixed(1)}% ｜ 
+    中位率 ${(stats.midRate * 100).toFixed(1)}% ｜ 
+    下位率 ${(stats.bottomRate * 100).toFixed(1)}%
+  `;
+}
+
+// ▼ フィルタ処理
+function filterRecords(records) {
+  let r = [...records];
+
+  // コース名揺れ補正
+  r = r.map(rec => {
+    if (courseList.includes(rec.course)) return rec;
+    const base = rec.course.split("→")[0];
+    const match = courseList.find(c => c === base);
+    return match ? { ...rec, course: match } : rec;
+  });
+
+  const mode   = modeSel.value;
+  const season = seasonSel.value;
+  const course = courseSel.value;
+
+  if (mode !== "ALL")   r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+
+  return r;
+}
+
+// ▼ overlay 更新
+async function updateOverlay() {
+  const all = await getAllRecords();
+  const records = filterRecords(all);
+
+  if (!records.length) {
+    overlayBox.innerHTML = "データなし";
+    return;
+  }
+
+  // NEXT_COURSE（index.html が保存した値）
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  if (nextCourse) {
+    const filtered = records.filter(r => r.course === nextCourse);
+    const stats = calcStats(filtered);
+    overlayBox.innerHTML = buildHTML(nextCourse, stats);
+    return;
+  }
+
+  // 最新コース
+  const last = records[records.length - 1];
+  const course = last.course;
+
+  const stats = calcStats(records.filter(r => r.course === course));
+  overlayBox.innerHTML = buildHTML(course, stats);
+}
+
+// ▼ 初回 + 2秒ごと更新
+updateOverlay();
+setInterval(updateOverlay, 2000);
+</script>
+
+</body>
+</html>
