@@ -134,10 +134,7 @@
       border-radius: 4px;
     }
     
-    /* ===========================
-       モーダル（緑テーマ）
-    =========================== */
-    #raceModal {
+     #raceModal {
       display: none;
       position: fixed;
       top: 0; left: 0;
@@ -151,134 +148,38 @@
     
     #raceModal.show {
       display: flex !important;
-      animation: fadeIn 0.2s ease-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    
-    #raceModal > div {
-      background: #ffffff;
-      padding: 24px;
-      width: 95%;
-      max-width: 520px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-      max-height: 90%;
-      overflow-y: auto;
-    }
-    
-    #raceModal h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      color: #27ae60;
-    }
-    
-    #raceModal label {
-      font-weight: bold;
-      color: #27ae60;
-    }
-    
-    #raceModal select,
-    #raceModal input[type="number"],
-    #raceModal input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      margin: 4px 0 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-    
-    #raceModal select:focus,
-    #raceModal input:focus {
-      border-color: #27ae60;
-      outline: none;
-    }
-    
-    /* レース入力カード */
-    #modalRaceInputs > div {
-      padding: 10px;
-      border: 1px solid #d8f3dd !important;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      background: #f8fdf8;
-    }
-    
-    /* ボタン */
-    #closeModalBtn,
-    #saveRaceBtn {
-      padding: 8px 16px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    
-    #closeModalBtn {
-      background: #cccccc;
-      color: #333;
-      margin-right: 8px;
-    }
-    
-    #saveRaceBtn {
-      background: #2ecc71;
-      color: #ffffff;
-    }
-    
-    #closeModalBtn:hover {
-      background: #b3b3b3;
-    }
-    
-    #saveRaceBtn:hover {
-      background: #27ae60;
-    }
-    
-    /* ===========================
-       右下の「＋ レース登録」ボタン
-    =========================== */
-    #openModalBtn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      padding: 14px 20px;
-      background: #2ecc71;
-      color: #fff;
-      border: none;
-      border-radius: 50px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      z-index: 9999;
-    }
-    
-    #openModalBtn:hover {
-      background: #27ae60;
     }
 
+    
+    /* ===========================
+       その他（既存）
+    =========================== */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 20px;
       background: #fafafa;
       color: #222;
     }
+    
     h2, h3, h4 {
       margin-top: 32px;
       margin-bottom: 8px;
     }
+    
     label {
       margin-right: 8px;
     }
+    
     select, input {
       margin-bottom: 8px;
     }
+    
     canvas {
       background: #fff;
       border: 1px solid #ddd;
       margin-top: 8px;
     }
+    
     .section-block {
       padding: 16px;
       margin-bottom: 24px;
@@ -287,15 +188,6 @@
       border: 1px solid #e0e0e0;
     }
 
-    /* ▼ モーダル */
-    #raceModal.show {
-      display:flex !important;
-      animation: fadeIn 0.2s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity:0; }
-      to { opacity:1; }
-    }
   </style>
 </head>
 
@@ -329,7 +221,7 @@ const courseList = [
   "プクプクフォールズ",
   "ショーニューロード",
   "おばけシネマ",
-  "ほねほねツイスター",
+  "ホネホネツイスター",
   "モーモーカントリー",
   "チョコマウンテン",
   "キノピオファクトリー",
@@ -338,302 +230,246 @@ const courseList = [
   "マリオサーキット",
   "レインボーロード",
 
-  "DKうちゅうセンター→マリオブラザーズサーキット",
-  "キノピオファクトリー→マリオブラザーズサーキット",
-  "サンサンさばく→マリオブラザーズサーキット",
-  "シュポポコースター→マリオブラザーズサーキット",
-  "チョコマウンテン→マリオブラザーズサーキット",
-  "トロフィーシティ→マリオブラザーズサーキット",
-  "ヘイホーカーニバル→マリオブラザーズサーキット",
-  "ワリオスタジアム→マリオブラザーズサーキット",
-];
-</script>
-
-<script>
-courseList.push(
+  // ここから遷移データ
   "マリオブラザーズサーキット→トロフィーシティ",
-  "シュポポコースター→トロフィーシティ",
-  "DKうちゅうセンター→トロフィーシティ",
-  "サンサンさばく→トロフィーシティ",
-  "ワリオスタジアム→トロフィーシティ",
-  "ノコノコビーチ→トロフィーシティ",
-  "リバーサイドサファリ→トロフィーシティ",
-  "モーモーカントリー→トロフィーシティ",
-  "ピーチスタジアム→トロフィーシティ"
-);
-</script>
-<script>
-courseList.push(
   "マリオブラザーズサーキット→シュポポコースター",
-  "トロフィーシティ→シュポポコースター",
-  "DKうちゅうセンター→シュポポコースター",
-  "サンサンさばく→シュポポコースター",
-  "チョコマウンテン→シュポポコースター"
-);
-  
-courseList.push(
   "マリオブラザーズサーキット→サンサンさばく",
-  "トロフィーシティ→サンサンさばく",
-  "シュポポコースター→サンサンさばく",
-  "DKうちゅうセンター→サンサンさばく",
-  "ヘイホーカーニバル→サンサンさばく"
-);
-
-courseList.push(
   "マリオブラザーズサーキット→ヘイホーカーニバル",
-  "サンサンさばく→ヘイホーカーニバル",
-  "ワリオスタジアム→ヘイホーカーニバル",
-  "キラーシップ→ヘイホーカーニバル",
-  "チョコマウンテン→ヘイホーカーニバル"
-);
-
-courseList.push(
   "マリオブラザーズサーキット→ワリオスタジアム",
-  "トロフィーシティ→ワリオスタジアム",
-  "ヘイホーカーニバル→ワリオスタジアム",
-  "キラーシップ→ワリオスタジアム",
-  "チョコマウンテン→ワリオスタジアム",
-  "キノピオファクトリー→ワリオスタジアム",
-  "クッパキャッスル→ワリオスタジアム"
-);
-
-courseList.push(
-  "ヘイホーカーニバル→キラーシップ",
-  "ワリオスタジアム→キラーシップ",
-  "キノピオファクトリー→キラーシップ",
-  "クッパキャッスル→キラーシップ",
-  "ホネホネツイスター→キラーシップ"
-);
-
-courseList.push(
-  "DKスノーマウンテン→ロゼッタてんもんだい",
-  "アイスビルディング→ロゼッタてんもんだい",
-  "ワリオシップ→ロゼッタてんもんだい",
-  "プクプクフォールズ→ロゼッタてんもんだい",
-  "ショーニューロード→ロゼッタてんもんだい",
-  "おばけシネマ→ロゼッタてんもんだい",
-  "マリオサーキット→ロゼッタてんもんだい"
-);
-
-courseList.push(
-  "DKスノーマウンテン→アイスビルディング",
-  "ロゼッタてんもんだい→アイスビルディング",
-  "ワリオシップ→アイスビルディング",
-  "ショーニューロード→アイスビルディング"
-);
-
-courseList.push(
-  "DKスノーマウンテン→ワリオシップ",
-  "ロゼッタてんもんだい→ワリオシップ",
-  "アイスビルディング→ワリオシップ",
-  "ピーチビーチ→ワリオシップ",
-  "ソルティータウン→ワリオシップ",
-  "プクプクフォールズ→ワリオシップ"
-);
-
-courseList.push(
-  "トロフィーシティ→ノコノコビーチ",
-  "DKうちゅうセンター→ノコノコビーチ",
-  "サンサンさばく→ノコノコビーチ",
-  "シュポポコースター→ノコノコビーチ",
-  "ディノディノジャングル→ノコノコビーチ",
-  "ハテナしんでん→ノコノコビーチ",
-  "ピーチスタジアム→ノコノコビーチ",
-  "リバーサイドサファリ→ノコノコビーチ"
-);
-
-courseList.push(
-  "トロフィーシティ→リバーサイドサファリ",
-  "ノコノコビーチ→リバーサイドサファリ",
-  "ピーチビーチ→リバーサイドサファリ",
-  "ソルティータウン→リバーサイドサファリ",
-  "ディノディノジャングル→リバーサイドサファリ",
-  "ハテナしんでん→リバーサイドサファリ",
-  "プクプクフォールズ→リバーサイドサファリ",
-  "ピーチスタジアム→リバーサイドサファリ"
-);
-
-courseList.push(
-  "ワリオシップ→ピーチビーチ",
-  "リバーサイドサファリ→ピーチビーチ",
-  "ソルティータウン→ピーチビーチ",
-  "ディノディノジャングル→ピーチビーチ",
-  "ハテナしんでん→ピーチビーチ"
-);
-
-courseList.push(
-  "DKスノーマウンテン→ソルティータウン",
-  "アイスビルディング→ソルティータウン",
-  "ワリオシップ→ソルティータウン",
-  "ピーチビーチ→ソルティータウン",
-  "プクプクフォールズ→ソルティータウン",
-  "リバーサイドサファリ→ソルティータウン",
-  "ディノディノジャングル→ソルティータウン",
-  "ハテナしんでん→ソルティータウン"
-);
-
-courseList.push(
-  "ノコノコビーチ→ディノディノジャングル",
-  "リバーサイドサファリ→ディノディノジャングル",
-  "ピーチビーチ→ディノディノジャングル",
-  "ソルティータウン→ディノディノジャングル",
-  "ハテナしんでん→ディノディノジャングル"
-);
-
-courseList.push(
-  "リバーサイドサファリ→ハテナしんでん",
-  "ピーチビーチ→ハテナしんでん",
-  "ソルティータウン→ハテナしんでん",
-  "ディノディノジャングル→ハテナしんでん"
-);
-
-courseList.push(
-  "DKスノーマウンテン→プクプクフォールズ",
-  "ロゼッタてんもんだい→プクプクフォールズ",
-  "ワリオシップ→プクプクフォールズ",
-  "リバーサイドサファリ→プクプクフォールズ",
-  "ソルティータウン→プクプクフォールズ",
-  "ショーニューロード→プクプクフォールズ",
-  "モーモーカントリー→プクプクフォールズ",
-  "チョコマウンテン→プクプクフォールズ",
-  "ピーチスタジアム→プクプクフォールズ"
-);
-
-courseList.push(
-  "DKスノーマウンテン→ショーニューロード",
-  "ロゼッタてんもんだい→ショーニューロード",
-  "アイスビルディング→ショーニューロード",
-  "プクプクフォールズ→ショーニューロード",
-  "おばけシネマ→ショーニューロード",
-  "モーモーカントリー→ショーニューロード",
-  "キノピオファクトリー→ショーニューロード",
-  "どんぐりツリーハウス→ショーニューロード",
-  "マリオサーキット→ショーニューロード"
-);
-
-courseList.push(
-  "ロゼッタてんもんだい→おばけシネマ",
-  "ショーニューロード→おばけシネマ",
-  "ホネホネツイスター→おばけシネマ",
-  "どんぐりツリーハウス→おばけシネマ",
-  "マリオサーキット→おばけシネマ"
-);
-
-courseList.push(
-  "ワリオスタジアム→ホネホネツイスター",
-  "キラーシップ→ホネホネツイスター",
-  "おばけシネマ→ホネホネツイスター",
-  "モーモーカントリー→ホネホネツイスター",
-  "キノピオファクトリー→ホネホネツイスター",
-  "クッパキャッスル→ホネホネツイスター",
-  "どんぐりツリーハウス→ホネホネツイスター",
-  "マリオサーキット→ホネホネツイスター"
-);
-
-courseList.push(
-  "DKスノーマウンテン→モーモーカントリー",
-  "ショーニューロード→モーモーカントリー",
-  "プクプクフォールズ→モーモーカントリー",
-  "ホネホネツイスター→モーモーカントリー",
-  "チョコマウンテン→モーモーカントリー",
-  "キノピオファクトリー→モーモーカントリー",
-  "マリオサーキット→モーモーカントリー",
-  "ピーチスタジアム→モーモーカントリー"
-);
-
-courseList.push(
   "マリオブラザーズサーキット→チョコマウンテン",
-  "トロフィーシティ→チョコマウンテン",
-  "シュポポコースター→チョコマウンテン",
-  "ヘイホーカーニバル→チョコマウンテン",
-  "ワリオスタジアム→チョコマウンテン",
-  "プクプクフォールズ→チョコマウンテン",
-  "モーモーカントリー→チョコマウンテン",
-  "キノピオファクトリー→チョコマウンテン",
-  "クッパキャッスル→チョコマウンテン"
-);
-
-courseList.push(
   "マリオブラザーズサーキット→キノピオファクトリー",
-  "ワリオスタジアム→キノピオファクトリー",
-  "キラーシップ→キノピオファクトリー",
-  "ショーニューロード→キノピオファクトリー",
-  "ホネホネツイスター→キノピオファクトリー",
-  "モーモーカントリー→キノピオファクトリー",
-  "チョコマウンテン→キノピオファクトリー",
-  "クッパキャッスル→キノピオファクトリー",
-  "どんぐりツリーハウス→キノピオファクトリー",
-  "マリオサーキット→キノピオファクトリー",
-  "ピーチスタジアム→キノピオファクトリー"
-);
 
-courseList.push(
-  "ワリオスタジアム→クッパキャッスル",
-  "キラーシップ→クッパキャッスル",
-  "ホネホネツイスター→クッパキャッスル",
-  "チョコマウンテン→クッパキャッスル",
-  "キノピオファクトリー→クッパキャッスル",
-  "マリオサーキット→クッパキャッスル"
-);
-
-courseList.push(
-  "ショーニューロード→どんぐりツリーハウス",
-  "おばけシネマ→どんぐりツリーハウス",
-  "ホネホネツイスター→どんぐりツリーハウス",
-  "キノピオファクトリー→どんぐりツリーハウス",
-  "マリオサーキット→どんぐりツリーハウス"
-);
-
-courseList.push(
-  "ロゼッタてんもんだい→マリオサーキット",
-  "ショーニューロード→マリオサーキット",
-  "おばけシネマ→マリオサーキット",
-  "ホネホネツイスター→マリオサーキット",
-  "モーモーカントリー→マリオサーキット",
-  "キノピオファクトリー→マリオサーキット",
-  "クッパキャッスル→マリオサーキット",
-  "どんぐりツリーハウス→マリオサーキット"
-);
-
-courseList.push(
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
   "トロフィーシティ→ピーチスタジアム",
-  "ノコノコビーチ→ピーチスタジアム",
-  "リバーサイドサファリ→ピーチスタジアム",
-  "プクプクフォールズ→ピーチスタジアム",
-  "モーモーカントリー→ピーチスタジアム",
-  "チョコマウンテン→ピーチスタジアム",
-  "キノピオファクトリー→ピーチスタジアム",
-  "マリオサーキット→ピーチスタジアム"
-);
 
-courseList.push(
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
   "ピーチスタジアム→レインボーロード"
-);
+];
 
 </script>
 
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
+<button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
 
-<script>
-function exportOldData() {
-  const data = localStorage.getItem("allRecords") || "[]";
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "oldData.json";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-</script>
-
-<button onclick="exportOldData()">データをエクスポート</button>
-
- 
   <!-- ▼ パスワード付きバックアップ UI ▼ -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>バックアップ（パスワード付き）</h3>
@@ -657,15 +493,7 @@ function exportOldData() {
 </div>
 <!-- ▲ パスワード付きバックアップ UI ▲ -->
   
-<div style="margin: 20px 0;">
-    <button id="exportSaveFileBtn">セーブデータをファイル出力</button>
-    <button id="exportSaveBtn">セーブデータ出力</button>
-    <button id="importSaveBtn">セーブデータ復元</button>
-    <input id="importSaveInput" type="text" placeholder="ここにセーブデータを貼り付け" style="width:60%;">
-    <input type="file" id="importSaveFile">
-    <button id="importBackupBtn">バックアップから復元</button>
-    <button id="importSaveFileBtn">ファイルから復元</button>
-  </div>
+
 
 <h3>TSV読み込み（スプシコピー対応）</h3>
 <textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
@@ -676,6 +504,44 @@ function exportOldData() {
 <button id="importFileBtn">読み込んで保存</button>
 
 </script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
+
+<!-- ▼ 旧データ取り込みセクション -->
+<div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
+
+  <!-- 方法2：旧JSONを読み込む -->
+  <div style="margin-bottom:15px;">
+    <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+    <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
+    <button id="importOldJsonBtn" style="margin-left:10px;">旧JSONを取り込む</button>
+  </div>
+
+  <hr>
+
+  <!-- 方法3：旧HTMLを読み込む -->
+  <div style="margin-top:15px;">
+    <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+    <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
+    <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
+  </div>
+
+  <p style="margin-top:15px; font-size:13px; color:#666;">
+    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
+    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
+  </p>
+</div>
+  
+<button id="importBackupBtn">バックアップ復元</button>
+<button id="importSaveFileBtn">ファイルから復元</button>
+
+
+<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>重複データの整理</h3>
+  <button id="removeDupBtn">重複データを自動削除する</button>
+  <p style="font-size:13px; color:#666; margin-top:10px;">
+    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+  </p>
+</div>
 
 
 <!-- ▼ タブボタン -->
@@ -695,6 +561,8 @@ function exportOldData() {
 
   <div id="raceHistoryList"></div>
 </div>
+
+<button onclick="openOverlay()">Overlay を開く</button>
 
 <div class="section-block">
   <h3>OBS オーバーレイ生成</h3>
@@ -741,7 +609,7 @@ function exportOldData() {
         style="width:100%; height:300px; border:none; background:transparent;">
 </iframe>
 
-  
+
 <script>
 
 function buildOverlayHTMLFile(mode, season, course) {
@@ -768,6 +636,7 @@ body {
   font-size: 22px;
   border-radius: 6px;
   line-height: 1.6;
+  white-space: normal; 
 }
 </style>
 </head>
@@ -898,7 +767,7 @@ function buildHTML(course, stats) {
   if (!stats) return course + " ｜ データなし";
 
   return (
-    "<b>" + course + "</b> ｜ " +
+    "<b>" + course + "</b><br> " +
     "平均順位 " + stats.avgRank.toFixed(2) + "位 ｜ " +
     "平均得点 " + stats.avgScore.toFixed(2) + "点 ｜ " +
     "試行回数 " + stats.count + "回<br>" +
@@ -908,6 +777,7 @@ function buildHTML(course, stats) {
     "下位率 " + (stats.bottomRate * 100).toFixed(1) + "%"
   );
 }
+
 
 function updateOverlay() {
   const records = getFilteredRecords();
@@ -929,22 +799,21 @@ function updateOverlay() {
   document.getElementById("overlay").innerHTML = buildHTML(course, stats);
 }
 
-<\/script>
+</scr` + `ipt>
 
 </body>
 </html>
 `;
 }
 
-function generateOBSOverlay() {
+async function generateOBSOverlay() {
   const mode = document.getElementById("obsMode").value;
   const season = document.getElementById("obsSeason").value;
   const course = document.getElementById("obsCourse").value;
 
-  const allRecords = JSON.parse(localStorage.getItem("allRecords") || "[]");
+  const allRecords = await getAllRecords();
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
-  // overlay HTML（データなし）を生成
   const html = buildOverlayHTMLFile(mode, season, course);
 
   const blob = new Blob([html], { type: "text/html" });
@@ -953,19 +822,34 @@ function generateOBSOverlay() {
   const frame = document.getElementById("overlayFrame");
   frame.src = url;
 
-  // OBS は load が遅いので 200ms 待つと確実
-  frame.onload = () => {
-    setTimeout(() => {
+  // ▼ OBS では onload が発火しないことがあるのでポーリング
+  const safeRecords = JSON.parse(JSON.stringify(allRecords));
+
+  const sendData = () => {
+    try {
       frame.contentWindow.postMessage(
         {
           type: "initData",
-          allRecords,
+          allRecords: safeRecords,
           nextCourse
         },
         "*"
       );
-    }, 200);
+      console.log("OBS overlay にデータ送信成功");
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
+
+  // ▼ 100ms 間隔で最大 30 回試す（3 秒）
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (sendData() || tries > 30) {
+      clearInterval(timer);
+    }
+    tries++;
+  }, 100);
 }
 </script>
 
@@ -989,6 +873,7 @@ function generateOBSOverlay() {
 
   <!-- ここにグラフや分析UIが続く -->
 </div>
+  
 <!-- ▼ レース登録ボタン（右下固定） -->
 <button id="openModalBtn" style="
   position: fixed;
@@ -1005,27 +890,9 @@ function generateOBSOverlay() {
   z-index: 9999;
 ">＋ レース登録</button>
 
-<!-- ▼ モーダル本体 -->
-<style>
-#raceModal {
-  display: none;
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(3px);
-  justify-content:center;
-  align-items:center;
-  z-index:9998;
-}
-
-#raceModal.show {
-  display: flex !important;
-}
-</style>
-
+<!-- ▼ レース登録モーダル -->
 <div id="raceModal">
-  <div style="
+  <div class="modal-inner" style="
     background:#fff;
     padding:24px;
     width: 95%;
@@ -1035,10 +902,12 @@ function generateOBSOverlay() {
     max-height: 90%;
     overflow-y: auto;
     overscroll-behavior: contain;
+    position: relative;
+    padding-bottom: 90px;
   ">
+
     <h3>レース登録</h3>
 
-    <!-- ▼ モード選択 -->
     <label>モード</label><br>
     <select id="modalMode" style="width:100%; margin-bottom:12px;">
       <option value="lounge">ラウンジ</option>
@@ -1046,19 +915,16 @@ function generateOBSOverlay() {
       <option value="nora">野良</option>
     </select>
 
-    <!-- ▼ Tier（ラウンジのみ） -->
     <div id="modalTierBlock">
       <label>Tier</label><br>
       <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
-    <!-- ▼ Season（ラウンジのみ） -->
     <div id="modalSeasonBlock">
       <label>Season</label><br>
       <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
-    <!-- ▼ レース数（大会・野良） -->
     <div id="modalRaceCountBlock">
       <label>レース数</label><br>
       <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
@@ -1077,20 +943,33 @@ function generateOBSOverlay() {
       </select>
     </div>
 
-    <!-- ▼ ラウンジは12固定（中断OK） -->
     <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
       ※ ラウンジは最大12レース（途中中断OK）
     </div>
 
-    <!-- ▼ レース入力エリア -->
     <div id="modalRaceInputs"></div>
 
-    <div style="text-align:right; margin-top:20px;">
-      <button id="closeModalBtn" style="padding:8px 16px; margin-right:8px;">キャンセル</button>
-      <button id="saveRaceBtn" style="padding:8px 16px; background:#007bff; color:#fff; border:none;">保存</button>
-    </div>
+   <div style="text-align:right; margin-top:20px;">
+      <button id="closeModalBtn" style="
+        padding:8px 16px;
+        margin-right:8px;
+        background:#ccc;
+        border-radius:6px;
+      ">キャンセル</button>
+    
+      <button id="saveRaceBtn" style="
+        padding:8px 16px;
+        background:#007bff;
+        color:#fff;
+        border:none;
+        border-radius:6px;
+        font-weight:bold;
+        cursor:pointer;
+      ">保存</button>
+    </div>   <!-- ★★★ この閉じタグが必要！ ★★★ -->
   </div>
 </div>
+
 
 <!-- ★★★ ここから全部の JS ★★★ -->
 <script>
@@ -1126,15 +1005,14 @@ openModalBtn.onclick = () => {
   editingTimestamp = null;          // 新規モード
   initModalSelectors();
   updateModalMode();
-  loadModalDraft();
   modal.classList.add("show");
 };
 
 closeModalBtn.onclick = () => {
   modal.classList.remove("show");
   editingTimestamp = null;
-  localStorage.removeItem("modalDraft");
 };
+
 
 </script>
 
@@ -1151,11 +1029,8 @@ function renderRaceHistory(records) {
   // ▼ 共通フィルター済み records が渡される前提
   let list = records || [];
 
-  // ▼ timestamp がある場合は新しい順に並べる
-  list = clone(list).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return b.timestamp - a.timestamp;
-  });
+  // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
+  list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
 
   if (!list.length) {
     box.innerHTML = "<p>レース履歴がありません。</p>";
@@ -1169,9 +1044,7 @@ function renderRaceHistory(records) {
     div.className = "race-history-item";
     div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
-    const date = r.timestamp
-      ? new Date(r.timestamp).toLocaleString()
-      : "日時なし";
+    const date = new Date(r.timestamp).toLocaleString();
 
     div.innerHTML = `
       <strong>${r.course}</strong>
@@ -1200,7 +1073,6 @@ function renderRaceHistory(records) {
     btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
   });
 }
-
 </script>
 
 
@@ -1208,7 +1080,7 @@ function renderRaceHistory(records) {
 
 let editingTimestamp = null;
 
-function openEditRecord(ts) {
+async function openEditRecord(ts) {
   const r = allRecords.find(x => x.timestamp === ts);
   if (!r) {
     alert("データが見つかりません");
@@ -1233,7 +1105,7 @@ function openEditRecord(ts) {
   document.getElementById("raceRank_1").value = r.rank;
   document.getElementById("raceScore_1").value = r.score;
 
-  saveRaceBtn.onclick = () => {
+  saveRaceBtn.onclick = async () => {
     const course = document.getElementById("raceCourse_1").value;
     const rank   = Number(document.getElementById("raceRank_1").value);
     const score  = Number(document.getElementById("raceScore_1").value);
@@ -1243,6 +1115,7 @@ function openEditRecord(ts) {
       return;
     }
 
+    // ▼ レコード更新
     r.course = course;
     r.rank   = rank;
     r.score  = score;
@@ -1253,8 +1126,14 @@ function openEditRecord(ts) {
       r.season = modalSeason.value;
     }
 
-    saveAllRecords();
+    // ▼ DB に保存
+    await updateRecord(r);
 
+    // ▼ メモリ側も更新
+    const idx = allRecords.findIndex(x => x.timestamp === ts);
+    if (idx >= 0) allRecords[idx] = r;
+
+    // ▼ UI 更新
     const filtered = getGloballyFilteredRecords();
     refreshModeView();
     renderRaceHistory(filtered);
@@ -1269,17 +1148,18 @@ function openEditRecord(ts) {
 
 
 <script>
-function deleteSet(ts) {
-  // ▼ allRecords から削除
-  allRecords = allRecords.filter(r => r.timestamp !== ts);
+async function deleteSet(ts) {
+  // ▼ DB から削除
+  await deleteRecord(ts);
 
-  // ▼ localStorage も allRecords に統一
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ メモリ側から削除
+  allRecords = allRecords.filter(r => r.timestamp !== ts);
 
   // ▼ UI 更新
   refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 
 </script>
 
@@ -1313,10 +1193,13 @@ saveRaceBtn.onclick = async () => {
   }
 
   /* ==========
-     編集モード処理
+     編集モード処理（DB版）
   ========== */
   if (editingTimestamp) {
-    // ▼ 古いレコードを削除
+    // ▼ DB から削除
+    await deleteRecord(editingTimestamp);
+
+    // ▼ メモリ側から削除
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
@@ -1329,22 +1212,24 @@ saveRaceBtn.onclick = async () => {
   }
 
   /* ==========
-     新規レコードを追加
+     DB に保存（新規レコード）
   ========== */
-  allRecords = [...allRecords, ...newRecords];
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
 
   /* ==========
-     保存（localStorage + backup）
+     メモリ側 allRecords に反映
   ========== */
-  await saveAllRecords();
+  allRecords.push(...newRecords);
 
   /* ==========
      UI 再描画（共通フィルター適用）
   ========== */
   const filtered = getGloballyFilteredRecords();
 
-  refreshModeView();          // 全機能更新
-  renderRaceHistory(filtered); // 履歴更新
+  refreshModeView();
+  renderRaceHistory(filtered);
 
   /* ==========
      後処理
@@ -1363,7 +1248,13 @@ function initOBSSeasonSelector() {
 
   // ▼ 共通の S1〜S30 + ALL を使う
   obsSeason.innerHTML = buildSeasonOptions();
+
+  // ▼ Season 変更時に overlay を再生成（任意）
+  obsSeason.onchange = () => {
+    generateOBSOverlay();
+  };
 }
+
 </script>
 
 
@@ -1384,7 +1275,7 @@ function getNextCourseFromModal() {
 }
 
 /* ============================================================
-   ▼ 次のコースを保存
+   ▼ 次のコースを保存（localStorage のままで正しい）
 ============================================================ */
 function saveNextCourse() {
   const nextCourse = getNextCourseFromModal();
@@ -1397,53 +1288,6 @@ function saveNextCourse() {
 }
 
 /* ============================================================
-   ▼ モーダルドラフト保存
-============================================================ */
-function saveModalDraft() {
-  const draft = {
-    mode: modalMode.value,
-    season: modalSeason.value,
-    tier: modalTier.value,
-    raceCount: modalRaceCount.value,
-    inputs: []
-  };
-
-  const scores = document.querySelectorAll("[id^='raceScore_']");
-  for (let i = 0; i < scores.length; i++) {
-    const index = i + 1;
-    draft.inputs.push({
-      course: document.getElementById(`raceCourse_${index}`).value,
-      rank: document.getElementById(`raceRank_${index}`).value,
-      score: document.getElementById(`raceScore_${index}`).value
-    });
-  }
-
-  localStorage.setItem("modalDraft", JSON.stringify(draft));
-}
-
-/* ============================================================
-   ▼ モーダルドラフト読み込み
-============================================================ */
-function loadModalDraft() {
-  const draft = JSON.parse(localStorage.getItem("modalDraft") || "null");
-  if (!draft) return;
-
-  modalMode.value = draft.mode;
-  modalSeason.value = draft.season;
-  modalTier.value = draft.tier;
-  modalRaceCount.value = draft.raceCount;
-
-  updateModalMode();
-
-  draft.inputs.forEach((d, i) => {
-    const index = i + 1;
-    document.getElementById(`raceCourse_${index}`).value = d.course;
-    document.getElementById(`raceRank_${index}`).value = d.rank;
-    document.getElementById(`raceScore_${index}`).value = d.score;
-  });
-}
-
-/* ============================================================
    ▼ モーダルセレクタ初期化
 ============================================================ */
 function initModalSelectors() {
@@ -1452,14 +1296,13 @@ function initModalSelectors() {
     .map(t => `<option value="${t}">${t}</option>`)
     .join("");
 
-  modalSeason.innerHTML = buildSeasonOptions(); // ← 統一
+  modalSeason.innerHTML = buildSeasonOptions();
 }
 
 /* ============================================================
    ▼ モード変更
 ============================================================ */
 modalMode.onchange = () => {
-  localStorage.removeItem("modalDraft");
   updateModalMode();
 };
 
@@ -1482,7 +1325,7 @@ function updateModalMode() {
 }
 
 /* ============================================================
-   ▼ レース入力欄生成
+   ▼ レース入力欄生成（modalDraft 削除済み）
 ============================================================ */
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
@@ -1515,42 +1358,38 @@ function generateRaceInputs(count) {
 
     rankInput.onchange = () => {
       scoreInput.value = calcScore(Number(rankInput.value));
-      saveModalDraft();
       saveNextCourse();
     };
 
     courseSelect.onchange = () => {
-      saveModalDraft();
       saveNextCourse();
     };
   }
 
   saveNextCourse();
 }
+
 </script>
 
 
   
 <script>
-function deleteRecord(ts) {
+async function deleteRecord(ts) {
   if (!confirm("このレースを削除しますか？")) return;
 
-  // ▼ メモリ側から削除
+  await deleteRecordFromDB(ts);
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ localStorage 保存（暗号化バックアップも更新）
-  saveAllRecords();
-
-  // ▼ 共通フィルターを適用して再描画
-  const filtered = getGloballyFilteredRecords();
-
-  refreshModeView();          // 全機能を更新（内部で filtered を使う）
-  renderRaceHistory(filtered); // 履歴だけは filtered を渡す
+  // ▼ 新構造：タブに応じたフィルターで再描画
+  renderRaceHistory(getFilteredRecords());
 }
+
+
 </script>
 
 
 <script>
+/* ▼ 保存処理（新構造対応・編集モード対応） */
 /* ▼ 保存処理（新構造対応・編集モード対応） */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
@@ -1591,38 +1430,73 @@ saveRaceBtn.onclick = async () => {
     newRecords.forEach(r => (r.totalScore12 = totalScore12));
   }
 
-  /* ▼ 編集モードなら古いレコードを削除 */
+  /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
   if (editingTimestamp) {
+    await deleteRecordFromDB(editingTimestamp);
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
-  /* ▼ 新規レコードを追加 */
-  allRecords = [...allRecords, ...newRecords];
+  /* ▼ 新規レコードを DB に保存 */
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
 
-  /* ▼ 保存（localStorage + backup） */
-  await saveAllRecords();
+  /* ▼ メモリ側 allRecords に反映 */
+  allRecords.push(...newRecords);
 
   /* ▼ 送信キューに追加 */
   const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
   queue.push(...newRecords);
   localStorage.setItem("sendQueue", JSON.stringify(queue));
 
-  /* ▼ 共通フィルターを適用して再描画 */
-  const filtered = getGloballyFilteredRecords();
+  /* ▼ UI 再描画（新構造） */
+  renderRaceHistory(getFilteredRecords());
 
-  refreshModeView();          // 全機能更新
-  renderRaceHistory(filtered); // 履歴更新
 
   /* ▼ 後処理 */
   editingTimestamp = null;
-  localStorage.removeItem("modalDraft");
   modal.classList.remove("show");
 };
+
 
 </script>
 
 
 <script>
+
+function getFilteredRecords() {
+  const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
+
+  switch (activeTab) {
+
+    case "historyTab":
+      return getRankingFilteredRecords();
+
+    case "aiTab":
+      return getAIFilteredRecords();
+
+    case "bubble3dTab":
+      return get3DFilteredRecords();
+
+    case "scatterTab":
+      return getScatterFilteredRecords();
+
+    case "heatmapTab":
+      return getHeatmapFilteredRecords();
+
+    case "radarTab":
+      return getRadarFilteredRecords();
+
+    case "growthTab":
+      return getGrowthFilteredRecords();
+
+    default:
+      return allRecords;
+  }
+}
+
+  
+  
 document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
     const target = btn.dataset.tab;
@@ -1639,7 +1513,11 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
     btn.classList.add("active");
 
     if (target === "historyTab") {
+      // ▼ 最新データで履歴を描画
       renderRaceHistory(getGloballyFilteredRecords());
+    } else if (target === "analysisTab") {
+      // ▼ 分析タブを開いたときも最新化
+      refreshModeView();
     }
   };
 });
@@ -1658,9 +1536,9 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   document.getElementById("analysisTab").style.display = "block";
   document.querySelector('[data-tab="analysisTab"]').classList.add("active");
 
+  // ▼ 分析タブを最新化
   refreshModeView();
 };
-
 </script>
 
 
@@ -2063,6 +1941,144 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 
 <script>
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("records")) {
+        db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+      }
+    };
+
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+
+async function addRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
+
+  // timestamp が無ければ付ける
+  if (!record.timestamp) {
+    record.timestamp = Date.now();
+  }
+
+  const id = await new Promise(resolve => {
+    const req = store.add(record);
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  await tx.done;
+
+  return { ...record, id };
+}
+
+
+async function clearRecords() {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").clear();
+  await tx.done;
+}
+
+
+async function updateRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").put(record);
+  await tx.done;
+}
+
+
+async function deleteRecord(id) {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").delete(id);
+  await tx.done;
+}
+
+async function getAllRecords() {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("records", "readonly");
+    const store = tx.objectStore("records");
+    const req = store.getAll();
+
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+}
+
+
+function buildRecordKey(r) {
+  return [
+    r.course,
+    r.rank,
+    r.score,
+    r.season,
+    r.tier,
+    r.mode,
+    r.timestamp ?? "noTS"
+  ].join("|");
+}
+
+async function removeDuplicateRecords() {
+  const records = await getAllRecords();
+
+  const seen = new Set();
+  const unique = [];
+
+  for (const r of records) {
+    const key = buildRecordKey(r);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  }
+
+  // DB を初期化して unique のみ保存
+  await clearRecords();
+  for (const r of unique) {
+    await addRecord(r);
+  }
+
+  allRecords = unique;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert(`重複データを削除しました！\n${records.length} → ${unique.length} 件`);
+}
+
+document.getElementById("removeDupBtn").onclick = async () => {
+  await removeDuplicateRecords();
+};
+
+async function fixMissingTimestamps() {
+  const records = await getAllRecords();
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
+
+  for (const r of records) {
+    if (!r.timestamp) {
+      r.timestamp = Date.now() + Math.random(); // 重複防止
+      store.put(r);
+    }
+  }
+
+  await tx.done;
+  console.log("timestamp 修復完了");
+}
+
+
 /* ==========
    共通データ
 ========== */
@@ -2130,23 +2146,37 @@ async function decrypt(base64) {
 
 /* ▼ セーブデータ生成 */
 async function exportSaveData() {
-  const json = JSON.stringify(allRecords);
+  const records = await getAllRecords(); // ← IndexedDB から取得
+  const json = JSON.stringify(records);
   const encrypted = await encrypt(json);
   return encrypted;
 }
 
+
 /* ▼ セーブデータ復元 */
 async function importSaveData(code) {
   const json = await decrypt(code);
-  allRecords = JSON.parse(json);
+  const records = JSON.parse(json);
 
-  // ★ allRecords に統一
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-  localStorage.setItem("backup", code);
+  // DB を初期化（全削除）
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
+
+  // 全削除
+  const clearReq = store.clear();
+  await new Promise(res => clearReq.onsuccess = res);
+
+  // 全件追加
+  for (const r of records) {
+    store.add(r);
+  }
+  await tx.done;
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 }
+
 
 
 /* ▼ 自動ダウンロードバックアップ */
@@ -2200,30 +2230,94 @@ async function importSaveData(code) {
 /* ▼ データ読み込み（壊れていたらバックアップから復元） */
 async function loadAllRecords() {
   try {
-    // ▼ まず allRecords を読む（統一後の正しい保存先）
-    const main = localStorage.getItem("allRecords");
-    if (main) {
-      allRecords = JSON.parse(main);
+    // ▼ ① まず IndexedDB から読み込む
+    let records = await getAllRecords();
+
+    if (records.length > 0) {
+      // ★ timestamp 補正（旧データ対策）
+      let base = Date.now();
+      records.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1; // 1ms ずつずらす
+        }
+      });
+
+      allRecords = records;
       return;
     }
 
-    // ▼ main が無い場合は backup を decrypt して復元
+    // ▼ ② DB が空 → 過去の localStorage データがあるか確認
+    const legacy = localStorage.getItem("allRecords");
+    if (legacy) {
+      const arr = JSON.parse(legacy);
+
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ ③ IndexedDB に移行
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      // ▼ ④ localStorage の allRecords を削除（移行完了）
+      localStorage.removeItem("allRecords");
+
+      // ▼ ⑤ メモリ側にも反映
+      allRecords = arr;
+      return;
+    }
+
+    // ▼ ⑥ localStorage に backup がある場合（暗号化データ）
     const backup = localStorage.getItem("backup");
     if (backup) {
       const json = await decrypt(backup);
-      allRecords = JSON.parse(json);
+      const arr = JSON.parse(json);
 
-      // ★ 復元したら allRecords に保存（統一）
-      localStorage.setItem("allRecords", JSON.stringify(allRecords));
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ DB に復元
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      allRecords = arr;
       return;
     }
 
-    // ▼ どちらも無ければ空
+    // ▼ ⑦ 何もなければ空
     allRecords = [];
-  } catch {
+
+  } catch (e) {
+    console.error("loadAllRecords error", e);
     allRecords = [];
   }
 }
+
+
 
 function normalizeSeason(raw) {
   if (!raw) return "";
@@ -2232,136 +2326,10 @@ function normalizeSeason(raw) {
   return "S" + Number(num);
 }
 
- 
 
 
-document.getElementById("importTSVBtn").onclick = () => {
-  const text = document.getElementById("tsvInput").value.trim();
-  if (!text) {
-    alert("TSVが空です");
-    return;
-  }
 
-  const lines = text.split("\n").map(l => l.trim());
-  if (lines.length <= 1) {
-    alert("データがありません");
-    return;
-  }
-
-  const body = lines.slice(1);
-  const newRecords = [];
-
-  for (const line of body) {
-    const cols = line.split("\t");
-
-    const course = cols[0] || "";
-    const rank = Number(cols[1] || 0);
-    const score = Number(cols[2] || 0);
-    const totalScore = Number(cols[3] || 0);
-
-    // ▼ season を S形式に変換
-    const season = normalizeSeason(cols[4] || "");
-
-    const tier = cols[5] || "";
-
-    if (!course || !rank) continue;
-
-    newRecords.push({
-      course,
-      rank,
-      score,
-      season,
-      tier,
-      mode: "lounge",
-      timestamp: null
-    });
-  }
-
-  const old = JSON.parse(localStorage.getItem("allRecords") || "[]");
-  const merged = old.concat(newRecords);
-
-  localStorage.setItem("allRecords", JSON.stringify(merged));
-
-  alert(`TSVから ${newRecords.length} 件を読み込みました！`);
-};
-
-  
-document.getElementById("importFileBtn").onclick = () => {
-  const file = document.getElementById("fileInput").files[0];
-  if (!file) {
-    alert("ファイルを選択してください");
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    const text = reader.result.trim();
-
-    const lines = text.split(/\r?\n/);
-    if (lines.length <= 1) {
-      alert("データがありません");
-      return;
-    }
-
-    const delimiter = lines[0].includes("\t") ? "\t" : ",";
-    const body = lines.slice(1);
-
-    const races = [];
-
-    for (const line of body) {
-      if (!line.trim()) continue;
-
-      const cols = line.split(delimiter);
-
-      const course = cols[0] || "";
-      const rank = Number(cols[1] || 0);
-      const score = Number(cols[2] || 0);
-      const season = normalizeSeason(cols[4] || "");
-      const tier = cols[5] || "";
-
-      if (!course || !rank) continue;
-
-      races.push({
-        course,
-        rank,
-        score,
-        season,
-        tier,
-        mode: "lounge",
-        timestamp: null
-      });
-    }
-
-    if (!races.length) {
-      alert("有効なデータがありません");
-      return;
-    }
-
-    // ▼ allRecords にセット
-    allRecords = races;
-
-    // ▼ メイン保存（allRecords に統一）
-    const json = JSON.stringify(allRecords);
-    localStorage.setItem("allRecords", json);
-
-    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
-
-    // ▼ 全分析機能を再描画
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    // ▼ バックアップ暗号化
-    queueMicrotask(async () => {
-      const encrypted = await encrypt(json);
-      localStorage.setItem("backup", encrypted);
-    });
-  };
-
-  reader.readAsText(file);
-};
-
-document.getElementById("importTSVBtn").onclick = () => {
+document.getElementById("importTSVBtn").onclick = async () => {
   const text = document.getElementById("tsvInput").value.trim();
   if (!text) {
     alert("TSVが空です");
@@ -2374,28 +2342,24 @@ document.getElementById("importTSVBtn").onclick = () => {
     return;
   }
 
-  const delimiter = "\t";
   const body = lines.slice(1);
-
-  const raw = [];
   const now = Date.now();
+  const raw = [];
 
   for (const line of body) {
-    const cols = line.split(delimiter).map(c => c.trim());
+    const cols = line.split("\t").map(c => c.trim());
     if (cols.length < 3) continue;
 
     const course = cols[0];
     const rank = Number(cols[1]);
     const score = Number(cols[2]);
 
-    // ▼ season 正規化
     let season = "seasonN";
     if (cols[4]) {
       const num = cols[4].replace(/[^0-9]/g, "");
       if (num) season = "S" + num;
     }
 
-    // ▼ tier 正規化
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
@@ -2438,15 +2402,165 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
-  // ▼ allRecords に統一
-  allRecords = final;
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
-  refreshAllAnalysisViews();
-  renderRaceHistory();
+  // ▼ IndexedDB(B方式) に保存
+  await clearRecords(); // 全削除
+  for (const r of final) {
+    await addRecord(r);
+  }
 
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
+
+  // ▼ 再読み込み
+  allRecords = await getAllRecords();
+  refreshAllAnalysisViews();
+  renderRaceHistory();
 };
+
+
+  
+document.getElementById("importFileBtn").onclick = () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    const text = reader.result.trim();
+    const lines = text.split(/\r?\n/);
+    if (lines.length <= 1) {
+      alert("データがありません");
+      return;
+    }
+
+    const delimiter = lines[0].includes("\t") ? "\t" : ",";
+    const body = lines.slice(1);
+
+    const races = [];
+
+    for (const line of body) {
+      if (!line.trim()) continue;
+
+      const cols = line.split(delimiter);
+
+      const course = cols[0] || "";
+      const rank = Number(cols[1] || 0);
+      const score = Number(cols[2] || 0);
+      const season = normalizeSeason(cols[4] || "");
+      const tier = cols[5] || "";
+
+      if (!course || !rank) continue;
+
+      races.push({
+        course,
+        rank,
+        score,
+        season,
+        tier,
+        mode: "lounge",
+        timestamp: null
+      });
+    }
+
+    if (!races.length) {
+      alert("有効なデータがありません");
+      return;
+    }
+
+    // ▼ IndexedDB に保存
+    await clearRecords();
+    for (const r of races) {
+      await addRecord(r);
+    }
+
+    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    // ▼ バックアップ暗号化
+    queueMicrotask(async () => {
+      const encrypted = await encrypt(JSON.stringify(allRecords));
+      localStorage.setItem("backup", encrypted);
+    });
+  };
+
+  reader.readAsText(file);
+};
+
+document.getElementById("importOldJsonBtn").onclick = () => {
+  const file = document.getElementById("oldJsonInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const json = reader.result;
+    const arr = JSON.parse(json);
+
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("旧JSONデータを取り込みました！");
+  };
+
+  reader.readAsText(file);
+};
+
+
+document.getElementById("importOldHtmlBtn").onclick = () => {
+  const file = document.getElementById("oldHtmlInput").files[0];
+  if (!file) {
+    alert("HTMLファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    const html = reader.result;
+
+    // ▼ localStorage.setItem("allRecords", "....") を抽出
+    const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
+
+    if (!match) {
+      alert("HTML内に allRecords が見つかりませんでした");
+      return;
+    }
+
+    const json = match[1];
+    const arr = JSON.parse(json);
+
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("旧HTMLからデータを取り込みました！");
+  };
+
+  reader.readAsText(file);
+};
+
+
+
+
+
 
 
 // Chart.js インスタンス保持用
@@ -2483,16 +2597,6 @@ const loungeSetTier = document.getElementById("loungeSetTier");
 
   
 function populateSeasonAndTierOptions() {
-  // ▼ Season（S1〜S30）
-  const seasons = [];
-  for (let i = 1; i <= 30; i++) {
-    seasons.push("S" + i);
-  }
-
-  // ▼ Tier（固定リスト）
-  
-  const tiers = loungeTiers.slice(1); // ALL は UI 側で付ける
-
   // ▼ Season を持つ全セレクト
   const seasonSelects = [
     statsSeason, growthSeason, radarSeason, heatmapSeason,
@@ -2507,22 +2611,25 @@ function populateSeasonAndTierOptions() {
     loungeSetTier
   ];
 
-  // ▼ Season を流し込む
+  // ▼ Season（buildSeasonOptions に統一）
+  const seasonHTML = buildSeasonOptions();
   for (const sel of seasonSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    seasons.forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
+    sel.innerHTML = seasonHTML;
   }
 
-  // ▼ Tier を流し込む
+  // ▼ Tier（ALL + loungeTiers）
+  const tierHTML =
+    `<option value="ALL">ALL</option>` +
+    loungeTiers
+      .filter(t => t !== "ALL")
+      .map(t => `<option value="${t}">${t}</option>`)
+      .join("");
+
   for (const sel of tierSelects) {
-    sel.innerHTML = `<option value="ALL">ALL</option>`;
-    tiers.forEach(t => {
-      sel.innerHTML += `<option value="${t}">${t}</option>`;
-    });
+    sel.innerHTML = tierHTML;
   }
 }
+
 
 function buildSeasonOptions() {
   const arr = ["ALL"];
@@ -2534,22 +2641,23 @@ function buildSeasonOptions() {
  
 
 /* ==========
-   初期ロード
+   初期ロード（IndexedDB版）
 ========== */
 window.addEventListener("load", async () => {
 
+  // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
   await loadAllRecords();
 
-  // ★ 最初に Season/Tier を UI に入れる
+  // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
 
-  // その後に各セレクタ初期化
+  // ▼ 各セレクタ初期化
   initGrowthSelectors();
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
-  
-  // ★ AI セレクタの onchange をここで登録（重要）
+
+  // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
   aiSeason.onchange = updateAICourseView;
   aiTier.onchange   = updateAICourseView;
@@ -2557,13 +2665,13 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
-  // そして初回描画
+  // ▼ 初回描画（DBから読み込んだ allRecords を使う）
   updateStatsView();
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
   updateRankingView();
-  updateAICourseView();   // ← ここで初めて正しく動く
+  updateAICourseView();
   update3DView();
   updateScatterView();
   updateLoungeSetView();
@@ -2578,30 +2686,14 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
   if (sec.style.display === "none") {
     sec.style.display = "block";
     btn.textContent = "12レースセット一覧を非表示";
-    updateLoungeSetView(); // 表示した瞬間に更新
+    updateLoungeSetView();
   } else {
     sec.style.display = "none";
     btn.textContent = "12レースセット一覧を表示";
   }
 };
 
-  
-document.getElementById("exportSaveBtn").onclick = async () => {
-  const code = await exportSaveData();
-  navigator.clipboard.writeText(code);
-  alert("セーブデータをコピーしました！");
-};
 
-document.getElementById("importSaveBtn").onclick = async () => {
-  const code = document.getElementById("importSaveInput").value.trim();
-  if (!code) {
-    alert("セーブデータを入力してください");
-    return;
-  }
-
-  await importSaveData(code);
-  alert("復元が完了しました！");
-};
 
 /* ==========
    ユーティリティ
@@ -2733,7 +2825,7 @@ function getStatsFilteredRecords() {
   // ▼ Tier
   if (tier !== "ALL") r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const rangeSel = statsRangeSelect.value;
   if (rangeSel !== "ALL") {
     let N = 0;
@@ -2742,11 +2834,17 @@ function getStatsFilteredRecords() {
     } else {
       N = Number(rangeSel);
     }
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版では timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 function getGrowthFilteredRecords() {
   let r = [...allRecords];
@@ -2759,11 +2857,16 @@ function getGrowthFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (course !== "ALL") r = r.filter(x => x.course === course);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = growthRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(growthRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
@@ -2780,36 +2883,21 @@ function getRadarFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = radarRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
 
-function getRadarFilteredRecords() {
-  let r = [...allRecords];
-
-  const course = radarCourse.value;
-  const season = radarSeason.value;
-  const tier   = radarTier.value;
-
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ▼ 直近 N
-  const sel = radarRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
-  }
-
-  return r;
-}
 
 function getHeatmapFilteredRecords() {
   let r = [...allRecords];
@@ -2824,11 +2912,16 @@ function getHeatmapFilteredRecords() {
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
   if (course !== "ALL") r = r.filter(x => x.course === course);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = heatmapRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(heatmapRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
@@ -2850,11 +2943,16 @@ function getRankingFilteredRecords() {
     r = r.filter(x => x.tier === tier);
   }
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = rankRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   // ▼ 最低走行回数
@@ -2871,13 +2969,14 @@ function getRankingFilteredRecords() {
 }
 
 
+
 function getAIFilteredRecords() {
   let r = [...allRecords];
 
   const course = aiCourse.value;
   const season = aiSeason.value;
   const tier   = aiTier.value;
-  const mode   = aiMode.value;  // ★追加
+  const mode   = aiMode.value;
 
   // ▼ mode（ALL のときは完全スルー）
   if (mode !== "ALL") {
@@ -2899,15 +2998,21 @@ function getAIFilteredRecords() {
     r = r.filter(x => x.tier === tier);
   }
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = aiRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(aiRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 
 function get3DFilteredRecords() {
@@ -2919,15 +3024,21 @@ function get3DFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = bubbleRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(bubbleRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
+
 
 function getLoungeSetFilteredRecords() {
   let r = [...allRecords];
@@ -2938,8 +3049,12 @@ function getLoungeSetFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
+  // ★ DB版：セット表示は timestamp 順が自然
+  r.sort((a, b) => (a.setTimestamp || a.timestamp || 0) - (b.setTimestamp || b.timestamp || 0));
+
   return r;
 }
+
 
 
 function getScatterFilteredRecords() {
@@ -2951,16 +3066,20 @@ function getScatterFilteredRecords() {
   if (season !== "ALL") r = r.filter(x => x.season === season);
   if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
   const sel = scatterRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(scatterRangeInput.value || 0) : Number(sel);
-    if (N > 0) r = r.slice(-N);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
   }
 
   return r;
 }
-
 
 function updateStatsView() {
   const records = getStatsFilteredRecords();
@@ -3359,11 +3478,8 @@ function updateModeGraphs(records) {
     return;
   }
 
-  // ▼ 時系列順に並べる（timestamp が null の場合はそのまま）
-  const sorted = clone(records).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return a.timestamp - b.timestamp;
-  });
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(records).sort((a, b) => a.timestamp - b.timestamp);
 
   // ▼ ラベル（レース番号）
   const labels = sorted.map((_, i) => `#${i + 1}`);
@@ -3447,6 +3563,7 @@ function updateModeGraphs(records) {
   });
 }
 
+
 function renderLoungeSets(records) {
   const div = document.getElementById("loungeSetView");
   if (!div) return;
@@ -3461,18 +3578,13 @@ function renderLoungeSets(records) {
     return;
   }
 
-  // ▼ timestamp がある場合は時系列順に並べる
-  const sorted = clone(sets).sort((a, b) => {
-    if (a.timestamp == null || b.timestamp == null) return 0;
-    return a.timestamp - b.timestamp;
-  });
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(sets).sort((a, b) => a.timestamp - b.timestamp);
 
   // ▼ HTML生成
   div.innerHTML = sorted
     .map((s, i) => {
-      const date = s.timestamp
-        ? new Date(s.timestamp).toLocaleString()
-        : "日時なし";
+      const date = new Date(s.timestamp).toLocaleString();
 
       return `
         <div class="lounge-set-card">
@@ -3992,23 +4104,7 @@ function getWinRate(filtered) {
   return wins / filtered.length;
 }
 
-async function exportSaveDataFile() {
-  const encrypted = await exportSaveData(); // 暗号化済み Base64
-  const blob = new Blob([encrypted], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "MKWorld_save.txt"; // 好きな名前でOK
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("exportSaveFileBtn").onclick = async () => {
-  await exportSaveDataFile();
-  alert("セーブデータをファイルとして出力しました！");
-};
 
 
 
@@ -4101,10 +4197,16 @@ document.getElementById("importBackupBtn").onclick = async () => {
 
   try {
     const json = await decrypt(code);
-    allRecords = JSON.parse(json);
+    const arr = JSON.parse(json);
 
-    // ★ allRecords に統一
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
 
     refreshAllAnalysisViews();
     renderRaceHistory();
@@ -4115,6 +4217,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
     alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
   }
 };
+
 
   
 document.getElementById("importSaveFileBtn").onclick = async () => {
@@ -4134,10 +4237,18 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
 
   try {
     const json = await decrypt(code);
-    allRecords = JSON.parse(json);
+    const arr = JSON.parse(json);
 
-    // ★ allRecords に統一
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
+
+    // ▼ backup だけは localStorage に保存してOK
     localStorage.setItem("backup", code);
 
     refreshAllAnalysisViews();
@@ -4149,6 +4260,7 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
     alert("復元に失敗しました。ファイルが壊れている可能性があります。");
   }
 };
+
 
 function bytesToBase64(bytes) {
   let binary = "";
@@ -4284,18 +4396,26 @@ async function importSaveDataWithPassword(saveText, password) {
 
   // データ本体を復元
   const json = await decrypt(obj.d);
-  allRecords = JSON.parse(json);
+  let arr = JSON.parse(json);
 
-  // ▼ 壊れたレコードを除去（必要なら残す）
-  allRecords = allRecords.filter(r =>
+  // ▼ 壊れたレコードを除去
+  arr = arr.filter(r =>
     r.mode &&
     r.season &&
     r.tier &&
     r.timestamp != null
   );
 
-  // ★★★ 保存先を allRecords に統一 ★★★
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ DB を初期化して保存
+  await clearRecords();
+  for (const r of arr) {
+    await addRecord(r);
+  }
+
+  // ▼ メモリ側にも反映
+  allRecords = arr;
+
+  // ▼ backup だけは localStorage に保存してOK
   localStorage.setItem("backup", obj.d);
 
   // ▼ UI 初期化
@@ -4350,105 +4470,152 @@ document.getElementById("restoreBackupWithPasswordBtn").onclick = async () => {
   await importSaveDataWithPassword(text, password);
 };
 
-document.getElementById("importFileBtn").onclick = () => {
+document.getElementById("importFileBtn").onclick = async () => {
   const file = document.getElementById("fileInput").files[0];
   if (!file) {
     alert("ファイルを選択してください");
     return;
   }
 
-  const reader = new FileReader();
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
 
-  reader.onload = () => {
-    const text = reader.result.trim();
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
 
-    if (lines.length <= 1) {
-      alert("データがありません");
-      return;
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const body = lines.slice(1);
+
+  const raw = [];
+  const now = Date.now();
+
+  for (const line of body) {
+    const cols = line.split(delimiter).map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const course = cols[0];
+    const rank = Number(cols[1]);
+    const score = Number(cols[2]);
+
+    // ▼ season 正規化
+    let season = "seasonN";
+    if (cols[4]) {
+      const num = cols[4].replace(/[^0-9]/g, "");
+      if (num) season = "S" + num;
     }
 
-    const delimiter = lines[0].includes("\t") ? "\t" : ",";
-    const body = lines.slice(1);
+    // ▼ tier 正規化
+    let tier = "tierN";
+    if (cols[5]) tier = cols[5].toUpperCase();
 
-    const raw = [];
-    const now = Date.now();
+    if (!course || !rank || rank < 1 || rank > 24) continue;
 
-    for (const line of body) {
-      const cols = line.split(delimiter).map(c => c.trim());
-      if (cols.length < 3) continue;
+    raw.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: now - raw.length * 1000
+    });
+  }
 
-      const course = cols[0];
-      const rank = Number(cols[1]);
-      const score = Number(cols[2]);
+  if (!raw.length) {
+    alert("有効なデータがありません");
+    return;
+  }
 
-      // ▼ season 正規化
-      let season = "seasonN";
-      if (cols[4]) {
-        const num = cols[4].replace(/[^0-9]/g, "");
-        if (num) season = "S" + num;
-      }
+  // ▼ 12レースごとに totalScore12 を付与
+  const final = [];
+  let setId = 1;
 
-      // ▼ tier 正規化
-      let tier = "tierN";
-      if (cols[5]) tier = cols[5].toUpperCase();
+  for (let i = 0; i < raw.length; i += 12) {
+    const set = raw.slice(i, i + 12);
+    if (set.length < 12) break;
 
-      if (!course || !rank || rank < 1 || rank > 24) continue;
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
 
-      raw.push({
-        course,
-        rank,
-        score,
-        season,
-        tier,
-        mode: "lounge",
-        timestamp: now - raw.length * 1000
-      });
-    }
+    set.forEach(r => {
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+      final.push(r);
+    });
 
-    if (!raw.length) {
-      alert("有効なデータがありません");
-      return;
-    }
+    setId++;
+  }
 
-    // ▼ 12レースごとに totalScore12 を付与
-    const final = [];
-    let setId = 1;
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();          // DB 初期化
+  for (const r of final) {
+    await addRecord(r);          // 全件追加
+  }
 
-    for (let i = 0; i < raw.length; i += 12) {
-      const set = raw.slice(i, i + 12);
-      if (set.length < 12) break;
+  // ▼ メモリ側も更新
+  allRecords = final;
 
-      const totalScore12 = set.reduce((s, r) => s + r.score, 0);
-      const setTimestamp = set[0].timestamp;
+  refreshAllAnalysisViews();
+  renderRaceHistory();
 
-      set.forEach(r => {
-        r.totalScore12 = totalScore12;
-        r.setId = setId;
-        r.setTimestamp = setTimestamp;
-        final.push(r);
-      });
-
-      setId++;
-    }
-
-    // ▼ 最重要：allRecords を更新
-    allRecords = final;
-
-    // ★★★ 統一保存先 ★★★
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
-  };
-
-  reader.readAsText(file);
+  alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
 };
 
 
-document.getElementById("importTSVBtn").onclick = () => {
+document.getElementById("migrateLocalStorageBtn").onclick = async () => {
+  // ▼ localStorage に過去データがあるか確認
+  const old = localStorage.getItem("allRecords");
+  if (!old) {
+    alert("localStorage に過去データがありません。");
+    return;
+  }
+
+  let oldRecords;
+  try {
+    oldRecords = JSON.parse(old);
+  } catch (e) {
+    alert("localStorage のデータが壊れています。");
+    return;
+  }
+
+  if (!Array.isArray(oldRecords) || oldRecords.length === 0) {
+    alert("移行するデータがありません。");
+    return;
+  }
+
+  // ▼ すでに DB にあるデータを取得
+  const dbRecords = await getAllRecords();
+
+  // ▼ 重複チェック用 Set
+  const seen = new Set(dbRecords.map(r => buildRecordKey(r)));
+
+  let added = 0;
+
+  for (const r of oldRecords) {
+    const key = buildRecordKey(r);
+
+    // ▼ すでに DB にあるならスキップ
+    if (seen.has(key)) continue;
+
+    // ▼ timestamp が無い古いデータは補完
+    if (!r.timestamp) {
+      r.timestamp = Date.now() + Math.random();
+    }
+
+    // ▼ DB に追加
+    await addRecord(r);
+
+    added++;
+  }
+
+  alert(`移行完了！\n${added} 件を IndexedDB に追加しました。`);
+};
+
+
+document.getElementById("importTSVBtn").onclick = async () => {
   const text = document.getElementById("tsvInput").value.trim();
   if (!text) {
     alert("TSVが空です");
@@ -4525,11 +4692,14 @@ document.getElementById("importTSVBtn").onclick = () => {
     setId++;
   }
 
-  // ▼ 最重要：allRecords を更新
-  allRecords = final;
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();
+  for (const r of final) {
+    await addRecord(r);
+  }
 
-  // ★★★ 統一保存先 ★★★
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  // ▼ メモリ側も更新
+  allRecords = final;
 
   refreshAllAnalysisViews();
   renderRaceHistory();
@@ -4538,6 +4708,100 @@ document.getElementById("importTSVBtn").onclick = () => {
 };
 
 
+let overlayWindow = null;
+
+// ▼ overlay.html を別ウィンドウで開く（OBS では不要）
+function openOverlay() {
+  overlayWindow = window.open(
+    "https://sorute03.github.io/MKADP/overlay.html",
+    "mkadp_overlay"
+  );
+}
+
+// ▼ OBS に送信（overlayWindow があればそちらへ）
+async function sendToOverlay() {
+  // ★ Promise を解決する（必須）
+  const records = await exportRecords();  
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  const payload = {
+    type: "records",
+    records,      // ← ここは純粋な配列になる
+    nextCourse
+  };
+
+  // Web で overlayWindow が開いている場合
+  if (overlayWindow && !overlayWindow.closed) {
+    overlayWindow.postMessage(payload, "*");
+  }
+
+  // OBS 用：常に postMessage を飛ばす
+  window.postMessage(payload, "*");
+}
+
+
+// 1秒ごとに送信
+setInterval(sendToOverlay, 1000);
+                          
+// ▼ OBS と通信する BroadcastChannel
+const bc = new BroadcastChannel("mkadp_channel");
+
+// ▼ IndexedDB → JSON
+async function exportRecords() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("records", "readonly");
+      const store = tx.objectStore("records");
+      const getAll = store.getAll();
+
+      getAll.onsuccess = () => resolve(getAll.result);
+      getAll.onerror = () => reject(getAll.error);
+    };
+
+    req.onerror = () => reject(req.error);
+  });
+}
+
+
+// ▼ OBS に送信
+async function sendToOBS() {
+  const records = await exportRecords();
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  bc.postMessage({
+    type: "records",
+    records,
+    nextCourse
+  });
+
+  console.log("SEND:", records.length, "件");
+}
+
+
+// ▼ 2秒ごとに送信
+//setInterval(sendToOBS, 2000);
+
+
+//async function sendToAppsScript() {
+  //const records = await exportRecords();
+  //const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  //const payload = {
+    //records,
+    //nextCourse
+  //};
+
+  //await fetch("https://script.google.com/macros/s/AKfycbxxNUnHQ3z8DXcc6vpKOBlmZdPKdWGtQz2GjzFRw3uGkQl4gRr2QWZp4SgWFVy8Jb_jOw/exec", {
+    //method: "POST",
+    //body: JSON.stringify(payload)
+  //});
+//}
+
+// 1秒ごとに送信
+//setInterval(sendToAppsScript, 1000);
 
   
 /* ============================================================
@@ -4568,48 +4832,53 @@ window.addEventListener("load", () => {
 });
 
 
-window.addEventListener("load", () => {
+
+
+window.addEventListener("load", async () => {
   const isOBS = location.search.includes("obs");
   const frame = document.getElementById("overlayFrame");
 
-  if (isOBS) {
+  if (!isOBS) return;
 
-    /* ▼ 1. まず localStorage の allRecords を読み込む（重要） */
-    const stored = localStorage.getItem("allRecords");
-    if (!stored || stored === "[]") {
-      console.warn("OBS モード：allRecords が空です。データを読み込んでください。");
-    }
+  /* ▼ 1. IndexedDB からデータを読み込む */
+  const records = await getAllRecords();
+  allRecords = records;
 
-    /* ▼ 2. iframe の祖先要素だけ残す */
-    const keep = new Set();
-    let node = frame;
-    while (node) {
-      keep.add(node);
-      node = node.parentElement;
-    }
-
-    document.body.querySelectorAll("*").forEach(el => {
-      if (!keep.has(el)) {
-        el.style.display = "none";
-      }
-    });
-
-    /* ▼ 3. iframe を全画面に */
-    frame.style.display = "block";
-    frame.style.position = "fixed";
-    frame.style.top = "0";
-    frame.style.left = "0";
-    frame.style.width = "100%";
-    frame.style.height = "100%";
-    frame.style.zIndex = "9999";
-
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-
-    /* ▼ 4. データを読み込んだ状態で overlay を生成 */
-    generateOBSOverlay();
+  if (!records.length) {
+    console.warn("OBS モード：DB にデータがありません。");
   }
+
+  /* ▼ 2. iframe の祖先要素だけ残す */
+  const keep = new Set();
+  let node = frame;
+  while (node) {
+    keep.add(node);
+    node = node.parentElement;
+  }
+
+  document.body.querySelectorAll("*").forEach(el => {
+    if (!keep.has(el)) {
+      el.style.display = "none";
+    }
+  });
+
+  /* ▼ 3. iframe を全画面に */
+  frame.style.display = "block";
+  frame.style.position = "fixed";
+  frame.style.top = "0";
+  frame.style.left = "0";
+  frame.style.width = "100%";
+  frame.style.height = "100%";
+  frame.style.zIndex = "9999";
+
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+
+  /* ▼ 4. DB のデータを使って overlay を生成 */
+  generateOBSOverlay();
 });
+
 </script>
+
 </body>
 </html>
