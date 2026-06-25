@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1782377996-514200",
+  "timestamp": 1782377996,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ソルティータウン",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ピーチスタジアム→モーモーカントリー",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "クッパキャッスル",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ハテナしんでん",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ハテナしんでん→ディノディノジャングル",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "プクプクフォールズ",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "どんぐりツリーハウス",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ワリオスタジアム",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "レインボーロード",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "キラーシップ",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "サンサンさばく",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1782377844691,
+      "totalScore12": 46
+    }
+  ]
+}
