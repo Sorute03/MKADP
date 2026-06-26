@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1782478914-873626",
+  "timestamp": 1782478914,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "プクプクフォールズ",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "おばけシネマ",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "ソルティータウン",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "レインボーロード",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "DKうちゅうセンター",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "クッパキャッスル",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "キラーシップ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "キノピオファクトリー",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "マリオサーキット",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "マリオサーキット→ホネホネツイスター",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1782460431693,
+      "totalScore12": 60
+    }
+  ]
+}
