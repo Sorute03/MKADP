@@ -1,0 +1,247 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1783087395-923348",
+  "timestamp": 1783087395,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "サンサンさばく→トロフィーシティ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "シュポポコースター",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "マリオサーキット",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "どんぐりツリーハウス",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ソルティータウン",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "リバーサイドサファリ",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "クッパキャッスル→ワリオスタジアム",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783069122754,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "サンサンさばく",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783069122755,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ピーチスタジアム→モーモーカントリー",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1783069122755,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "おばけシネマ",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783069122755,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "プクプクフォールズ",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1783069122755,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "マリオブラザーズサーキット",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1783069122755,
+      "totalScore12": 56
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "クッパキャッスル",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "レインボーロード",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "プクプクフォールズ",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ワリオシップ",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "マリオサーキット",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "シュポポコースター",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "どんぐりツリーハウス",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "サンサンさばく",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "マリオブラザーズサーキット",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "キラーシップ→ヘイホーカーニバル",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783083184489,
+      "totalScore12": 78
+    }
+  ]
+}
