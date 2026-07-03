@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1783109023-352420",
+  "timestamp": 1783109023,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "マリオサーキット",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "キラーシップ",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "シュポポコースター",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "レインボーロード",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "トロフィーシティ→ピーチスタジアム",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ハテナしんでん",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "どんぐりツリーハウス",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "アイスビルディング",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "クッパキャッスル",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ノコノコビーチ",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "サンサンさばく",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "チョコマウンテン",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1783090774846,
+      "totalScore12": 88
+    }
+  ]
+}
