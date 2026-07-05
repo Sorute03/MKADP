@@ -1,0 +1,223 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1783227662-809266",
+  "timestamp": 1783227662,
+  "races": [
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "シュポポコースター",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "どんぐりツリーハウス",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "レインボーロード",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ソルティータウン",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "マリオサーキット",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "プクプクフォールズ",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ヘイホーカーニバル",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "リバーサイドサファリ",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1783169835894
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "キノピオファクトリー→クッパキャッスル",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "クッパキャッスル",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ソルティータウン",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "シュポポコースター",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "レインボーロード",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "キラーシップ",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ロゼッタてんもんだい",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "DKうちゅうセンター",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ハテナしんでん",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1783175896096
+    },
+    {
+      "mode": "tournament",
+      "season": null,
+      "tier": null,
+      "course": "ノコノコビーチ",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1783175896096
+    }
+  ]
+}
