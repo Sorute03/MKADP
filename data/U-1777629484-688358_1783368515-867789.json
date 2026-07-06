@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1783368515-867789",
+  "timestamp": 1783368515,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "シュポポコースター",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "クッパキャッスル",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "どんぐりツリーハウス",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ヘイホーカーニバル→マリオブラザーズサーキット",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "マリオサーキット",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ノコノコビーチ",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ロゼッタてんもんだい",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "おばけシネマ→どんぐりツリーハウス",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "サンサンさばく",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ワリオシップ",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "レインボーロード",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1783349499699,
+      "totalScore12": 69
+    }
+  ]
+}
