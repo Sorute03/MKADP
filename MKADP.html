@@ -548,6 +548,7 @@ const courseList = [
 <div id="tabs" style="margin-bottom:20px;">
   <button class="tabBtn active" data-tab="analysisTab">分析</button>
   <button class="tabBtn" data-tab="historyTab">レース一覧</button>
+  <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
 </div>
   
 <!-- ▼ レース一覧タブ -->
@@ -1645,6 +1646,26 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </div>
 </div>
 
+<!-- ▼ ラウンジ統計タブ -->
+<div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
+
+  <h2>Lounge Stats Viewer</h2>
+
+  <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
+  <input id="discordWebhookInput" placeholder="Discord Webhook URL（任意）" style="padding:6px; width:300px;">
+  <button id="loadLoungeBtn">データ取得</button>
+  <button id="sendDiscordBtn">Discordへ送信</button>
+
+  <div id="loungeStats" style="margin-top:20px;"></div>
+
+  <canvas id="loungeCanvas" width="1000" height="500" style="margin-top:20px;"></canvas>
+    <label>コース別データを合成:</label>
+  <select id="mergeCourseDataSelect">
+    <option value="off">使わない</option>
+    <option value="on">ADPデータを合成する</option>
+  </select>
+
+</div>
 
 
 <script>
@@ -4584,6 +4605,321 @@ window.addEventListener("load", async () => {
   /* ▼ 4. DB のデータを使って overlay を生成 */
   generateOBSOverlay();
 });
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" }
+  });
+  return res.json();
+}
+
+async function apiSearchPlayer(name) {
+  const url = `https://lounge-api.mk8dx.net/players/search?name=${encodeURIComponent(name)}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.length ? json[0] : null;
+}
+
+async function apiPlayerDetails(playerId) {
+  const url = `https://lounge-api.mk8dx.net/players/${playerId}`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+async function apiPlayerHistory(playerId) {
+  const url = `https://lounge-api.mk8dx.net/players/${playerId}/history`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+
+
+async function fetchRateHistory(playerId, season, playerCount = 3000) {
+  const url = season === 1
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const html = await res.text();
+
+  let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  if (mmrMatches.length === 0 && season === 1) {
+    mmrMatches = [...html.matchAll(/class="rating"[^>]*>\s*([\d,]+)\s*</g)];
+  }
+
+  const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
+}
+
+async function fetchRateHistory(playerId, season, playerCount = 3000) {
+  const url = season === 1
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const html = await res.text();
+
+  let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  if (mmrMatches.length === 0 && season === 1) {
+    mmrMatches = [...html.matchAll(/class="rating"[^>]*>\s*([\d,]+)\s*</g)];
+  }
+
+  const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
+}
+
+async function fetchAllStatsByName(name) {
+  const playerId = await fetchPlayerIdByName(name);
+  if (!playerId) throw new Error("プレイヤーが見つかりません");
+
+  const seasons = [1,2,3,4,5,6,7,8,9,10];
+
+  let allHistory = [];
+  let peakMMR = 0;
+
+  for (const s of seasons) {
+    const hist = await fetchRateHistory(playerId, s);
+    if (hist.length === 0) continue;
+
+    allHistory = allHistory.concat(hist);
+
+    const localPeak = Math.max(...hist.map(h => h.rating));
+    if (localPeak > peakMMR) peakMMR = localPeak;
+  }
+
+  const ratings = allHistory.map(h => h.rating);
+  const avgScore = ratings.length
+    ? (ratings.reduce((a,b)=>a+b,0) / ratings.length).toFixed(2)
+    : "-";
+
+  return {
+    playerId,
+    seasons,
+    history: allHistory,
+    peakMMR,
+    avgScore,
+    matches: ratings.length
+  };
+}
+
+function drawLoungeStats(data) {
+  const { details, history, courseStats } = data;
+
+  const box = document.getElementById("loungeStats");
+
+  const rankInfo = getRankInfo(details.mmr, 2);
+
+  box.innerHTML = `
+    <h3>${details.name} - Lounge Stats</h3>
+    <p>MMR: ${details.mmr}</p>
+    <p>Peak MMR: ${details.peak_mmr}</p>
+    <p>Wins: ${details.wins}</p>
+    <p>Losses: ${details.losses}</p>
+    <p>Rank: <span style="color:${rankInfo.color}; font-weight:bold;">${rankInfo.rank}</span></p>
+  `;
+
+  if (courseStats) {
+    let html = "<h3>コース別戦績（ADP IndexedDB）</h3>";
+    html += "<table border='1' style='border-collapse:collapse;'>";
+    html += "<tr><th>コース</th><th>回数</th><th>平均順位</th><th>平均得点</th></tr>";
+
+    courseStats.forEach(c => {
+      html += `
+        <tr>
+          <td>${c.course}</td>
+          <td>${c.count}</td>
+          <td>${c.avgRank}</td>
+          <td>${c.avgScore}</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+
+    box.innerHTML += html;
+  }
+
+  drawLoungeGraph(history, rankInfo.color);
+}
+
+
+function drawLoungeGraph(history, color) {
+  const canvas = document.getElementById("loungeCanvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if (!history.length) return;
+
+  const ratings = history.map(h => h.mmr);
+  const minR = Math.min(...ratings);
+  const maxR = Math.max(...ratings);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  history.forEach((h, i) => {
+    const x = (i / (history.length - 1)) * (canvas.width - 40) + 20;
+    const y = canvas.height - 40 - ((h.mmr - minR) / (maxR - minR)) * (canvas.height - 80);
+    if (i === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.fillText("Rating History", 20, 20);
+}
+
+  
+async function sendCanvasToDiscord() {
+  const webhookUrl = document.getElementById("discordWebhookInput").value.trim();
+  if (!webhookUrl) { alert("Webhook URL を入力してください"); return; }
+
+  const canvas = document.getElementById("loungeCanvas");
+
+  canvas.toBlob(async (blob) => {
+    const form = new FormData();
+    form.append("payload_json", JSON.stringify({
+      content: "Lounge Stats 画像です",
+      username: "MKWorld Bot"
+    }));
+    form.append("file", blob, "stats.png");
+
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      body: form
+    });
+
+    alert(res.ok ? "Discordに送信しました" : "送信失敗");
+  }, "image/png");
+}
+
+document.getElementById("loadLoungeBtn").onclick = async () => {
+  const name = document.getElementById("playerNameInput").value.trim();
+  if (!name) return alert("名前を入力してください");
+
+  const player = await apiSearchPlayer(name);
+  if (!player) return alert("プレイヤーが見つかりません");
+
+  const details = await apiPlayerDetails(player.player_id);
+  const history = await apiPlayerHistory(player.player_id);
+
+  drawLoungeStats(details, history, name);
+};
+
+document.getElementById("sendDiscordBtn").onclick = sendCanvasToDiscord;
+
+/******************************************************
+ * ランク情報
+ ******************************************************/
+function getRankInfoV1(mmr) {
+  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfoV2(mmr) {
+  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfo(mmr, season) {
+  return season >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+}
+
+function loadADPIndexedDBRecords() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("MKADP_DB", 1);
+
+    request.onerror = () => reject("IndexedDB 読み込み失敗");
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("records", "readonly");
+      const store = tx.objectStore("records");
+
+      const getAllReq = store.getAll();
+      getAllReq.onsuccess = () => resolve(getAllReq.result || []);
+      getAllReq.onerror = () => reject("records 読み込み失敗");
+    };
+  });
+}
+
+
+async function mergeLoungeWithADP(details, history) {
+  const courseMap = await loadADPCourseDataFromIndexedDB();
+
+  const courseStats = Object.entries(courseMap).map(([course, data]) => {
+    return {
+      course,
+      count: data.count,
+      avgRank: (data.totalRank / data.count).toFixed(2),
+      avgScore: (data.totalScore / data.count).toFixed(2)
+    };
+  });
+
+  return { details, history, courseStats };
+}
+
+async function loadADPCourseDataFromIndexedDB() {
+  const records = await loadADPIndexedDBRecords();
+
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = { count: 0, totalRank: 0, totalScore: 0 };
+    }
+    map[r.course].count++;
+    map[r.course].totalRank += r.rank;
+    map[r.course].totalScore += r.score;
+  });
+
+  return map;
+}
+
+document.getElementById("loadLoungeBtn").onclick = async () => {
+  const name = document.getElementById("playerNameInput").value.trim();
+  if (!name) return alert("名前を入力してください");
+
+  const player = await apiSearchPlayer(name);
+  const details = await apiPlayerDetails(player.player_id);
+  const history = await apiPlayerHistory(player.player_id);
+
+  const mergeCourse = document.getElementById("mergeCourseDataSelect").value === "on";
+
+  let finalData;
+
+  if (mergeCourse) {
+    finalData = await mergeLoungeWithADP(details, history);
+  } else {
+    finalData = { details, history, courseStats: null };
+  }
+
+  window._loungeName = name;
+  window._loungeData = finalData;
+
+  drawLoungeStats(finalData);
+};
 
 </script>
 
