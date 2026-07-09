@@ -4651,16 +4651,7 @@ async function apiSearchPlayer(name) {
   const proxyUrl =
     `https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec?url=${encodeURIComponent(apiUrl)}`;
 
-  // ▼ 302 リダイレクトを必ず追跡する
-  const res = await fetch(proxyUrl, {
-    method: "GET",
-    mode: "cors",
-    redirect: "follow",   // ← これが最重要
-    headers: {
-      "Accept": "application/json",
-    }
-  });
-
+  const res = await fetch(proxyUrl, { redirect: "follow" });
   const text = await res.text();
   if (!text) {
     console.error("GAS returned empty response");
@@ -4677,10 +4668,6 @@ async function apiSearchPlayer(name) {
 
   return json.data && json.data.length ? json.data[0] : null;
 }
-
-
-
-
 
 async function apiPlayerDetails(playerId) {
   
