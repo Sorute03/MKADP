@@ -4637,6 +4637,11 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
+state.backgroundImage = null;
+state.bgBrightness = 1;
+state.bgContrast = 1;
+state.bgOpacity = 1;
+state.bgBlur = 0;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec";
 
 
@@ -5113,11 +5118,7 @@ async function drawFlag(ctx, country, x, y) {
   ctx.drawImage(flag, x, y, 60, 40);
 }
   
-state.backgroundImage = null;
-state.bgBrightness = 1;
-state.bgContrast = 1;
-state.bgOpacity = 1;
-state.bgBlur = 0;
+
 
 function setBgImage(file) {
   const reader = new FileReader();
