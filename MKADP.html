@@ -4860,18 +4860,6 @@ async function sendCanvasToDiscord() {
   }, "image/png");
 }
 
-document.getElementById("loadLoungeBtn").onclick = async () => {
-  const name = document.getElementById("playerNameInput").value.trim();
-  if (!name) return alert("名前を入力してください");
-
-  const player = await apiSearchPlayer(name);
-  if (!player) return alert("プレイヤーが見つかりません");
-
-  const details = await apiPlayerDetails(player.player_id);
-  const history = await apiPlayerHistory(player.player_id);
-
-  drawLoungeStats(details, history, name);
-};
 
 document.getElementById("sendDiscordBtn").onclick = sendCanvasToDiscord;
 
