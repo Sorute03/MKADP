@@ -4637,13 +4637,6 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
-const state = {
-  backgroundImage: null,
-  bgBrightness: 1,
-  bgContrast: 1,
-  bgOpacity: 1,
-  bgBlur: 0
-};
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec";
 
@@ -5042,6 +5035,23 @@ function applyAllFilters(history) {
   return filtered;
 }
   
+/* ============================================================
+   Lounge Stats Viewer — 関数群 完全版
+   （state 初期化 → 背景 → プレイヤー情報 → MMR グラフ → 画像生成）
+   ============================================================ */
+
+// ▼ state（必ず最初に定義する）
+const state = {
+  backgroundImage: null,
+  bgBrightness: 1,
+  bgContrast: 1,
+  bgOpacity: 1,
+  bgBlur: 0
+};
+
+/* ============================================================
+   ▼ 汎用パネル描画
+   ============================================================ */
 function drawPanel(ctx, x, y, w, h) {
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(x, y, w, h);
@@ -5051,6 +5061,9 @@ function drawPanel(ctx, x, y, w, h) {
   ctx.strokeRect(x, y, w, h);
 }
 
+/* ============================================================
+   ▼ プレイヤー情報パネル
+   ============================================================ */
 async function drawPlayerInfo(ctx, details, stats) {
   const x = 40;
   const y = 40;
@@ -5059,12 +5072,12 @@ async function drawPlayerInfo(ctx, details, stats) {
 
   drawPanel(ctx, x, y, w, h);
 
-  // ▼ プレイヤー名（OZAX の位置）
+  // ▼ プレイヤー名
   ctx.fillStyle = "#fff";
   ctx.font = "32px sans-serif";
   ctx.fillText(details.name, x + 20, y + 50);
 
-  // ▼ 国旗（自動表示）
+  // ▼ 国旗
   await drawFlag(ctx, details.country, x + 20, y + 70);
 
   ctx.font = "20px sans-serif";
@@ -5076,6 +5089,9 @@ async function drawPlayerInfo(ctx, details, stats) {
   ctx.fillText(`Rank: ${stats.rank}`, x + 20, y + 280);
 }
 
+/* ============================================================
+   ▼ MMR グラフ
+   ============================================================ */
 function drawMMRGraph(ctx, history) {
   const x = 500;
   const y = 40;
@@ -5109,6 +5125,9 @@ function drawMMRGraph(ctx, history) {
   ctx.fillText("MMR Progression", x + 20, y + 30);
 }
 
+/* ============================================================
+   ▼ 国旗描画
+   ============================================================ */
 async function drawFlag(ctx, country, x, y) {
   if (!country) return;
 
@@ -5117,12 +5136,12 @@ async function drawFlag(ctx, country, x, y) {
 
   await flag.decode();
 
-  // OZAX 風の横長国旗
   ctx.drawImage(flag, x, y, 60, 40);
 }
-  
 
-
+/* ============================================================
+   ▼ 背景設定（明るさ・コントラスト・ぼかし・透過）
+   ============================================================ */
 function setBgImage(file) {
   const reader = new FileReader();
   reader.onload = () => state.backgroundImage = reader.result;
@@ -5134,6 +5153,9 @@ function setBgContrast(v) { state.bgContrast = Number(v); }
 function setBgOpacity(v) { state.bgOpacity = Number(v); }
 function setBgBlur(v) { state.bgBlur = Number(v); }
 
+/* ============================================================
+   ▼ 背景描画
+   ============================================================ */
 async function drawBackground(ctx, w, h) {
   if (!state.backgroundImage) {
     ctx.fillStyle = "#000";
@@ -5145,36 +5167,31 @@ async function drawBackground(ctx, w, h) {
   bg.src = state.backgroundImage;
   await bg.decode();
 
-  // ▼ Canvas の filter を使って明暗・コントラスト・ぼかしを適用
   ctx.filter = `
     brightness(${state.bgBrightness})
     contrast(${state.bgContrast})
     blur(${state.bgBlur}px)
   `;
 
-  // ▼ 透過度を反映
   ctx.globalAlpha = state.bgOpacity;
 
   ctx.drawImage(bg, 0, 0, w, h);
 
-  // ▼ 他の描画に影響しないようにリセット
   ctx.filter = "none";
   ctx.globalAlpha = 1;
 }
 
+/* ============================================================
+   ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
+   ============================================================ */
 async function generateLoungeImage(details, history, stats) {
   const canvas = document.getElementById("loungeCanvas");
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
 
-  // ★ 背景（ここに入れる）
   await drawBackground(ctx, w, h);
-
-  // ★ 左パネル（プレイヤー情報）
   await drawPlayerInfo(ctx, details, stats);
-
-  // ★ 右パネル（MMRグラフ）
   drawMMRGraph(ctx, history);
 
   return canvas;
