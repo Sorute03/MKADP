@@ -4637,88 +4637,53 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec";
+
+
 async function fetchJson(url) {
-  const res = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" }
-  });
-  return res.json();
+  const res = await fetch(url, { redirect: "follow" });
+  const text = await res.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("JSON parse error:", e, text);
+    return null;
+  }
 }
+
 
 async function apiSearchPlayer(name) {
   const apiUrl =
     `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
 
   const proxyUrl =
-    `https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec?url=${encodeURIComponent(apiUrl)}`;
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
 
-  const res = await fetch(proxyUrl, { redirect: "follow" });
-  const text = await res.text();
-  if (!text) {
-    console.error("GAS returned empty response");
-    return null;
-  }
-
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch (e) {
-    console.error("JSON parse error:", e, text);
-    return null;
-  }
-
-  return json.data && json.data.length ? json.data[0] : null;
+  return await fetchJson(proxyUrl);
 }
 
+
 async function apiPlayerDetails(playerId) {
-  
-  // ▼ MKCentral API（本物の URL）
   const apiUrl =
     `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
 
-  // ▼ あなたの GAS プロキシ URL
   const proxyUrl =
-    `https://script.google.com/macros/s/AKfycbzDyjHG3MBbW8yqBgUP5mFzYhMJZU2E-yLtP6L_-_ZzV4qO5JsDTPUin7U0E45Ro9Sw/exec?url=${encodeURIComponent(apiUrl)}`;
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
 
-  // ▼ fetch（GAS が MKCentral API を代理で叩く）
-  const res = await fetch(proxyUrl, {
-    method: "GET",
-    mode: "cors",
-    redirect: "follow",
-    headers: { "Accept": "application/json" }
-  });
-  const text = await res.text();
-
-
-
-  // ▼ JSON を返す
-  return await res.json();
+  return await fetchJson(proxyUrl);
 }
 
-
 async function apiPlayerHistory(playerId) {
-  // ▼ MKCentral API（本物の URL）
   const apiUrl =
     `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
 
-  // ▼ あなたの GAS プロキシ URL
   const proxyUrl =
-    `https://script.google.com/macros/s/AKfycbzDyjHG3MBbW8yqBgUP5mFzYhMJZU2E-yLtP6L_-_ZzV4qO5JsDTPUin7U0E45Ro9Sw/exec?url=${encodeURIComponent(apiUrl)}`;
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
 
-  // ▼ fetch（GAS が MKCentral API を代理で叩く）
-  const res = await fetch(proxyUrl, {
-    method: "GET",
-    mode: "cors",
-    redirect: "follow",
-    headers: { "Accept": "application/json" }
-  });
-  const text = await res.text();
-
-
-  // ▼ JSON を返す
-  return await res.json();
+  return await fetchJson(proxyUrl);
 }
-
-
 
 
 
