@@ -4651,9 +4651,15 @@ async function apiSearchPlayer(name) {
   const proxyUrl =
     `https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec?url=${encodeURIComponent(apiUrl)}`;
 
-  const res = await fetch(proxyUrl, { redirect: "follow" }); // ← これが重要
-  const text = await res.text();   // ← JSON が空でも落ちない
-  if (!text) return null;
+  // ▼ 302 リダイレクトを必ず追跡する
+  const res = await fetch(proxyUrl, { redirect: "follow" });
+
+  // ▼ JSON が空でも落ちない
+  const text = await res.text();
+  if (!text) {
+    console.error("GAS returned empty response");
+    return null;
+  }
 
   let json;
   try {
@@ -4668,7 +4674,9 @@ async function apiSearchPlayer(name) {
 
 
 
+
 async function apiPlayerDetails(playerId) {
+  
   // ▼ MKCentral API（本物の URL）
   const apiUrl =
     `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
@@ -4678,7 +4686,9 @@ async function apiPlayerDetails(playerId) {
     `https://script.google.com/macros/s/AKfycbzDyjHG3MBbW8yqBgUP5mFzYhMJZU2E-yLtP6L_-_ZzV4qO5JsDTPUin7U0E45Ro9Sw/exec?url=${encodeURIComponent(apiUrl)}`;
 
   // ▼ fetch（GAS が MKCentral API を代理で叩く）
-  const res = await fetch(proxyUrl);
+  const res = await fetch(proxyUrl, { redirect: "follow" });
+  const text = await res.text();
+
 
   // ▼ JSON を返す
   return await res.json();
@@ -4695,7 +4705,8 @@ async function apiPlayerHistory(playerId) {
     `https://script.google.com/macros/s/AKfycbzDyjHG3MBbW8yqBgUP5mFzYhMJZU2E-yLtP6L_-_ZzV4qO5JsDTPUin7U0E45Ro9Sw/exec?url=${encodeURIComponent(apiUrl)}`;
 
   // ▼ fetch（GAS が MKCentral API を代理で叩く）
-  const res = await fetch(proxyUrl);
+  const res = await fetch(proxyUrl, { redirect: "follow" });
+  const text = await res.text();
 
   // ▼ JSON を返す
   return await res.json();
