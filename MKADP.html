@@ -4641,7 +4641,15 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6
 
 
 async function fetchJson(url) {
-  const res = await fetch(url, { redirect: "follow" });
+  const res = await fetch(url, {
+    method: "GET",
+    mode: "cors",
+    redirect: "follow",
+    headers: {
+      "Accept": "application/json"
+    }
+  });
+
   const text = await res.text();
   if (!text) return null;
 
@@ -4652,6 +4660,7 @@ async function fetchJson(url) {
     return null;
   }
 }
+
 
 
 async function apiSearchPlayer(name) {
