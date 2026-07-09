@@ -4645,21 +4645,24 @@ async function fetchJson(url) {
 }
 
 async function apiSearchPlayer(name) {
-  // ▼ MKCentral API（本物の URL）
   const apiUrl =
     `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
 
-  // ▼ あなたの GAS プロキシ URL
   const proxyUrl =
-    `https://script.google.com/macros/s/AKfycbzDyjHG3MBbW8yqBgUP5mFzYhMJZU2E-yLtP6L_-_ZzV4qO5JsDTPUin7U0E45Ro9Sw/exec?url=${encodeURIComponent(apiUrl)}`;
+    `https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec?url=${encodeURIComponent(apiUrl)}`;
 
-  // ▼ fetch（GAS が MKCentral API を代理で叩く）
-  const res = await fetch(proxyUrl);
+  const res = await fetch(proxyUrl, { redirect: "follow" }); // ← これが重要
+  const text = await res.text();   // ← JSON が空でも落ちない
+  if (!text) return null;
 
-  // ▼ JSON を取得
-  const json = await res.json();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    console.error("JSON parse error:", e, text);
+    return null;
+  }
 
-  // ▼ 検索結果がある場合は最初の1件を返す
   return json.data && json.data.length ? json.data[0] : null;
 }
 
