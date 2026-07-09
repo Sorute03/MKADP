@@ -4637,11 +4637,14 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
-state.backgroundImage = null;
-state.bgBrightness = 1;
-state.bgContrast = 1;
-state.bgOpacity = 1;
-state.bgBlur = 0;
+const state = {
+  backgroundImage: null,
+  bgBrightness: 1,
+  bgContrast: 1,
+  bgOpacity: 1,
+  bgBlur: 0
+};
+
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwzFFdfNUUWbmkYZh2AwEq6mMHl3WC8q8lyu1dLfcqo2g0-uzb9fDxJAgpxShmgKjo/exec";
 
 
