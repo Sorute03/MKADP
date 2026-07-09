@@ -4645,25 +4645,59 @@ async function fetchJson(url) {
 }
 
 async function apiSearchPlayer(name) {
-  const url = `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
-  const res = await fetch(url);
+  // ▼ MKCentral API（本物の URL）
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
+
+  // ▼ あなたの GAS プロキシ URL
+  const proxyUrl =
+    `https://script.google.com/macros/s/AKfycbwc3wEiRACsFZ50ZspnY939YkD_BlXfu55FppGMqpyrGdIx3pAk_Km6P_yPm3PK6EVC/exec?url=${encodeURIComponent(apiUrl)}`;
+
+  // ▼ fetch（GAS が MKCentral API を代理で叩く）
+  const res = await fetch(proxyUrl);
+
+  // ▼ JSON を取得
   const json = await res.json();
+
+  // ▼ 検索結果がある場合は最初の1件を返す
   return json.data && json.data.length ? json.data[0] : null;
 }
 
 
+
 async function apiPlayerDetails(playerId) {
-  const url = `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
-  const res = await fetch(url);
+  // ▼ MKCentral API（本物の URL）
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
+
+  // ▼ あなたの GAS プロキシ URL
+  const proxyUrl =
+    `https://script.google.com/macros/s/AKfycbwc3wEiRACsFZ50ZspnY939YkD_BlXfu55FppGMqpyrGdIx3pAk_Km6P_yPm3PK6EVC/exec?url=${encodeURIComponent(apiUrl)}`;
+
+  // ▼ fetch（GAS が MKCentral API を代理で叩く）
+  const res = await fetch(proxyUrl);
+
+  // ▼ JSON を返す
   return await res.json();
 }
 
 
 async function apiPlayerHistory(playerId) {
-  const url = `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
-  const res = await fetch(url);
+  // ▼ MKCentral API（本物の URL）
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
+
+  // ▼ あなたの GAS プロキシ URL
+  const proxyUrl =
+    `https://script.google.com/macros/s/AKfycbwc3wEiRACsFZ50ZspnY939YkD_BlXfu55FppGMqpyrGdIx3pAk_Km6P_yPm3PK6EVC/exec?url=${encodeURIComponent(apiUrl)}`;
+
+  // ▼ fetch（GAS が MKCentral API を代理で叩く）
+  const res = await fetch(proxyUrl);
+
+  // ▼ JSON を返す
   return await res.json();
 }
+
 
 
 
