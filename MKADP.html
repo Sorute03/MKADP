@@ -571,7 +571,58 @@ const courseList = [
   <div id="raceHistoryList"></div>
 </div>
 
+<!-- ▼ ラウンジ統計タブ -->
+<div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
+
+  <h2>Lounge Stats Viewer</h2>
+
+  <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
+  <input id="discordWebhookInput" placeholder="Discord Webhook URL（任意）" style="padding:6px; width:300px;">
+  <button id="loadLoungeBtn">データ取得</button>
+  <button id="sendDiscordBtn">Discordへ送信</button>
+
+  <div id="loungeStats" style="margin-top:20px;"></div>
+
+  <canvas id="loungeCanvas" width="1000" height="500" style="margin-top:20px;"></canvas>
+    <label>コース別データを合成:</label>
+  <select id="mergeCourseDataSelect">
+    <option value="off">使わない</option>
+    <option value="on">ADPデータを合成する</option>
+  </select>
+
+  <label>Season:</label>
+  <select id="seasonSelect">
+    <option value="ALL">ALL</option>
+    <option value="1">Season 1</option>
+    <option value="2">Season 2</option>
+    <option value="3">Season 3</option>
+    <option value="4">Season 4</option>
+    <option value="5">Season 5</option>
+    <option value="6">Season 6</option>
+    <option value="7">Season 7</option>
+    <option value="8">Season 8</option>
+    <option value="9">Season 9</option>
+    <option value="10">Season 10</option>
+  </select>
+
+  <h3>背景画像設定</h3>
+  <input type="file" id="bgImageInput" accept="image/*" onchange="setBgImage(this.files[0])">
   
+  <label>明るさ</label>
+  <input type="range" id="bgBrightnessInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgBrightness(this.value)">
+  
+  <label>コントラスト</label>
+  <input type="range" id="bgContrastInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgContrast(this.value)">
+  
+  <label>透過度</label>
+  <input type="range" id="bgOpacityInput" min="0" max="1" step="0.01" value="1" onchange="setBgOpacity(this.value)">
+  
+  <label>ぼかし(px)</label>
+  <input type="range" id="bgBlurInput" min="0" max="20" step="1" value="0" onchange="setBgBlur(this.value)">
+  
+    
+</div>
+
   
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
 <div id="analysisTab" class="tabContent" style="display:block;">
@@ -1646,26 +1697,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </div>
 </div>
 
-<!-- ▼ ラウンジ統計タブ -->
-<div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
-
-  <h2>Lounge Stats Viewer</h2>
-
-  <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
-  <input id="discordWebhookInput" placeholder="Discord Webhook URL（任意）" style="padding:6px; width:300px;">
-  <button id="loadLoungeBtn">データ取得</button>
-  <button id="sendDiscordBtn">Discordへ送信</button>
-
-  <div id="loungeStats" style="margin-top:20px;"></div>
-
-  <canvas id="loungeCanvas" width="1000" height="500" style="margin-top:20px;"></canvas>
-    <label>コース別データを合成:</label>
-  <select id="mergeCourseDataSelect">
-    <option value="off">使わない</option>
-    <option value="on">ADPデータを合成する</option>
-  </select>
-
-</div>
 
 
 <script>
@@ -4614,23 +4645,26 @@ async function fetchJson(url) {
 }
 
 async function apiSearchPlayer(name) {
-  const url = `https://lounge-api.mk8dx.net/players/search?name=${encodeURIComponent(name)}`;
+  const url = `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
   const res = await fetch(url);
   const json = await res.json();
-  return json.length ? json[0] : null;
+  return json.data && json.data.length ? json.data[0] : null;
 }
+
 
 async function apiPlayerDetails(playerId) {
-  const url = `https://lounge-api.mk8dx.net/players/${playerId}`;
+  const url = `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
   const res = await fetch(url);
   return await res.json();
 }
 
+
 async function apiPlayerHistory(playerId) {
-  const url = `https://lounge-api.mk8dx.net/players/${playerId}/history`;
+  const url = `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
   const res = await fetch(url);
   return await res.json();
 }
+
 
 
 
@@ -4673,8 +4707,6 @@ async function fetchRateHistory(playerId, season, playerCount = 3000) {
 async function fetchAllStatsByName(name) {
   const playerId = await fetchPlayerIdByName(name);
   if (!playerId) throw new Error("プレイヤーが見つかりません");
-
-  const seasons = [1,2,3,4,5,6,7,8,9,10];
 
   let allHistory = [];
   let peakMMR = 0;
@@ -4864,22 +4896,6 @@ function loadADPIndexedDBRecords() {
   });
 }
 
-
-async function mergeLoungeWithADP(details, history) {
-  const courseMap = await loadADPCourseDataFromIndexedDB();
-
-  const courseStats = Object.entries(courseMap).map(([course, data]) => {
-    return {
-      course,
-      count: data.count,
-      avgRank: (data.totalRank / data.count).toFixed(2),
-      avgScore: (data.totalScore / data.count).toFixed(2)
-    };
-  });
-
-  return { details, history, courseStats };
-}
-
 async function loadADPCourseDataFromIndexedDB() {
   const records = await loadADPIndexedDBRecords();
 
@@ -4896,6 +4912,22 @@ async function loadADPCourseDataFromIndexedDB() {
 
   return map;
 }
+
+async function mergeLoungeWithADP(details, history) {
+  const courseMap = await loadADPCourseDataFromIndexedDB();
+
+  const courseStats = Object.entries(courseMap).map(([course, data]) => {
+    return {
+      course,
+      count: data.count,
+      avgRank: (data.totalRank / data.count).toFixed(2),
+      avgScore: (data.totalScore / data.count).toFixed(2)
+    };
+  });
+
+  return { details, history, courseStats };
+}
+
 
 document.getElementById("loadLoungeBtn").onclick = async () => {
   const name = document.getElementById("playerNameInput").value.trim();
@@ -4920,6 +4952,201 @@ document.getElementById("loadLoungeBtn").onclick = async () => {
 
   drawLoungeStats(finalData);
 };
+
+function filterByFormat(history, format) {
+  if (format === "ALL") return history;
+  return history.filter(h => h.player_count == Number(format));
+}
+
+function filterBySeason(history, season) {
+  if (season === "ALL") return history;
+  return history.filter(h => h.season == season);
+}
+
+function filterLastN(history, lastN) {
+  if (!lastN) return history;
+  return history.slice(-lastN * 12);
+}
+
+function filterFirstN(history, firstN) {
+  if (!firstN) return history;
+  return history.slice(0, firstN * 12);
+}
+
+function filterRace(history, tlast, tfirst) {
+  let filtered = [...history];
+  if (tlast) filtered = filtered.slice(-tlast);
+  if (tfirst) filtered = filtered.slice(0, tfirst);
+  return filtered;
+}
+
+function filterTier(history, tier) {
+  if (tier === "ALL") return history;
+  return history.filter(h => h.tier === tier);
+}
+
+function applyAllFilters(history) {
+  const season = document.getElementById("seasonSelect").value;
+  const format = document.getElementById("formatSelect").value;
+  const lastN = Number(document.getElementById("lastNInput").value);
+  const firstN = Number(document.getElementById("firstNInput").value);
+  const tlast = Number(document.getElementById("tlastInput").value);
+  const tfirst = Number(document.getElementById("tfirstInput").value);
+  const tier = document.getElementById("tierSelect").value;
+
+  let filtered = [...history];
+
+  filtered = filterBySeason(filtered, season);
+  filtered = filterByFormat(filtered, format);
+  filtered = filterLastN(filtered, lastN);
+  filtered = filterFirstN(filtered, firstN);
+  filtered = filterRace(filtered, tlast, tfirst);
+  filtered = filterTier(filtered, tier);
+
+  return filtered;
+}
+  
+function drawPanel(ctx, x, y, w, h) {
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(x, y, w, h);
+
+  ctx.strokeStyle = "rgba(0,150,255,0.8)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+}
+
+async function drawPlayerInfo(ctx, details, stats) {
+  const x = 40;
+  const y = 40;
+  const w = 420;
+  const h = 420;
+
+  drawPanel(ctx, x, y, w, h);
+
+  // ▼ プレイヤー名（OZAX の位置）
+  ctx.fillStyle = "#fff";
+  ctx.font = "32px sans-serif";
+  ctx.fillText(details.name, x + 20, y + 50);
+
+  // ▼ 国旗（自動表示）
+  await drawFlag(ctx, details.country, x + 20, y + 70);
+
+  ctx.font = "20px sans-serif";
+  ctx.fillText(`MMR: ${details.mmr}`, x + 20, y + 130);
+  ctx.fillText(`Peak MMR: ${details.peak_mmr}`, x + 20, y + 160);
+  ctx.fillText(`Avg: ${stats.avgScore}`, x + 20, y + 190);
+  ctx.fillText(`W-L: ${details.wins} - ${details.losses}`, x + 20, y + 220);
+  ctx.fillText(`Events: ${stats.matches}`, x + 20, y + 250);
+  ctx.fillText(`Rank: ${stats.rank}`, x + 20, y + 280);
+}
+
+function drawMMRGraph(ctx, history) {
+  const x = 500;
+  const y = 40;
+  const w = 700;
+  const h = 420;
+
+  drawPanel(ctx, x, y, w, h);
+
+  if (!history.length) return;
+
+  const ratings = history.map(h => h.mmr);
+  const minR = Math.min(...ratings);
+  const maxR = Math.max(...ratings);
+
+  ctx.strokeStyle = "#00aaff";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  history.forEach((h, i) => {
+    const px = x + 40 + (i / (history.length - 1)) * (w - 80);
+    const py = y + h - 40 - ((h.mmr - minR) / (maxR - minR)) * (h - 80);
+
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("MMR Progression", x + 20, y + 30);
+}
+
+async function drawFlag(ctx, country, x, y) {
+  if (!country) return;
+
+  const flag = new Image();
+  flag.src = `flags/${country}.png`;
+
+  await flag.decode();
+
+  // OZAX 風の横長国旗
+  ctx.drawImage(flag, x, y, 60, 40);
+}
+  
+state.backgroundImage = null;
+state.bgBrightness = 1;
+state.bgContrast = 1;
+state.bgOpacity = 1;
+state.bgBlur = 0;
+
+function setBgImage(file) {
+  const reader = new FileReader();
+  reader.onload = () => state.backgroundImage = reader.result;
+  reader.readAsDataURL(file);
+}
+
+function setBgBrightness(v) { state.bgBrightness = Number(v); }
+function setBgContrast(v) { state.bgContrast = Number(v); }
+function setBgOpacity(v) { state.bgOpacity = Number(v); }
+function setBgBlur(v) { state.bgBlur = Number(v); }
+
+async function drawBackground(ctx, w, h) {
+  if (!state.backgroundImage) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+
+  const bg = new Image();
+  bg.src = state.backgroundImage;
+  await bg.decode();
+
+  // ▼ Canvas の filter を使って明暗・コントラスト・ぼかしを適用
+  ctx.filter = `
+    brightness(${state.bgBrightness})
+    contrast(${state.bgContrast})
+    blur(${state.bgBlur}px)
+  `;
+
+  // ▼ 透過度を反映
+  ctx.globalAlpha = state.bgOpacity;
+
+  ctx.drawImage(bg, 0, 0, w, h);
+
+  // ▼ 他の描画に影響しないようにリセット
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
+}
+
+async function generateLoungeImage(details, history, stats) {
+  const canvas = document.getElementById("loungeCanvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // ★ 背景（ここに入れる）
+  await drawBackground(ctx, w, h);
+
+  // ★ 左パネル（プレイヤー情報）
+  await drawPlayerInfo(ctx, details, stats);
+
+  // ★ 右パネル（MMRグラフ）
+  drawMMRGraph(ctx, history);
+
+  return canvas;
+}
 
 </script>
 
