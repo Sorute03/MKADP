@@ -5651,6 +5651,17 @@ const bg = state.backgroundImage || "default_background.png";
 
 drawAdpCourseImage(stats, bg);
 
+function renderAdpCourseSelect() {
+  const html = `
+    <select id="adpCourseSelect" multiple size="10" style="width:260px;">
+      ${courseList.map(c => `<option>${c}</option>`).join("")}
+    </select>
+  `;
+  document.getElementById("adpCourseSelectBox").insertAdjacentHTML("afterbegin", html);
+}
+
+window.addEventListener("DOMContentLoaded", renderAdpCourseSelect);
+
 </script>
 
 </body>
