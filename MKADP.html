@@ -194,6 +194,13 @@
 
 <body>
 <script>
+let currentSeasonFilter = "ALL";
+// ▼ グローバルフィルタ（AIタブ・courseStatsTab 共通）
+let currentSeasonFilter = "ALL";
+let currentTierFilter = "ALL";
+let currentRecentFilter = 0;
+let currentAndOrMode = "AND";
+
 // 全レコード（localStorage + セッション追加分）
 let allRecords = [];
 // Tier 一覧（ALL は分析用のみ）
@@ -5667,6 +5674,7 @@ function initAdpCourseSelector() {
   sel.innerHTML =
     courseList.map(c => `<option value="${c}">${c}</option>`).join("");
 }
+
 
 </script>
 
