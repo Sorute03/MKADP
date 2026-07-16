@@ -551,7 +551,9 @@ const courseList = [
   <button class="tabBtn active" data-tab="analysisTab">分析</button>
   <button class="tabBtn" data-tab="historyTab">レース一覧</button>
   <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
+  <button class="tabBtn" data-tab="coursestatsTab">コース別stats</button>
 </div>
+
   
 <!-- ▼ レース一覧タブ -->
 <div id="historyTab" class="tabContent" style="display:none;">
@@ -626,70 +628,76 @@ const courseList = [
 
 </div>
   
-<!-- ADP コース比較セクション -->
-<div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-  <p>コースを最大5つ選択:</p>
+<!-- ▼ courseStatsTab（タブとして使う） -->
+<div id="courseStatsTab" style="padding: 16px;">
 
-  <!-- ★ 中身は JS で流し込む -->
-  <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
+  <!-- ADP コース比較セクション（ID はそのまま） -->
+  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+    <p>コースを最大5つ選択:</p>
 
-  <div style="margin-top: 8px;">
-    <button id="showAdpCourseStatsBtn">表示</button>
-    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
-    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+    <!-- ★ 中身は JS で流し込む（ID はそのまま） -->
+    <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
+
+    <div style="margin-top: 8px;">
+      <button id="showAdpCourseStatsBtn">表示</button>
+      <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+    </div>
   </div>
+
+  <!-- 背景画像設定（ID はそのまま） -->
+  <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
+    <h3>背景画像設定（コース比較画像用）</h3>
+
+    <label>背景画像</label><br>
+    <input type="file" id="adpCourseBgInput" accept="image/*"><br><br>
+
+    <label>明るさ</label><br>
+    <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
+
+    <label>コントラスト</label><br>
+    <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
+
+    <label>透過度</label><br>
+    <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
+
+    <label>ぼかし(px)</label><br>
+    <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
+  </div>
+
+  <!-- テキスト色設定（ID はそのまま） -->
+  <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
+    <h3>テキスト色設定</h3>
+
+    <label>テキスト色</label><br>
+    <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
+
+    <label>縁取り色</label><br>
+    <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
+
+    <label>縁取り太さ(px)</label><br>
+    <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
+
+    <label>影の濃さ(px)</label><br>
+    <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
+
+    <label>影の色</label><br>
+    <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+  </div>
+
+  <!-- テキスト結果表示（ID はそのまま） -->
+  <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+
+  <!-- グラフ表示（ID はそのまま） -->
+  <canvas id="adpCourseStatsChart" width="600" height="300"
+    style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
+
+  <!-- 画像生成 Canvas（ID はそのまま） -->
+  <canvas id="adpCourseImage" width="800" height="600"
+    style="border:1px solid #ccc; display:block;"></canvas>
+
 </div>
 
-<!-- 背景画像設定 -->
-<div id="adpCourseBgSettings" style="margin-bottom: 20px;">
-  <h3>背景画像設定（コース比較画像用）</h3>
-
-  <label>背景画像</label><br>
-  <input type="file" id="adpCourseBgInput" accept="image/*"><br><br>
-
-  <label>明るさ</label><br>
-  <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-
-  <label>コントラスト</label><br>
-  <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-
-  <label>透過度</label><br>
-  <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-
-  <label>ぼかし(px)</label><br>
-  <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
-</div>
-
-<!-- テキスト色設定 -->
-<div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
-  <h3>テキスト色設定</h3>
-
-  <label>テキスト色</label><br>
-  <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
-
-  <label>縁取り色</label><br>
-  <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
-
-  <label>縁取り太さ(px)</label><br>
-  <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
-
-  <label>影の濃さ(px)</label><br>
-  <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
-
-  <label>影の色</label><br>
-  <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
-</div>
-
-<!-- テキスト結果表示 -->
-<div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
-
-<!-- グラフ表示 -->
-<canvas id="adpCourseStatsChart" width="600" height="300"
-  style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
-
-<!-- 画像生成 Canvas -->
-<canvas id="adpCourseImage" width="800" height="600"
-  style="border:1px solid #ccc; display:block;"></canvas>
 
   
 <!-- ▼ レース登録ボタン（右下固定） -->
@@ -4953,22 +4961,25 @@ function getRankInfo(mmr, season) {
   return season >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
 }
 
-function loadADPIndexedDBRecords() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("MKADP_DB", 1);
-
-    request.onerror = () => reject("IndexedDB 読み込み失敗");
-    request.onsuccess = () => {
-      const db = request.result;
-      const tx = db.transaction("records", "readonly");
-      const store = tx.objectStore("records");
-
-      const getAllReq = store.getAll();
-      getAllReq.onsuccess = () => resolve(getAllReq.result || []);
-      getAllReq.onerror = () => reject("records 読み込み失敗");
-    };
+async function loadADPIndexedDBRecords() {
+  const db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
   });
+
+  const tx = db.transaction("records", "readonly");  // ★ここが重要
+  const store = tx.objectStore("records");
+
+  const all = await new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  return all;
 }
+
 
 async function loadADPCourseDataFromIndexedDB() {
   const records = await loadADPIndexedDBRecords();
