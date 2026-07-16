@@ -626,10 +626,14 @@ const courseList = [
 
 </div>
   
-<!-- ADP コース比較セクション全体 -->
+<!-- ADP コース比較セクション -->
 <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
   <p>コースを最大5つ選択:</p>
-  <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
+
+  <!-- ★ ここがテンプレート式（あなたの希望通り） -->
+  <select id="adpCourseSelect" multiple size="10" style="width:260px;">
+    ${courseList.map(c => `<option>${c}</option>`).join("")}
+  </select>
 
   <div style="margin-top: 8px;">
     <button id="showAdpCourseStatsBtn">表示</button>
@@ -638,7 +642,7 @@ const courseList = [
   </div>
 </div>
 
-<!-- 背景画像設定（コース比較画像用） -->
+<!-- 背景画像設定 -->
 <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
   <h3>背景画像設定（コース比較画像用）</h3>
 
@@ -681,11 +685,11 @@ const courseList = [
 <!-- テキスト結果表示 -->
 <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
 
-<!-- グラフ表示用 Canvas -->
+<!-- グラフ表示 -->
 <canvas id="adpCourseStatsChart" width="600" height="300"
   style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
 
-<!-- 画像カード生成用 Canvas -->
+<!-- 画像生成 Canvas -->
 <canvas id="adpCourseImage" width="800" height="600"
   style="border:1px solid #ccc; display:block;"></canvas>
 
