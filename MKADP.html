@@ -621,7 +621,15 @@ const courseList = [
   <label>ぼかし(px)</label>
   <input type="range" id="bgBlurInput" min="0" max="20" step="1" value="0" onchange="setBgBlur(this.value)">
   
-    
+  <div id="adpCourseSelectBox">
+    <p>コースを最大5つ選択:</p>
+    <select id="adpCourseSelect" multiple size="10"></select>
+    <button id="showAdpCourseStatsBtn">表示</button>
+  </div>
+  
+  <div id="adpCourseStatsResult"></div>
+  <canvas id="adpCourseStatsChart" width="600" height="300"></canvas>
+
 </div>
 
   
@@ -5184,6 +5192,208 @@ async function generateLoungeImage(details, history, stats) {
   drawMMRGraph(ctx, history);
 
   return canvas;
+}
+  
+async function getAdpCourseStatsOnly() {
+  const records = await loadADPIndexedDBRecords(); // 既存関数
+
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = { count: 0, totalRank: 0, totalScore: 0 };
+    }
+    map[r.course].count++;
+    map[r.course].totalRank += r.rank;
+    map[r.course].totalScore += r.score;
+  });
+
+  return Object.entries(map).map(([course, data]) => ({
+    course,
+    count: data.count,
+    avgRank: Number((data.totalRank / data.count).toFixed(2)),
+    avgScore: Number((data.totalScore / data.count).toFixed(2))
+  }));
+}
+
+async function initAdpCourseSelect() {
+  const stats = await getAdpCourseStatsOnly();
+  const sel = document.getElementById("adpCourseSelect");
+
+  stats.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.course;
+    opt.textContent = s.course;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
+  const sel = document.getElementById("adpCourseSelect");
+  const selected = [...sel.selectedOptions].map(o => o.value);
+
+  if (selected.length === 0) return alert("コースを選択してください");
+  if (selected.length > 5) return alert("最大5コースまで選択できます");
+
+  const stats = await getAdpCourseStatsOnly();
+  const filtered = stats.filter(s => selected.includes(s.course));
+
+  drawAdpCourseStatsTable(filtered);
+  drawAdpCourseStatsChart(filtered);
+};
+function drawAdpCourseStatsTable(list) {
+  const box = document.getElementById("adpCourseStatsResult");
+  box.innerHTML = "";
+
+  let html = `
+    <table border="1" style="border-collapse:collapse;">
+      <tr>
+        <th>コース</th>
+        <th>走行数</th>
+        <th>平均順位</th>
+        <th>平均得点</th>
+      </tr>
+  `;
+
+  list.forEach(s => {
+    html += `
+      <tr>
+        <td>${s.course}</td>
+        <td>${s.count}</td>
+        <td>${s.avgRank}</td>
+        <td>${s.avgScore}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  box.innerHTML = html;
+}
+
+function drawAdpCourseStatsChart(list) {
+  const ctx = document.getElementById("adpCourseStatsChart").getContext("2d");
+
+  const labels = list.map(s => s.course);
+  const avgRanks = list.map(s => s.avgRank);
+  const avgScores = list.map(s => s.avgScore);
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "平均順位",
+          data: avgRanks,
+          backgroundColor: "rgba(255, 99, 132, 0.6)"
+        },
+        {
+          label: "平均得点",
+          data: avgScores,
+          backgroundColor: "rgba(54, 162, 235, 0.6)"
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+function filterAdpRecords(records, filters) {
+  return records.filter(r => {
+
+    // season
+    if (filters.season && r.season !== filters.season) return false;
+
+    // tier
+    if (filters.tier && r.tier !== filters.tier) return false;
+
+    // course（複数）
+    if (filters.courses && filters.courses.length > 0) {
+      if (!filters.courses.includes(r.course)) return false;
+    }
+
+    return true;
+  });
+}
+
+function applyRecentFilter(records, N) {
+  if (!N || N <= 0) return records;
+  return records.slice(-N);
+}
+
+function aggregateCourseStats(records) {
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = {
+        count: 0,
+        ranks: [],
+        scores: []
+      };
+    }
+    map[r.course].count++;
+    map[r.course].ranks.push(r.rank);
+    map[r.course].scores.push(r.score);
+  });
+
+  return Object.entries(map).map(([course, data]) => {
+    const avgRank = data.ranks.reduce((a,b)=>a+b,0) / data.ranks.length;
+    const avgScore = data.scores.reduce((a,b)=>a+b,0) / data.scores.length;
+
+    const sortedRanks = [...data.ranks].sort((a,b)=>a-b);
+    const medianRank = sortedRanks[Math.floor(sortedRanks.length/2)];
+
+    const winRate = data.ranks.filter(r => r <= 3).length / data.ranks.length;
+
+    return {
+      course,
+      count: data.count,
+      avgRank: Number(avgRank.toFixed(2)),
+      avgScore: Number(avgScore.toFixed(2)),
+      medianRank,
+      winRate: Number((winRate * 100).toFixed(1))
+    };
+  });
+}
+
+function applyAndOrFilter(records, filters, mode) {
+  if (mode === "AND") {
+    return filterAdpRecords(records, filters);
+  }
+
+  if (mode === "OR") {
+    return records.filter(r => {
+      return (
+        (filters.season && r.season === filters.season) ||
+        (filters.tier && r.tier === filters.tier) ||
+        (filters.courses && filters.courses.includes(r.course))
+      );
+    });
+  }
+
+  return records;
+}
+
+async function getFilteredAdpCourseStats(filters) {
+  let records = await loadADPIndexedDBRecords();
+
+  // AND / OR フィルター
+  records = applyAndOrFilter(records, filters, filters.mode);
+
+  // 直近 N 件
+  records = applyRecentFilter(records, filters.recent);
+
+  // 集計
+  const stats = aggregateCourseStats(records);
+
+  // 最大 5 コースに制限
+  return stats.slice(0, 5);
 }
 
 </script>
