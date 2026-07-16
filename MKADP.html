@@ -622,27 +622,31 @@ const courseList = [
   <label>ぼかし(px)</label>
   <input type="range" id="bgBlurInput" min="0" max="20" step="1" value="0" onchange="setBgBlur(this.value)">
   
-  <div id="adpCourseSelectBox">
-    <p>コースを最大5つ選択:</p>
-    <select id="adpCourseSelect" multiple size="10"></select>
-    <button id="showAdpCourseStatsBtn">表示</button>
-  </div>
   
-  <div id="adpCourseStatsResult"></div>
-  <canvas id="adpCourseStatsChart" width="600" height="300"></canvas>
 
 </div>
-
   
-<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
-<div id="analysisTab" class="tabContent" style="display:block;">
+<!-- ADP コース比較セクション全体 -->
 
-  <div class="section-block">
-    <label>直近 N レースで比較：</label>
-    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-    <button onclick="refreshModeView(allRecords)">再描画</button>
+<div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+  <p>コースを最大5つ選択:</p>
+  <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
+  <div style="margin-top: 8px;">
+    <button id="showAdpCourseStatsBtn">表示</button>
+    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
   </div>
-<button id="sendAdpCourseStatsBtn">Discordに送信</button>
+</div>
+
+<!-- テキスト結果表示 -->
+<div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+
+<!-- グラフ表示用 Canvas -->
+<canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
+
+<!-- 画像カード生成用 Canvas -->
+<canvas id="adpCourseImage" width="800" height="600" style="border:1px solid #ccc; display:block;"></canvas>
+
 
 
   <!-- ここにグラフや分析UIが続く -->
@@ -5519,6 +5523,91 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
   sendAdpCourseStatsToDiscord(window.latestAdpCourseStats);
 };
 
+
+async function drawAdpCourseImage(stats, backgroundUrl) {
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  // 背景画像読み込み
+  const bg = new Image();
+  bg.src = backgroundUrl;
+  await bg.decode();
+
+  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+  // テキスト設定
+  ctx.fillStyle = "white";
+  ctx.font = "24px 'Noto Sans JP'";
+  ctx.textBaseline = "top";
+
+  let y = 40;
+  ctx.fillText("ADP コース比較結果", 40, y);
+  y += 50;
+
+  stats.forEach(s => {
+    ctx.fillText(`【${s.course}】`, 40, y); y += 30;
+    ctx.fillText(`走行数: ${s.count}`, 60, y); y += 25;
+    ctx.fillText(`平均順位: ${s.avgRank}`, 60, y); y += 25;
+    ctx.fillText(`中央値: ${s.medianRank}`, 60, y); y += 25;
+    ctx.fillText(`勝率(3位以内): ${s.winRate}%`, 60, y); y += 25;
+    ctx.fillText(`平均得点: ${s.avgScore}`, 60, y); y += 40;
+  });
+}
+  
+async function sendAdpCourseImageToDiscord() {
+  const canvas = document.getElementById("adpCourseImage");
+  const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+
+  const webhook = getSelectedWebhookUrl();
+  if (!webhook) {
+    alert("Webhook が選択されていません");
+    return;
+  }
+
+  const boundary = "----mkcBoundary" + new Date().getTime();
+
+  const payload =
+    Utilities.newBlob(
+      base64,
+      "image/png",
+      "adp_course_stats.png"
+    );
+
+  const data = Utilities.newBlob(
+    "--" + boundary + "\r\n" +
+    "Content-Disposition: form-data; name=\"file\"; filename=\"adp_course_stats.png\"\r\n" +
+    "Content-Type: image/png\r\n\r\n"
+  ).getBytes()
+    .concat(payload.getBytes())
+    .concat(Utilities.newBlob("\r\n--" + boundary + "--").getBytes());
+
+  await fetch(webhook, {
+    method: "POST",
+    body: data,
+    headers: {
+      "Content-Type": "multipart/form-data; boundary=" + boundary
+    }
+  });
+
+  alert("Discord に画像を送信しました！");
+}
+
+
+document.getElementById("sendAdpCourseImageBtn").onclick = () => {
+  if (!window.latestAdpCourseStats) {
+    alert("まず『表示』を押して結果を生成してください");
+    return;
+  }
+  sendAdpCourseImageToDiscord();
+};
+
+
+window.latestAdpCourseStats = stats;
+
+// 背景画像（あなたの設定に合わせて変更）
+const bg = state.backgroundImage || "default_background.png";
+
+drawAdpCourseImage(stats, bg);
 
 </script>
 
