@@ -630,10 +630,8 @@ const courseList = [
 <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
   <p>コースを最大5つ選択:</p>
 
-  <!-- ★ ここがテンプレート式（あなたの希望通り） -->
-  <select id="adpCourseSelect" multiple size="10" style="width:260px;">
-    ${courseList.map(c => `<option>${c}</option>`).join("")}
-  </select>
+  <!-- ★ 中身は JS で流し込む -->
+  <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
 
   <div style="margin-top: 8px;">
     <button id="showAdpCourseStatsBtn">表示</button>
@@ -2473,6 +2471,7 @@ window.addEventListener("load", async () => {
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
+  initAdpCourseSelector();
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -5651,16 +5650,12 @@ const bg = state.backgroundImage || "default_background.png";
 
 drawAdpCourseImage(stats, bg);
 
-function renderAdpCourseSelect() {
-  const html = `
-    <select id="adpCourseSelect" multiple size="10" style="width:260px;">
-      ${courseList.map(c => `<option>${c}</option>`).join("")}
-    </select>
-  `;
-  document.getElementById("adpCourseSelectBox").insertAdjacentHTML("afterbegin", html);
-}
+function initAdpCourseSelector() {
+  const sel = document.getElementById("adpCourseSelect");
 
-window.addEventListener("DOMContentLoaded", renderAdpCourseSelect);
+  sel.innerHTML =
+    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+}
 
 </script>
 
