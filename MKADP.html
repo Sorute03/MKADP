@@ -3228,32 +3228,55 @@ function getScatterFilteredRecords() {
 }
 
 function updateStatsView() {
-  const records = getStatsFilteredRecords();
+  try {
+    const records = getStatsFilteredRecords();
 
-  const count = records.length;
-  const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
-  const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
-  const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
+    const count = records.length;
+    const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
+    const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
+    const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
 
-  document.getElementById("basicStats").innerHTML = `
-    <p>対象レース数：${count}</p>
-    <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
-  `;
+    // ▼ basicStats 要素の存在確認
+    const basicStatsEl = document.getElementById("basicStats");
+    if (basicStatsEl) {
+      basicStatsEl.innerHTML = `
+        <p>対象レース数：${count}</p>
+        <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
+      `;
+    } else {
+      console.warn("basicStats 要素が見つかりません");
+    }
 
-  const lounge12 = records.filter(r => r.totalScore12);
-  if (lounge12.length) {
-    const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-    document.getElementById("avgTotalScore12Text").innerText =
-      `12レース平均合計スコア：${avg12.toFixed(1)}点`;
-  } else {
-    document.getElementById("avgTotalScore12Text").innerText = "";
+    // ▼ avgTotalScore12Text 要素の存在確認
+    const avgTotalScore12TextEl = document.getElementById("avgTotalScore12Text");
+    if (avgTotalScore12TextEl) {
+      const lounge12 = records.filter(r => r.totalScore12);
+      if (lounge12.length) {
+        const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
+        avgTotalScore12TextEl.innerText =
+          `12レース平均合計スコア：${avg12.toFixed(1)}点`;
+      } else {
+        avgTotalScore12TextEl.innerText = "";
+      }
+    } else {
+      console.warn("avgTotalScore12Text 要素が見つかりません");
+    }
+
+    // ▼ グラフ描画（存在確認付き）
+    if (typeof drawWinRateChart === "function") {
+      drawWinRateChart(records);
+    }
+    if (typeof drawAvgRankChart === "function") {
+      drawAvgRankChart(records);
+    }
+    if (typeof drawAvgScoreChart === "function") {
+      drawAvgScoreChart(records);
+    }
+
+  } catch (err) {
+    console.error("updateStatsView エラー:", err);
   }
-
-  drawWinRateChart(records);
-  drawAvgRankChart(records);
-  drawAvgScoreChart(records);
 }
-
 function updateGrowthView() {
   const records = getGrowthFilteredRecords();
   if (!records.length) {
