@@ -473,29 +473,28 @@ const courseList = [
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
 <button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
 
-  <!-- ▼ パスワード付きバックアップ UI ▼ -->
+<!-- ▼ バックアップ v3（パスワード付き） -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>バックアップ（パスワード付き）</h3>
+  <h3>バックアップ（v3 / パスワード付き）</h3>
 
   <!-- セーブ（出力） -->
   <div style="margin-bottom:15px;">
-    <label>デバイス間データ移行バックアップファイル用パスワード：</label>
+    <label>バックアップパスワード：</label>
     <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <button id="downloadBackupWithPasswordBtn">バックアップを保存</button>
+    <button id="downloadBackupBtn">バックアップを保存</button>
   </div>
 
   <hr>
 
   <!-- 復元（インポート） -->
   <div>
-    <label>デバイス間データ移行復元パスワード：</label>
+    <label>復元パスワード：</label>
     <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
     <input id="restoreFileInput" type="file" accept=".txt">
-    <button id="restoreBackupWithPasswordBtn">復元する</button>
+    <button id="restoreBackupBtn">復元する</button>
   </div>
 </div>
-<!-- ▲ パスワード付きバックアップ UI ▲ -->
-  
+<!-- ▲ バックアップ v3 ▲ -->
 
 
 <h3>TSV読み込み（スプシコピー対応）</h3>
@@ -506,13 +505,11 @@ const courseList = [
 <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 <button id="importFileBtn">読み込んで保存</button>
 
-</script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
 
-<!-- ▼ 旧データ取り込みセクション -->
+<!-- ▼ 旧データ取り込み -->
 <div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
 
-  <!-- 方法2：旧JSONを読み込む -->
   <div style="margin-bottom:15px;">
     <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
     <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
@@ -521,31 +518,18 @@ const courseList = [
 
   <hr>
 
-  <!-- 方法3：旧HTMLを読み込む -->
   <div style="margin-top:15px;">
     <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
     <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
     <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
   </div>
-
-  <p style="margin-top:15px; font-size:13px; color:#666;">
-    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
-    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
-  </p>
 </div>
-  
-<button id="importBackupBtn">バックアップ復元</button>
-<button id="importSaveFileBtn">ファイルから復元</button>
 
 
 <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>重複データの整理</h3>
   <button id="removeDupBtn">重複データを自動削除する</button>
-  <p style="font-size:13px; color:#666; margin-top:10px;">
-    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
-  </p>
 </div>
-
 
 <!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
@@ -2051,7 +2035,6 @@ document.getElementById("importOldJsonBtn").addEventListener("click", async () =
     alert("旧JSON読み込みに失敗しました: " + err.message);
   }
 });
-
 // ▼ 4. 旧HTMLファイル読み込み
 document.getElementById("importOldHtmlBtn").addEventListener("click", async () => {
   const fileInput = document.getElementById("oldHtmlInput");
@@ -2060,9 +2043,9 @@ document.getElementById("importOldHtmlBtn").addEventListener("click", async () =
   try {
     const text = await fileInput.files[0].text();
 
-    // ▼ HTML内の allRecords を抽出
+    // ▼ HTML内の allRecords を抽出（修正版）
     const match =
-      text.match(/allRecords\s*=\s*JSON\.parse\(['"]([^'"]+)['"]/i) ||
+      text.match(/allRecords\s*=\s*JSON\.parse\(['"]([^'"]+)['"]\)/i) ||
       text.match(/allRecords\s*=\s*(
 
 \[.*?\]
@@ -2095,7 +2078,7 @@ document.getElementById("importOldHtmlBtn").addEventListener("click", async () =
     // ▼ IndexedDB をクリアして新しいデータで上書き
     await clearAllRecordsFromDB();
     for (const rec of mergedRecords) {
-      await addRecord(rec);   // ★ mogiDB / records に保存
+      await addRecord(rec);
     }
 
     // ▼ メモリにも反映
@@ -2106,7 +2089,7 @@ document.getElementById("importOldHtmlBtn").addEventListener("click", async () =
     );
 
     fileInput.value = "";
-    refreshAllAnalysisViews();  // ★ UI更新
+    refreshAllAnalysisViews();
   } catch (err) {
     alert("旧HTML読み込みに失敗しました: " + err.message);
   }
