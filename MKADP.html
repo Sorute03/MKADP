@@ -1795,14 +1795,18 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <script>
 
-function openDB() {
+/* ===========================
+   IndexedDB データ操作関数
+=========================== */
+
+async function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open("mogiDB", 1);
+    const req = indexedDB.open("MKADPDatabase", 1);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains("records")) {
-        db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+      if (!db.objectStoreNames.contains("races")) {
+        db.createObjectStore("races", { keyPath: "timestamp" });
       }
     };
 
@@ -1811,429 +1815,60 @@ function openDB() {
   });
 }
 
-
 async function addRecord(record) {
   const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  const store = tx.objectStore("records");
-
-  // timestamp が無ければ付ける
+  const tx = db.transaction(["races"], "readwrite");
+  const store = tx.objectStore("races");
+  
   if (!record.timestamp) {
     record.timestamp = Date.now();
   }
-
-  const id = await new Promise(resolve => {
-    const req = store.add(record);
-    req.onsuccess = () => resolve(req.result);
-  });
-
-  await tx.done;
-
-  return { ...record, id };
+  
+  store.add(record);
+  await new Promise(res => tx.oncomplete = res);
 }
-
-
-async function clearRecords() {
-  const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  tx.objectStore("records").clear();
-  await tx.done;
-}
-
 
 async function updateRecord(record) {
   const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  tx.objectStore("records").put(record);
-  await tx.done;
+  const tx = db.transaction(["races"], "readwrite");
+  tx.objectStore("races").put(record);
+  await new Promise(res => tx.oncomplete = res);
 }
 
-
-async function deleteRecord(id) {
+async function deleteRecord(timestamp) {
   const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  tx.objectStore("records").delete(id);
-  await tx.done;
+  const tx = db.transaction(["races"], "readwrite");
+  tx.objectStore("races").delete(timestamp);
+  await new Promise(res => tx.oncomplete = res);
 }
 
-async function getAllRecords() {
-  const db = await openDB();
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("records", "readonly");
-    const store = tx.objectStore("records");
-    const req = store.getAll();
-
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => resolve([]);
-  });
+async function deleteRecordFromDB(timestamp) {
+  await deleteRecord(timestamp);
 }
 
-
-function buildRecordKey(r) {
-  return [
-    r.course,
-    r.rank,
-    r.score,
-    r.season,
-    r.tier,
-    r.mode,
-    r.timestamp ?? "noTS"
-  ].join("|");
-}
-
-async function removeDuplicateRecords() {
-  const records = await getAllRecords();
-
-  const seen = new Set();
-  const unique = [];
-
-  for (const r of records) {
-    const key = buildRecordKey(r);
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(r);
-    }
-  }
-
-  // DB を初期化して unique のみ保存
-  await clearRecords();
-  for (const r of unique) {
-    await addRecord(r);
-  }
-
-  allRecords = unique;
-
-  refreshAllAnalysisViews();
-  renderRaceHistory();
-
-  alert(`重複データを削除しました！\n${records.length} → ${unique.length} 件`);
-}
-
-document.getElementById("removeDupBtn").onclick = async () => {
-  await removeDuplicateRecords();
-};
-
-async function fixMissingTimestamps() {
-  const records = await getAllRecords();
-  const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  const store = tx.objectStore("records");
-
-  for (const r of records) {
-    if (!r.timestamp) {
-      r.timestamp = Date.now() + Math.random(); // 重複防止
-      store.put(r);
-    }
-  }
-
-  await tx.done;
-  console.log("timestamp 修復完了");
-}
-
-
-/* ==========
-   共通データ
-========== */
-async function getAesKey() {
-  let keyBase64 = localStorage.getItem("aesKey");
-
-  // 初回だけキーを生成
-  if (!keyBase64) {
-    const raw = crypto.getRandomValues(new Uint8Array(32)); // 256bit
-    keyBase64 = btoa(String.fromCharCode(...raw));
-    localStorage.setItem("aesKey", keyBase64);
-  }
-
-  // Base64 → Uint8Array
-  const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
-
-  return crypto.subtle.importKey(
-    "raw",
-    raw,
-    "AES-GCM",
-    false,
-    ["encrypt", "decrypt"]
-  );
-}
-
-
-async function encrypt(text) {
-  const key = await getAesKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-
-  const encoded = new TextEncoder().encode(text);
-  const cipher = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    encoded
-  );
-
-  const combined = new Uint8Array(iv.length + cipher.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(cipher), iv.length);
-
-  // ★ ここを修正
-  return bytesToBase64(combined);
-}
-
-async function decrypt(base64) {
-  const key = await getAesKey();
-
-  // ★ ここを修正
-  const data = base64ToBytes(base64);
-
-  const iv = data.slice(0, 12);
-  const cipher = data.slice(12);
-
-  const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    cipher
-  );
-
-  return new TextDecoder().decode(plain);
-}
-
-
-
-/* ▼ セーブデータ生成 */
-async function exportSaveData() {
-  const records = await getAllRecords(); // ← IndexedDB から取得
-  const json = JSON.stringify(records);
-  const encrypted = await encrypt(json);
-  return encrypted;
-}
-
-
-/* ▼ セーブデータ復元 */
-async function importSaveData(code) {
-  const json = await decrypt(code);
-  const records = JSON.parse(json);
-
-  // DB を初期化（全削除）
-  const db = await openDB();
-  const tx = db.transaction("records", "readwrite");
-  const store = tx.objectStore("records");
-
-  // 全削除
-  const clearReq = store.clear();
-  await new Promise(res => clearReq.onsuccess = res);
-
-  // 全件追加
-  for (const r of records) {
-    store.add(r);
-  }
-  await tx.done;
-
-  refreshAllAnalysisViews();
-  renderRaceHistory();
-}
-
-
-
-/* ▼ 自動ダウンロードバックアップ */
-async function downloadBackup() {
-  const encrypted = await encrypt(JSON.stringify(allRecords));
-  const blob = new Blob([encrypted], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "MKWorld_backup.txt";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function bytesToBase64(bytes) {
-  let binary = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-
-/* ▼ localStorage + backup 二重保存 */
-async function importSaveData(code) {
-  const json = await decrypt(code);
-  allRecords = JSON.parse(json);
-
-  // ★ allRecords に統一
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-  localStorage.setItem("backup", code);
-
-  refreshAllAnalysisViews();
-  renderRaceHistory();
-}
-
-
-/* ▼ データ読み込み（壊れていたらバックアップから復元） */
-async function loadAllRecords() {
-  try {
-    // ▼ ① まず IndexedDB から読み込む
-    let records = await getAllRecords();
-
-    if (records.length > 0) {
-      // ★ timestamp 補正（旧データ対策）
-      let base = Date.now();
-      records.forEach(r => {
-        if (!r.timestamp) {
-          r.timestamp = base;
-          base += 1; // 1ms ずつずらす
-        }
-      });
-
-      allRecords = records;
-      return;
-    }
-
-    // ▼ ② DB が空 → 過去の localStorage データがあるか確認
-    const legacy = localStorage.getItem("allRecords");
-    if (legacy) {
-      const arr = JSON.parse(legacy);
-
-      // ★ timestamp 補正
-      let base = Date.now();
-      arr.forEach(r => {
-        if (!r.timestamp) {
-          r.timestamp = base;
-          base += 1;
-        }
-      });
-
-      // ▼ ③ IndexedDB に移行
-      const db = await openDB();
-      const tx = db.transaction("records", "readwrite");
-      const store = tx.objectStore("records");
-
-      for (const r of arr) {
-        store.add(r);
-      }
-      await tx.done;
-
-      // ▼ ④ localStorage の allRecords を削除（移行完了）
-      localStorage.removeItem("allRecords");
-
-      // ▼ ⑤ メモリ側にも反映
-      allRecords = arr;
-      return;
-    }
-
-    // ▼ ⑥ localStorage に backup がある場合（暗号化データ）
-    const backup = localStorage.getItem("backup");
-    if (backup) {
-      const json = await decrypt(backup);
-      const arr = JSON.parse(json);
-
-      // ★ timestamp 補正
-      let base = Date.now();
-      arr.forEach(r => {
-        if (!r.timestamp) {
-          r.timestamp = base;
-          base += 1;
-        }
-      });
-
-      // ▼ DB に復元
-      const db = await openDB();
-      const tx = db.transaction("records", "readwrite");
-      const store = tx.objectStore("records");
-
-      for (const r of arr) {
-        store.add(r);
-      }
-      await tx.done;
-
-      allRecords = arr;
-      return;
-    }
-
-    // ▼ ⑦ 何もなければ空
-    allRecords = [];
-
-  } catch (e) {
-    console.error("loadAllRecords error", e);
-    allRecords = [];
-  }
-}
-
-
-
-function normalizeSeason(raw) {
-  if (!raw) return "";
-  const num = raw.replace(/[^0-9]/g, "");
-  if (!num) return "";
-  return "S" + Number(num);
-}
-
-
-/* ===========================
-   IndexedDB データ操作関数
-=========================== */
-
-// ▼ IndexedDB からすべてのデータを取得
 async function getAllRecordsFromDB() {
+  const db = await openDB();
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("MKADPDatabase", 1);
+    const tx = db.transaction(["races"], "readonly");
+    const store = tx.objectStore("races");
+    const req = store.getAll();
     
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(["races"], "readonly");
-      const store = transaction.objectStore("races");
-      const getAllRequest = store.getAll();
-      
-      getAllRequest.onerror = () => reject(getAllRequest.error);
-      getAllRequest.onsuccess = () => {
-        resolve(getAllRequest.result || []);
-      };
-    };
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
   });
 }
 
-// ▼ IndexedDB にすべてのデータを復元
-async function restoreAllRecordsToDB(records) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("MKADPDatabase", 1);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(["races"], "readwrite");
-      const store = transaction.objectStore("races");
-      
-      // ▼ 既存データをクリア
-      store.clear();
-      
-      // ▼ 新しいデータを追加
-      records.forEach(rec => {
-        store.add(rec);
-      });
-      
-      transaction.onerror = () => reject(transaction.error);
-      transaction.oncomplete = () => resolve();
-    };
-  });
+async function clearAllRecordsFromDB() {
+  const db = await openDB();
+  const tx = db.transaction(["races"], "readwrite");
+  tx.objectStore("races").clear();
+  await new Promise(res => tx.oncomplete = res);
 }
 
 /* ===========================
    重複チェック関数
 =========================== */
 
-// ▼ 重複判定関数（タイムスタンプ有り無しで処理を分ける）
 function isDuplicate(record1, record2) {
   // ▼ 基本プロパティの比較
   const basicMatch = (
@@ -2254,26 +1889,22 @@ function isDuplicate(record1, record2) {
   
   // ▼ どちらかタイムスタンプがない場合 → タイムスタンプ以外で重複判定
   if (!record1.timestamp || !record2.timestamp) {
-    return true; // 基本プロパティが全て同じなら重複
+    return true;
   }
   
   return false;
 }
 
-// ▼ 重複を検出してマージ
 function mergeRecordsWithDuplicateCheck(existingRecords, newRecords) {
   let addedCount = 0;
   let duplicateCount = 0;
   const mergedRecords = [...existingRecords];
   
   newRecords.forEach(newRec => {
-    // ▼ 既存データから重複を探す
     const hasDuplicate = mergedRecords.some(existing => isDuplicate(existing, newRec));
     
     if (hasDuplicate) {
       duplicateCount++;
-      const tsInfo = newRec.timestamp ? `timestamp: ${newRec.timestamp}` : "timestamp: なし";
-      console.log(`重複スキップ: ${newRec.course} (${newRec.rank}位) - ${tsInfo}`);
     } else {
       mergedRecords.push(newRec);
       addedCount++;
@@ -2308,35 +1939,24 @@ document.getElementById("downloadBackupWithPasswordBtn").addEventListener("click
   }
   
   try {
-    // ▼ IndexedDB とメモリの両方からデータを取得
+    // ▼ IndexedDB からすべてのデータを取得
     const dbRecords = await getAllRecordsFromDB();
-    const memoryRecords = [...allRecords];
     
-    // ▼ 重複を排除して統合
-    const allData = [...new Map(
-      [...dbRecords, ...memoryRecords].map(r => [r.timestamp || r.course + r.rank, r])
-    ).values()];
-    
-    if (allData.length === 0) {
+    if (dbRecords.length === 0) {
       alert("保存するデータがありません");
       return;
     }
     
     // ▼ メタデータを含めて保存
     const backupData = {
-      version: "1.0",
+      version: "2.0",
       timestamp: new Date().toISOString(),
-      recordCount: allData.length,
-      records: allData
+      recordCount: dbRecords.length,
+      records: dbRecords
     };
     
-    // ▼ データを JSON に変換
     const dataStr = JSON.stringify(backupData);
-    
-    // ▼ 暗号化（Base64 エンコード）
     const encoded = btoa(dataStr);
-    
-    // ▼ パスワードのハッシュ化
     const hash = await sha256(password);
     const header = `MKADP_BACKUP_v2|${hash}|`;
     const backupContent = header + encoded;
@@ -2350,7 +1970,8 @@ document.getElementById("downloadBackupWithPasswordBtn").addEventListener("click
     a.click();
     URL.revokeObjectURL(url);
     
-    alert(`バックアップを保存しました（${allData.length}件）`);
+    alert(`バックアップを保存しました（${dbRecords.length}件）`);
+    document.getElementById("backupPassword").value = "";
   } catch (err) {
     console.error("バックアップ保存エラー:", err);
     alert("バックアップ保存に失敗しました: " + err.message);
@@ -2408,13 +2029,15 @@ document.getElementById("restoreBackupWithPasswordBtn").addEventListener("click"
     const { mergedRecords, addedCount, duplicateCount } = 
       mergeRecordsWithDuplicateCheck(existingDBRecords, backupData.records);
     
-    // ▼ IndexedDB に復元
-    await restoreAllRecordsToDB(mergedRecords);
+    // ▼ IndexedDB をクリアして新しいデータで上書き
+    await clearAllRecordsFromDB();
+    for (const rec of mergedRecords) {
+      await addRecord(rec);
+    }
     
     // ▼ メモリにも反映
     allRecords = [...mergedRecords];
     
-    // ▼ 結果表示
     let message = `復元完了：\n`;
     message += `新規追加: ${addedCount}件\n`;
     message += `重複スキップ: ${duplicateCount}件\n`;
@@ -2422,6 +2045,7 @@ document.getElementById("restoreBackupWithPasswordBtn").addEventListener("click"
     
     alert(message);
     fileInput.value = "";
+    document.getElementById("restorePassword").value = "";
     refreshAllAnalysisViews();
   } catch (err) {
     console.error("バックアップ復元エラー:", err);
@@ -2469,17 +2093,15 @@ document.getElementById("importOldJsonBtn").addEventListener("click", async () =
     
     // ▼ 重複チェックしながらマージ
     const { mergedRecords, addedCount, duplicateCount } = 
-      mergeRecordsWithDuplicateCheck([...allRecords, ...existingDBRecords], records);
+      mergeRecordsWithDuplicateCheck(existingDBRecords, records);
     
-    // ▼ DB に保存
+    // ▼ DB をクリアして新しいデータで上書き
+    await clearAllRecordsFromDB();
     for (const rec of mergedRecords) {
-      if (rec.course && rec.rank && !allRecords.some(r => isDuplicate(r, rec))) {
-        await saveRecord(rec);
-        if (!allRecords.some(r => isDuplicate(r, rec))) {
-          allRecords.push(rec);
-        }
-      }
+      await addRecord(rec);
     }
+    
+    allRecords = [...mergedRecords];
     
     let message = `インポート完了：\n`;
     message += `新規追加: ${addedCount}件\n`;
@@ -2537,17 +2159,15 @@ document.getElementById("importOldHtmlBtn").addEventListener("click", async () =
     
     // ▼ 重複チェックしながらマージ
     const { mergedRecords, addedCount, duplicateCount } = 
-      mergeRecordsWithDuplicateCheck([...allRecords, ...existingDBRecords], records);
+      mergeRecordsWithDuplicateCheck(existingDBRecords, records);
     
-    // ▼ DB に保存
+    // ▼ DB をクリアして新しいデータで上書き
+    await clearAllRecordsFromDB();
     for (const rec of mergedRecords) {
-      if (rec.course && rec.rank && !allRecords.some(r => isDuplicate(r, rec))) {
-        await saveRecord(rec);
-        if (!allRecords.some(r => isDuplicate(r, rec))) {
-          allRecords.push(rec);
-        }
-      }
+      await addRecord(rec);
     }
+    
+    allRecords = [...mergedRecords];
     
     let message = `インポート完了：\n`;
     message += `新規追加: ${addedCount}件\n`;
@@ -2608,15 +2228,15 @@ document.getElementById("importTSVBtn").addEventListener("click", async () => {
     
     // ▼ 重複チェックしながらマージ
     const { mergedRecords, addedCount, duplicateCount } = 
-      mergeRecordsWithDuplicateCheck([...allRecords, ...existingDBRecords], records);
+      mergeRecordsWithDuplicateCheck(existingDBRecords, records);
     
-    // ▼ DB に保存
+    // ▼ DB をクリアして新しいデータで上書き
+    await clearAllRecordsFromDB();
     for (const rec of mergedRecords) {
-      if (!allRecords.some(r => isDuplicate(r, rec))) {
-        await saveRecord(rec);
-        allRecords.push(rec);
-      }
+      await addRecord(rec);
     }
+    
+    allRecords = [...mergedRecords];
     
     let message = `インポート完了：\n`;
     message += `新規追加: ${addedCount}件\n`;
@@ -2681,15 +2301,15 @@ document.getElementById("importFileBtn").addEventListener("click", async () => {
     
     // ▼ 重複チェックしながらマージ
     const { mergedRecords, addedCount, duplicateCount } = 
-      mergeRecordsWithDuplicateCheck([...allRecords, ...existingDBRecords], records);
+      mergeRecordsWithDuplicateCheck(existingDBRecords, records);
     
-    // ▼ DB に保存
+    // ▼ DB をクリアして新しいデータで上書き
+    await clearAllRecordsFromDB();
     for (const rec of mergedRecords) {
-      if (!allRecords.some(r => isDuplicate(r, rec))) {
-        await saveRecord(rec);
-        allRecords.push(rec);
-      }
+      await addRecord(rec);
     }
+    
+    allRecords = [...mergedRecords];
     
     let message = `インポート完了：\n`;
     message += `新規追加: ${addedCount}件\n`;
@@ -2703,7 +2323,6 @@ document.getElementById("importFileBtn").addEventListener("click", async () => {
     alert("ファイル読み込みに失敗しました: " + err.message);
   }
 });
-
 
 
 
