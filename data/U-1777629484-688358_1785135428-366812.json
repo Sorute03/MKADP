@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1785135428-366812",
+  "timestamp": 1785135428,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "リバーサイドサファリ",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ソルティータウン",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "レインボーロード",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ホネホネツイスター",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ノコノコビーチ",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "プクプクフォールズ",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "どんぐりツリーハウス",
+      "rank": 1,
+      "score": 15,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "マリオブラザーズサーキット",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ワリオシップ",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "サンサンさばく",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "シュポポコースター",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1785135173056,
+      "totalScore12": 74
+    }
+  ]
+}
