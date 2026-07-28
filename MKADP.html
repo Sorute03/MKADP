@@ -2282,27 +2282,26 @@ async function verifyPassword(encryptedPassword, inputPassword) {
 async function convertThisBackupToV3(saveText, password) {
   const obj = JSON.parse(saveText);
 
-  // パスワード照合
+  // ▼ パスワード照合
   const ok = await verifyPassword(obj.p, password);
   if (!ok) throw new Error("パスワードが違います");
 
-  // aesKey 復元
+  // ▼ aesKey を復元
   const aesKeyBase64 = await decryptWithPassword(obj.k, password);
+
+  // ▼ ★ここが絶対に必要★
   localStorage.setItem("aesKey", aesKeyBase64);
 
-  // データ本体復元
-  const json = await decrypt(obj.d);
+  // ▼ データ本体を復号
+  const json = await decrypt(obj.d);   // ← ここで OperationError が消える
   let records = JSON.parse(json);
 
-  // 壊れたレコード除去
+  // ▼ 壊れたレコード除去
   records = records.filter(r =>
-    r.mode &&
-    r.season &&
-    r.tier &&
-    r.timestamp != null
+    r.mode && r.season && r.tier && r.timestamp != null
   );
 
-  // v3 形式に変換
+  // ▼ v3 形式に変換
   const body = JSON.stringify(records);
   const hash = await digestMessage(body);
   const base64 = btoa(body);
