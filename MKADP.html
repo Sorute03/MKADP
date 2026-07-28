@@ -3854,24 +3854,25 @@ function openOverlay() {
 
 // ▼ OBS に送信（overlayWindow があればそちらへ）
 async function sendToOverlay() {
-  // ★ Promise を解決する（必須）
-  const records = await exportRecords();  
+  const records = await exportRecords();  // mogiDB / records から取得
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
   const payload = {
     type: "records",
-    records,      // ← ここは純粋な配列になる
+    records,
     nextCourse
   };
 
-  // Web で overlayWindow が開いている場合
-  if (overlayWindow && !overlayWindow.closed) {
-    overlayWindow.postMessage(payload, "*");
+  // iframe overlay
+  const frame = document.getElementById("overlayFrame");
+  if (frame && frame.contentWindow) {
+    frame.contentWindow.postMessage(payload, "*");
   }
 
-  // OBS 用：常に postMessage を飛ばす
+  // OBS overlay
   window.postMessage(payload, "*");
 }
+
 
 
 // 1秒ごとに送信
@@ -3885,19 +3886,21 @@ async function exportRecords() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("mogiDB", 1);
 
+    req.onerror = () => reject("DB open failed");
+
     req.onsuccess = () => {
       const db = req.result;
-      const tx = db.transaction("records", "readonly");
+      const tx = db.transaction(["records"], "readonly");
       const store = tx.objectStore("records");
-      const getAll = store.getAll();
 
-      getAll.onsuccess = () => resolve(getAll.result);
-      getAll.onerror = () => reject(getAll.error);
+      const getReq = store.getAll();
+
+      getReq.onsuccess = () => resolve(getReq.result || []);
+      getReq.onerror = () => reject("getAll failed");
     };
-
-    req.onerror = () => reject(req.error);
   });
 }
+
 
 
 // ▼ OBS に送信
