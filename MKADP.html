@@ -494,6 +494,19 @@ const courseList = [
     <button id="restoreBackupBtn">復元する</button>
   </div>
 </div>
+
+<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>旧バックアップ → v3 変換</h3>
+  <div style="margin-bottom:10px;">
+    <label>旧バックアップ用パスワード：</label>
+    <input id="legacyBackupPassword" type="password" placeholder="旧バックアップのパスワード" style="width:200px;">
+  </div>
+  <div style="margin-bottom:10px;">
+    <input id="legacyBackupFileInput" type="file" accept=".txt,.json">
+  </div>
+  <button id="convertLegacyBackupBtn">旧バックアップを v3 に変換して保存</button>
+</div>
+
 <!-- ▲ バックアップ v3 ▲ -->
 
 
@@ -2038,6 +2051,7 @@ document.getElementById("importOldJsonBtn").addEventListener("click", async () =
 });
   
 // ▼ 4. 旧HTMLファイル読み込み
+// ▼ 4. 旧HTMLファイル読み込み
 document.getElementById("importOldHtmlBtn").addEventListener("click", async () => {
   const fileInput = document.getElementById("oldHtmlInput");
   if (!fileInput.files.length) return alert("ファイルを選択してください");
@@ -2187,6 +2201,126 @@ document.getElementById("importFileBtn").addEventListener("click", async () => {
     alert("ファイル読み込みに失敗しました: " + err.message);
   }
 });
+
+// 旧バックアップ用：PBKDF2 + AES-GCM（あなたの旧コードを再利用）
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveKeyFromPassword(password, saltBytes) {
+  const enc = new TextEncoder();
+  const pwKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    pwKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function decryptWithPassword(base64, password) {
+  const combined = base64ToBytes(base64);
+  const salt = combined.slice(0, 16);
+  const iv   = combined.slice(16, 28);
+  const cipher = combined.slice(28);
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+// 旧バックアップ → v3 変換
+document.getElementById("convertLegacyBackupBtn").onclick = async () => {
+  const password = document.getElementById("legacyBackupPassword").value.trim();
+  const fileInput = document.getElementById("legacyBackupFileInput");
+
+  if (!password) return alert("旧バックアップのパスワードを入力してください");
+  if (!fileInput.files.length) return alert("旧バックアップファイルを選択してください");
+
+  try {
+    const text = await fileInput.files[0].text();
+    const obj = JSON.parse(text);   // {p,k,d} を想定
+
+    if (!obj || !obj.p || !obj.k || !obj.d) {
+      return alert("旧バックアップ形式ではありません");
+    }
+
+    // パスワード照合（p は password を password で暗号化したもの）
+    try {
+      const decryptedPw = await decryptWithPassword(obj.p, password);
+      if (decryptedPw !== password) {
+        return alert("パスワードが違います（旧バックアップ）");
+      }
+    } catch {
+      return alert("旧バックアップの復号に失敗しました（パスワード不一致の可能性）");
+    }
+
+    // データ本体 d を復号 → allRecords 配列を取得
+    const json = await decryptWithPassword(obj.d, password); // 旧仕様に合わせて必要なら decrypt() に変更
+    let records = JSON.parse(json);
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return alert("旧バックアップ内にレースデータがありません");
+    }
+
+    // timestamp 補完
+    records = records.map((r, idx) => ({
+      ...r,
+      timestamp: r.timestamp || Date.now() - idx * 1000
+    }));
+
+    // v3 バックアップ構造を生成
+    const backup = {
+      version: "3.0",
+      timestamp: Date.now(),
+      count: records.length,
+      records
+    };
+
+    const encoded = btoa(JSON.stringify(backup));
+    const hash = await sha256(password);   // 既存の sha256 関数を利用
+
+    const content = `MKADP_BACKUP_v3|${hash}|${encoded}`;
+
+    // v3 ファイルとして保存
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mkadp_backup_v3_converted_${new Date().toISOString().split("T")[0]}.txt`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    alert(`旧バックアップから v3 への変換完了（${records.length}件）`);
+  } catch (err) {
+    alert("旧バックアップの変換に失敗しました: " + err.message);
+  }
+};
+
 
 
 
