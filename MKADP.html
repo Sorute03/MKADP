@@ -2408,20 +2408,12 @@ function buildSeasonOptions() {
 ========== */
 window.addEventListener("load", async () => {
 
-  // ▼ IndexedDB から全レコード読み込み（mogiDB版）
   allRecords = await getAllRecordsFromDB();
 
-  // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
 
-  // ▼ 各セレクタ初期化
-  initGrowthSelectors();
-  initRadarSelector();
-  initAISelector();
-  initOBSSeasonSelector();
-  initAdpCourseSelector();
+  initAllSelectors();   // ← これだけでOK
 
-  // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
   aiSeason.onchange = updateAICourseView;
   aiTier.onchange   = updateAICourseView;
@@ -2429,7 +2421,6 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
-  // ▼ 初回描画（DBから読み込んだ allRecords を使う）
   updateStatsView();
   updateGrowthView();
   updateRadarView();
@@ -2442,6 +2433,7 @@ window.addEventListener("load", async () => {
 
   renderRaceHistory();
 });
+
 
 document.getElementById("toggleLoungeSetBtn").onclick = () => {
   const sec = document.getElementById("loungeSetSection");
@@ -2895,6 +2887,7 @@ function updateStatsView() {
     console.error("updateStatsView エラー:", err);
   }
 }
+  
 function updateGrowthView() {
   const records = getGrowthFilteredRecords();
   if (!records.length) {
@@ -3390,6 +3383,15 @@ function renderLoungeSets(records) {
 /* ==========
    成長スコア（Tier × Season × Course）
 ========== */
+
+function initAllSelectors() {
+  initGrowthSelectors();
+  initRadarSelector();
+  initAISelector();
+  initOBSSeasonSelector();
+  initAdpCourseSelector();
+}
+
 
 function initGrowthSelectors() {
   const tierSel = document.getElementById("growthTier");
