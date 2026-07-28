@@ -5189,24 +5189,6 @@ const filters = {
   mode: currentAndOrMode
 };
 
-const stats = getFilteredAdpCourseStats(filters); // await を消す
-
-
-
-  
-window.latestAdpCourseStats = stats;
-
-// 背景画像（あなたの設定に合わせて変更）
-const bg = state.backgroundImage || "default_background.png";
-
-drawAdpCourseImage(stats, bg);
-
-function initAdpCourseSelector() {
-  const sel = document.getElementById("adpCourseSelect");
-
-  sel.innerHTML =
-    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
-}
 
 
 </script>
