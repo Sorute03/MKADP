@@ -2235,6 +2235,24 @@ async function deriveKeyFromPassword(password, saltBytes) {
   );
 }
 
+async function decrypt(base64) {
+  const bytes = base64ToBytes(base64);
+  const salt = bytes.slice(0, 16);
+  const iv = bytes.slice(16, 28);
+  const cipher = bytes.slice(28);
+
+  const key = await deriveKeyFromPassword(localStorage.getItem("aesKey"), salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+
 async function decryptWithPassword(base64, password) {
   const combined = base64ToBytes(base64);
   const salt = combined.slice(0, 16);
