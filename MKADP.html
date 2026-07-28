@@ -2837,7 +2837,7 @@ function getScatterFilteredRecords() {
   return r;
 }
 
- let currentSeasonFilter = "ALL";
+let currentSeasonFilter = "ALL";
 let currentTierFilter = "ALL";
 let selectedCourses = [];
 let currentRecentFilter = "ALL";
@@ -2940,8 +2940,9 @@ function updateLoungeSetView() {
 }
 
 function drawWinRateChart(records) {
-  const ctx = document.getElementById("chartWinRate").getContext("2d");
-
+  const canvas = document.getElementById("winRateChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
   // ▼ destroy を安全に呼ぶ
   if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
     window.chartWinRate.destroy();
