@@ -2059,57 +2059,57 @@ document.getElementById("importOldHtmlBtn").addEventListener("click", async () =
   try {
     const text = await fileInput.files[0].text();
 
-    // ▼ HTML内の allRecords を抽出（完全修正版）
-    const match =
-      text.match(/allRecords\s*=\s*JSON\.parse\(['"]([^'"]+)['"]\)/i) ||
-      text.match(/allRecords\s*=\s*(
+    // ▼ allRecords の開始位置を探す
+    const idx = text.indexOf("allRecords");
+    if (idx === -1) throw new Error("allRecords が見つかりません");
 
-\[.*?\]
+    // ▼ そこから先の = 以降を取得
+    const after = text.slice(idx);
 
-)/s);
+    // ▼ JSON.parse("...") 形式か、配列 [ ... ] 形式か判定
+    let jsonString = null;
 
-    if (!match) throw new Error("HTMLからデータを抽出できませんでした");
+    // ① JSON.parse("...") の場合
+    const parseStart = after.indexOf('JSON.parse("');
+    if (parseStart !== -1) {
+      const start = parseStart + 'JSON.parse("'.length;
+      const end = after.indexOf('")', start);
+      jsonString = JSON.parse(`"${after.slice(start, end)}"`);
+    } else {
+      // ② 配列 [ ... ] の場合
+      const arrStart = after.indexOf("[");
+      const arrEnd = after.indexOf("]", arrStart);
+      jsonString = JSON.parse(after.slice(arrStart, arrEnd + 1));
+    }
 
-    let records = JSON.parse(
-      match[1].startsWith("[") ? match[1] : JSON.parse(`"${match[1]}"`)
-    );
+    const records = jsonString;
 
     if (!Array.isArray(records) || records.length === 0) {
       throw new Error("読み込むレースデータがありません");
     }
 
-    // ▼ timestamp が無い場合は生成
-    records = records.map((r, idx) => ({
+    // ▼ timestamp 補完
+    const fixed = records.map((r, idx) => ({
       ...r,
       timestamp: r.timestamp || Date.now() - idx * 1000
     }));
 
-    // ▼ 既存の IndexedDB データを取得
     const existing = await getAllRecordsFromDB();
-
-    // ▼ 重複チェックしながらマージ
     const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, records);
+      mergeRecordsWithDuplicateCheck(existing, fixed);
 
-    // ▼ IndexedDB をクリアして新しいデータで上書き
     await clearAllRecordsFromDB();
-    for (const rec of mergedRecords) {
-      await addRecord(rec);
-    }
+    for (const rec of mergedRecords) await addRecord(rec);
 
-    // ▼ メモリにも反映
     allRecords = [...mergedRecords];
 
-    alert(
-      `インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`
-    );
-
-    fileInput.value = "";
+    alert(`インポート完了：新規 ${addedCount} / 重複 ${duplicateCount}`);
     refreshAllAnalysisViews();
   } catch (err) {
     alert("旧HTML読み込みに失敗しました: " + err.message);
   }
 });
+
 
 // ▼ 5. TSV読み込み
 document.getElementById("importTSVBtn").addEventListener("click", async () => {
