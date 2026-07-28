@@ -2538,6 +2538,29 @@ document.getElementById("importFullBackupBtn").onclick = async () => {
   alert("復元が完了しました！");
 };
 
+document.getElementById("exportFullBackupBtn").onclick = async () => {
+  const json = await exportFullBackup();
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKADP_FULL_BACKUP.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  alert("完全バックアップをダウンロードしました！");
+};
+
+document.getElementById("importFullBackupBtn").onclick = async () => {
+  const file = document.getElementById("importFullBackupFile").files[0];
+  if (!file) return alert("バックアップファイルを選択してください");
+
+  const text = await file.text();
+  await importFullBackup(text);
+
+  alert("完全バックアップを復元しました！");
+};
 
 
 // Chart.js インスタンス保持用
