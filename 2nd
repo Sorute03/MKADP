@@ -1,0 +1,5437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>MKWorld ラウンジ分析（配布版）</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    
+        /* ===========================
+       全体
+    =========================== */
+    body {
+      font-family: "Noto Sans JP", sans-serif;
+      margin: 20px;
+      background: #f8fdf8;
+      color: #222;
+    }
+    
+    /* ===========================
+       見出し
+    =========================== */
+    h2 {
+      font-size: 26px;
+      font-weight: bold;
+      color: #27ae60;
+      margin-bottom: 20px;
+    }
+    
+    h3, h4 {
+      color: #27ae60;
+      margin-top: 28px;
+    }
+    
+    /* ===========================
+       ボタン（共通）
+    =========================== */
+    button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    
+    button:hover {
+      opacity: 0.85;
+    }
+    
+    #exportSaveBtn,
+    #importSaveBtn {
+      background: #2ecc71;
+      color: #fff;
+    }
+    
+    /* ===========================
+       タブボタン
+    =========================== */
+    .tabBtn {
+      padding: 10px 18px;
+      border-radius: 6px;
+      border: 1px solid #27ae60;
+      background: #fff;
+      color: #27ae60;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 6px;
+      transition: 0.2s;
+    }
+    
+    .tabBtn.active {
+      background: #27ae60;
+      color: #fff;
+    }
+    
+    .tabBtn:hover {
+      background: #e8f9ee;
+    }
+    
+    /* ===========================
+       セクションブロック
+    =========================== */
+    .section-block {
+      padding: 16px;
+      margin-bottom: 24px;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #d8f3dd;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    
+    /* ===========================
+       入力フォーム
+    =========================== */
+    input, select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    
+    input:focus, select:focus {
+      border-color: #27ae60;
+      outline: none;
+    }
+    
+    /* ===========================
+       グラフ（canvas）
+    =========================== */
+    canvas {
+      background: #fff;
+      border: 1px solid #d8f3dd;
+      border-radius: 8px;
+      margin-top: 12px;
+      padding: 8px;
+    }
+    
+    /* ===========================
+       レース一覧
+    =========================== */
+    #raceHistoryList div {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    #raceHistoryList button {
+      background: #e74c3c;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+    
+     #raceModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(3px);
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+    }
+    
+    #raceModal.show {
+      display: flex !important;
+    }
+
+    
+    /* ===========================
+       その他（既存）
+    =========================== */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 20px;
+      background: #fafafa;
+      color: #222;
+    }
+    
+    h2, h3, h4 {
+      margin-top: 32px;
+      margin-bottom: 8px;
+    }
+    
+    label {
+      margin-right: 8px;
+    }
+    
+    select, input {
+      margin-bottom: 8px;
+    }
+    
+    canvas {
+      background: #fff;
+      border: 1px solid #ddd;
+      margin-top: 8px;
+    }
+    
+    .section-block {
+      padding: 16px;
+      margin-bottom: 24px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+  </style>
+</head>
+
+<body>
+<script>
+
+// 全レコード（localStorage + セッション追加分）
+let allRecords = [];
+// Tier 一覧（ALL は分析用のみ）
+const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
+
+
+const courseList = [
+  "マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "ホネホネツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+  "レインボーロード",
+
+  // ここから遷移データ
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "マリオブラザーズサーキット→シュポポコースター",
+  "マリオブラザーズサーキット→サンサンさばく",
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "マリオブラザーズサーキット→キノピオファクトリー",
+
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
+  "トロフィーシティ→ピーチスタジアム",
+
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
+  "ピーチスタジアム→レインボーロード"
+];
+
+</script>
+
+
+
+<h2>MKWorld ラウンジ分析（配布ページ）</h2>
+  
+<div style="margin-top:20px; padding:10px; border:1px solid #ccc;">
+  <h3>完全バックアップ（localStorage + IndexedDB）</h3>
+
+  <button id="exportFullBackupBtn">完全バックアップをダウンロード</button>
+  <br><br>
+
+  <input type="file" id="importFullBackupFile">
+  <button id="importFullBackupBtn">完全バックアップを復元</button>
+</div>
+
+<button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
+
+<!-- ▼ バックアップ v3（パスワード付き） -->
+<div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>バックアップ（v3 / パスワード付き）</h3>
+
+  <!-- セーブ（出力） -->
+  <div style="margin-bottom:15px;">
+    <label>バックアップパスワード：</label>
+    <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
+    <button id="downloadBackupBtn">バックアップを保存</button>
+  </div>
+
+  <hr>
+
+  <!-- 復元（インポート） -->
+  <div>
+    <label>復元パスワード：</label>
+    <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
+    <input id="restoreFileInput" type="file" accept=".txt">
+    <button id="restoreBackupBtn">復元する</button>
+  </div>
+</div>
+
+<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>旧バックアップ → v3 変換</h3>
+  <div style="margin-bottom:10px;">
+    <label>旧バックアップ用パスワード：</label>
+    <input id="legacyBackupPassword" type="password" placeholder="旧バックアップのパスワード" style="width:200px;">
+  </div>
+  <div style="margin-bottom:10px;">
+    <input id="legacyBackupFileInput" type="file" accept=".txt,.json">
+  </div>
+  <button id="convertOldBackupBtn">旧バックアップを v3 に変換して保存</button>
+</div>
+
+<!-- ▲ バックアップ v3 ▲ -->
+
+
+<h3>TSV読み込み（スプシコピー対応）</h3>
+<textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
+<button id="importTSVBtn">TSVを読み込む</button>
+
+<h3>CSV / TSV 読み込み（セーブデータとして保存）</h3>
+<input type="file" id="fileInput" accept=".csv,.tsv,.txt">
+<button id="importFileBtn">読み込んで保存</button>
+
+
+<!-- ▼ 旧データ取り込み -->
+<div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
+
+  <div style="margin-bottom:15px;">
+    <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+    <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
+    <button id="importOldJsonBtn" style="margin-left:10px;">旧JSONを取り込む</button>
+  </div>
+
+  <hr>
+
+  <div style="margin-top:15px;">
+    <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+    <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
+    <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
+  </div>
+</div>
+
+
+<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+  <h3>重複データの整理</h3>
+  <button id="removeDupBtn">重複データを自動削除する</button>
+</div>
+
+
+<!-- ▼ タブボタン -->
+<div id="tabs" style="margin-bottom:20px;">
+  <button class="tabBtn active" data-tab="analysisTab">分析</button>
+  <button class="tabBtn" data-tab="historyTab">レース一覧</button>
+  <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
+  <button class="tabBtn" data-tab="coursestatsTab">コース別stats</button>
+</div>
+
+  
+<!-- ▼ レース一覧タブ -->
+<div id="historyTab" class="tabContent" style="display:none;">
+  <h3>登録済みレース一覧</h3>
+
+  <!-- ▼ 分析タブに戻るボタン -->
+  <button id="backToAnalysisBtn" style="margin-bottom:12px;">
+    ← 分析タブに戻る
+  </button>
+
+  <div id="raceHistoryList"></div>
+</div>
+
+
+
+<!-- ▼ レース一覧タブ -->
+<div id="historyTab" class="tabContent" style="display:none;">
+  <h3>登録済みレース一覧</h3>
+  <div id="raceHistoryList"></div>
+</div>
+
+<!-- ▼ ラウンジ統計タブ -->
+<div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
+
+  <h2>Lounge Stats Viewer</h2>
+
+  <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
+  <input id="discordWebhookInput" placeholder="Discord Webhook URL（任意）" style="padding:6px; width:300px;">
+  <button id="loadLoungeBtn">データ取得</button>
+  <button id="sendDiscordBtn">Discordへ送信</button>
+
+  <div id="loungeStats" style="margin-top:20px;"></div>
+
+  <canvas id="loungeCanvas" width="1000" height="500" style="margin-top:20px;"></canvas>
+    <label>コース別データを合成:</label>
+  <select id="mergeCourseDataSelect">
+    <option value="off">使わない</option>
+    <option value="on">ADPデータを合成する</option>
+  </select>
+
+  <label>Season:</label>
+  <select id="seasonSelect">
+    <option value="ALL">ALL</option>
+    <option value="1">Season 1</option>
+    <option value="2">Season 2</option>
+    <option value="3">Season 3</option>
+    <option value="4">Season 4</option>
+    <option value="5">Season 5</option>
+    <option value="6">Season 6</option>
+    <option value="7">Season 7</option>
+    <option value="8">Season 8</option>
+    <option value="9">Season 9</option>
+    <option value="10">Season 10</option>
+  </select>
+
+  <h3>背景画像設定</h3>
+  <input type="file" id="bgImageInput" accept="image/*" onchange="setBgImage(this.files[0])">
+  
+  <label>明るさ</label>
+  <input type="range" id="bgBrightnessInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgBrightness(this.value)">
+  
+  <label>コントラスト</label>
+  <input type="range" id="bgContrastInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgContrast(this.value)">
+  
+  <label>透過度</label>
+  <input type="range" id="bgOpacityInput" min="0" max="1" step="0.01" value="1" onchange="setBgOpacity(this.value)">
+  
+  <label>ぼかし(px)</label>
+  <input type="range" id="bgBlurInput" min="0" max="20" step="1" value="0" onchange="setBgBlur(this.value)">
+  
+  
+
+</div>
+  
+<!-- ▼ courseStatsTab（タブとして使う） -->
+<div id="courseStatsTab" style="padding: 16px;">
+
+  <!-- ADP コース比較セクション（ID はそのまま） -->
+  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+    <p>コースを最大5つ選択:</p>
+
+    <!-- ★ 中身は JS で流し込む（ID はそのまま） -->
+    <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
+
+    <div style="margin-top: 8px;">
+      <button id="showAdpCourseStatsBtn">表示</button>
+      <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+    </div>
+  </div>
+
+  <!-- 背景画像設定（ID はそのまま） -->
+  <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
+    <h3>背景画像設定（コース比較画像用）</h3>
+
+    <label>背景画像</label><br>
+    <input type="file" id="adpCourseBgInput" accept="image/*"><br><br>
+
+    <label>明るさ</label><br>
+    <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
+
+    <label>コントラスト</label><br>
+    <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
+
+    <label>透過度</label><br>
+    <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
+
+    <label>ぼかし(px)</label><br>
+    <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
+  </div>
+
+  <!-- テキスト色設定（ID はそのまま） -->
+  <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
+    <h3>テキスト色設定</h3>
+
+    <label>テキスト色</label><br>
+    <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
+
+    <label>縁取り色</label><br>
+    <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
+
+    <label>縁取り太さ(px)</label><br>
+    <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
+
+    <label>影の濃さ(px)</label><br>
+    <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
+
+    <label>影の色</label><br>
+    <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+  </div>
+
+  <!-- テキスト結果表示（ID はそのまま） -->
+  <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+
+  <!-- グラフ表示（ID はそのまま） -->
+  <canvas id="adpCourseStatsChart" width="600" height="300"
+    style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
+
+  <!-- 画像生成 Canvas（ID はそのまま） -->
+  <canvas id="adpCourseImage" width="800" height="600"
+    style="border:1px solid #ccc; display:block;"></canvas>
+
+</div>
+
+
+  
+<!-- ▼ レース登録ボタン（右下固定） -->
+<button id="openModalBtn" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
+">＋ レース登録</button>
+
+<!-- ▼ レース登録モーダル -->
+<div id="raceModal">
+  <div class="modal-inner" style="
+    background:#fff;
+    padding:24px;
+    width: 95%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    max-height: 90%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    position: relative;
+    padding-bottom: 90px;
+  ">
+
+    <h3>レース登録</h3>
+
+    <label>モード</label><br>
+    <select id="modalMode" style="width:100%; margin-bottom:12px;">
+      <option value="lounge">ラウンジ</option>
+      <option value="tournament">大会</option>
+      <option value="nora">野良</option>
+    </select>
+
+    <div id="modalTierBlock">
+      <label>Tier</label><br>
+      <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
+    </div>
+
+    <div id="modalSeasonBlock">
+      <label>Season</label><br>
+      <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
+    </div>
+
+    <div id="modalRaceCountBlock">
+      <label>レース数</label><br>
+      <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
+        <option value="1">1レース</option>
+        <option value="2">2レース</option>
+        <option value="3">3レース</option>
+        <option value="4">4レース</option>
+        <option value="5">5レース</option>
+        <option value="6">6レース</option>
+        <option value="7">7レース</option>
+        <option value="8">8レース（大会）</option>
+        <option value="9">9レース</option>
+        <option value="10">10レース</option>
+        <option value="11">11レース</option>
+        <option value="12">12レース（大会）</option>
+      </select>
+    </div>
+
+    <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
+      ※ ラウンジは最大12レース（途中中断OK）
+    </div>
+
+    <div id="modalRaceInputs"></div>
+
+   <div style="text-align:right; margin-top:20px;">
+      <button id="closeModalBtn" style="
+        padding:8px 16px;
+        margin-right:8px;
+        background:#ccc;
+        border-radius:6px;
+      ">キャンセル</button>
+    
+      <button id="saveRaceBtn" style="
+        padding:8px 16px;
+        background:#007bff;
+        color:#fff;
+        border:none;
+        border-radius:6px;
+        font-weight:bold;
+        cursor:pointer;
+      ">保存</button>
+    </div>   <!-- ★★★ この閉じタグが必要！ ★★★ -->
+  </div>
+</div>
+
+
+<!-- ★★★ ここから全部の JS ★★★ -->
+<script>
+/* ▼ スコア計算 */
+function calcScore(rank) {
+  const table = {
+    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
+    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
+    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
+    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
+  };
+  return table[rank] || 0;
+}
+const modal = document.getElementById("raceModal");
+const openModalBtn = document.getElementById("openModalBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const saveRaceBtn = document.getElementById("saveRaceBtn");
+
+const modalMode = document.getElementById("modalMode");
+const modalTierBlock = document.getElementById("modalTierBlock");
+const modalSeasonBlock = document.getElementById("modalSeasonBlock");
+const modalRaceCountBlock = document.getElementById("modalRaceCountBlock");
+const modalLoungeInfo = document.getElementById("modalLoungeInfo");
+
+const modalTier = document.getElementById("modalTier");
+const modalSeason = document.getElementById("modalSeason");
+const modalRaceCount = document.getElementById("modalRaceCount");
+const modalRaceInputs = document.getElementById("modalRaceInputs");
+</script>
+
+<script>
+openModalBtn.onclick = () => {
+  editingTimestamp = null;          // 新規モード
+  initModalSelectors();
+  updateModalMode();
+  modal.classList.add("show");
+};
+
+closeModalBtn.onclick = () => {
+  modal.classList.remove("show");
+  editingTimestamp = null;
+};
+
+
+</script>
+
+<!-- 以下すべての JS をここに置く -->
+
+
+
+
+<script>
+function renderRaceHistory(records) {
+  const box = document.getElementById("raceHistoryList");
+  if (!box) return;
+
+  // ▼ 共通フィルター済み records が渡される前提
+  let list = records || [];
+
+  // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
+  list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
+
+  if (!list.length) {
+    box.innerHTML = "<p>レース履歴がありません。</p>";
+    return;
+  }
+
+  box.innerHTML = "";
+
+  list.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "race-history-item";
+    div.style = "padding:8px; border-bottom:1px solid #ddd;";
+
+    const date = new Date(r.timestamp).toLocaleString();
+
+    div.innerHTML = `
+      <strong>${r.course}</strong>
+      (${r.rank}位 / ${r.score}点 / ${r.mode})
+      <span style="margin-left:10px; color:#555;">${date}</span>
+
+      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;">
+        編集
+      </button>
+
+      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;">
+        削除
+      </button>
+    `;
+
+    box.appendChild(div);
+  });
+
+  // ▼ 編集ボタン
+  document.querySelectorAll(".editBtn").forEach(btn => {
+    btn.onclick = () => openEditRecord(Number(btn.dataset.ts));
+  });
+
+  // ▼ 削除ボタン
+  document.querySelectorAll(".deleteBtn").forEach(btn => {
+    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
+  });
+}
+</script>
+
+
+<script>
+
+let editingTimestamp = null;
+
+async function openEditRecord(ts) {
+  const r = allRecords.find(x => x.timestamp === ts);
+  if (!r) {
+    alert("データが見つかりません");
+    return;
+  }
+
+  editingTimestamp = ts;
+
+  modal.classList.add("show");
+
+  modalMode.value = r.mode;
+  updateModalMode();
+
+  if (r.mode === "lounge") {
+    modalTier.value = r.tier || "ALL";
+    modalSeason.value = r.season || "ALL";
+  }
+
+  generateRaceInputs(1);
+
+  document.getElementById("raceCourse_1").value = r.course;
+  document.getElementById("raceRank_1").value = r.rank;
+  document.getElementById("raceScore_1").value = r.score;
+
+  saveRaceBtn.onclick = async () => {
+    const course = document.getElementById("raceCourse_1").value;
+    const rank   = Number(document.getElementById("raceRank_1").value);
+    const score  = Number(document.getElementById("raceScore_1").value);
+
+    if (!course || !rank) {
+      alert("コースと順位は必須です");
+      return;
+    }
+
+    // ▼ レコード更新
+    r.course = course;
+    r.rank   = rank;
+    r.score  = score;
+    r.mode   = modalMode.value;
+
+    if (r.mode === "lounge") {
+      r.tier   = modalTier.value;
+      r.season = modalSeason.value;
+    }
+
+    // ▼ DB に保存
+    await updateRecord(r);
+
+    // ▼ メモリ側も更新
+    const idx = allRecords.findIndex(x => x.timestamp === ts);
+    if (idx >= 0) allRecords[idx] = r;
+
+    // ▼ UI 更新
+    const filtered = getGloballyFilteredRecords();
+    refreshModeView();
+    renderRaceHistory(filtered);
+
+    modal.classList.remove("show");
+    editingTimestamp = null;
+  };
+}
+
+
+</script>
+
+
+<script>
+async function deleteSet(ts) {
+  // ▼ DB から削除
+  await deleteRecord(ts);
+
+  // ▼ メモリ側から削除
+  allRecords = allRecords.filter(r => r.timestamp !== ts);
+
+  // ▼ UI 更新
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+}
+
+
+</script>
+
+<script>
+saveRaceBtn.onclick = async () => {
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+
+  const newRecords = [];
+
+  for (let i = 1; i <= count; i++) {
+    const rank = Number(document.getElementById(`raceRank_${i}`).value);
+    if (!rank) continue;
+
+    const course = document.getElementById(`raceCourse_${i}`).value;
+
+    newRecords.push({
+      mode,
+      season: mode === "lounge" ? modalSeason.value : null,
+      tier: mode === "lounge" ? modalTier.value : null,
+      course,
+      rank,
+      score: calcScore(rank),
+      timestamp: editingTimestamp ?? Date.now()
+    });
+  }
+
+  if (!newRecords.length) {
+    alert("1レース以上入力してください");
+    return;
+  }
+
+  /* ==========
+     編集モード処理（DB版）
+  ========== */
+  if (editingTimestamp) {
+    // ▼ DB から削除
+    await deleteRecord(editingTimestamp);
+
+    // ▼ メモリ側から削除
+    allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
+  }
+
+  /* ==========
+     12レースセットの totalScore12 を付与
+  ========== */
+  if (mode === "lounge" && newRecords.length === 12) {
+    const total = newRecords.reduce((s, r) => s + r.score, 0);
+    newRecords.forEach(r => (r.totalScore12 = total));
+  }
+
+  /* ==========
+     DB に保存（新規レコード）
+  ========== */
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
+
+  /* ==========
+     メモリ側 allRecords に反映
+  ========== */
+  allRecords.push(...newRecords);
+
+  /* ==========
+     UI 再描画（共通フィルター適用）
+  ========== */
+  const filtered = getGloballyFilteredRecords();
+
+  refreshModeView();
+  renderRaceHistory(filtered);
+
+  /* ==========
+     後処理
+  ========== */
+  editingTimestamp = null;
+  modal.classList.remove("show");
+};
+
+</script>
+
+
+<script>
+function initOBSSeasonSelector() {
+  const obsSeason = document.getElementById("obsSeason");
+  if (!obsSeason) return;
+
+  // ▼ 共通の S1〜S30 + ALL を使う
+  obsSeason.innerHTML = buildSeasonOptions();
+
+  // ▼ Season 変更時に overlay を再生成（任意）
+  obsSeason.onchange = () => {
+    generateOBSOverlay();
+  };
+}
+
+</script>
+
+
+<script>
+/* ============================================================
+   ▼ 次のコースを取得
+============================================================ */
+function getNextCourseFromModal() {
+  const scores = document.querySelectorAll("[id^='raceScore_']");
+  for (let i = 0; i < scores.length; i++) {
+    if (!scores[i].value) {
+      const index = i + 1;
+      const courseSelect = document.getElementById(`raceCourse_${index}`);
+      return courseSelect ? courseSelect.value : null;
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   ▼ 次のコースを保存（localStorage のままで正しい）
+============================================================ */
+function saveNextCourse() {
+  const nextCourse = getNextCourseFromModal();
+  if (nextCourse) {
+    localStorage.setItem("nextCourse", nextCourse);
+
+    const obsCourse = document.getElementById("obsCourse");
+    if (obsCourse) obsCourse.value = nextCourse;
+  }
+}
+
+/* ============================================================
+   ▼ モーダルセレクタ初期化
+============================================================ */
+function initModalSelectors() {
+  modalTier.innerHTML = loungeTiers
+    .filter(t => t !== "ALL")
+    .map(t => `<option value="${t}">${t}</option>`)
+    .join("");
+
+  modalSeason.innerHTML = buildSeasonOptions();
+}
+
+/* ============================================================
+   ▼ モード変更
+============================================================ */
+modalMode.onchange = () => {
+  updateModalMode();
+};
+
+function updateModalMode() {
+  const mode = modalMode.value;
+
+  if (mode === "lounge") {
+    modalTierBlock.style.display = "block";
+    modalSeasonBlock.style.display = "block";
+    modalRaceCountBlock.style.display = "none";
+    modalLoungeInfo.style.display = "block";
+    generateRaceInputs(12);
+  } else {
+    modalTierBlock.style.display = "none";
+    modalSeasonBlock.style.display = "none";
+    modalRaceCountBlock.style.display = "block";
+    modalLoungeInfo.style.display = "none";
+    generateRaceInputs(Number(modalRaceCount.value));
+  }
+}
+
+/* ============================================================
+   ▼ レース入力欄生成（modalDraft 削除済み）
+============================================================ */
+function generateRaceInputs(count) {
+  modalRaceInputs.innerHTML = "";
+
+  for (let i = 1; i <= count; i++) {
+    modalRaceInputs.innerHTML += `
+      <div style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px;">
+        <strong>${i} レース目</strong><br>
+
+        <label>コース</label><br>
+        <select id="raceCourse_${i}" style="width:100%; margin-bottom:8px;">
+          ${courseList.map(c => `<option>${c}</option>`).join("")}
+        </select>
+
+        <label>順位</label><br>
+        <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
+          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+        </select>
+
+        <label>スコア（自動）</label><br>
+        <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
+      </div>
+    `;
+  }
+
+  for (let i = 1; i <= count; i++) {
+    const rankInput = document.getElementById(`raceRank_${i}`);
+    const scoreInput = document.getElementById(`raceScore_${i}`);
+    const courseSelect = document.getElementById(`raceCourse_${i}`);
+
+    rankInput.onchange = () => {
+      scoreInput.value = calcScore(Number(rankInput.value));
+      saveNextCourse();
+    };
+
+    courseSelect.onchange = () => {
+      saveNextCourse();
+    };
+  }
+
+  saveNextCourse();
+}
+
+</script>
+
+
+  
+<script>
+async function deleteRecord(ts) {
+  if (!confirm("このレースを削除しますか？")) return;
+
+  await deleteRecordFromDB(ts);
+  allRecords = allRecords.filter(r => r.timestamp !== ts);
+
+  // ▼ 新構造：タブに応じたフィルターで再描画
+  renderRaceHistory(getFilteredRecords());
+}
+
+
+</script>
+
+
+<script>
+/* ▼ 保存処理（新構造対応・編集モード対応） */
+/* ▼ 保存処理（新構造対応・編集モード対応） */
+saveRaceBtn.onclick = async () => {
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+
+  const newRecords = [];
+  const raceScores = [];
+
+  // ▼ 入力されたレースを収集
+  for (let i = 1; i <= count; i++) {
+    const rank = Number(document.getElementById(`raceRank_${i}`).value);
+    if (!rank) continue;
+
+    const course = document.getElementById(`raceCourse_${i}`).value;
+    const score = calcScore(rank);
+
+    raceScores.push(score);
+
+    newRecords.push({
+      mode,
+      season: mode === "lounge" ? modalSeason.value : null,
+      tier: mode === "lounge" ? modalTier.value : null,
+      course,
+      rank,
+      score,
+      timestamp: editingTimestamp ?? Date.now()
+    });
+  }
+
+  if (!newRecords.length) {
+    alert("1レース以上入力してください");
+    return;
+  }
+
+  /* ▼ ラウンジモードなら totalScore12 を付与 */
+  if (mode === "lounge" && newRecords.length === 12) {
+    const totalScore12 = raceScores.reduce((a, b) => a + b, 0);
+    newRecords.forEach(r => (r.totalScore12 = totalScore12));
+  }
+
+  /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
+  if (editingTimestamp) {
+    await deleteRecordFromDB(editingTimestamp);
+    allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
+  }
+
+  /* ▼ 新規レコードを DB に保存 */
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
+
+  /* ▼ メモリ側 allRecords に反映 */
+  allRecords.push(...newRecords);
+
+  /* ▼ 送信キューに追加 */
+  const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
+  queue.push(...newRecords);
+  localStorage.setItem("sendQueue", JSON.stringify(queue));
+
+  /* ▼ UI 再描画（新構造） */
+  renderRaceHistory(getFilteredRecords());
+
+
+  /* ▼ 後処理 */
+  editingTimestamp = null;
+  modal.classList.remove("show");
+};
+
+
+</script>
+
+
+<script>
+
+function getFilteredRecords() {
+  const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
+
+  switch (activeTab) {
+
+    case "historyTab":
+      return getRankingFilteredRecords();
+
+    case "aiTab":
+      return getAIFilteredRecords();
+
+    case "bubble3dTab":
+      return get3DFilteredRecords();
+
+    case "scatterTab":
+      return getScatterFilteredRecords();
+
+    case "heatmapTab":
+      return getHeatmapFilteredRecords();
+
+    case "radarTab":
+      return getRadarFilteredRecords();
+
+    case "growthTab":
+      return getGrowthFilteredRecords();
+
+    default:
+      return allRecords;
+  }
+}
+
+  
+  
+document.querySelectorAll(".tabBtn").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.tab;
+
+    document.querySelectorAll(".tabContent").forEach(tab => {
+      tab.style.display = "none";
+    });
+
+    document.querySelectorAll(".tabBtn").forEach(b => {
+      b.classList.remove("active");
+    });
+
+    document.getElementById(target).style.display = "block";
+    btn.classList.add("active");
+
+    if (target === "historyTab") {
+      // ▼ 最新データで履歴を描画
+      renderRaceHistory(getGloballyFilteredRecords());
+    } else if (target === "analysisTab") {
+      // ▼ 分析タブを開いたときも最新化
+      refreshModeView();
+    }
+  };
+});
+</script>
+
+<script>
+document.getElementById("backToAnalysisBtn").onclick = () => {
+  document.querySelectorAll(".tabContent").forEach(tab => {
+    tab.style.display = "none";
+  });
+
+  document.querySelectorAll(".tabBtn").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  document.getElementById("analysisTab").style.display = "block";
+  document.querySelector('[data-tab="analysisTab"]').classList.add("active");
+
+  // ▼ 分析タブを最新化
+  refreshModeView();
+};
+</script>
+
+
+<!-- ▼ 基本統計・3グラフ（専用フィルター） -->
+<div class="section-block">
+  <h3>基本統計 / 勝率・平均順位・平均スコア</h3>
+
+  <label for="statsMode">モード：</label>
+  <select id="statsMode" onchange="updateStatsView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="statsRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="statsRangeSelect" onchange="updateStatsView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="200">200</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="statsRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="statsRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateStatsView()"
+  >
+
+  <label for="statsSeason" style="margin-left:16px;">Season：</label>
+  <select id="statsSeason" onchange="updateStatsView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="statsTier" style="margin-left:16px;">Tier：</label>
+  <select id="statsTier" onchange="updateStatsView()">
+    <option value="ALL">ALL</option>
+  </select>
+</div>
+
+<!-- ▼ ランキング -->
+<div class="section-block">
+  <h3>コースランキング（得意・苦手）</h3>
+
+  <label for="rankMode">モード：</label>
+  <select id="rankMode" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label style="margin-left:16px;">基準：</label>
+  <select id="rankMetric" onchange="updateRankingView()">
+    <option value="strong">得意スコア</option>
+    <option value="weak">苦手スコア</option>
+    <option value="growth">成長スコア</option>
+    <option value="winRate">勝率</option>
+    <option value="avgRank">平均順位</option>
+    <option value="avgScore">平均スコア</option>
+    <option value="stdRank">安定度（順位のブレ）</option>
+    <option value="firstRate">爆発力（1位率）</option>
+    <option value="avoidBottom">下位回避率</option>
+    <option value="rankScore">順位逆数スコア</option>
+    <option value="efficiency">スコア効率</option>
+  </select>
+
+  <label for="rankSeason" style="margin-left:16px;">Season：</label>
+  <select id="rankSeason" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="rankTier" style="margin-left:16px;">Tier：</label>
+  <select id="rankTier" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="rankRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="rankRangeSelect" onchange="updateRankingView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="rankRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="rankRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateRankingView()"
+  >
+
+  <label for="minRuns" style="margin-left:16px;">最低走行回数：</label>
+  <input
+    id="minRuns"
+    type="number"
+    value="3"
+    min="1"
+    max="100"
+    step="1"
+    onchange="updateRankingView()"
+  >
+
+  <label style="margin-left:16px;">表示件数：</label>
+  <select id="rankLimit" onchange="updateRankingView()">
+    <option value="5">5</option>
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+  </select>
+
+  <h4>得意コース TOP10</h4>
+  <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
+
+  <h4 style="margin-top:20px;">苦手コース TOP10</h4>
+  <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
+</div>
+
+<!-- ▼ AI評価 -->
+<div class="section-block">
+  <h3>AIコース評価</h3>
+  
+  <label for="aiMode">Mode：</label>
+  <select id="aiMode" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">lounge</option>
+    <option value="nora">nora</option>
+    <option value="tournament">tournament</option>
+  </select>
+
+  <label for="aiCourse" style="margin-left:16px;">Course：</label>
+  <select id="aiCourse" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiSeason" style="margin-left:16px;">Season：</label>
+  <select id="aiSeason" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiTier" style="margin-left:16px;">Tier：</label>
+  <select id="aiTier" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="aiRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="aiRangeSelect" onchange="updateAICourseView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="aiRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="aiRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateAICourseView()"
+  >
+
+  <div id="aiCourseResult" style="margin-top:16px;"></div>
+</div>
+
+<!-- ▼ 成長スコア -->
+<div class="section-block">
+  <h3>成長スコア（Tier × Season × Course）</h3>
+
+  <label for="growthMode">モード：</label>
+  <select id="growthMode" onchange="updateGrowthView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="growthTier" style="margin-left:16px;">Tier：</label>
+  <select id="growthTier" onchange="updateGrowthView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="growthSeason" style="margin-left:16px;">Season：</label>
+  <select id="growthSeason" onchange="updateGrowthView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="growthCourse" style="margin-left:16px;">Course：</label>
+  <select id="growthCourse" onchange="updateGrowthView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="growthRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="growthRangeSelect" onchange="updateGrowthView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="growthRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="growthRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateGrowthView()"
+  >
+
+  <canvas id="chartGrowth" height="160" style="margin-top:20px;"></canvas>
+</div>
+
+<div class="section-block">
+  <h3>コース別レーダー評価</h3>
+
+  <label for="radarMode">モード：</label>
+  <select id="radarMode" onchange="updateRadarView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="radarCourse" style="margin-left:16px;">Course：</label>
+  <select id="radarCourse" onchange="updateRadarView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="radarSeason" style="margin-left:16px;">Season：</label>
+  <select id="radarSeason" onchange="updateRadarView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="radarTier" style="margin-left:16px;">Tier：</label>
+  <select id="radarTier" onchange="updateRadarView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="radarRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="radarRangeSelect" onchange="updateRadarView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="radarRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="radarRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateRadarView()"
+  >
+
+  <canvas id="chartRadar" height="200" style="margin-top:20px;"></canvas>
+</div>
+
+<!-- ▼ ヒートマップ -->
+<div class="section-block">
+  <h3>コース別ヒートマップ</h3>
+
+  <label for="heatmapMode">モード：</label>
+  <select id="heatmapMode" onchange="updateHeatmapView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="heatmapSeason" style="margin-left:16px;">Season：</label>
+  <select id="heatmapSeason" onchange="updateHeatmapView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="heatmapTier" style="margin-left:16px;">Tier：</label>
+  <select id="heatmapTier" onchange="updateHeatmapView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="heatmapCourse" style="margin-left:16px;">Course：</label>
+  <select id="heatmapCourse" onchange="updateHeatmapView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="heatmapRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="heatmapRangeSelect" onchange="updateHeatmapView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="heatmapRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="heatmapRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateHeatmapView()"
+  >
+
+  <canvas id="chartHeatmap" height="300" style="margin-top:20px;"></canvas>
+</div>
+
+<!-- ▼ 3Dバブル -->
+<div class="section-block">
+  <h3>3D バブルチャート</h3>
+
+  <label for="bubbleMode">モード：</label>
+  <select id="bubbleMode" onchange="update3DView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="bubbleSeason" style="margin-left:16px;">Season：</label>
+  <select id="bubbleSeason" onchange="update3DView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="bubbleTier" style="margin-left:16px;">Tier：</label>
+  <select id="bubbleTier" onchange="update3DView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="bubbleRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="bubbleRangeSelect" onchange="update3DView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="bubbleRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="bubbleRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="update3DView()"
+  >
+
+  <canvas id="chart3D" height="300" style="margin-top:20px;"></canvas>
+</div>
+
+<!-- ▼ 散布図 -->
+<div class="section-block">
+  <h3>散布図（強さ × 成長）</h3>
+
+  <label for="scatterMode">モード：</label>
+  <select id="scatterMode" onchange="updateScatterView()">
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="tournament">大会</option>
+    <option value="nora">野良</option>
+  </select>
+
+  <label for="scatterSeason" style="margin-left:16px;">Season：</label>
+  <select id="scatterSeason" onchange="updateScatterView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="scatterTier" style="margin-left:16px;">Tier：</label>
+  <select id="scatterTier" onchange="updateScatterView()">
+    <option value="ALL">ALL</option>
+  </select>
+
+  <label for="scatterRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <select id="scatterRangeSelect" onchange="updateScatterView()">
+    <option value="ALL">ALL</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="CUSTOM">カスタム</option>
+  </select>
+
+  <label for="scatterRangeInput" style="margin-left:16px;">カスタム：</label>
+  <input
+    id="scatterRangeInput"
+    type="number"
+    min="1"
+    placeholder="任意の数"
+    style="width:80px; margin-left:8px;"
+    oninput="updateScatterView()"
+  >
+
+  <canvas id="chartScatter" height="300" style="margin-top:20px;"></canvas>
+</div>
+
+<!-- ▼ ラウンジ12Rセット -->
+<button id="toggleLoungeSetBtn">12レースセット一覧を表示</button>
+
+<div id="loungeSetSection" style="display:none;">
+  <div class="section-block">
+    <h3>ラウンジ 12レースセット一覧</h3>
+
+    <label>Season：</label>
+    <select id="loungeSetSeason" onchange="updateLoungeSetView()">
+      <option value="ALL">ALL</option>
+    </select>
+
+    <label style="margin-left:16px;">Tier：</label>
+    <select id="loungeSetTier" onchange="updateLoungeSetView()">
+      <option value="ALL">ALL</option>
+    </select>
+
+    <div id="loungeSetView" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+
+
+<script>
+
+/* ===========================
+   IndexedDB データ操作関数
+=========================== */
+
+async function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+
+      // ★ records ストアを必ず作る
+      if (!db.objectStoreNames.contains("records")) {
+        db.createObjectStore("records", { keyPath: "timestamp" });
+      }
+    };
+
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+
+async function addRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction(["records"], "readwrite");
+  const store = tx.objectStore("records");
+
+  if (!record.timestamp) {
+    record.timestamp = Date.now();
+  }
+
+  store.add(record);
+  await new Promise(res => tx.oncomplete = res);
+}
+
+
+async function updateRecord(record) {
+  const db = await openDB();
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").put(record);
+  await new Promise(res => tx.oncomplete = res);
+}
+
+
+async function deleteRaceRecord(timestamp) {
+  const db = await openDB();
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").delete(timestamp);
+  await new Promise(res => tx.oncomplete = res);
+}
+
+
+async function deleteRecordFromDB(timestamp) {
+  await deleteRecord(timestamp);
+}
+
+async function getAllRacesFromDB() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(["records"], "readonly");
+    const store = tx.objectStore("records");
+    const req = store.getAll();
+    
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+
+async function clearAllRacesFromDB() {
+  const db = await openDB();
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").clear();
+  await new Promise(res => tx.oncomplete = res);
+}
+
+
+/* ===========================
+   重複チェック関数
+=========================== */
+
+function isDuplicate(record1, record2) {
+  // ▼ 基本プロパティの比較
+  const basicMatch = (
+    record1.course === record2.course &&
+    record1.rank === record2.rank &&
+    record1.score === record2.score &&
+    record1.season === record2.season &&
+    record1.tier === record2.tier &&
+    record1.mode === record2.mode
+  );
+  
+  if (!basicMatch) return false;
+  
+  // ▼ 両方ともタイムスタンプがある場合 → タイムスタンプも比較
+  if (record1.timestamp && record2.timestamp) {
+    return record1.timestamp === record2.timestamp;
+  }
+  
+  // ▼ どちらかタイムスタンプがない場合 → タイムスタンプ以外で重複判定
+  if (!record1.timestamp || !record2.timestamp) {
+    return true;
+  }
+  
+  return false;
+}
+
+function mergeRecordsWithDuplicateCheck(existingRecords, newRecords) {
+  let addedCount = 0;
+  let duplicateCount = 0;
+  const mergedRecords = [...existingRecords];
+  
+  newRecords.forEach(newRec => {
+    const hasDuplicate = mergedRecords.some(existing => isDuplicate(existing, newRec));
+    
+    if (hasDuplicate) {
+      duplicateCount++;
+    } else {
+      mergedRecords.push(newRec);
+      addedCount++;
+    }
+  });
+  
+  return { mergedRecords, addedCount, duplicateCount };
+}
+
+/* ===========================
+   SHA256 ハッシュ関数
+=========================== */
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/* ===========================
+   バックアップ・復元機能
+=========================== */
+
+// ▼ 1. パスワード付きバックアップ（保存）
+document.getElementById("downloadBackupBtn").onclick = async () => {
+  const password = document.getElementById("backupPassword").value.trim();
+  if (!password) return alert("パスワードを入力してください");
+
+  try {
+    const records = await getAllRecordsFromDB();
+    if (records.length === 0) return alert("保存するデータがありません");
+
+    const backup = {
+      version: "3.0",
+      timestamp: Date.now(),
+      count: records.length,
+      records
+    };
+
+    const encoded = btoa(JSON.stringify(backup));
+    const hash = await sha256(password);
+
+    const content = `MKADP_BACKUP_v3|${hash}|${encoded}`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mkadp_backup_${new Date().toISOString().split("T")[0]}.txt`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    alert(`バックアップ保存完了（${records.length}件）`);
+  } catch (err) {
+    alert("バックアップ保存に失敗しました: " + err.message);
+  }
+};
+
+
+document.getElementById("restoreBackupBtn").onclick = async () => {
+  const password = document.getElementById("restorePassword").value.trim();
+  const fileInput = document.getElementById("restoreFileInput");
+
+  if (!password) return alert("パスワードを入力してください");
+  if (!fileInput.files.length) return alert("ファイルを選択してください");
+
+  try {
+    const text = await fileInput.files[0].text();
+
+    if (!text.startsWith("MKADP_BACKUP_v3|")) {
+      return alert("無効なバックアップファイルです");
+    }
+
+    const parts = text.split("|");
+    const storedHash = parts[1];
+    const encoded = parts[2];
+
+    const hash = await sha256(password);
+    if (hash !== storedHash) return alert("パスワードが正しくありません");
+
+    const backup = JSON.parse(atob(encoded));
+    const incoming = backup.records;
+
+    const existing = await getAllRecordsFromDB();
+    const { mergedRecords, addedCount, duplicateCount } =
+      mergeRecordsWithDuplicateCheck(existing, incoming);
+
+    await clearAllRecordsFromDB();
+    for (const r of mergedRecords) await addRecord(r);
+
+    allRecords = [...mergedRecords];
+
+    alert(
+      `復元完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件\n合計: ${mergedRecords.length}件`
+    );
+
+    refreshAllAnalysisViews();
+  } catch (err) {
+    alert("バックアップ復元に失敗しました: " + err.message);
+  }
+};
+
+
+// ▼ 3. 旧JSONファイル読み込み
+document.getElementById("importOldJsonBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("oldJsonInput");
+  if (!fileInput.files.length) return alert("ファイルを選択してください");
+
+  try {
+    const text = await fileInput.files[0].text();
+    const data = JSON.parse(text);
+
+    let records = Array.isArray(data)
+      ? data
+      : (data.allRecords && Array.isArray(data.allRecords))
+        ? data.allRecords
+        : null;
+
+    if (!records || records.length === 0) {
+      return alert("読み込むデータがありません");
+    }
+
+    // timestamp が無い場合は生成
+    records = records.map((r, idx) => ({
+      ...r,
+      timestamp: r.timestamp || Date.now() - idx * 1000
+    }));
+
+    const existing = await getAllRecordsFromDB();
+    const { mergedRecords, addedCount, duplicateCount } =
+      mergeRecordsWithDuplicateCheck(existing, records);
+
+    await clearAllRecordsFromDB();
+    for (const rec of mergedRecords) await addRecord(rec);
+
+    allRecords = [...mergedRecords];
+
+    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
+    fileInput.value = "";
+    refreshAllAnalysisViews();
+  } catch (err) {
+    alert("旧JSON読み込みに失敗しました: " + err.message);
+  }
+});
+  
+// ▼ 4. 旧HTMLファイル読み込み
+// ▼ 4. 旧HTMLファイル読み込み
+document.getElementById("importOldHtmlBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("oldHtmlInput");
+  if (!fileInput.files.length) return alert("ファイルを選択してください");
+
+  try {
+    const text = await fileInput.files[0].text();
+
+    // ▼ allRecords の開始位置を探す
+    const idx = text.indexOf("allRecords");
+    if (idx === -1) throw new Error("allRecords が見つかりません");
+
+    // ▼ そこから先の = 以降を取得
+    const after = text.slice(idx);
+
+    // ▼ JSON.parse("...") 形式か、配列 [ ... ] 形式か判定
+    let jsonString = null;
+
+    // ① JSON.parse("...") の場合
+    const parseStart = after.indexOf('JSON.parse("');
+    if (parseStart !== -1) {
+      const start = parseStart + 'JSON.parse("'.length;
+      const end = after.indexOf('")', start);
+      jsonString = JSON.parse(`"${after.slice(start, end)}"`);
+    } else {
+      // ② 配列 [ ... ] の場合
+      const arrStart = after.indexOf("[");
+      const arrEnd = after.indexOf("]", arrStart);
+      jsonString = JSON.parse(after.slice(arrStart, arrEnd + 1));
+    }
+
+    const records = jsonString;
+
+    if (!Array.isArray(records) || records.length === 0) {
+      throw new Error("読み込むレースデータがありません");
+    }
+
+    // ▼ timestamp 補完
+    const fixed = records.map((r, idx) => ({
+      ...r,
+      timestamp: r.timestamp || Date.now() - idx * 1000
+    }));
+
+    const existing = await getAllRecordsFromDB();
+    const { mergedRecords, addedCount, duplicateCount } =
+      mergeRecordsWithDuplicateCheck(existing, fixed);
+
+    await clearAllRecordsFromDB();
+    for (const rec of mergedRecords) await addRecord(rec);
+
+    allRecords = [...mergedRecords];
+
+    alert(`インポート完了：新規 ${addedCount} / 重複 ${duplicateCount}`);
+    refreshAllAnalysisViews();
+  } catch (err) {
+    alert("旧HTML読み込みに失敗しました: " + err.message);
+  }
+});
+
+
+// ▼ 5. TSV読み込み
+document.getElementById("importTSVBtn").addEventListener("click", async () => {
+  const tsv = document.getElementById("tsvInput").value.trim();
+  if (!tsv) return alert("TSVデータを入力してください");
+
+  try {
+    const lines = tsv.split("\n");
+    const records = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const c = lines[i].split("\t");
+      const course = c[0]?.trim();
+      const rank = parseInt(c[1]);
+
+      if (!course || !rank) continue;
+
+      records.push({
+        course,
+        rank,
+        score: c[2] ? parseInt(c[2]) : calcScore(rank),
+        mode: c[3] || "lounge",
+        tier: c[4] || "ALL",
+        season: c[5] || "ALL",
+        timestamp: Date.now()
+      });
+    }
+
+    const existing = await getAllRecordsFromDB();
+    const { mergedRecords, addedCount, duplicateCount } =
+      mergeRecordsWithDuplicateCheck(existing, records);
+
+    await clearAllRecordsFromDB();
+    for (const rec of mergedRecords) await addRecord(rec);
+
+    allRecords = [...mergedRecords];
+
+    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
+    document.getElementById("tsvInput").value = "";
+    refreshAllAnalysisViews();
+  } catch (err) {
+    alert("TSV読み込みに失敗しました: " + err.message);
+  }
+});
+
+// ▼ 6. CSV/TSV ファイル読み込み
+document.getElementById("importFileBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("fileInput");
+  if (!fileInput.files.length) return alert("ファイルを選択してください");
+
+  try {
+    const text = await fileInput.files[0].text();
+    const delimiter = text.includes("\t") ? "\t" : ",";
+    const lines = text.trim().split("\n");
+
+    const records = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const c = lines[i].split(delimiter).map(s => s.trim().replace(/^"|"$/g, ""));
+      const course = c[0];
+      const rank = parseInt(c[1]);
+
+      if (!course || !rank) continue;
+
+      records.push({
+        course,
+        rank,
+        score: c[2] ? parseInt(c[2]) : calcScore(rank),
+        mode: c[3] || "lounge",
+        tier: c[4] || "ALL",
+        season: c[5] || "ALL",
+        timestamp: Date.now()
+      });
+    }
+
+    const existing = await getAllRecordsFromDB();
+    const { mergedRecords, addedCount, duplicateCount } =
+      mergeRecordsWithDuplicateCheck(existing, records);
+
+    await clearAllRecordsFromDB();
+    for (const rec of mergedRecords) await addRecord(rec);
+
+    allRecords = [...mergedRecords];
+
+    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
+    fileInput.value = "";
+    refreshAllAnalysisViews();
+  } catch (err) {
+    alert("ファイル読み込みに失敗しました: " + err.message);
+  }
+});
+
+// 旧バックアップ用：PBKDF2 + AES-GCM（あなたの旧コードを再利用）
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveKeyFromPassword(password, saltBytes) {
+  const enc = new TextEncoder();
+  const pwKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    pwKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function decrypt(base64) {
+  const bytes = base64ToBytes(base64);
+  const salt = bytes.slice(0, 16);
+  const iv = bytes.slice(16, 28);
+  const cipher = bytes.slice(28);
+
+  const key = await deriveKeyFromPassword(localStorage.getItem("aesKey"), salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+
+async function decryptWithPassword(base64, password) {
+  const combined = base64ToBytes(base64);
+  const salt = combined.slice(0, 16);
+  const iv   = combined.slice(16, 28);
+  const cipher = combined.slice(28);
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+async function verifyPassword(encryptedPassword, inputPassword) {
+  try {
+    const decrypted = await decryptWithPassword(encryptedPassword, inputPassword);
+    return decrypted === inputPassword;
+  } catch {
+    return false;
+  }
+}
+
+async function convertThisBackupToV3(saveText, password) {
+  // ▼ JSON パース（p/k/d）
+  const obj = JSON.parse(saveText);
+
+  // ▼ パスワード照合
+  const ok = await verifyPassword(obj.p, password);
+  if (!ok) throw new Error("パスワードが違います");
+
+  // ▼ aesKey 復元
+  const aesKeyBase64 = await decryptWithPassword(obj.k, password);
+
+  // ▼ decrypt() が使う aesKey をセット（旧方式）
+  localStorage.setItem("aesKey", aesKeyBase64);
+
+  // ▼ データ本体復号（旧 records[]）
+  const json = await decrypt(obj.d);
+  let records = JSON.parse(json);
+
+  // ▼ 新方式へ変換（12レースごと）
+  const final = [];
+  let setId = 1;
+
+  for (let i = 0; i < records.length; i += 12) {
+    const set = records.slice(i, i + 12);
+    if (set.length < 12) break;
+
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
+
+    set.forEach(r => {
+      // ★ 新方式フィールドを付与
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+
+      final.push(r);
+    });
+
+    setId++;
+  }
+
+  // ▼ DB（records ストア）に保存
+  for (const r of final) {
+    await addRecord(r);   // ★ 新方式レコードを旧ストア名 records に保存
+  }
+
+  // ▼ v3 バックアップ生成（必要なら）
+  const body = JSON.stringify(final);
+  const hash = await digestMessage(body);
+  const base64 = btoa(body);
+
+  return `MKADP_BACKUP_v3|${hash}|${base64}`;
+}
+
+
+document.getElementById("convertOldBackupBtn").onclick = async () => {
+  const file = document.getElementById("legacyBackupFileInput").files[0];
+  const password = document.getElementById("legacyBackupPassword").value.trim();
+
+  if (!file) return alert("旧バックアップファイルを選択してください");
+  if (!password) return alert("旧バックアップのパスワードを入力してください");
+
+  const text = await file.text();
+
+  try {
+    const v3 = await convertThisBackupToV3(text, password);
+
+    const blob = new Blob([v3], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "MKADP_BACKUP_v3.txt";
+    a.click();
+
+    URL.revokeObjectURL(url);
+    alert("旧バックアップを v3 に変換しました！");
+  } catch (e) {
+    console.error(e);
+    alert("変換に失敗しました。パスワードが違うか、ファイルが壊れています。");
+  }
+};
+
+function parsePlainTextRecords(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (lines.length <= 1) throw new Error("テキストに有効なデータがありません");
+
+  // 1行目で区切り文字を判定（タブ or カンマ）
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const body = lines.slice(1);
+
+  const raw = [];
+  const now = Date.now();
+
+  for (const line of body) {
+    const cols = line.split(delimiter).map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const course = cols[0];
+    const rank = Number(cols[1]);
+    const score = Number(cols[2]);
+
+    // ▼ season 正規化
+    let season = "seasonN";
+    if (cols[4]) {
+      const num = cols[4].replace(/[^0-9]/g, "");
+      if (num) season = "S" + num;
+    }
+
+    // ▼ tier 正規化
+    let tier = "tierN";
+    if (cols[5]) tier = cols[5].toUpperCase();
+
+    if (!course || !rank || rank < 1 || rank > 24) continue;
+
+    raw.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: now - raw.length * 1000
+    });
+  }
+
+  if (!raw.length) throw new Error("有効なレコードがありません");
+
+  // ▼ 12レースごとに totalScore12 を付与
+  const final = [];
+  let setId = 1;
+
+  for (let i = 0; i < raw.length; i += 12) {
+    const set = raw.slice(i, i + 12);
+    if (set.length < 12) break;
+
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
+
+    set.forEach(r => {
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+      final.push(r);
+    });
+
+    setId++;
+  }
+
+  return final;
+}
+
+async function exportFullBackup() {
+  // ▼ localStorage の全データ
+  const ls = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    ls[key] = localStorage.getItem(key);
+  }
+
+  // ▼ IndexedDB(records) の全データ
+  const db = await openDB();
+  const tx = db.transaction(["records"], "readonly");
+  const store = tx.objectStore("records");
+  const records = await store.getAll();
+
+  // ▼ 全部まとめる
+  const backup = {
+    localStorage: ls,
+    records: records
+  };
+
+  return JSON.stringify(backup);
+}
+
+async function importFullBackup(jsonText) {
+  const backup = JSON.parse(jsonText);
+
+  // ▼ localStorage を復元
+  for (const [key, value] of Object.entries(backup.localStorage)) {
+    localStorage.setItem(key, value);
+  }
+
+  // ▼ IndexedDB(records) を復元
+  const db = await openDB();
+
+  // 既存データを取得（重複チェック用）
+  const existingTx = db.transaction(["records"], "readonly");
+  const existingStore = existingTx.objectStore("records");
+  const existingRecords = await existingStore.getAll();
+  await new Promise(res => existingTx.oncomplete = res);
+
+  // 既存の timestamp をセット化（高速重複チェック）
+  const existingTimestamps = new Set(existingRecords.map(r => r.timestamp));
+
+  // ▼ 新しいデータを入れる
+  const tx = db.transaction(["records"], "readwrite");
+  const store = tx.objectStore("records");
+
+  for (const r of backup.records) {
+
+    // ★ 重複チェック（timestamp）
+    if (existingTimestamps.has(r.timestamp)) {
+      console.log("重複スキップ:", r);
+      continue;
+    }
+
+    // ★ 新規レコードとして追加
+    store.put(r);
+
+    // 重複チェック用セットに追加
+    existingTimestamps.add(r.timestamp);
+  }
+
+  await new Promise(res => tx.oncomplete = res);
+}
+
+async function downloadFullBackup() {
+  const json = await exportFullBackup();
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKADP_FULL_BACKUP.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("importFullBackupBtn").onclick = async () => {
+  const file = document.getElementById("fullBackupFileInput").files[0];
+  if (!file) return alert("バックアップファイルを選択してください");
+
+  const text = await file.text();
+  await importFullBackup(text);
+
+  alert("復元が完了しました！");
+};
+
+document.getElementById("exportFullBackupBtn").onclick = async () => {
+  const json = await exportFullBackup();
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKADP_FULL_BACKUP.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  alert("完全バックアップをダウンロードしました！");
+};
+
+document.getElementById("importFullBackupBtn").onclick = async () => {
+  const file = document.getElementById("importFullBackupFile").files[0];
+  if (!file) return alert("バックアップファイルを選択してください");
+
+  const text = await file.text();
+  await importFullBackup(text);
+
+  alert("完全バックアップを復元しました！");
+};
+
+
+// Chart.js インスタンス保持用
+let chartWinRate   = null;
+let chartAvgRank   = null;
+let chartAvgScore  = null;
+
+let chartGrowth    = null;
+let chartRadar     = null;
+let chartHeatmap   = null;
+
+let chart3D        = null;
+let chartScatter   = null
+
+const statsSeason = document.getElementById("statsSeason");
+const growthSeason = document.getElementById("growthSeason");
+const radarSeason = document.getElementById("radarSeason");
+const heatmapSeason = document.getElementById("heatmapSeason");
+const rankSeason = document.getElementById("rankSeason");
+const aiSeason = document.getElementById("aiSeason");
+const bubbleSeason = document.getElementById("bubbleSeason");
+const scatterSeason = document.getElementById("scatterSeason");
+const loungeSetSeason = document.getElementById("loungeSetSeason");
+
+const statsTier = document.getElementById("statsTier");
+const growthTier = document.getElementById("growthTier");
+const radarTier = document.getElementById("radarTier");
+const heatmapTier = document.getElementById("heatmapTier");
+const rankTier = document.getElementById("rankTier");
+const aiTier = document.getElementById("aiTier");
+const bubbleTier = document.getElementById("bubbleTier");
+const scatterTier = document.getElementById("scatterTier");
+const loungeSetTier = document.getElementById("loungeSetTier");
+
+  
+function populateSeasonAndTierOptions() {
+  // ▼ Season を持つ全セレクト
+  const seasonSelects = [
+    statsSeason, growthSeason, radarSeason, heatmapSeason,
+    rankSeason, aiSeason, bubbleSeason, scatterSeason,
+    loungeSetSeason
+  ];
+
+  // ▼ Tier を持つ全セレクト
+  const tierSelects = [
+    statsTier, growthTier, radarTier, heatmapTier,
+    rankTier, aiTier, bubbleTier, scatterTier,
+    loungeSetTier
+  ];
+
+  // ▼ Season（buildSeasonOptions に統一）
+  const seasonHTML = buildSeasonOptions();
+  for (const sel of seasonSelects) {
+    sel.innerHTML = seasonHTML;
+  }
+
+  // ▼ Tier（ALL + loungeTiers）
+  const tierHTML =
+    `<option value="ALL">ALL</option>` +
+    loungeTiers
+      .filter(t => t !== "ALL")
+      .map(t => `<option value="${t}">${t}</option>`)
+      .join("");
+
+  for (const sel of tierSelects) {
+    sel.innerHTML = tierHTML;
+  }
+}
+
+
+function buildSeasonOptions() {
+  const arr = ["ALL"];
+  for (let i = 1; i <= 30; i++) {
+    arr.push(`S${i}`);
+  }
+  return arr.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+ 
+
+/* ==========
+   初期ロード（IndexedDB版）
+========== */
+window.addEventListener("load", async () => {
+
+  allRecords = await getAllRecordsFromDB();
+
+  populateSeasonAndTierOptions();
+
+  initAllSelectors();
+
+  aiCourse.onchange = updateAICourseView;
+  aiSeason.onchange = updateAICourseView;
+  aiTier.onchange   = updateAICourseView;
+  aiMode.onchange   = updateAICourseView;
+  aiRangeSelect.onchange = updateAICourseView;
+  aiRangeInput.oninput   = updateAICourseView;
+
+  updateGrowthView();
+  updateRadarView();
+  updateHeatmapView();
+  updateRankingView();
+  updateAICourseView();
+  update3DView();
+  updateScatterView();
+  updateLoungeSetView();
+
+  // ▼ ここを入れ替える
+  renderRaceHistory();   // Canvas を生成
+  updateStatsView();     // Canvas が存在するタイミングで呼ぶ
+});
+
+
+document.getElementById("toggleLoungeSetBtn").onclick = () => {
+  const sec = document.getElementById("loungeSetSection");
+  const btn = document.getElementById("toggleLoungeSetBtn");
+
+  if (sec.style.display === "none") {
+    sec.style.display = "block";
+    btn.textContent = "12レースセット一覧を非表示";
+    updateLoungeSetView();
+  } else {
+    sec.style.display = "none";
+    btn.textContent = "12レースセット一覧を表示";
+  }
+};
+
+
+
+/* ==========
+   ユーティリティ
+========== */
+</script>   <!-- ★★★ 必須 ★★★ -->
+
+<script>
+function refreshAllAnalysisViews() {
+  updateStatsView();
+  updateGrowthView();
+  updateRadarView();
+  updateHeatmapView();
+  updateRankingView();
+  updateAICourseView();
+  update3DView();
+  updateScatterView();
+  updateLoungeSetView();
+}
+
+
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+
+function groupBy(records, keyFn) {
+  const map = {};
+  for (const r of records) {
+    const k = keyFn(r);
+    if (!map[k]) map[k] = [];
+    map[k] = map[k].concat(r);
+  }
+  return map;
+}
+
+function calcStats(records) {
+  if (!records.length) {
+    return {
+      count: 0,
+      winRate: 0,
+      avgRank: 0,
+      avgScore: 0,
+      avgTotalScore12: 0,
+      stdRank: 0,
+      firstRate: 0,
+      avoidBottomRate: 0,
+      rankScore: 0,
+      efficiency: 0,
+      topRate: 0,
+      midRate: 0,
+      bottomRate: 0
+    };
+  }
+
+  const count = records.length;
+
+  // ▼ 基本統計
+  const wins = records.filter(r => r.rank <= 3).length;
+  const sumRank = records.reduce((s, r) => s + r.rank, 0);
+  const sumScore = records.reduce((s, r) => s + r.score, 0);
+
+  const avgRank = sumRank / count;
+  const avgScore = sumScore / count;
+
+  // ▼ 12レース合計スコア（ラウンジセットのみ）
+  const loungeSets = records.filter(r => r.totalScore12 != null);
+  const avgTotalScore12 =
+    loungeSets.length > 0
+      ? loungeSets.reduce((s, r) => s + r.totalScore12, 0) / loungeSets.length
+      : 0;
+
+  // ▼ 安定度（順位の標準偏差）
+  const stdRank = Math.sqrt(
+    records.reduce((a, r) => a + Math.pow(r.rank - avgRank, 2), 0) / count
+  );
+
+  // ▼ 爆発力（1位率）
+  const firstRate = records.filter(r => r.rank === 1).length / count;
+
+  // ▼ ★ 新しい順位分布
+  const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
+  const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
+  const bottomRate = records.filter(r => r.rank >= 16).length / count;
+
+  // ▼ 下位回避率（1 - 下位率）
+  const avoidBottomRate = 1 - bottomRate;
+
+  // ▼ 順位逆数スコア（高いほど良い）
+  const rankScore = 12 - avgRank;
+
+  // ▼ スコア効率（平均スコア ÷ 平均順位）
+  const efficiency = avgScore / avgRank;
+
+  return {
+    count,
+    winRate: wins / count,
+    avgRank,
+    avgScore,
+    avgTotalScore12,
+    stdRank,
+    firstRate,
+    avoidBottomRate,
+    rankScore,
+    efficiency,
+    topRate,
+    midRate,
+    bottomRate
+  };
+}
+
+
+/* ==========
+   基本統計 & モード別グラフ
+========== */
+function getStatsFilteredRecords() {
+  let r = [...allRecords];
+
+  const mode   = statsMode.value;
+  const season = statsSeason.value;
+  const tier   = statsTier.value;
+
+  // ▼ モード
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+
+  // ▼ Season
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+
+  // ▼ Tier
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const rangeSel = statsRangeSelect.value;
+  if (rangeSel !== "ALL") {
+    let N = 0;
+    if (rangeSel === "CUSTOM") {
+      N = Number(statsRangeInput.value || 0);
+    } else {
+      N = Number(rangeSel);
+    }
+
+    if (N > 0) {
+      // ★ DB版では timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+
+function getGrowthFilteredRecords() {
+  let r = [...allRecords];
+
+  const tier   = growthTier.value;
+  const season = growthSeason.value;
+  const course = growthCourse.value;
+
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = growthRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(growthRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+function getRadarFilteredRecords() {
+  let r = [...allRecords];
+
+  const course = radarCourse.value;
+  const season = radarSeason.value;
+  const tier   = radarTier.value;
+
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = radarRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+
+function getHeatmapFilteredRecords() {
+  let r = [...allRecords];
+
+  const mode   = heatmapMode.value;
+  const season = heatmapSeason.value;
+  const tier   = heatmapTier.value;
+  const course = heatmapCourse.value;
+
+  if (mode !== "ALL")   r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = heatmapRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(heatmapRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+function getRankingFilteredRecords() {
+  let r = [...allRecords];
+
+  const season = rankSeason.value;
+  const tier   = rankTier.value;
+
+  // ▼ Season（ALL のときは完全スルー）
+  if (season !== "ALL") {
+    r = r.filter(x => x.season === season);
+  }
+
+  // ▼ Tier（ALL のときは完全スルー）
+  if (tier !== "ALL") {
+    r = r.filter(x => x.tier === tier);
+  }
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = rankRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  // ▼ 最低走行回数
+  const min = Number(document.getElementById("minRuns").value || 0);
+  if (min > 0) {
+    const grouped = {};
+    r.forEach(x => {
+      grouped[x.course] = (grouped[x.course] || 0) + 1;
+    });
+    r = r.filter(x => grouped[x.course] >= min);
+  }
+
+  return r;
+}
+
+
+
+function getAIFilteredRecords() {
+  let r = [...allRecords];
+
+  const course = aiCourse.value;
+  const season = aiSeason.value;
+  const tier   = aiTier.value;
+  const mode   = aiMode.value;
+
+  // ▼ mode（ALL のときは完全スルー）
+  if (mode !== "ALL") {
+    r = r.filter(x => x.mode === mode);
+  }
+
+  // ▼ course（ALL のときは完全スルー）
+  if (course !== "ALL") {
+    r = r.filter(x => x.course === course);
+  }
+
+  // ▼ season（ALL のときは完全スルー）
+  if (season !== "ALL") {
+    r = r.filter(x => x.season === season);
+  }
+
+  // ▼ tier（ALL のときは完全スルー）
+  if (tier !== "ALL") {
+    r = r.filter(x => x.tier === tier);
+  }
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = aiRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(aiRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+
+
+function get3DFilteredRecords() {
+  let r = [...allRecords];
+
+  const season = bubbleSeason.value;
+  const tier   = bubbleTier.value;
+
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = bubbleRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(bubbleRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+
+function getLoungeSetFilteredRecords() {
+  let r = [...allRecords];
+
+  const season = loungeSetSeason.value;
+  const tier   = loungeSetTier.value;
+
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+
+  // ★ DB版：セット表示は timestamp 順が自然
+  r.sort((a, b) => (a.setTimestamp || a.timestamp || 0) - (b.setTimestamp || b.timestamp || 0));
+
+  return r;
+}
+
+
+
+function getScatterFilteredRecords() {
+  let r = [...allRecords];
+
+  const season = scatterSeason.value;
+  const tier   = scatterTier.value;
+
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
+
+  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  const sel = scatterRangeSelect.value;
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(scatterRangeInput.value || 0) : Number(sel);
+
+    if (N > 0) {
+      // ★ DB版：timestamp でソートしてから slice
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+let currentSeasonFilter = "ALL";
+let currentTierFilter = "ALL";
+let selectedCourses = [];
+let currentRecentFilter = "ALL";
+let currentAndOrMode = "AND";
+ 
+
+function updateStatsView() {
+  try {
+    const records = getStatsFilteredRecords();
+
+    const count = records.length;
+    const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
+    const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
+    const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
+
+    // ▼ basicStats 要素の存在確認
+    const basicStatsEl = document.getElementById("basicStats");
+    if (basicStatsEl) {
+      basicStatsEl.innerHTML = `
+        <p>対象レース数：${count}</p>
+        <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
+      `;
+    } else {
+      console.warn("basicStats 要素が見つかりません");
+    }
+
+    // ▼ avgTotalScore12Text 要素の存在確認
+    const avgTotalScore12TextEl = document.getElementById("avgTotalScore12Text");
+    if (avgTotalScore12TextEl) {
+      const lounge12 = records.filter(r => r.totalScore12);
+      if (lounge12.length) {
+        const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
+        avgTotalScore12TextEl.innerText =
+          `12レース平均合計スコア：${avg12.toFixed(1)}点`;
+      } else {
+        avgTotalScore12TextEl.innerText = "";
+      }
+    } else {
+      console.warn("avgTotalScore12Text 要素が見つかりません");
+    }
+
+    // ▼ グラフ描画（存在確認付き）
+    if (typeof drawWinRateChart === "function") {
+      drawWinRateChart(records);
+    }
+    if (typeof drawAvgRankChart === "function") {
+      drawAvgRankChart(records);
+    }
+    if (typeof drawAvgScoreChart === "function") {
+      drawAvgScoreChart(records);
+    }
+
+  } catch (err) {
+    console.error("updateStatsView エラー:", err);
+  }
+}
+  
+function updateGrowthView() {
+  const records = getGrowthFilteredRecords();
+  if (!records.length) {
+    drawGrowthChart([], []);
+    return;
+  }
+
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r.score);
+  });
+
+  const labels = Object.keys(grouped);
+  const values = labels.map(c => {
+    const arr = grouped[c];
+    return arr.reduce((a,b)=>a+b,0) / arr.length;
+  });
+
+  drawGrowthChart(labels, values);
+}
+
+
+
+function updateLoungeSetView() {
+  const records = getLoungeSetFilteredRecords();
+
+  const sets = {};
+  records.forEach(r => {
+    if (!r.totalScore12) return;
+    if (!sets[r.timestamp]) sets[r.timestamp] = r.totalScore12;
+  });
+
+  const html = Object.entries(sets)
+    .sort((a,b)=>b[0]-a[0])
+    .map(([ts, score]) => {
+      const date = new Date(Number(ts)).toLocaleString();
+      return `<p>${date}：${score}点</p>`;
+    })
+    .join("");
+
+  document.getElementById("loungeSetView").innerHTML = html || "<p>データなし</p>";
+}
+
+function drawWinRateChart(records) {
+  const canvas = document.getElementById("winRateChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  // ▼ destroy を安全に呼ぶ
+  if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
+    window.chartWinRate.destroy();
+  }
+
+  if (!records.length) {
+    window.chartWinRate = new Chart(ctx, {
+      type: "bar",
+      data: { labels: [], datasets: [] }
+    });
+    return;
+  }
+
+  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
+  const labels = sorted.map((_,i)=>`#${i+1}`);
+  const winRates = sorted.map(r => (r.rank <= 3 ? 100 : 0));
+
+  window.chartWinRate = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "勝率(%)",
+        data: winRates,
+        backgroundColor: "rgba(54,162,235,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+
+function drawGrowthChart(labels, values) {
+  const ctx = document.getElementById("chartGrowth").getContext("2d");
+
+  if (window.chartGrowth && typeof window.chartGrowth.destroy === "function") {
+    window.chartGrowth.destroy();
+  }
+
+  window.chartGrowth = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "平均スコア",
+        data: values,
+        backgroundColor: "rgba(153,102,255,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+
+function drawRadarChart(labels, values) {
+  const ctx = document.getElementById("chartRadar").getContext("2d");
+
+  if (window.chartRadar && typeof window.chartRadar.destroy === "function") {
+    window.chartRadar.destroy();
+  }
+
+  window.chartRadar = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels,
+      datasets: [{
+        label: "評価",
+        data: values,
+        backgroundColor: "rgba(153,102,255,0.2)",
+        borderColor: "rgba(153,102,255,1)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { r: { beginAtZero: true } }
+    }
+  });
+}
+
+
+
+function drawHeatmap(map) {
+  const ctx = document.getElementById("chartHeatmap").getContext("2d");
+
+  if (window.chartHeatmap && typeof window.chartHeatmap.destroy === "function") {
+    window.chartHeatmap.destroy();
+  }
+
+  const courses = Object.keys(map);
+  const values = courses.map(c => {
+    const arr = map[c];
+    let sum = 0, count = 0;
+    arr.forEach((v,i)=>{ sum += v * (i+1); count += v; });
+    return count ? sum / count : 12;
+  });
+
+  window.chartHeatmap = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: courses,
+      datasets: [{
+        label: "平均順位（低いほど良い）",
+        data: values,
+        backgroundColor: values.map(v => {
+          const t = (12 - v) / 12;
+          const g = Math.round(255 * t);
+          const r = Math.round(255 * (1 - t));
+          return `rgba(${r},${g},100,0.8)`;
+        })
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, max: 12 } }
+    }
+  });
+}
+
+
+
+function drawAvgRankChart(records) {
+  const ctx = document.getElementById("chartAvgRank").getContext("2d");
+
+  if (window.chartAvgRank && typeof window.chartAvgRank.destroy === "function") {
+    window.chartAvgRank.destroy();
+  }
+
+  if (!records.length) {
+    window.chartAvgRank = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
+    return;
+  }
+
+  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
+  const labels = sorted.map((_,i)=>`#${i+1}`);
+  const avgRanks = sorted.map(r => r.rank);
+
+  window.chartAvgRank = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "平均順位",
+        data: avgRanks,
+        backgroundColor: "rgba(255,159,64,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 24 } }
+    }
+  });
+}
+
+function drawAvgScoreChart(records) {
+  const ctx = document.getElementById("chartAvgScore").getContext("2d");
+
+  if (window.chartAvgScore && typeof window.chartAvgScore.destroy === "function") {
+    window.chartAvgScore.destroy();
+  }
+
+  if (!records.length) {
+    window.chartAvgScore = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
+    return;
+  }
+
+  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
+  const labels = sorted.map((_,i)=>`#${i+1}`);
+  const avgScores = sorted.map(r => r.score);
+
+  window.chartAvgScore = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "平均スコア",
+        data: avgScores,
+        backgroundColor: "rgba(75,192,192,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 15, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+}
+
+
+function drawScatterChart(points) {
+  const ctx = document.getElementById("chartScatter").getContext("2d");
+
+  if (window.chartScatter && typeof window.chartScatter.destroy === "function") {
+    window.chartScatter.destroy();
+  }
+
+  window.chartScatter = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [{
+        label: "コース",
+        data: points,
+        backgroundColor: "rgba(255,99,132,0.6)"
+      }]
+    },
+    options: {
+      parsing: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: "強さスコア" } },
+        y: { title: { display: true, text: "成長スコア" } }
+      }
+    }
+  });
+}
+
+
+
+
+function draw3DChart(points) {
+  const ctx = document.getElementById("chart3D").getContext("2d");
+
+  if (window.chart3D && typeof window.chart3D.destroy === "function") {
+    window.chart3D.destroy();
+  }
+
+  window.chart3D = new Chart(ctx, {
+    type: "bubble",
+    data: {
+      datasets: [{
+        label: "コース",
+        data: points,
+        backgroundColor: "rgba(54,162,235,0.5)"
+      }]
+    },
+    options: {
+      parsing: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: "強さスコア" } },
+        y: { title: { display: true, text: "成長スコア" } }
+      }
+    }
+  });
+}
+
+
+
+function updateBasicStats(records) {
+
+  // ▼ 全体
+  const statsAll = calcStats(records);
+
+  // ▼ モード別
+  const statsLounge     = calcStats(records.filter(r => r.mode === "lounge"));
+  const statsTournament = calcStats(records.filter(r => r.mode === "tournament"));
+  const statsNora       = calcStats(records.filter(r => r.mode === "nora"));
+
+  // ▼ ラウンジ totalScore12 平均
+  let avgTotalScore12 = 0;
+  const loungeSets = records.filter(r => r.mode === "lounge" && r.totalScore12 != null);
+
+  if (loungeSets.length > 0) {
+    avgTotalScore12 =
+      loungeSets.reduce((a, b) => a + b.totalScore12, 0) / loungeSets.length;
+  }
+
+  // ▼ 表示
+  document.getElementById("avgTotalScore12Text").textContent =
+    loungeSets.length > 0
+      ? `平均合計スコア(12R)：${avgTotalScore12.toFixed(1)}`
+      : "";
+
+  const basicDiv = document.getElementById("basicStats");
+  basicDiv.innerHTML = `
+    <p>対象レース数：${statsAll.count}</p>
+    <p>
+      勝率（3位以内）：${(statsAll.winRate * 100).toFixed(1)}%
+      / 平均順位：${statsAll.avgRank.toFixed(2)}
+      / 平均スコア：${statsAll.avgScore.toFixed(2)}
+      ${loungeSets.length > 0 ? `/ 平均合計スコア(12R)：${avgTotalScore12.toFixed(1)}` : ""}
+    </p>
+    <p>
+      ラウンジ：${statsLounge.count}
+      / 大会：${statsTournament.count}
+      / 野良：${statsNora.count}
+    </p>
+  `;
+}
+
+function updateModeGraphs(records) {
+  if (!records.length) {
+    if (chartWinRate) chartWinRate.destroy();
+    if (chartAvgRank) chartAvgRank.destroy();
+    if (chartAvgScore) chartAvgScore.destroy();
+    return;
+  }
+
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(records).sort((a, b) => a.timestamp - b.timestamp);
+
+  // ▼ ラベル（レース番号）
+  const labels = sorted.map((_, i) => `#${i + 1}`);
+
+  // ▼ 勝率（3位以内 → 1 / 0 の配列）
+  const winRates = sorted.map(r => (r.rank <= 3 ? 100 : 0));
+
+  // ▼ 平均順位
+  const avgRanks = sorted.map(r => r.rank);
+
+  // ▼ 平均スコア
+  const avgScores = sorted.map(r => r.score);
+
+  /* ==========
+     勝率グラフ
+  ========== */
+  const ctxW = document.getElementById("chartWinRate").getContext("2d");
+  if (chartWinRate) chartWinRate.destroy();
+  chartWinRate = new Chart(ctxW, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "勝率(%)",
+        data: winRates,
+        backgroundColor: "rgba(54,162,235,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+
+  /* ==========
+     平均順位グラフ（最大24固定）
+  ========== */
+  const ctxR = document.getElementById("chartAvgRank").getContext("2d");
+  if (chartAvgRank) chartAvgRank.destroy();
+  chartAvgRank = new Chart(ctxR, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "平均順位",
+        data: avgRanks,
+        backgroundColor: "rgba(255,159,64,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 24 } }
+    }
+  });
+
+  /* ==========
+     平均スコアグラフ（最大15固定）
+  ========== */
+  const ctxS = document.getElementById("chartAvgScore").getContext("2d");
+  if (chartAvgScore) chartAvgScore.destroy();
+  chartAvgScore = new Chart(ctxS, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "平均スコア",
+        data: avgScores,
+        backgroundColor: "rgba(75,192,192,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 15,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+
+function renderLoungeSets(records) {
+  const div = document.getElementById("loungeSetView");
+  if (!div) return;
+
+  // ▼ ラウンジの12レースセットのみ
+  const sets = records.filter(
+    r => r.mode === "lounge" && r.totalScore12 != null
+  );
+
+  if (!sets.length) {
+    div.innerHTML = "<p>12レースセットのデータがありません。</p>";
+    return;
+  }
+
+  // ▼ DB版：timestamp は loadAllRecords() で必ず補正済み
+  const sorted = clone(sets).sort((a, b) => a.timestamp - b.timestamp);
+
+  // ▼ HTML生成
+  div.innerHTML = sorted
+    .map((s, i) => {
+      const date = new Date(s.timestamp).toLocaleString();
+
+      return `
+        <div class="lounge-set-card">
+          <p><strong>セット #${i + 1}</strong></p>
+          <p>合計スコア：${s.totalScore12}</p>
+          <p>Season：${s.season || "-"}</p>
+          <p>Tier：${s.tier || "-"}</p>
+          <p>日時：${date}</p>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+  
+/* ==========
+   成長スコア（Tier × Season × Course）
+========== */
+
+function initAllSelectors() {
+  initGrowthSelectors();
+  initRadarSelector();
+  initAISelector();
+  initOBSSeasonSelector();
+  initAdpCourseSelector();
+}
+
+function initAdpCourseSelector() {
+  const sel = document.getElementById("adpCourseSelect");
+  sel.innerHTML = courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+}
+
+function initGrowthSelectors() {
+  const tierSel = document.getElementById("growthTier");
+  const seasonSel = document.getElementById("growthSeason");
+  const courseSel = document.getElementById("growthCourse");
+
+  tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+  seasonSel.innerHTML = buildSeasonOptions();
+
+
+  // courseList は②で定義される前提
+  courseSel.innerHTML = ["ALL"].concat(courseList).map(c => `<option value="${c}">${c}</option>`).join("");
+}
+
+
+/* ==========
+   レーダー（コース別評価）
+========== */
+
+function initRadarSelector() {
+  const sel = document.getElementById("radarCourse");
+  sel.innerHTML = `
+    <option value="ALL">ALL</option>
+    ${courseList.map(c => `<option value="${c}">${c}</option>`).join("")}
+  `;
+}
+
+
+function updateRadarView() {
+  const records = getRadarFilteredRecords();
+
+  if (!records.length) {
+    drawRadarChart([], []);
+    return;
+  }
+
+  const avgRank  = records.reduce((a,b)=>a+b.rank,0) / records.length;
+  const avgScore = records.reduce((a,b)=>a+b.score,0) / records.length;
+  const winRate  = records.filter(r => r.rank <= 3).length / records.length;
+
+  const labels = ["勝率", "平均順位", "平均スコア"];
+  const values = [
+    winRate * 100,
+    13 - avgRank,
+    avgScore
+  ];
+
+  drawRadarChart(labels, values);
+}
+
+
+
+/* ==========
+   ヒートマップ（コース × 指標）
+========== */
+function updateHeatmapView() {
+  const records = getHeatmapFilteredRecords();
+
+  const map = {};
+  records.forEach(r => {
+    if (!map[r.course]) map[r.course] = Array(24).fill(0);
+    map[r.course][r.rank - 1]++;
+  });
+
+  drawHeatmap(map);
+}
+
+
+
+/* ==========
+   コースランキング（得意 / 苦手）
+========== */
+
+function updateRankingView() {
+  const records = getRankingFilteredRecords();
+
+  const strongTable = document.getElementById("tableStrong");
+  const weakTable   = document.getElementById("tableWeak");
+
+  if (!records || !records.length) {
+    strongTable.innerHTML = `
+      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th></tr>
+      <tr><td colspan="6">データがありません</td></tr>
+    `;
+    weakTable.innerHTML = `
+      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th></tr>
+      <tr><td colspan="6">データがありません</td></tr>
+    `;
+    return;
+  }
+
+  const minRuns = Number(document.getElementById("minRuns").value || 3);
+  const metric  = document.getElementById("rankMetric").value; // ★追加
+
+  const byCourse = groupBy(records, r => r.course);
+  const rows = [];
+
+  for (const c of Object.keys(byCourse)) {
+    const rs = byCourse[c];
+    if (rs.length < minRuns) continue;
+
+    const s = calcStats(rs);
+
+    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
+
+    rows.push({
+      course: c,
+      count: rs.length,
+      avgRank: s.avgRank,
+      winRate: s.winRate,
+      avgScore: s.avgScore,
+      avgTotalScore12: s.avgTotalScore12,
+    
+      // ▼ 安定度・爆発力・下位回避など
+      stdRank: s.stdRank,
+      firstRate: s.firstRate,
+      avoidBottom: s.avoidBottomRate,
+      rankScore: s.rankScore,
+      efficiency: s.efficiency,
+    
+      // ▼ ★ 新しい順位分布（1〜5 / 6〜15 / 16〜24）
+      topRate: s.topRate,       // 上位率（1〜5）
+      midRate: s.midRate,       // 中位率（6〜15）
+      bottomRate: s.bottomRate, // 下位率（16〜24）
+    
+      // ▼ 得意・苦手・成長スコア
+      strongScore,
+      weakScore,
+      growth
+    });
+  }
+
+  // ▼ 基準に応じてソート切り替え（★ここが今回の本体）
+    // ▼ 基準に応じてソート切り替え（★完全版）
+  let sorted;
+  switch (metric) {
+
+    // ▼ 既存
+    case "strong":
+      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
+      break;
+  
+    case "weak":
+      sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore);
+      break;
+  
+    case "growth":
+      sorted = [...rows].sort((a,b)=>b.growth - a.growth);
+      break;
+  
+    case "winRate":
+      sorted = [...rows].sort((a,b)=>b.winRate - a.winRate);
+      break;
+  
+    case "avgRank":
+      sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank);
+      break;
+  
+    case "avgScore":
+      sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
+      break;
+  
+    case "avgTotalScore12":
+      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12);
+      break;
+  
+    // ▼ 安定度（低いほど良い）
+    case "stdRank":
+      sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank);
+      break;
+  
+    // ▼ 爆発力（1位率）
+    case "firstRate":
+      sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate);
+      break;
+  
+    // ▼ 下位回避率（高いほど良い）
+    case "avoidBottom":
+      sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom);
+      break;
+  
+    // ▼ 順位逆数スコア
+    case "rankScore":
+      sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore);
+      break;
+  
+    // ▼ スコア効率
+    case "efficiency":
+      sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency);
+      break;
+  
+    // ▼ ★ 上位率（1〜5）
+    case "topRate":
+      sorted = [...rows].sort((a,b)=>b.topRate - a.topRate);
+      break;
+  
+    // ▼ ★ 中位率（6〜15）
+    case "midRate":
+      sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
+      break;
+  
+    // ▼ ★ 下位率（16〜24）
+    case "bottomRate":
+      sorted = [...rows].sort((a,b)=>b.bottomRate - a.bottomRate);
+      break;
+  
+    // ▼ デフォルト（得意スコア）
+    default:
+      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
+      break;
+  }
+
+
+  const maxRank = Number(document.getElementById("rankLimit").value || 10);
+  
+  const strongSorted = sorted.slice(0, maxRank);
+  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0, maxRank);
+
+
+  
+  strongTable.innerHTML = `
+    <tr>
+      <th>コース</th>
+      <th>回数</th>
+      <th>勝率%</th>
+      <th>平均順位</th>
+      <th>平均スコア</th>
+      <th>上位率%</th>
+      <th>中位率%</th>
+      <th>下位率%</th>
+      <th>得意スコア</th>
+    </tr>
+    ${
+      strongSorted.length
+        ? strongSorted.map(r => `
+          <tr>
+            <td>${r.course}</td>
+            <td>${r.count}</td>
+            <td>${(r.winRate*100).toFixed(1)}</td>
+            <td>${r.avgRank.toFixed(2)}</td>
+            <td>${r.avgScore.toFixed(2)}</td>
+            <td>${(r.topRate*100).toFixed(1)}</td>
+            <td>${(r.midRate*100).toFixed(1)}</td>
+            <td>${(r.bottomRate*100).toFixed(1)}</td>
+            <td>${r.strongScore.toFixed(1)}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
+    }
+  `;
+
+  weakTable.innerHTML = `
+    <tr>
+      <th>コース</th>
+      <th>回数</th>
+      <th>勝率%</th>
+      <th>平均順位</th>
+      <th>平均スコア</th>
+      <th>上位率%</th>
+      <th>中位率%</th>
+      <th>下位率%</th>
+      <th>苦手スコア</th>
+    </tr>
+    ${
+      weakSorted.length
+        ? weakSorted.map(r => `
+          <tr>
+            <td>${r.course}</td>
+            <td>${r.count}</td>
+            <td>${(r.winRate*100).toFixed(1)}</td>
+            <td>${r.avgRank.toFixed(2)}</td>
+            <td>${r.avgScore.toFixed(2)}</td>
+            <td>${(r.topRate*100).toFixed(1)}</td>
+            <td>${(r.midRate*100).toFixed(1)}</td>
+            <td>${(r.bottomRate*100).toFixed(1)}</td>
+            <td>${r.weakScore.toFixed(1)}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
+    }
+  `;
+}
+
+/* ==========
+   AIコース評価
+========== */
+
+function initAISelector() {
+  // ▼ コース
+  const selCourse = document.getElementById("aiCourse");
+  selCourse.innerHTML =
+    `<option value="ALL">ALL</option>` +
+    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  // ▼ モード（★追加）
+  const selMode = document.getElementById("aiMode");
+  selMode.innerHTML = `
+    <option value="ALL">ALL</option>
+    <option value="lounge">lounge</option>
+    <option value="nora">nora</option>
+    <option value="tournament">tournament</option>
+  `;
+}
+
+
+
+function updateAICourseView() {
+  const records = getAIFilteredRecords();
+  const div = document.getElementById("aiCourseResult");
+
+  if (!records.length) {
+    div.innerHTML = "<p>データがありません。</p>";
+    return;
+  }
+
+  const s = calcStats(records);
+
+  const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
+  const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+  const growth      = strongScore - weakScore;
+
+  // ▼ ★ AI 基準セレクタ
+  const metric = document.getElementById("aiMetric")?.value || "strong";
+
+  // ▼ ★ 基準に応じて mainScore を切り替え
+  let mainScore = 0;
+
+  switch (metric) {
+    case "strong": mainScore = strongScore; break;
+    case "weak": mainScore = -weakScore; break; // 苦手は低いほど悪いので反転
+    case "growth": mainScore = growth; break;
+
+    case "winRate": mainScore = s.winRate * 100; break;
+    case "avgRank": mainScore = -s.avgRank; break; // 低いほど良い
+    case "avgScore": mainScore = s.avgScore; break;
+    case "avgTotalScore12": mainScore = s.avgTotalScore12; break;
+
+    case "stdRank": mainScore = -s.stdRank; break; // 低いほど良い
+    case "firstRate": mainScore = s.firstRate * 100; break;
+    case "avoidBottom": mainScore = s.avoidBottomRate * 100; break;
+    case "rankScore": mainScore = s.rankScore; break;
+    case "efficiency": mainScore = s.efficiency; break;
+
+    case "topRate": mainScore = s.topRate * 100; break;
+    case "midRate": mainScore = s.midRate * 100; break;
+    case "bottomRate": mainScore = -(s.bottomRate * 100); break; // 低いほど良い
+
+    default: mainScore = strongScore; break;
+  }
+
+  const course = document.getElementById("aiCourse").value;
+  const title = (course === "ALL") ? "全コース総合評価" : `コース：${course}`;
+
+  let verdict = "";
+  if (strongScore > 140) verdict = "かなり得意なコースです。";
+  else if (strongScore > 100) verdict = "得意寄りのコースです。";
+  else if (weakScore > 120) verdict = "かなり苦手なコースです。";
+  else if (weakScore > 90)  verdict = "やや苦手なコースです。";
+  else verdict = "評価が分かれるコースです。";
+  // ▼ サブ評価コメントをまとめる
+    let subComments = [];
+    
+    // 安定度
+    if (s.stdRank < 4) subComments.push("順位のブレが小さく非常に安定しています。");
+    else if (s.stdRank < 7) subComments.push("順位の安定度は平均的です。");
+    else subComments.push("順位のブレが大きめです。");
+    
+    // 上位率
+    if (s.topRate > 0.40) subComments.push("上位に入りやすい傾向があります。");
+    else if (s.topRate > 0.25) subComments.push("上位率は平均的です。");
+    else subComments.push("上位に入りにくい傾向があります。");
+    
+    // 中位率
+    if (s.midRate > 0.60) subComments.push("中位に安定しやすいコースです。");
+    
+    // 下位率
+    if (s.bottomRate > 0.35) subComments.push("下位を取りやすい危険なコースです。");
+    else if (s.bottomRate < 0.20) subComments.push("下位を取りにくい安定したコースです。");
+    
+    // 下位回避率
+    if (s.avoidBottomRate > 0.90) subComments.push("下位をほとんど取らない安定型です。");
+    
+    // 爆発力
+    if (s.firstRate > 0.15) subComments.push("1位を多く取れる爆発力があります。");
+    
+    // スコア効率
+    if (s.efficiency > 1.0) subComments.push("順位に対してスコア効率が非常に良いです。");
+    
+    // 順位逆数スコア
+    if (s.rankScore > 7) subComments.push("順位スコアが高く安定しています。");
+    
+    // 12レース平均スコア
+    if (s.avgTotalScore12 > 90) subComments.push("ラウンジセットの成績が非常に良いです。");
+    
+    // ▼ HTML に追加
+    const subCommentHTML = subComments.map(c => `<p>・${c}</p>`).join("");
+    
+
+  div.innerHTML = `
+    <p><strong>${title}</strong></p>
+    <p><strong>試行回数：</strong>${records.length}</p>
+  
+    <p><strong>AI 基準スコア：</strong>${mainScore.toFixed(2)}</p>
+  
+    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
+    <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
+    <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
+    <p><strong>12レース平均スコア：</strong>${s.avgTotalScore12.toFixed(1)}</p>
+  
+    <p><strong>上位率（1〜5位）：</strong>${(s.topRate * 100).toFixed(1)}%</p>
+    <p><strong>中位率（6〜15位）：</strong>${(s.midRate * 100).toFixed(1)}%</p>
+    <p><strong>下位率（16〜24位）：</strong>${(s.bottomRate * 100).toFixed(1)}%</p>
+    <p><strong>下位回避率：</strong>${(s.avoidBottomRate * 100).toFixed(1)}%</p>
+  
+    <p><strong>安定度（順位のブレ）：</strong>${s.stdRank.toFixed(2)}</p>
+    <p><strong>爆発力（1位率）：</strong>${(s.firstRate * 100).toFixed(1)}%</p>
+  
+    <p><strong>順位逆数スコア：</strong>${s.rankScore.toFixed(2)}</p>
+    <p><strong>スコア効率：</strong>${s.efficiency.toFixed(3)}</p>
+  
+    <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
+    <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
+    <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
+  
+    <hr>
+    <p>${verdict}</p>
+  
+    <h4>項目別評価</h4>
+    ${subCommentHTML}
+  `;
+}
+
+
+
+/* ==========
+   3D バブル（強さ × 成長 × 使用数）
+========== */
+
+function update3DView() {
+  const records = get3DFilteredRecords(); // ★独立フィルター
+
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r);
+  });
+
+  const points = Object.entries(grouped).map(([course, arr]) => {
+    const s = calcStats(arr);
+    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
+
+    return {
+      x: strongScore,
+      y: growth,
+      r: Math.min(20, 5 + arr.length),
+      label: course
+    };
+  });
+
+  draw3DChart(points);
+}
+
+/* ==========
+   散布図（強さ × 成長）
+========== */
+function updateScatterView() {
+  const records = getScatterFilteredRecords(); // ★独立フィルター
+
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r);
+  });
+
+  const points = Object.entries(grouped).map(([course, arr]) => {
+    const s = calcStats(arr);
+    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
+    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
+    const growth      = strongScore - weakScore;
+
+    return {
+      x: strongScore,
+      y: growth,
+      label: course
+    };
+  });
+
+  drawScatterChart(points);
+}
+
+  
+function getWinRate(filtered) {
+  if (!filtered.length) return 0;
+  const wins = filtered.filter(r => r.rank <= 3).length;
+  return wins / filtered.length;
+}
+
+
+
+
+
+
+
+/* ============================================================
+   ▼ 固定コピー対策ID（ユーザーID）生成
+   ============================================================ */
+function getUserCopyId() {
+  let id = localStorage.getItem("userCopyId");
+  if (!id) {
+    const unixSec = Math.floor(Date.now() / 1000);
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    id = `U-${unixSec}-${rand}`;
+    localStorage.setItem("userCopyId", id);
+  }
+  return id;
+}
+
+/* ============================================================
+   ▼ バッチID生成（6時間に1回送信）
+   ============================================================ */
+function generateBatchId() {
+  const unixSec = Math.floor(Date.now() / 1000);
+  const rand = Math.floor(100000 + Math.random() * 900000);
+  return `${unixSec}-${rand}`;
+}
+
+/* ============================================================
+   ▼ 6時間に1回だけ送信する判定
+   ============================================================ */
+function shouldSendNow() {
+  const lastSent = Number(localStorage.getItem("lastSent") || 0);
+  const now = Date.now();
+  const SIX_HOURS = 6 * 60 * 60 * 1000; // 6時間
+
+  return now - lastSent >= SIX_HOURS;
+}
+
+/* ============================================================
+   ▼ Cloudflare Worker に送信（6時間に1回）
+   ============================================================ */
+/* ============================================================
+   ▼ Cloudflare Worker に送信（6時間に1回）
+   ============================================================ */
+async function sendDataToWorker() {
+  const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
+  if (!queue.length) return;
+
+  if (!shouldSendNow()) {
+    console.log("まだ送信しない（6時間に1回）");
+    return;
+  }
+
+  const payload = {
+    userId: getUserCopyId(),
+    batchId: generateBatchId(),
+    timestamp: Math.floor(Date.now() / 1000),
+    races: queue
+  };
+
+  try {
+    const res = await fetch("https://mkadp.haruto-mori0602.workers.dev/", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      console.log("送信完了（6時間に1回）");
+      localStorage.setItem("sendQueue", "[]");
+      localStorage.setItem("lastSent", Date.now());
+    } else {
+      console.log("送信失敗 → 次の6時間後に再試行");
+      console.log(await res.text());
+    }
+  } catch (e) {
+    console.log("送信エラー → 次の6時間後に再試行");
+    console.error(e);
+  }
+}
+
+
+
+let overlayWindow = null;
+
+// ▼ overlay.html を別ウィンドウで開く（OBS では不要）
+function openOverlay() {
+  overlayWindow = window.open(
+    "https://sorute03.github.io/MKADP/overlay.html",
+    "mkadp_overlay"
+  );
+}
+
+// ▼ OBS に送信（overlayWindow があればそちらへ）
+async function sendToOverlay() {
+  const records = await exportRecords();  // mogiDB / records から取得
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  const payload = {
+    type: "records",
+    records,
+    nextCourse
+  };
+
+  // iframe overlay
+  const frame = document.getElementById("overlayFrame");
+  if (frame && frame.contentWindow) {
+    frame.contentWindow.postMessage(payload, "*");
+  }
+
+  // OBS overlay
+  window.postMessage(payload, "*");
+}
+
+
+
+// 1秒ごとに送信
+setInterval(sendToOverlay, 1000);
+                          
+// ▼ OBS と通信する BroadcastChannel
+const bc = new BroadcastChannel("mkadp_channel");
+
+// ▼ IndexedDB → JSON
+async function exportRecords() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+
+    req.onerror = () => reject("DB open failed");
+
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction(["records"], "readonly");
+      const store = tx.objectStore("records");
+
+      const getReq = store.getAll();
+
+      getReq.onsuccess = () => resolve(getReq.result || []);
+      getReq.onerror = () => reject("getAll failed");
+    };
+  });
+}
+
+
+
+// ▼ OBS に送信
+async function sendToOBS() {
+  const records = await exportRecords();
+  const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  bc.postMessage({
+    type: "records",
+    records,
+    nextCourse
+  });
+
+  console.log("SEND:", records.length, "件");
+}
+
+
+// ▼ 2秒ごとに送信
+//setInterval(sendToOBS, 2000);
+
+
+//async function sendToAppsScript() {
+  //const records = await exportRecords();
+  //const nextCourse = localStorage.getItem("nextCourse") || "";
+
+  //const payload = {
+    //records,
+    //nextCourse
+  //};
+
+  //await fetch("https://script.google.com/macros/s/AKfycbxxNUnHQ3z8DXcc6vpKOBlmZdPKdWGtQz2GjzFRw3uGkQl4gRr2QWZp4SgWFVy8Jb_jOw/exec", {
+    //method: "POST",
+    //body: JSON.stringify(payload)
+  //});
+//}
+
+// 1秒ごとに送信
+//setInterval(sendToAppsScript, 1000);
+
+  
+/* ============================================================
+   ▼ 自動送信チェック（5分ごと）
+   ============================================================ */
+setInterval(() => {
+  sendDataToWorker();
+}, 5 * 60 * 1000); // 5分ごとにチェック
+
+window.addEventListener("load", () => {
+  const isLocal = location.protocol === "file:";
+
+  if (isLocal) {
+    // 方式選択を無効化
+    const select = document.getElementById("obsModeType");
+    select.disabled = true;
+
+    // Blob 方式も ?obs 方式も使えないので警告
+    alert(
+      "OBS で使用するには、ローカルファイル (file://) ではなく\n" +
+      "ローカルWebサーバー (http://localhost) で開く必要があります。\n\n" +
+      "例:\n" +
+      "・VSCode の Live Server\n" +
+      "・python -m http.server\n" +
+      "・Web Server for Chrome\n"
+    );
+  }
+});
+
+
+
+
+window.addEventListener("load", async () => {
+  const isOBS = location.search.includes("obs");
+  const frame = document.getElementById("overlayFrame");
+
+  if (!isOBS) return;
+
+  /* ▼ 1. IndexedDB からデータを読み込む */
+  const records = await getAllRecords();
+  allRecords = records;
+
+  if (!records.length) {
+    console.warn("OBS モード：DB にデータがありません。");
+  }
+
+  /* ▼ 2. iframe の祖先要素だけ残す */
+  const keep = new Set();
+  let node = frame;
+  while (node) {
+    keep.add(node);
+    node = node.parentElement;
+  }
+
+  document.body.querySelectorAll("*").forEach(el => {
+    if (!keep.has(el)) {
+      el.style.display = "none";
+    }
+  });
+
+  /* ▼ 3. iframe を全画面に */
+  frame.style.display = "block";
+  frame.style.position = "fixed";
+  frame.style.top = "0";
+  frame.style.left = "0";
+  frame.style.width = "100%";
+  frame.style.height = "100%";
+  frame.style.zIndex = "9999";
+
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+
+  /* ▼ 4. DB のデータを使って overlay を生成 */
+  generateOBSOverlay();
+});
+
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbz518c03LHEaZzrIi1zzes7vwbLcuVoiH1aWgnzHEEg5XBqILR_SUDoyJx9qRmQH04X/exec";
+
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    method: "GET",
+    mode: "cors",
+    redirect: "follow",
+    headers: {
+      "Accept": "application/json"
+    }
+  });
+
+  const text = await res.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("JSON parse error:", e, text);
+    return null;
+  }
+}
+
+
+
+async function apiSearchPlayer(name) {
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
+
+  const proxyUrl =
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+
+  return await fetchJson(proxyUrl);
+}
+
+
+async function apiPlayerDetails(playerId) {
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
+
+  const proxyUrl =
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+
+  return await fetchJson(proxyUrl);
+}
+
+async function apiPlayerHistory(playerId) {
+  const apiUrl =
+    `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
+
+  const proxyUrl =
+    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+
+  return await fetchJson(proxyUrl);
+}
+
+
+
+async function fetchRateHistory(playerId, season, playerCount = 3000) {
+  const url = season === 1
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const html = await res.text();
+
+  let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  if (mmrMatches.length === 0 && season === 1) {
+    mmrMatches = [...html.matchAll(/class="rating"[^>]*>\s*([\d,]+)\s*</g)];
+  }
+
+  const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
+}
+
+async function fetchRateHistory(playerId, season, playerCount = 3000) {
+  const url = season === 1
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const html = await res.text();
+
+  let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  if (mmrMatches.length === 0 && season === 1) {
+    mmrMatches = [...html.matchAll(/class="rating"[^>]*>\s*([\d,]+)\s*</g)];
+  }
+
+  const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
+}
+
+async function fetchAllStatsByName(name) {
+  const playerId = await fetchPlayerIdByName(name);
+  if (!playerId) throw new Error("プレイヤーが見つかりません");
+
+  let allHistory = [];
+  let peakMMR = 0;
+
+  for (const s of seasons) {
+    const hist = await fetchRateHistory(playerId, s);
+    if (hist.length === 0) continue;
+
+    allHistory = allHistory.concat(hist);
+
+    const localPeak = Math.max(...hist.map(h => h.rating));
+    if (localPeak > peakMMR) peakMMR = localPeak;
+  }
+
+  const ratings = allHistory.map(h => h.rating);
+  const avgScore = ratings.length
+    ? (ratings.reduce((a,b)=>a+b,0) / ratings.length).toFixed(2)
+    : "-";
+
+  return {
+    playerId,
+    seasons,
+    history: allHistory,
+    peakMMR,
+    avgScore,
+    matches: ratings.length
+  };
+}
+
+function drawLoungeStats(data) {
+  const { details, history, courseStats } = data;
+
+  const box = document.getElementById("loungeStats");
+
+  const rankInfo = getRankInfo(details.mmr, 2);
+
+  box.innerHTML = `
+    <h3>${details.name} - Lounge Stats</h3>
+    <p>MMR: ${details.mmr}</p>
+    <p>Peak MMR: ${details.peak_mmr}</p>
+    <p>Wins: ${details.wins}</p>
+    <p>Losses: ${details.losses}</p>
+    <p>Rank: <span style="color:${rankInfo.color}; font-weight:bold;">${rankInfo.rank}</span></p>
+  `;
+
+  if (courseStats) {
+    let html = "<h3>コース別戦績（ADP IndexedDB）</h3>";
+    html += "<table border='1' style='border-collapse:collapse;'>";
+    html += "<tr><th>コース</th><th>回数</th><th>平均順位</th><th>平均得点</th></tr>";
+
+    courseStats.forEach(c => {
+      html += `
+        <tr>
+          <td>${c.course}</td>
+          <td>${c.count}</td>
+          <td>${c.avgRank}</td>
+          <td>${c.avgScore}</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+
+    box.innerHTML += html;
+  }
+
+  drawLoungeGraph(history, rankInfo.color);
+}
+
+
+function drawLoungeGraph(history, color) {
+  const canvas = document.getElementById("loungeCanvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if (!history.length) return;
+
+  const ratings = history.map(h => h.mmr);
+  const minR = Math.min(...ratings);
+  const maxR = Math.max(...ratings);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  history.forEach((h, i) => {
+    const x = (i / (history.length - 1)) * (canvas.width - 40) + 20;
+    const y = canvas.height - 40 - ((h.mmr - minR) / (maxR - minR)) * (canvas.height - 80);
+    if (i === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.fillText("Rating History", 20, 20);
+}
+
+  
+async function sendCanvasToDiscord() {
+  const webhookUrl = document.getElementById("discordWebhookInput").value.trim();
+  if (!webhookUrl) { alert("Webhook URL を入力してください"); return; }
+
+  const canvas = document.getElementById("loungeCanvas");
+
+  canvas.toBlob(async (blob) => {
+    const form = new FormData();
+    form.append("payload_json", JSON.stringify({
+      content: "Lounge Stats 画像です",
+      username: "MKWorld Bot"
+    }));
+    form.append("file", blob, "stats.png");
+
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      body: form
+    });
+
+    alert(res.ok ? "Discordに送信しました" : "送信失敗");
+  }, "image/png");
+}
+
+
+document.getElementById("sendDiscordBtn").onclick = sendCanvasToDiscord;
+
+/******************************************************
+ * ランク情報
+ ******************************************************/
+function getRankInfoV1(mmr) {
+  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfoV2(mmr) {
+  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfo(mmr, season) {
+  return season >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+}
+
+async function loadADPIndexedDBRecords() {
+  const db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open("mogiDB", 1);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  const tx = db.transaction("records", "readonly");  // ★ここが重要
+  const store = tx.objectStore("records");
+
+  const all = await new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  return all;
+}
+
+
+async function loadADPCourseDataFromIndexedDB() {
+  const records = await loadADPIndexedDBRecords();
+
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = { count: 0, totalRank: 0, totalScore: 0 };
+    }
+    map[r.course].count++;
+    map[r.course].totalRank += r.rank;
+    map[r.course].totalScore += r.score;
+  });
+
+  return map;
+}
+
+async function mergeLoungeWithADP(details, history) {
+  const courseMap = await loadADPCourseDataFromIndexedDB();
+
+  const courseStats = Object.entries(courseMap).map(([course, data]) => {
+    return {
+      course,
+      count: data.count,
+      avgRank: (data.totalRank / data.count).toFixed(2),
+      avgScore: (data.totalScore / data.count).toFixed(2)
+    };
+  });
+
+  return { details, history, courseStats };
+}
+
+
+document.getElementById("loadLoungeBtn").onclick = async () => {
+  const name = document.getElementById("playerNameInput").value.trim();
+  if (!name) return alert("名前を入力してください");
+
+  const player = await apiSearchPlayer(name);
+  const details = await apiPlayerDetails(player.player_id);
+  const history = await apiPlayerHistory(player.player_id);
+
+  const mergeCourse = document.getElementById("mergeCourseDataSelect").value === "on";
+
+  let finalData;
+
+  if (mergeCourse) {
+    finalData = await mergeLoungeWithADP(details, history);
+  } else {
+    finalData = { details, history, courseStats: null };
+  }
+
+  window._loungeName = name;
+  window._loungeData = finalData;
+
+  drawLoungeStats(finalData);
+};
+
+function filterByFormat(history, format) {
+  if (format === "ALL") return history;
+  return history.filter(h => h.player_count == Number(format));
+}
+
+function filterBySeason(history, season) {
+  if (season === "ALL") return history;
+  return history.filter(h => h.season == season);
+}
+
+function filterLastN(history, lastN) {
+  if (!lastN) return history;
+  return history.slice(-lastN * 12);
+}
+
+function filterFirstN(history, firstN) {
+  if (!firstN) return history;
+  return history.slice(0, firstN * 12);
+}
+
+function filterRace(history, tlast, tfirst) {
+  let filtered = [...history];
+  if (tlast) filtered = filtered.slice(-tlast);
+  if (tfirst) filtered = filtered.slice(0, tfirst);
+  return filtered;
+}
+
+function filterTier(history, tier) {
+  if (tier === "ALL") return history;
+  return history.filter(h => h.tier === tier);
+}
+
+function applyAllFilters(history) {
+  const season = document.getElementById("seasonSelect").value;
+  const format = document.getElementById("formatSelect").value;
+  const lastN = Number(document.getElementById("lastNInput").value);
+  const firstN = Number(document.getElementById("firstNInput").value);
+  const tlast = Number(document.getElementById("tlastInput").value);
+  const tfirst = Number(document.getElementById("tfirstInput").value);
+  const tier = document.getElementById("tierSelect").value;
+
+  let filtered = [...history];
+
+  filtered = filterBySeason(filtered, season);
+  filtered = filterByFormat(filtered, format);
+  filtered = filterLastN(filtered, lastN);
+  filtered = filterFirstN(filtered, firstN);
+  filtered = filterRace(filtered, tlast, tfirst);
+  filtered = filterTier(filtered, tier);
+
+  return filtered;
+}
+  
+/* ============================================================
+   Lounge Stats Viewer — 関数群 完全版
+   （state 初期化 → 背景 → プレイヤー情報 → MMR グラフ → 画像生成）
+   ============================================================ */
+
+// ▼ state（必ず最初に定義する）
+const state = {
+  backgroundImage: null,
+  bgBrightness: 1,
+  bgContrast: 1,
+  bgOpacity: 1,
+  bgBlur: 0
+};
+
+/* ============================================================
+   ▼ 汎用パネル描画
+   ============================================================ */
+function drawPanel(ctx, x, y, w, h) {
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(x, y, w, h);
+
+  ctx.strokeStyle = "rgba(0,150,255,0.8)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+}
+
+/* ============================================================
+   ▼ プレイヤー情報パネル
+   ============================================================ */
+async function drawPlayerInfo(ctx, details, stats) {
+  const x = 40;
+  const y = 40;
+  const w = 420;
+  const h = 420;
+
+  drawPanel(ctx, x, y, w, h);
+
+  // ▼ プレイヤー名
+  ctx.fillStyle = "#fff";
+  ctx.font = "32px sans-serif";
+  ctx.fillText(details.name, x + 20, y + 50);
+
+  // ▼ 国旗
+  await drawFlag(ctx, details.country, x + 20, y + 70);
+
+  ctx.font = "20px sans-serif";
+  ctx.fillText(`MMR: ${details.mmr}`, x + 20, y + 130);
+  ctx.fillText(`Peak MMR: ${details.peak_mmr}`, x + 20, y + 160);
+  ctx.fillText(`Avg: ${stats.avgScore}`, x + 20, y + 190);
+  ctx.fillText(`W-L: ${details.wins} - ${details.losses}`, x + 20, y + 220);
+  ctx.fillText(`Events: ${stats.matches}`, x + 20, y + 250);
+  ctx.fillText(`Rank: ${stats.rank}`, x + 20, y + 280);
+}
+
+/* ============================================================
+   ▼ MMR グラフ
+   ============================================================ */
+function drawMMRGraph(ctx, history) {
+  const x = 500;
+  const y = 40;
+  const w = 700;
+  const h = 420;
+
+  drawPanel(ctx, x, y, w, h);
+
+  if (!history.length) return;
+
+  const ratings = history.map(h => h.mmr);
+  const minR = Math.min(...ratings);
+  const maxR = Math.max(...ratings);
+
+  ctx.strokeStyle = "#00aaff";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  history.forEach((h, i) => {
+    const px = x + 40 + (i / (history.length - 1)) * (w - 80);
+    const py = y + h - 40 - ((h.mmr - minR) / (maxR - minR)) * (h - 80);
+
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("MMR Progression", x + 20, y + 30);
+}
+
+/* ============================================================
+   ▼ 国旗描画
+   ============================================================ */
+async function drawFlag(ctx, country, x, y) {
+  if (!country) return;
+
+  const flag = new Image();
+  flag.src = `flags/${country}.png`;
+
+  await flag.decode();
+
+  ctx.drawImage(flag, x, y, 60, 40);
+}
+
+/* ============================================================
+   ▼ 背景設定（明るさ・コントラスト・ぼかし・透過）
+   ============================================================ */
+function setBgImage(file) {
+  const reader = new FileReader();
+  reader.onload = () => state.backgroundImage = reader.result;
+  reader.readAsDataURL(file);
+}
+
+function setBgBrightness(v) { state.bgBrightness = Number(v); }
+function setBgContrast(v) { state.bgContrast = Number(v); }
+function setBgOpacity(v) { state.bgOpacity = Number(v); }
+function setBgBlur(v) { state.bgBlur = Number(v); }
+
+/* ============================================================
+   ▼ 背景描画
+   ============================================================ */
+async function drawBackground(ctx, w, h) {
+  if (!state.backgroundImage) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+
+  const bg = new Image();
+  bg.src = state.backgroundImage;
+  await bg.decode();
+
+  ctx.filter = `
+    brightness(${state.bgBrightness})
+    contrast(${state.bgContrast})
+    blur(${state.bgBlur}px)
+  `;
+
+  ctx.globalAlpha = state.bgOpacity;
+
+  ctx.drawImage(bg, 0, 0, w, h);
+
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
+}
+
+/* ============================================================
+   ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
+   ============================================================ */
+async function generateLoungeImage(details, history, stats) {
+  const canvas = document.getElementById("loungeCanvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+
+  await drawBackground(ctx, w, h);
+  await drawPlayerInfo(ctx, details, stats);
+  drawMMRGraph(ctx, history);
+
+  return canvas;
+}
+  
+async function getAdpCourseStatsOnly() {
+  const records = await loadADPIndexedDBRecords(); // 既存関数
+
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = { count: 0, totalRank: 0, totalScore: 0 };
+    }
+    map[r.course].count++;
+    map[r.course].totalRank += r.rank;
+    map[r.course].totalScore += r.score;
+  });
+
+  return Object.entries(map).map(([course, data]) => ({
+    course,
+    count: data.count,
+    avgRank: Number((data.totalRank / data.count).toFixed(2)),
+    avgScore: Number((data.totalScore / data.count).toFixed(2))
+  }));
+}
+
+async function initAdpCourseSelect() {
+  const stats = await getAdpCourseStatsOnly();
+  const sel = document.getElementById("adpCourseSelect");
+
+  stats.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.course;
+    opt.textContent = s.course;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
+  const sel = document.getElementById("adpCourseSelect");
+  const selectedCourses = [...sel.selectedOptions].map(o => o.value);
+
+  if (selectedCourses.length === 0) {
+    return alert("コースを選択してください");
+  }
+
+  const records = await loadADPIndexedDBRecords();
+
+  const filtered = applyAndOrFilter(records, {
+    season: currentSeasonFilter,
+    tier: currentTierFilter,
+    recent: currentRecentFilter,
+    courses: selectedCourses,
+    mode: currentFilterMode
+  }, currentFilterMode);
+
+  const stats = aggregateCourseStats(filtered);
+
+  // ▼ テキストとグラフ
+  drawAdpCourseStatsTable(stats);
+  drawAdpCourseStatsChart(stats);
+
+  // ▼ 画像生成（ここが重要）
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  window.latestAdpCourseStats = stats;
+
+  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
+};
+
+  
+function drawAdpCourseStatsTable(list) {
+  const box = document.getElementById("adpCourseStatsResult");
+  box.innerHTML = "";
+
+  let html = `
+    <table border="1" style="border-collapse:collapse;">
+      <tr>
+        <th>コース</th>
+        <th>走行数</th>
+        <th>平均順位</th>
+        <th>中央値</th>
+        <th>勝率(3位以内)</th>
+        <th>平均得点</th>
+      </tr>
+  `;
+
+  list.forEach(s => {
+    html += `
+      <tr>
+        <td>${s.course}</td>
+        <td>${s.count}</td>
+        <td>${s.avgRank}</td>
+        <td>${s.medianRank}</td>
+        <td>${s.winRate}%</td>
+        <td>${s.avgScore}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  box.innerHTML = html;
+}
+
+function drawAdpCourseStatsChart(list) {
+  const ctx = document.getElementById("adpCourseStatsChart").getContext("2d");
+
+  const labels = list.map(s => s.course);
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "平均順位",
+          data: list.map(s => s.avgRank),
+          backgroundColor: "rgba(255, 99, 132, 0.6)"
+        },
+        {
+          label: "平均得点",
+          data: list.map(s => s.avgScore),
+          backgroundColor: "rgba(54, 162, 235, 0.6)"
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function filterAdpRecords(records, filters) {
+  return records.filter(r => {
+
+    // season
+    if (filters.season && r.season !== filters.season) return false;
+
+    // tier
+    if (filters.tier && r.tier !== filters.tier) return false;
+
+    // course（複数）
+    if (filters.courses && filters.courses.length > 0) {
+      if (!filters.courses.includes(r.course)) return false;
+    }
+
+    return true;
+  });
+}
+
+function applyRecentFilter(records, N) {
+  if (!N || N <= 0) return records;
+  return records.slice(-N);
+}
+
+
+function aggregateCourseStats(records) {
+  const map = {};
+
+  records.forEach(r => {
+    if (!map[r.course]) {
+      map[r.course] = {
+        count: 0,
+        ranks: [],
+        scores: []
+      };
+    }
+    map[r.course].count++;
+    map[r.course].ranks.push(r.rank);
+    map[r.course].scores.push(r.score);
+  });
+
+  return Object.entries(map).map(([course, data]) => {
+    const avgRank = data.ranks.reduce((a,b)=>a+b,0) / data.ranks.length;
+    const avgScore = data.scores.reduce((a,b)=>a+b,0) / data.scores.length;
+
+    const sortedRanks = [...data.ranks].sort((a,b)=>a-b);
+    const medianRank = sortedRanks[Math.floor(sortedRanks.length/2)];
+
+    const winRate = data.ranks.filter(r => r <= 3).length / data.ranks.length;
+
+    return {
+      course,
+      count: data.count,
+      avgRank: Number(avgRank.toFixed(2)),
+      avgScore: Number(avgScore.toFixed(2)),
+      medianRank,
+      winRate: Number((winRate * 100).toFixed(1))
+    };
+  });
+}
+
+function applyAndOrFilter(records, filters, mode) {
+  if (mode === "AND") {
+    return records.filter(r => {
+      if (filters.season && r.season !== filters.season) return false;
+      if (filters.tier && r.tier !== filters.tier) return false;
+      if (filters.courses && filters.courses.length > 0 && !filters.courses.includes(r.course)) return false;
+      return true;
+    });
+  }
+
+  if (mode === "OR") {
+    return records.filter(r => {
+      return (
+        (filters.season && r.season === filters.season) ||
+        (filters.tier && r.tier === filters.tier) ||
+        (filters.courses && filters.courses.includes(r.course))
+      );
+    });
+  }
+
+  return records;
+}
+
+
+async function getFilteredAdpCourseStats(filters) {
+  let records = await loadADPIndexedDBRecords();
+
+  // AND / OR フィルター
+  records = applyAndOrFilter(records, filters, filters.mode);
+
+  // 直近 N 件
+  records = applyRecentFilter(records, filters.recent);
+
+  // 集計
+  const stats = aggregateCourseStats(records);
+
+  // 最大 5 コースに制限
+  return stats.slice(0, 5);
+}
+  
+function initAdpCourseSelect() {
+  const sel = document.getElementById("adpCourseSelect");
+
+  courseList.forEach(course => {
+    const opt = document.createElement("option");
+    opt.value = course;
+    opt.textContent = course;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById("adpCourseSelect").addEventListener("change", () => {
+  const sel = document.getElementById("adpCourseSelect");
+  const selected = [...sel.selectedOptions];
+
+  if (selected.length > 5) {
+    selected[selected.length - 1].selected = false;
+    alert("最大5コースまで選択できます");
+  }
+});
+  
+function getSelectedWebhookUrl() {
+  return currentWebhookUrl; // あなたの既存変数に合わせて変更
+}
+
+function buildAdpCourseStatsMessage(stats) {
+  let lines = [];
+  lines.push("**ADP コース比較結果（最大5コース）**");
+
+  stats.forEach(s => {
+    lines.push(
+      `\n【${s.course}】\n` +
+      `走行数: ${s.count}\n` +
+      `平均順位: ${s.avgRank}\n` +
+      `中央値: ${s.medianRank}\n` +
+      `勝率(3位以内): ${s.winRate}%\n` +
+      `平均得点: ${s.avgScore}\n`
+    );
+  });
+
+  return lines.join("\n");
+}
+
+async function sendAdpCourseStatsToDiscord(stats) {
+  const webhook = getSelectedWebhookUrl();
+  if (!webhook) {
+    alert("Webhook が選択されていません");
+    return;
+  }
+
+  const message = buildAdpCourseStatsMessage(stats);
+
+  const payload = {
+    content: message
+  };
+
+  await fetch(webhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  alert("Discord に送信しました！");
+}
+
+document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
+  const sel = document.getElementById("adpCourseSelect");
+  const selectedCourses = [...sel.selectedOptions].map(o => o.value);
+
+  if (selectedCourses.length === 0) {
+    return alert("コースを選択してください");
+  }
+
+  const records = await loadADPIndexedDBRecords();
+
+  const filtered = applyAndOrFilter(records, {
+    season: currentSeasonFilter,
+    tier: currentTierFilter,
+    recent: currentRecentFilter,
+    courses: selectedCourses,
+    mode: currentFilterMode
+  }, currentFilterMode);
+
+  const stats = aggregateCourseStats(filtered);
+
+  drawAdpCourseStatsTable(stats);
+  drawAdpCourseStatsChart(stats);
+
+  // ▼ 送信ボタンに結果を渡す
+  window.latestAdpCourseStats = stats;
+};
+
+document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
+  if (!window.latestAdpCourseStats) {
+    alert("まず『表示』を押して結果を生成してください");
+    return;
+  }
+
+  sendAdpCourseStatsToDiscord(window.latestAdpCourseStats);
+};
+
+
+async function drawAdpCourseImage(ctx, w, h) {
+
+  // ▼ 背景画像が選択されているか？
+  if (state.backgroundImage) {
+    const img = new Image();
+    img.src = state.backgroundImage;
+
+    try {
+      await img.decode();  // 画像読み込み
+
+      // ▼ 背景フィルタ適用
+      ctx.filter = `
+        brightness(${state.bgBrightness})
+        contrast(${state.bgContrast})
+        blur(${state.bgBlur}px)
+      `;
+      ctx.globalAlpha = state.bgOpacity;
+
+      // ▼ 背景画像を描画
+      ctx.drawImage(img, 0, 0, w, h);
+
+    } catch (e) {
+      console.warn("背景画像の読み込みに失敗 → 背景色にフォールバックします");
+      drawFallbackColor(ctx, w, h);
+    }
+
+  } else {
+    // ▼ 背景画像なし → 背景色だけ
+    drawFallbackColor(ctx, w, h);
+  }
+
+  // ▼ フィルタ解除
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
+
+  // ▼ 既存のパネル・テキスト描画
+  await drawAdpCoursePanels(ctx);
+  await drawAdpCourseTexts(ctx);
+}
+
+function drawFallbackColor(ctx, w, h) {
+  ctx.filter = `
+    brightness(${state.bgBrightness})
+    contrast(${state.bgContrast})
+    blur(${state.bgBlur}px)
+  `;
+  ctx.globalAlpha = state.bgOpacity;
+
+  ctx.fillStyle = state.bgColor || "#000";
+  ctx.fillRect(0, 0, w, h);
+}
+
+document.getElementById("bgImageInput").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    state.backgroundImage = null;
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.backgroundImage = reader.result;  // Base64 URL
+  };
+  reader.readAsDataURL(file);
+};
+
+
+async function sendAdpCourseImageToDiscord() {
+  const canvas = document.getElementById("adpCourseImage");
+  const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+
+  const webhook = getSelectedWebhookUrl();
+  if (!webhook) {
+    alert("Webhook が選択されていません");
+    return;
+  }
+
+  const boundary = "----mkcBoundary" + new Date().getTime();
+
+  const payload =
+    Utilities.newBlob(
+      base64,
+      "image/png",
+      "adp_course_stats.png"
+    );
+
+  const data = Utilities.newBlob(
+    "--" + boundary + "\r\n" +
+    "Content-Disposition: form-data; name=\"file\"; filename=\"adp_course_stats.png\"\r\n" +
+    "Content-Type: image/png\r\n\r\n"
+  ).getBytes()
+    .concat(payload.getBytes())
+    .concat(Utilities.newBlob("\r\n--" + boundary + "--").getBytes());
+
+  await fetch(webhook, {
+    method: "POST",
+    body: data,
+    headers: {
+      "Content-Type": "multipart/form-data; boundary=" + boundary
+    }
+  });
+
+  alert("Discord に画像を送信しました！");
+}
+
+
+document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
+  if (!window.latestAdpCourseStats) {
+    alert("まず『表示』を押して結果を生成してください");
+    return;
+  }
+
+  // ▼ フィルタ作成
+  const filters = {
+    season: currentSeasonFilter,
+    tier: currentTierFilter,
+    courses: selectedCourses,
+    recent: currentRecentFilter,
+    mode: currentAndOrMode
+  };
+
+  // ▼ stats を取得（await 必須）
+  const stats = await getFilteredAdpCourseStats(filters);
+  window.latestAdpCourseStats = stats;
+
+  // ▼ Canvas と ctx を取得（ここが重要）
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  // ▼ 背景画像は state.backgroundImage に入っているので drawAdpCourseImage 内で使う
+  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
+
+  // ▼ Discord送信など既存処理
+  const dataUrl = canvas.toDataURL("image/png");
+  sendAdpCourseImageToDiscord(dataUrl);
+};
+
+const filters = {
+  season: currentSeasonFilter,
+  tier: currentTierFilter,
+  courses: selectedCourses,
+  recent: currentRecentFilter,
+  mode: currentAndOrMode
+};
+
+
+
+</script>
+
+</body>
+</html>
