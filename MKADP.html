@@ -2271,7 +2271,7 @@ async function convertOldBackupToV3(text, password) {
       records = JSON.parse(json);
     }
 
-    // ▼ 旧形式②：JSON だが p/k/d ではない → AES-GCM Base64 の可能性
+    // ▼ JSON だが p/k/d ではない → AES-GCM Base64 の可能性
     else {
       const json = await decrypt(text);
       records = JSON.parse(json);
@@ -2292,7 +2292,7 @@ async function convertOldBackupToV3(text, password) {
       records = JSON.parse(json);
     }
 
-    // ▼ JSON でも | でもない → AES-GCM Base64 の txt バックアップか TSV/CSV
+    // ▼ JSON でも | でもない → txt バックアップ or TSV/CSV
     else {
       try {
         // ▼ txt バックアップ（AES-GCM Base64 のみ）
@@ -2320,8 +2320,6 @@ async function convertOldBackupToV3(text, password) {
 
   return `MKADP_BACKUP_v3|${hash}|${base64}`;
 }
-
-
 
 
 document.getElementById("convertOldBackupBtn").onclick = async () => {
