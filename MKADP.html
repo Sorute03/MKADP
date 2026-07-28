@@ -5141,12 +5141,35 @@ async function sendAdpCourseImageToDiscord() {
 }
 
 
-document.getElementById("sendAdpCourseImageBtn").onclick = () => {
+document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
   if (!window.latestAdpCourseStats) {
     alert("まず『表示』を押して結果を生成してください");
     return;
   }
-  sendAdpCourseImageToDiscord();
+
+  // ▼ フィルタ作成
+  const filters = {
+    season: currentSeasonFilter,
+    tier: currentTierFilter,
+    courses: selectedCourses,
+    recent: currentRecentFilter,
+    mode: currentAndOrMode
+  };
+
+  // ▼ stats を取得（await 必須）
+  const stats = await getFilteredAdpCourseStats(filters);
+  window.latestAdpCourseStats = stats;
+
+  // ▼ Canvas と ctx を取得（ここが重要）
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  // ▼ 背景画像は state.backgroundImage に入っているので drawAdpCourseImage 内で使う
+  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
+
+  // ▼ Discord送信など既存処理
+  const dataUrl = canvas.toDataURL("image/png");
+  sendAdpCourseImageToDiscord(dataUrl);
 };
 
 const filters = {
