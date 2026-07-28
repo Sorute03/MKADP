@@ -8,7 +8,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    
         /* ===========================
        全体
     =========================== */
@@ -195,12 +194,11 @@
 <body>
 <script>
 
-// 全レコード（localStorage + セッション追加分）
-let allRecords = [];
 // Tier 一覧（ALL は分析用のみ）
 const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
 
-
+// 全レコード（localStorage + セッション追加分）
+let allRecords = [];
 const courseList = [
   "マリオブラザーズサーキット",
   "トロフィーシティ",
@@ -471,54 +469,31 @@ const courseList = [
 
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
-  
-<div style="margin-top:20px; padding:10px; border:1px solid #ccc;">
-  <h3>完全バックアップ（localStorage + IndexedDB）</h3>
-
-  <button id="exportFullBackupBtn">完全バックアップをダウンロード</button>
-  <br><br>
-
-  <input type="file" id="importFullBackupFile">
-  <button id="importFullBackupBtn">完全バックアップを復元</button>
-</div>
-
 <button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
 
-<!-- ▼ バックアップ v3（パスワード付き） -->
+  <!-- ▼ パスワード付きバックアップ UI ▼ -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>バックアップ（v3 / パスワード付き）</h3>
+  <h3>バックアップ（パスワード付き）</h3>
 
   <!-- セーブ（出力） -->
   <div style="margin-bottom:15px;">
-    <label>バックアップパスワード：</label>
+    <label>デバイス間データ移行バックアップファイル用パスワード：</label>
     <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <button id="downloadBackupBtn">バックアップを保存</button>
+    <button id="downloadBackupWithPasswordBtn">バックアップを保存</button>
   </div>
 
   <hr>
 
   <!-- 復元（インポート） -->
   <div>
-    <label>復元パスワード：</label>
+    <label>デバイス間データ移行復元パスワード：</label>
     <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
     <input id="restoreFileInput" type="file" accept=".txt">
-    <button id="restoreBackupBtn">復元する</button>
+    <button id="restoreBackupWithPasswordBtn">復元する</button>
   </div>
 </div>
-
-<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>旧バックアップ → v3 変換</h3>
-  <div style="margin-bottom:10px;">
-    <label>旧バックアップ用パスワード：</label>
-    <input id="legacyBackupPassword" type="password" placeholder="旧バックアップのパスワード" style="width:200px;">
-  </div>
-  <div style="margin-bottom:10px;">
-    <input id="legacyBackupFileInput" type="file" accept=".txt,.json">
-  </div>
-  <button id="convertOldBackupBtn">旧バックアップを v3 に変換して保存</button>
-</div>
-
-<!-- ▲ バックアップ v3 ▲ -->
+<!-- ▲ パスワード付きバックアップ UI ▲ -->
+  
 
 
 <h3>TSV読み込み（スプシコピー対応）</h3>
@@ -529,11 +504,13 @@ const courseList = [
 <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 <button id="importFileBtn">読み込んで保存</button>
 
+</script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
 
-<!-- ▼ 旧データ取り込み -->
+<!-- ▼ 旧データ取り込みセクション -->
 <div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
 
+  <!-- 方法2：旧JSONを読み込む -->
   <div style="margin-bottom:15px;">
     <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
     <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
@@ -542,19 +519,30 @@ const courseList = [
 
   <hr>
 
+  <!-- 方法3：旧HTMLを読み込む -->
   <div style="margin-top:15px;">
     <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
     <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
     <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
   </div>
+
+  <p style="margin-top:15px; font-size:13px; color:#666;">
+    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
+    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
+  </p>
 </div>
+  
+<button id="importBackupBtn">バックアップ復元</button>
+<button id="importSaveFileBtn">ファイルから復元</button>
 
 
 <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3>重複データの整理</h3>
   <button id="removeDupBtn">重複データを自動削除する</button>
+  <p style="font-size:13px; color:#666; margin-top:10px;">
+    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+  </p>
 </div>
-
 
 <!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
@@ -563,7 +551,6 @@ const courseList = [
   <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab">コース別stats</button>
 </div>
-
   
 <!-- ▼ レース一覧タブ -->
 <div id="historyTab" class="tabContent" style="display:none;">
@@ -585,6 +572,7 @@ const courseList = [
   <div id="raceHistoryList"></div>
 </div>
 
+  
 <!-- ▼ ラウンジ統計タブ -->
 <div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
 
@@ -637,7 +625,8 @@ const courseList = [
   
 
 </div>
-  
+
+
 <!-- ▼ courseStatsTab（タブとして使う） -->
 <div id="courseStatsTab" style="padding: 16px;">
 
@@ -709,6 +698,18 @@ const courseList = [
 </div>
 
 
+  
+<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
+<div id="analysisTab" class="tabContent" style="display:block;">
+
+  <div class="section-block">
+    <label>直近 N レースで比較：</label>
+    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
+    <button onclick="refreshModeView(allRecords)">再描画</button>
+  </div>
+
+  <!-- ここにグラフや分析UIが続く -->
+</div>
   
 <!-- ▼ レース登録ボタン（右下固定） -->
 <button id="openModalBtn" style="
@@ -1378,6 +1379,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </script>
 
 
+
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
   <h3>基本統計 / 勝率・平均順位・平均スコア</h3>
@@ -1801,23 +1803,16 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 
-
 <script>
 
-/* ===========================
-   IndexedDB データ操作関数
-=========================== */
-
-async function openDB() {
+function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("mogiDB", 1);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
-
-      // ★ records ストアを必ず作る
       if (!db.objectStoreNames.contains("records")) {
-        db.createObjectStore("records", { keyPath: "timestamp" });
+        db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
       }
     };
 
@@ -1829,456 +1824,177 @@ async function openDB() {
 
 async function addRecord(record) {
   const db = await openDB();
-  const tx = db.transaction(["records"], "readwrite");
+  const tx = db.transaction("records", "readwrite");
   const store = tx.objectStore("records");
 
+  // timestamp が無ければ付ける
   if (!record.timestamp) {
     record.timestamp = Date.now();
   }
 
-  store.add(record);
-  await new Promise(res => tx.oncomplete = res);
+  const id = await new Promise(resolve => {
+    const req = store.add(record);
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  await tx.done;
+
+  return { ...record, id };
+}
+
+
+async function clearRecords() {
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").clear();
+  await tx.done;
 }
 
 
 async function updateRecord(record) {
   const db = await openDB();
-  const tx = db.transaction(["records"], "readwrite");
+  const tx = db.transaction("records", "readwrite");
   tx.objectStore("records").put(record);
-  await new Promise(res => tx.oncomplete = res);
+  await tx.done;
 }
 
 
-async function deleteRaceRecord(timestamp) {
+async function deleteRecord(id) {
   const db = await openDB();
-  const tx = db.transaction(["records"], "readwrite");
-  tx.objectStore("records").delete(timestamp);
-  await new Promise(res => tx.oncomplete = res);
+  const tx = db.transaction("records", "readwrite");
+  tx.objectStore("records").delete(id);
+  await tx.done;
 }
 
-
-async function deleteRecordFromDB(timestamp) {
-  await deleteRecord(timestamp);
-}
-
-async function getAllRacesFromDB() {
+async function getAllRecords() {
   const db = await openDB();
+
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(["records"], "readonly");
+    const tx = db.transaction("records", "readonly");
     const store = tx.objectStore("records");
     const req = store.getAll();
-    
+
     req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => resolve([]);
   });
 }
 
 
-async function clearAllRacesFromDB() {
+function buildRecordKey(r) {
+  return [
+    r.course,
+    r.rank,
+    r.score,
+    r.season,
+    r.tier,
+    r.mode,
+    r.timestamp ?? "noTS"
+  ].join("|");
+}
+
+async function removeDuplicateRecords() {
+  const records = await getAllRecords();
+
+  const seen = new Set();
+  const unique = [];
+
+  for (const r of records) {
+    const key = buildRecordKey(r);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  }
+
+  // DB を初期化して unique のみ保存
+  await clearRecords();
+  for (const r of unique) {
+    await addRecord(r);
+  }
+
+  allRecords = unique;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert(`重複データを削除しました！\n${records.length} → ${unique.length} 件`);
+}
+
+document.getElementById("removeDupBtn").onclick = async () => {
+  await removeDuplicateRecords();
+};
+
+async function fixMissingTimestamps() {
+  const records = await getAllRecords();
   const db = await openDB();
-  const tx = db.transaction(["records"], "readwrite");
-  tx.objectStore("records").clear();
-  await new Promise(res => tx.oncomplete = res);
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
+
+  for (const r of records) {
+    if (!r.timestamp) {
+      r.timestamp = Date.now() + Math.random(); // 重複防止
+      store.put(r);
+    }
+  }
+
+  await tx.done;
+  console.log("timestamp 修復完了");
 }
 
 
-/* ===========================
-   重複チェック関数
-=========================== */
+/* ==========
+   共通データ
+========== */
+async function getAesKey() {
+  let keyBase64 = localStorage.getItem("aesKey");
 
-function isDuplicate(record1, record2) {
-  // ▼ 基本プロパティの比較
-  const basicMatch = (
-    record1.course === record2.course &&
-    record1.rank === record2.rank &&
-    record1.score === record2.score &&
-    record1.season === record2.season &&
-    record1.tier === record2.tier &&
-    record1.mode === record2.mode
-  );
-  
-  if (!basicMatch) return false;
-  
-  // ▼ 両方ともタイムスタンプがある場合 → タイムスタンプも比較
-  if (record1.timestamp && record2.timestamp) {
-    return record1.timestamp === record2.timestamp;
+  // 初回だけキーを生成
+  if (!keyBase64) {
+    const raw = crypto.getRandomValues(new Uint8Array(32)); // 256bit
+    keyBase64 = btoa(String.fromCharCode(...raw));
+    localStorage.setItem("aesKey", keyBase64);
   }
-  
-  // ▼ どちらかタイムスタンプがない場合 → タイムスタンプ以外で重複判定
-  if (!record1.timestamp || !record2.timestamp) {
-    return true;
-  }
-  
-  return false;
-}
 
-function mergeRecordsWithDuplicateCheck(existingRecords, newRecords) {
-  let addedCount = 0;
-  let duplicateCount = 0;
-  const mergedRecords = [...existingRecords];
-  
-  newRecords.forEach(newRec => {
-    const hasDuplicate = mergedRecords.some(existing => isDuplicate(existing, newRec));
-    
-    if (hasDuplicate) {
-      duplicateCount++;
-    } else {
-      mergedRecords.push(newRec);
-      addedCount++;
-    }
-  });
-  
-  return { mergedRecords, addedCount, duplicateCount };
-}
+  // Base64 → Uint8Array
+  const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
 
-/* ===========================
-   SHA256 ハッシュ関数
-=========================== */
-
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-/* ===========================
-   バックアップ・復元機能
-=========================== */
-
-// ▼ 1. パスワード付きバックアップ（保存）
-document.getElementById("downloadBackupBtn").onclick = async () => {
-  const password = document.getElementById("backupPassword").value.trim();
-  if (!password) return alert("パスワードを入力してください");
-
-  try {
-    const records = await getAllRecordsFromDB();
-    if (records.length === 0) return alert("保存するデータがありません");
-
-    const backup = {
-      version: "3.0",
-      timestamp: Date.now(),
-      count: records.length,
-      records
-    };
-
-    const encoded = btoa(JSON.stringify(backup));
-    const hash = await sha256(password);
-
-    const content = `MKADP_BACKUP_v3|${hash}|${encoded}`;
-
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `mkadp_backup_${new Date().toISOString().split("T")[0]}.txt`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-    alert(`バックアップ保存完了（${records.length}件）`);
-  } catch (err) {
-    alert("バックアップ保存に失敗しました: " + err.message);
-  }
-};
-
-
-document.getElementById("restoreBackupBtn").onclick = async () => {
-  const password = document.getElementById("restorePassword").value.trim();
-  const fileInput = document.getElementById("restoreFileInput");
-
-  if (!password) return alert("パスワードを入力してください");
-  if (!fileInput.files.length) return alert("ファイルを選択してください");
-
-  try {
-    const text = await fileInput.files[0].text();
-
-    if (!text.startsWith("MKADP_BACKUP_v3|")) {
-      return alert("無効なバックアップファイルです");
-    }
-
-    const parts = text.split("|");
-    const storedHash = parts[1];
-    const encoded = parts[2];
-
-    const hash = await sha256(password);
-    if (hash !== storedHash) return alert("パスワードが正しくありません");
-
-    const backup = JSON.parse(atob(encoded));
-    const incoming = backup.records;
-
-    const existing = await getAllRecordsFromDB();
-    const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, incoming);
-
-    await clearAllRecordsFromDB();
-    for (const r of mergedRecords) await addRecord(r);
-
-    allRecords = [...mergedRecords];
-
-    alert(
-      `復元完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件\n合計: ${mergedRecords.length}件`
-    );
-
-    refreshAllAnalysisViews();
-  } catch (err) {
-    alert("バックアップ復元に失敗しました: " + err.message);
-  }
-};
-
-
-// ▼ 3. 旧JSONファイル読み込み
-document.getElementById("importOldJsonBtn").addEventListener("click", async () => {
-  const fileInput = document.getElementById("oldJsonInput");
-  if (!fileInput.files.length) return alert("ファイルを選択してください");
-
-  try {
-    const text = await fileInput.files[0].text();
-    const data = JSON.parse(text);
-
-    let records = Array.isArray(data)
-      ? data
-      : (data.allRecords && Array.isArray(data.allRecords))
-        ? data.allRecords
-        : null;
-
-    if (!records || records.length === 0) {
-      return alert("読み込むデータがありません");
-    }
-
-    // timestamp が無い場合は生成
-    records = records.map((r, idx) => ({
-      ...r,
-      timestamp: r.timestamp || Date.now() - idx * 1000
-    }));
-
-    const existing = await getAllRecordsFromDB();
-    const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, records);
-
-    await clearAllRecordsFromDB();
-    for (const rec of mergedRecords) await addRecord(rec);
-
-    allRecords = [...mergedRecords];
-
-    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
-    fileInput.value = "";
-    refreshAllAnalysisViews();
-  } catch (err) {
-    alert("旧JSON読み込みに失敗しました: " + err.message);
-  }
-});
-  
-// ▼ 4. 旧HTMLファイル読み込み
-// ▼ 4. 旧HTMLファイル読み込み
-document.getElementById("importOldHtmlBtn").addEventListener("click", async () => {
-  const fileInput = document.getElementById("oldHtmlInput");
-  if (!fileInput.files.length) return alert("ファイルを選択してください");
-
-  try {
-    const text = await fileInput.files[0].text();
-
-    // ▼ allRecords の開始位置を探す
-    const idx = text.indexOf("allRecords");
-    if (idx === -1) throw new Error("allRecords が見つかりません");
-
-    // ▼ そこから先の = 以降を取得
-    const after = text.slice(idx);
-
-    // ▼ JSON.parse("...") 形式か、配列 [ ... ] 形式か判定
-    let jsonString = null;
-
-    // ① JSON.parse("...") の場合
-    const parseStart = after.indexOf('JSON.parse("');
-    if (parseStart !== -1) {
-      const start = parseStart + 'JSON.parse("'.length;
-      const end = after.indexOf('")', start);
-      jsonString = JSON.parse(`"${after.slice(start, end)}"`);
-    } else {
-      // ② 配列 [ ... ] の場合
-      const arrStart = after.indexOf("[");
-      const arrEnd = after.indexOf("]", arrStart);
-      jsonString = JSON.parse(after.slice(arrStart, arrEnd + 1));
-    }
-
-    const records = jsonString;
-
-    if (!Array.isArray(records) || records.length === 0) {
-      throw new Error("読み込むレースデータがありません");
-    }
-
-    // ▼ timestamp 補完
-    const fixed = records.map((r, idx) => ({
-      ...r,
-      timestamp: r.timestamp || Date.now() - idx * 1000
-    }));
-
-    const existing = await getAllRecordsFromDB();
-    const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, fixed);
-
-    await clearAllRecordsFromDB();
-    for (const rec of mergedRecords) await addRecord(rec);
-
-    allRecords = [...mergedRecords];
-
-    alert(`インポート完了：新規 ${addedCount} / 重複 ${duplicateCount}`);
-    refreshAllAnalysisViews();
-  } catch (err) {
-    alert("旧HTML読み込みに失敗しました: " + err.message);
-  }
-});
-
-
-// ▼ 5. TSV読み込み
-document.getElementById("importTSVBtn").addEventListener("click", async () => {
-  const tsv = document.getElementById("tsvInput").value.trim();
-  if (!tsv) return alert("TSVデータを入力してください");
-
-  try {
-    const lines = tsv.split("\n");
-    const records = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const c = lines[i].split("\t");
-      const course = c[0]?.trim();
-      const rank = parseInt(c[1]);
-
-      if (!course || !rank) continue;
-
-      records.push({
-        course,
-        rank,
-        score: c[2] ? parseInt(c[2]) : calcScore(rank),
-        mode: c[3] || "lounge",
-        tier: c[4] || "ALL",
-        season: c[5] || "ALL",
-        timestamp: Date.now()
-      });
-    }
-
-    const existing = await getAllRecordsFromDB();
-    const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, records);
-
-    await clearAllRecordsFromDB();
-    for (const rec of mergedRecords) await addRecord(rec);
-
-    allRecords = [...mergedRecords];
-
-    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
-    document.getElementById("tsvInput").value = "";
-    refreshAllAnalysisViews();
-  } catch (err) {
-    alert("TSV読み込みに失敗しました: " + err.message);
-  }
-});
-
-// ▼ 6. CSV/TSV ファイル読み込み
-document.getElementById("importFileBtn").addEventListener("click", async () => {
-  const fileInput = document.getElementById("fileInput");
-  if (!fileInput.files.length) return alert("ファイルを選択してください");
-
-  try {
-    const text = await fileInput.files[0].text();
-    const delimiter = text.includes("\t") ? "\t" : ",";
-    const lines = text.trim().split("\n");
-
-    const records = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const c = lines[i].split(delimiter).map(s => s.trim().replace(/^"|"$/g, ""));
-      const course = c[0];
-      const rank = parseInt(c[1]);
-
-      if (!course || !rank) continue;
-
-      records.push({
-        course,
-        rank,
-        score: c[2] ? parseInt(c[2]) : calcScore(rank),
-        mode: c[3] || "lounge",
-        tier: c[4] || "ALL",
-        season: c[5] || "ALL",
-        timestamp: Date.now()
-      });
-    }
-
-    const existing = await getAllRecordsFromDB();
-    const { mergedRecords, addedCount, duplicateCount } =
-      mergeRecordsWithDuplicateCheck(existing, records);
-
-    await clearAllRecordsFromDB();
-    for (const rec of mergedRecords) await addRecord(rec);
-
-    allRecords = [...mergedRecords];
-
-    alert(`インポート完了：\n新規追加: ${addedCount}件\n重複スキップ: ${duplicateCount}件`);
-    fileInput.value = "";
-    refreshAllAnalysisViews();
-  } catch (err) {
-    alert("ファイル読み込みに失敗しました: " + err.message);
-  }
-});
-
-// 旧バックアップ用：PBKDF2 + AES-GCM（あなたの旧コードを再利用）
-function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function deriveKeyFromPassword(password, saltBytes) {
-  const enc = new TextEncoder();
-  const pwKey = await crypto.subtle.importKey(
+  return crypto.subtle.importKey(
     "raw",
-    enc.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
-
-  return crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: saltBytes,
-      iterations: 100000,
-      hash: "SHA-256"
-    },
-    pwKey,
-    { name: "AES-GCM", length: 256 },
+    raw,
+    "AES-GCM",
     false,
     ["encrypt", "decrypt"]
   );
 }
 
+
+async function encrypt(text) {
+  const key = await getAesKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const encoded = new TextEncoder().encode(text);
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    encoded
+  );
+
+  const combined = new Uint8Array(iv.length + cipher.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(cipher), iv.length);
+
+  // ★ ここを修正
+  return bytesToBase64(combined);
+}
+
 async function decrypt(base64) {
-  const bytes = base64ToBytes(base64);
-  const salt = bytes.slice(0, 16);
-  const iv = bytes.slice(16, 28);
-  const cipher = bytes.slice(28);
+  const key = await getAesKey();
 
-  const key = await deriveKeyFromPassword(localStorage.getItem("aesKey"), salt);
+  // ★ ここを修正
+  const data = base64ToBytes(base64);
 
-  const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    cipher
-  );
-
-  return new TextDecoder().decode(plain);
-}
-
-
-async function decryptWithPassword(base64, password) {
-  const combined = base64ToBytes(base64);
-  const salt = combined.slice(0, 16);
-  const iv   = combined.slice(16, 28);
-  const cipher = combined.slice(28);
-
-  const key = await deriveKeyFromPassword(password, salt);
+  const iv = data.slice(0, 12);
+  const cipher = data.slice(12);
 
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
@@ -2289,125 +2005,224 @@ async function decryptWithPassword(base64, password) {
   return new TextDecoder().decode(plain);
 }
 
-async function verifyPassword(encryptedPassword, inputPassword) {
-  try {
-    const decrypted = await decryptWithPassword(encryptedPassword, inputPassword);
-    return decrypted === inputPassword;
-  } catch {
-    return false;
-  }
-}
 
-async function convertThisBackupToV3(saveText, password) {
-  // ▼ JSON パース（p/k/d）
-  const obj = JSON.parse(saveText);
 
-  // ▼ パスワード照合
-  const ok = await verifyPassword(obj.p, password);
-  if (!ok) throw new Error("パスワードが違います");
-
-  // ▼ aesKey 復元
-  const aesKeyBase64 = await decryptWithPassword(obj.k, password);
-
-  // ▼ decrypt() が使う aesKey をセット（旧方式）
-  localStorage.setItem("aesKey", aesKeyBase64);
-
-  // ▼ データ本体復号（旧 records[]）
-  const json = await decrypt(obj.d);
-  let records = JSON.parse(json);
-
-  // ▼ 新方式へ変換（12レースごと）
-  const final = [];
-  let setId = 1;
-
-  for (let i = 0; i < records.length; i += 12) {
-    const set = records.slice(i, i + 12);
-    if (set.length < 12) break;
-
-    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
-    const setTimestamp = set[0].timestamp;
-
-    set.forEach(r => {
-      // ★ 新方式フィールドを付与
-      r.totalScore12 = totalScore12;
-      r.setId = setId;
-      r.setTimestamp = setTimestamp;
-
-      final.push(r);
-    });
-
-    setId++;
-  }
-
-  // ▼ DB（records ストア）に保存
-  for (const r of final) {
-    await addRecord(r);   // ★ 新方式レコードを旧ストア名 records に保存
-  }
-
-  // ▼ v3 バックアップ生成（必要なら）
-  const body = JSON.stringify(final);
-  const hash = await digestMessage(body);
-  const base64 = btoa(body);
-
-  return `MKADP_BACKUP_v3|${hash}|${base64}`;
+/* ▼ セーブデータ生成 */
+async function exportSaveData() {
+  const records = await getAllRecords(); // ← IndexedDB から取得
+  const json = JSON.stringify(records);
+  const encrypted = await encrypt(json);
+  return encrypted;
 }
 
 
-document.getElementById("convertOldBackupBtn").onclick = async () => {
-  const file = document.getElementById("legacyBackupFileInput").files[0];
-  const password = document.getElementById("legacyBackupPassword").value.trim();
+/* ▼ セーブデータ復元 */
+async function importSaveData(code) {
+  const json = await decrypt(code);
+  const records = JSON.parse(json);
 
-  if (!file) return alert("旧バックアップファイルを選択してください");
-  if (!password) return alert("旧バックアップのパスワードを入力してください");
+  // DB を初期化（全削除）
+  const db = await openDB();
+  const tx = db.transaction("records", "readwrite");
+  const store = tx.objectStore("records");
 
-  const text = await file.text();
+  // 全削除
+  const clearReq = store.clear();
+  await new Promise(res => clearReq.onsuccess = res);
 
+  // 全件追加
+  for (const r of records) {
+    store.add(r);
+  }
+  await tx.done;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+}
+
+
+
+/* ▼ 自動ダウンロードバックアップ */
+async function downloadBackup() {
+  const encrypted = await encrypt(JSON.stringify(allRecords));
+  const blob = new Blob([encrypted], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKWorld_backup.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+
+/* ▼ localStorage + backup 二重保存 */
+async function importSaveData(code) {
+  const json = await decrypt(code);
+  allRecords = JSON.parse(json);
+
+  // ★ allRecords に統一
+  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  localStorage.setItem("backup", code);
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+}
+
+
+/* ▼ データ読み込み（壊れていたらバックアップから復元） */
+async function loadAllRecords() {
   try {
-    const v3 = await convertThisBackupToV3(text, password);
+    // ▼ ① まず IndexedDB から読み込む
+    let records = await getAllRecords();
 
-    const blob = new Blob([v3], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
+    if (records.length > 0) {
+      // ★ timestamp 補正（旧データ対策）
+      let base = Date.now();
+      records.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1; // 1ms ずつずらす
+        }
+      });
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "MKADP_BACKUP_v3.txt";
-    a.click();
+      allRecords = records;
+      return;
+    }
 
-    URL.revokeObjectURL(url);
-    alert("旧バックアップを v3 に変換しました！");
+    // ▼ ② DB が空 → 過去の localStorage データがあるか確認
+    const legacy = localStorage.getItem("allRecords");
+    if (legacy) {
+      const arr = JSON.parse(legacy);
+
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ ③ IndexedDB に移行
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      // ▼ ④ localStorage の allRecords を削除（移行完了）
+      localStorage.removeItem("allRecords");
+
+      // ▼ ⑤ メモリ側にも反映
+      allRecords = arr;
+      return;
+    }
+
+    // ▼ ⑥ localStorage に backup がある場合（暗号化データ）
+    const backup = localStorage.getItem("backup");
+    if (backup) {
+      const json = await decrypt(backup);
+      const arr = JSON.parse(json);
+
+      // ★ timestamp 補正
+      let base = Date.now();
+      arr.forEach(r => {
+        if (!r.timestamp) {
+          r.timestamp = base;
+          base += 1;
+        }
+      });
+
+      // ▼ DB に復元
+      const db = await openDB();
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+
+      for (const r of arr) {
+        store.add(r);
+      }
+      await tx.done;
+
+      allRecords = arr;
+      return;
+    }
+
+    // ▼ ⑦ 何もなければ空
+    allRecords = [];
+
   } catch (e) {
-    console.error(e);
-    alert("変換に失敗しました。パスワードが違うか、ファイルが壊れています。");
+    console.error("loadAllRecords error", e);
+    allRecords = [];
   }
-};
+}
 
-function parsePlainTextRecords(text) {
+
+
+function normalizeSeason(raw) {
+  if (!raw) return "";
+  const num = raw.replace(/[^0-9]/g, "");
+  if (!num) return "";
+  return "S" + Number(num);
+}
+
+
+
+
+document.getElementById("importTSVBtn").onclick = async () => {
+  const text = document.getElementById("tsvInput").value.trim();
+  if (!text) {
+    alert("TSVが空です");
+    return;
+  }
+
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-  if (lines.length <= 1) throw new Error("テキストに有効なデータがありません");
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
 
-  // 1行目で区切り文字を判定（タブ or カンマ）
-  const delimiter = lines[0].includes("\t") ? "\t" : ",";
   const body = lines.slice(1);
-
-  const raw = [];
   const now = Date.now();
+  const raw = [];
 
   for (const line of body) {
-    const cols = line.split(delimiter).map(c => c.trim());
+    const cols = line.split("\t").map(c => c.trim());
     if (cols.length < 3) continue;
 
     const course = cols[0];
     const rank = Number(cols[1]);
     const score = Number(cols[2]);
 
-    // ▼ season 正規化
     let season = "seasonN";
     if (cols[4]) {
       const num = cols[4].replace(/[^0-9]/g, "");
       if (num) season = "S" + num;
     }
 
-    // ▼ tier 正規化
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
@@ -2424,7 +2239,10 @@ function parsePlainTextRecords(text) {
     });
   }
 
-  if (!raw.length) throw new Error("有効なレコードがありません");
+  if (!raw.length) {
+    alert("有効なデータがありません");
+    return;
+  }
 
   // ▼ 12レースごとに totalScore12 を付与
   const final = [];
@@ -2447,120 +2265,165 @@ function parsePlainTextRecords(text) {
     setId++;
   }
 
-  return final;
-}
-
-async function exportFullBackup() {
-  // ▼ localStorage の全データ
-  const ls = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    ls[key] = localStorage.getItem(key);
+  // ▼ IndexedDB(B方式) に保存
+  await clearRecords(); // 全削除
+  for (const r of final) {
+    await addRecord(r);
   }
 
-  // ▼ IndexedDB(records) の全データ
-  const db = await openDB();
-  const tx = db.transaction(["records"], "readonly");
-  const store = tx.objectStore("records");
-  const records = await store.getAll();
+  alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 
-  // ▼ 全部まとめる
-  const backup = {
-    localStorage: ls,
-    records: records
-  };
+  // ▼ 再読み込み
+  allRecords = await getAllRecords();
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+};
 
-  return JSON.stringify(backup);
-}
 
-async function importFullBackup(jsonText) {
-  const backup = JSON.parse(jsonText);
-
-  // ▼ localStorage を復元
-  for (const [key, value] of Object.entries(backup.localStorage)) {
-    localStorage.setItem(key, value);
+  
+document.getElementById("importFileBtn").onclick = () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
   }
 
-  // ▼ IndexedDB(records) を復元
-  const db = await openDB();
+  const reader = new FileReader();
 
-  // 既存データを取得（重複チェック用）
-  const existingTx = db.transaction(["records"], "readonly");
-  const existingStore = existingTx.objectStore("records");
-  const existingRecords = await existingStore.getAll();
-  await new Promise(res => existingTx.oncomplete = res);
-
-  // 既存の timestamp をセット化（高速重複チェック）
-  const existingTimestamps = new Set(existingRecords.map(r => r.timestamp));
-
-  // ▼ 新しいデータを入れる
-  const tx = db.transaction(["records"], "readwrite");
-  const store = tx.objectStore("records");
-
-  for (const r of backup.records) {
-
-    // ★ 重複チェック（timestamp）
-    if (existingTimestamps.has(r.timestamp)) {
-      console.log("重複スキップ:", r);
-      continue;
+  reader.onload = async () => {
+    const text = reader.result.trim();
+    const lines = text.split(/\r?\n/);
+    if (lines.length <= 1) {
+      alert("データがありません");
+      return;
     }
 
-    // ★ 新規レコードとして追加
-    store.put(r);
+    const delimiter = lines[0].includes("\t") ? "\t" : ",";
+    const body = lines.slice(1);
 
-    // 重複チェック用セットに追加
-    existingTimestamps.add(r.timestamp);
+    const races = [];
+
+    for (const line of body) {
+      if (!line.trim()) continue;
+
+      const cols = line.split(delimiter);
+
+      const course = cols[0] || "";
+      const rank = Number(cols[1] || 0);
+      const score = Number(cols[2] || 0);
+      const season = normalizeSeason(cols[4] || "");
+      const tier = cols[5] || "";
+
+      if (!course || !rank) continue;
+
+      races.push({
+        course,
+        rank,
+        score,
+        season,
+        tier,
+        mode: "lounge",
+        timestamp: null
+      });
+    }
+
+    if (!races.length) {
+      alert("有効なデータがありません");
+      return;
+    }
+
+    // ▼ IndexedDB に保存
+    await clearRecords();
+    for (const r of races) {
+      await addRecord(r);
+    }
+
+    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    // ▼ バックアップ暗号化
+    queueMicrotask(async () => {
+      const encrypted = await encrypt(JSON.stringify(allRecords));
+      localStorage.setItem("backup", encrypted);
+    });
+  };
+
+  reader.readAsText(file);
+};
+
+document.getElementById("importOldJsonBtn").onclick = () => {
+  const file = document.getElementById("oldJsonInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
   }
 
-  await new Promise(res => tx.oncomplete = res);
-}
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const json = reader.result;
+    const arr = JSON.parse(json);
 
-async function downloadFullBackup() {
-  const json = await exportFullBackup();
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "MKADP_FULL_BACKUP.json";
-  a.click();
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
 
-  URL.revokeObjectURL(url);
-}
+    alert("旧JSONデータを取り込みました！");
+  };
 
-document.getElementById("importFullBackupBtn").onclick = async () => {
-  const file = document.getElementById("fullBackupFileInput").files[0];
-  if (!file) return alert("バックアップファイルを選択してください");
-
-  const text = await file.text();
-  await importFullBackup(text);
-
-  alert("復元が完了しました！");
+  reader.readAsText(file);
 };
 
-document.getElementById("exportFullBackupBtn").onclick = async () => {
-  const json = await exportFullBackup();
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "MKADP_FULL_BACKUP.json";
-  a.click();
+document.getElementById("importOldHtmlBtn").onclick = () => {
+  const file = document.getElementById("oldHtmlInput").files[0];
+  if (!file) {
+    alert("HTMLファイルを選択してください");
+    return;
+  }
 
-  URL.revokeObjectURL(url);
-  alert("完全バックアップをダウンロードしました！");
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    const html = reader.result;
+
+    // ▼ localStorage.setItem("allRecords", "....") を抽出
+    const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
+
+    if (!match) {
+      alert("HTML内に allRecords が見つかりませんでした");
+      return;
+    }
+
+    const json = match[1];
+    const arr = JSON.parse(json);
+
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    allRecords = await getAllRecords();
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("旧HTMLからデータを取り込みました！");
+  };
+
+  reader.readAsText(file);
 };
 
-document.getElementById("importFullBackupBtn").onclick = async () => {
-  const file = document.getElementById("importFullBackupFile").files[0];
-  if (!file) return alert("バックアップファイルを選択してください");
 
-  const text = await file.text();
-  await importFullBackup(text);
 
-  alert("完全バックアップを復元しました！");
-};
+
+
 
 
 // Chart.js インスタンス保持用
@@ -2645,12 +2508,20 @@ function buildSeasonOptions() {
 ========== */
 window.addEventListener("load", async () => {
 
-  allRecords = await getAllRecordsFromDB();
+  // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
+  await loadAllRecords();
 
+  // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
 
-  initAllSelectors();
+  // ▼ 各セレクタ初期化
+  initGrowthSelectors();
+  initRadarSelector();
+  initAISelector();
+  initOBSSeasonSelector();
+  initAdpCourseSelector();
 
+  // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
   aiSeason.onchange = updateAICourseView;
   aiTier.onchange   = updateAICourseView;
@@ -2658,6 +2529,8 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
+  // ▼ 初回描画（DBから読み込んだ allRecords を使う）
+  updateStatsView();
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
@@ -2667,11 +2540,8 @@ window.addEventListener("load", async () => {
   updateScatterView();
   updateLoungeSetView();
 
-  // ▼ ここを入れ替える
-  renderRaceHistory();   // Canvas を生成
-  updateStatsView();     // Canvas が存在するタイミングで呼ぶ
+  renderRaceHistory();
 });
-
 
 document.getElementById("toggleLoungeSetBtn").onclick = () => {
   const sec = document.getElementById("loungeSetSection");
@@ -3075,64 +2945,33 @@ function getScatterFilteredRecords() {
   return r;
 }
 
-let currentSeasonFilter = "ALL";
-let currentTierFilter = "ALL";
-let selectedCourses = [];
-let currentRecentFilter = "ALL";
-let currentAndOrMode = "AND";
- 
-
 function updateStatsView() {
-  try {
-    const records = getStatsFilteredRecords();
+  const records = getStatsFilteredRecords();
 
-    const count = records.length;
-    const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
-    const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
-    const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
+  const count = records.length;
+  const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
+  const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
+  const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
 
-    // ▼ basicStats 要素の存在確認
-    const basicStatsEl = document.getElementById("basicStats");
-    if (basicStatsEl) {
-      basicStatsEl.innerHTML = `
-        <p>対象レース数：${count}</p>
-        <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
-      `;
-    } else {
-      console.warn("basicStats 要素が見つかりません");
-    }
+  document.getElementById("basicStats").innerHTML = `
+    <p>対象レース数：${count}</p>
+    <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
+  `;
 
-    // ▼ avgTotalScore12Text 要素の存在確認
-    const avgTotalScore12TextEl = document.getElementById("avgTotalScore12Text");
-    if (avgTotalScore12TextEl) {
-      const lounge12 = records.filter(r => r.totalScore12);
-      if (lounge12.length) {
-        const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-        avgTotalScore12TextEl.innerText =
-          `12レース平均合計スコア：${avg12.toFixed(1)}点`;
-      } else {
-        avgTotalScore12TextEl.innerText = "";
-      }
-    } else {
-      console.warn("avgTotalScore12Text 要素が見つかりません");
-    }
-
-    // ▼ グラフ描画（存在確認付き）
-    if (typeof drawWinRateChart === "function") {
-      drawWinRateChart(records);
-    }
-    if (typeof drawAvgRankChart === "function") {
-      drawAvgRankChart(records);
-    }
-    if (typeof drawAvgScoreChart === "function") {
-      drawAvgScoreChart(records);
-    }
-
-  } catch (err) {
-    console.error("updateStatsView エラー:", err);
+  const lounge12 = records.filter(r => r.totalScore12);
+  if (lounge12.length) {
+    const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
+    document.getElementById("avgTotalScore12Text").innerText =
+      `12レース平均合計スコア：${avg12.toFixed(1)}点`;
+  } else {
+    document.getElementById("avgTotalScore12Text").innerText = "";
   }
+
+  drawWinRateChart(records);
+  drawAvgRankChart(records);
+  drawAvgScoreChart(records);
 }
-  
+
 function updateGrowthView() {
   const records = getGrowthFilteredRecords();
   if (!records.length) {
@@ -3178,9 +3017,8 @@ function updateLoungeSetView() {
 }
 
 function drawWinRateChart(records) {
-  const canvas = document.getElementById("winRateChart");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  const ctx = document.getElementById("chartWinRate").getContext("2d");
+
   // ▼ destroy を安全に呼ぶ
   if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
     window.chartWinRate.destroy();
@@ -3629,19 +3467,6 @@ function renderLoungeSets(records) {
 /* ==========
    成長スコア（Tier × Season × Course）
 ========== */
-
-function initAllSelectors() {
-  initGrowthSelectors();
-  initRadarSelector();
-  initAISelector();
-  initOBSSeasonSelector();
-  initAdpCourseSelector();
-}
-
-function initAdpCourseSelector() {
-  const sel = document.getElementById("adpCourseSelect");
-  sel.innerHTML = courseList.map(c => `<option value="${c}">${c}</option>`).join("");
-}
 
 function initGrowthSelectors() {
   const tierSel = document.getElementById("growthTier");
@@ -4226,6 +4051,525 @@ async function sendDataToWorker() {
   }
 }
 
+document.getElementById("importBackupBtn").onclick = async () => {
+  const code = localStorage.getItem("backup");
+
+  if (!code) {
+    alert("バックアップがありません");
+    return;
+  }
+
+  try {
+    const json = await decrypt(code);
+    const arr = JSON.parse(json);
+
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
+
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("バックアップから復元しました！");
+  } catch (e) {
+    console.error(e);
+    alert("バックアップの復元に失敗しました。データが壊れている可能性があります。");
+  }
+};
+
+
+  
+document.getElementById("importSaveFileBtn").onclick = async () => {
+  const file = document.getElementById("importSaveFile").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const text = await file.text();
+
+  const code = text
+    .replace(/^\uFEFF/, "")
+    .replace(/[\u0000-\u001F]/g, "")
+    .replace(/[\u200B-\u200F]/g, "")
+    .replace(/\s+/g, "");
+
+  try {
+    const json = await decrypt(code);
+    const arr = JSON.parse(json);
+
+    // ▼ DB 初期化
+    await clearRecords();
+    for (const r of arr) {
+      await addRecord(r);
+    }
+
+    // ▼ メモリ側更新
+    allRecords = arr;
+
+    // ▼ backup だけは localStorage に保存してOK
+    localStorage.setItem("backup", code);
+
+    refreshAllAnalysisViews();
+    renderRaceHistory();
+
+    alert("ファイルから復元が完了しました！");
+  } catch (e) {
+    console.error(e);
+    alert("復元に失敗しました。ファイルが壊れている可能性があります。");
+  }
+};
+
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function deriveKeyFromPassword(password, saltBytes) {
+  const enc = new TextEncoder();
+  const pwKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    pwKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptWithPassword(text, password) {
+  const enc = new TextEncoder();
+  const data = enc.encode(text);
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+
+  const cipherBytes = new Uint8Array(cipher);
+  const combined = new Uint8Array(salt.length + iv.length + cipherBytes.length);
+  combined.set(salt, 0);
+  combined.set(iv, salt.length);
+  combined.set(cipherBytes, salt.length + iv.length);
+
+  return bytesToBase64(combined);
+}
+
+async function decryptWithPassword(base64, password) {
+  const combined = base64ToBytes(base64);
+
+  const salt = combined.slice(0, 16);
+  const iv   = combined.slice(16, 28);
+  const cipher = combined.slice(28);
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    cipher
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
+async function encryptPasswordForCheck(password) {
+  return await encryptWithPassword(password, password);
+}
+
+async function verifyPassword(encryptedPassword, inputPassword) {
+  try {
+    const decrypted = await decryptWithPassword(encryptedPassword, inputPassword);
+    return decrypted === inputPassword;
+  } catch {
+    return false;
+  }
+}
+
+async function exportSaveDataWithPassword(password) {
+  const json = JSON.stringify(allRecords);
+
+  // データ本体（あなたの既存 encrypt）
+  const encryptedData = await encrypt(json);
+
+  // aesKey をパスワードで暗号化
+  const aesKeyBase64 = localStorage.getItem("aesKey");
+  const encryptedKey = await encryptWithPassword(aesKeyBase64, password);
+
+  // パスワード照合用
+  const encryptedPassword = await encryptPasswordForCheck(password);
+
+  return JSON.stringify({
+    p: encryptedPassword, // パスワード照合用
+    k: encryptedKey,      // aesKey
+    d: encryptedData      // allRecords
+  });
+}
+
+async function importSaveDataWithPassword(saveText, password) {
+  const obj = JSON.parse(saveText);
+
+  // パスワード照合
+  const ok = await verifyPassword(obj.p, password);
+  if (!ok) {
+    alert("パスワードが違います");
+    return;
+  }
+
+  // aesKey を復元
+  const aesKeyBase64 = await decryptWithPassword(obj.k, password);
+  localStorage.setItem("aesKey", aesKeyBase64);
+
+  // データ本体を復元
+  const json = await decrypt(obj.d);
+  let arr = JSON.parse(json);
+
+  // ▼ 壊れたレコードを除去
+  arr = arr.filter(r =>
+    r.mode &&
+    r.season &&
+    r.tier &&
+    r.timestamp != null
+  );
+
+  // ▼ DB を初期化して保存
+  await clearRecords();
+  for (const r of arr) {
+    await addRecord(r);
+  }
+
+  // ▼ メモリ側にも反映
+  allRecords = arr;
+
+  // ▼ backup だけは localStorage に保存してOK
+  localStorage.setItem("backup", obj.d);
+
+  // ▼ UI 初期化
+  initAISelector();
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert("復元が完了しました！");
+}
+
+
+// ▼ パスワード付きバックアップ保存
+document.getElementById("downloadBackupWithPasswordBtn").onclick = async () => {
+  const password = document.getElementById("backupPassword").value.trim();
+  if (!password) {
+    alert("パスワードを入力してください");
+    return;
+  }
+
+  const saveText = await exportSaveDataWithPassword(password);
+
+  const blob = new Blob([saveText], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MKWorld_backup.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  alert("バックアップを保存しました！");
+};
+
+
+// ▼ パスワード付きバックアップ復元
+document.getElementById("restoreBackupWithPasswordBtn").onclick = async () => {
+  const password = document.getElementById("restorePassword").value.trim();
+  if (!password) {
+    alert("パスワードを入力してください");
+    return;
+  }
+
+  const fileInput = document.getElementById("restoreFileInput");
+  if (!fileInput.files.length) {
+    alert("復元するファイルを選択してください");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const text = await file.text();
+
+  await importSaveDataWithPassword(text, password);
+};
+
+document.getElementById("importFileBtn").onclick = async () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) {
+    alert("ファイルを選択してください");
+    return;
+  }
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
+
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const body = lines.slice(1);
+
+  const raw = [];
+  const now = Date.now();
+
+  for (const line of body) {
+    const cols = line.split(delimiter).map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const course = cols[0];
+    const rank = Number(cols[1]);
+    const score = Number(cols[2]);
+
+    // ▼ season 正規化
+    let season = "seasonN";
+    if (cols[4]) {
+      const num = cols[4].replace(/[^0-9]/g, "");
+      if (num) season = "S" + num;
+    }
+
+    // ▼ tier 正規化
+    let tier = "tierN";
+    if (cols[5]) tier = cols[5].toUpperCase();
+
+    if (!course || !rank || rank < 1 || rank > 24) continue;
+
+    raw.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: now - raw.length * 1000
+    });
+  }
+
+  if (!raw.length) {
+    alert("有効なデータがありません");
+    return;
+  }
+
+  // ▼ 12レースごとに totalScore12 を付与
+  const final = [];
+  let setId = 1;
+
+  for (let i = 0; i < raw.length; i += 12) {
+    const set = raw.slice(i, i + 12);
+    if (set.length < 12) break;
+
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
+
+    set.forEach(r => {
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+      final.push(r);
+    });
+
+    setId++;
+  }
+
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();          // DB 初期化
+  for (const r of final) {
+    await addRecord(r);          // 全件追加
+  }
+
+  // ▼ メモリ側も更新
+  allRecords = final;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
+};
+
+
+document.getElementById("migrateLocalStorageBtn").onclick = async () => {
+  // ▼ localStorage に過去データがあるか確認
+  const old = localStorage.getItem("allRecords");
+  if (!old) {
+    alert("localStorage に過去データがありません。");
+    return;
+  }
+
+  let oldRecords;
+  try {
+    oldRecords = JSON.parse(old);
+  } catch (e) {
+    alert("localStorage のデータが壊れています。");
+    return;
+  }
+
+  if (!Array.isArray(oldRecords) || oldRecords.length === 0) {
+    alert("移行するデータがありません。");
+    return;
+  }
+
+  // ▼ すでに DB にあるデータを取得
+  const dbRecords = await getAllRecords();
+
+  // ▼ 重複チェック用 Set
+  const seen = new Set(dbRecords.map(r => buildRecordKey(r)));
+
+  let added = 0;
+
+  for (const r of oldRecords) {
+    const key = buildRecordKey(r);
+
+    // ▼ すでに DB にあるならスキップ
+    if (seen.has(key)) continue;
+
+    // ▼ timestamp が無い古いデータは補完
+    if (!r.timestamp) {
+      r.timestamp = Date.now() + Math.random();
+    }
+
+    // ▼ DB に追加
+    await addRecord(r);
+
+    added++;
+  }
+
+  alert(`移行完了！\n${added} 件を IndexedDB に追加しました。`);
+};
+
+
+document.getElementById("importTSVBtn").onclick = async () => {
+  const text = document.getElementById("tsvInput").value.trim();
+  if (!text) {
+    alert("TSVが空です");
+    return;
+  }
+
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (lines.length <= 1) {
+    alert("データがありません");
+    return;
+  }
+
+  const delimiter = "\t";
+  const body = lines.slice(1);
+
+  const raw = [];
+  const now = Date.now();
+
+  for (const line of body) {
+    const cols = line.split(delimiter).map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const course = cols[0];
+    const rank = Number(cols[1]);
+    const score = Number(cols[2]);
+
+    // ▼ season 正規化
+    let season = "seasonN";
+    if (cols[4]) {
+      const num = cols[4].replace(/[^0-9]/g, "");
+      if (num) season = "S" + num;
+    }
+
+    // ▼ tier 正規化
+    let tier = "tierN";
+    if (cols[5]) tier = cols[5].toUpperCase();
+
+    if (!course || !rank || rank < 1 || rank > 24) continue;
+
+    raw.push({
+      course,
+      rank,
+      score,
+      season,
+      tier,
+      mode: "lounge",
+      timestamp: now - raw.length * 1000
+    });
+  }
+
+  if (!raw.length) {
+    alert("有効なデータがありません");
+    return;
+  }
+
+  // ▼ 12レースごとに totalScore12 を付与
+  const final = [];
+  let setId = 1;
+
+  for (let i = 0; i < raw.length; i += 12) {
+    const set = raw.slice(i, i + 12);
+    if (set.length < 12) break;
+
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
+
+    set.forEach(r => {
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+      final.push(r);
+    });
+
+    setId++;
+  }
+
+  // ▼ ★★★ DB に保存（完全移行）★★★
+  await clearRecords();
+  for (const r of final) {
+    await addRecord(r);
+  }
+
+  // ▼ メモリ側も更新
+  allRecords = final;
+
+  refreshAllAnalysisViews();
+  renderRaceHistory();
+
+  alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
+};
 
 
 let overlayWindow = null;
@@ -4240,25 +4584,24 @@ function openOverlay() {
 
 // ▼ OBS に送信（overlayWindow があればそちらへ）
 async function sendToOverlay() {
-  const records = await exportRecords();  // mogiDB / records から取得
+  // ★ Promise を解決する（必須）
+  const records = await exportRecords();  
   const nextCourse = localStorage.getItem("nextCourse") || "";
 
   const payload = {
     type: "records",
-    records,
+    records,      // ← ここは純粋な配列になる
     nextCourse
   };
 
-  // iframe overlay
-  const frame = document.getElementById("overlayFrame");
-  if (frame && frame.contentWindow) {
-    frame.contentWindow.postMessage(payload, "*");
+  // Web で overlayWindow が開いている場合
+  if (overlayWindow && !overlayWindow.closed) {
+    overlayWindow.postMessage(payload, "*");
   }
 
-  // OBS overlay
+  // OBS 用：常に postMessage を飛ばす
   window.postMessage(payload, "*");
 }
-
 
 
 // 1秒ごとに送信
@@ -4272,21 +4615,19 @@ async function exportRecords() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("mogiDB", 1);
 
-    req.onerror = () => reject("DB open failed");
-
     req.onsuccess = () => {
       const db = req.result;
-      const tx = db.transaction(["records"], "readonly");
+      const tx = db.transaction("records", "readonly");
       const store = tx.objectStore("records");
+      const getAll = store.getAll();
 
-      const getReq = store.getAll();
-
-      getReq.onsuccess = () => resolve(getReq.result || []);
-      getReq.onerror = () => reject("getAll failed");
+      getAll.onsuccess = () => resolve(getAll.result);
+      getAll.onerror = () => reject(getAll.error);
     };
+
+    req.onerror = () => reject(req.error);
   });
 }
-
 
 
 // ▼ OBS に送信
@@ -4400,31 +4741,6 @@ window.addEventListener("load", async () => {
   /* ▼ 4. DB のデータを使って overlay を生成 */
   generateOBSOverlay();
 });
-
-
-const GAS_URL = "https://script.google.com/macros/s/AKfycbz518c03LHEaZzrIi1zzes7vwbLcuVoiH1aWgnzHEEg5XBqILR_SUDoyJx9qRmQH04X/exec";
-
-
-async function fetchJson(url) {
-  const res = await fetch(url, {
-    method: "GET",
-    mode: "cors",
-    redirect: "follow",
-    headers: {
-      "Accept": "application/json"
-    }
-  });
-
-  const text = await res.text();
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("JSON parse error:", e, text);
-    return null;
-  }
-}
 
 
 
@@ -4678,7 +4994,6 @@ async function loadADPIndexedDBRecords() {
 
   return all;
 }
-
 
 async function loadADPCourseDataFromIndexedDB() {
   const records = await loadADPIndexedDBRecords();
@@ -5006,17 +5321,8 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 
   const stats = aggregateCourseStats(filtered);
 
-  // ▼ テキストとグラフ
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
-
-  // ▼ 画像生成（ここが重要）
-  const canvas = document.getElementById("adpCourseImage");
-  const ctx = canvas.getContext("2d");
-
-  window.latestAdpCourseStats = stats;
-
-  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
 };
 
   
@@ -5284,73 +5590,36 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
 };
 
 
-async function drawAdpCourseImage(ctx, w, h) {
+async function drawAdpCourseImage(stats, backgroundUrl) {
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
 
-  // ▼ 背景画像が選択されているか？
-  if (state.backgroundImage) {
-    const img = new Image();
-    img.src = state.backgroundImage;
+  // 背景画像読み込み
+  const bg = new Image();
+  bg.src = backgroundUrl;
+  await bg.decode();
 
-    try {
-      await img.decode();  // 画像読み込み
+  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-      // ▼ 背景フィルタ適用
-      ctx.filter = `
-        brightness(${state.bgBrightness})
-        contrast(${state.bgContrast})
-        blur(${state.bgBlur}px)
-      `;
-      ctx.globalAlpha = state.bgOpacity;
+  // テキスト設定
+  ctx.fillStyle = "white";
+  ctx.font = "24px 'Noto Sans JP'";
+  ctx.textBaseline = "top";
 
-      // ▼ 背景画像を描画
-      ctx.drawImage(img, 0, 0, w, h);
+  let y = 40;
+  ctx.fillText("ADP コース比較結果", 40, y);
+  y += 50;
 
-    } catch (e) {
-      console.warn("背景画像の読み込みに失敗 → 背景色にフォールバックします");
-      drawFallbackColor(ctx, w, h);
-    }
-
-  } else {
-    // ▼ 背景画像なし → 背景色だけ
-    drawFallbackColor(ctx, w, h);
-  }
-
-  // ▼ フィルタ解除
-  ctx.filter = "none";
-  ctx.globalAlpha = 1;
-
-  // ▼ 既存のパネル・テキスト描画
-  await drawAdpCoursePanels(ctx);
-  await drawAdpCourseTexts(ctx);
+  stats.forEach(s => {
+    ctx.fillText(`【${s.course}】`, 40, y); y += 30;
+    ctx.fillText(`走行数: ${s.count}`, 60, y); y += 25;
+    ctx.fillText(`平均順位: ${s.avgRank}`, 60, y); y += 25;
+    ctx.fillText(`中央値: ${s.medianRank}`, 60, y); y += 25;
+    ctx.fillText(`勝率(3位以内): ${s.winRate}%`, 60, y); y += 25;
+    ctx.fillText(`平均得点: ${s.avgScore}`, 60, y); y += 40;
+  });
 }
-
-function drawFallbackColor(ctx, w, h) {
-  ctx.filter = `
-    brightness(${state.bgBrightness})
-    contrast(${state.bgContrast})
-    blur(${state.bgBlur}px)
-  `;
-  ctx.globalAlpha = state.bgOpacity;
-
-  ctx.fillStyle = state.bgColor || "#000";
-  ctx.fillRect(0, 0, w, h);
-}
-
-document.getElementById("bgImageInput").onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    state.backgroundImage = null;
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.backgroundImage = reader.result;  // Base64 URL
-  };
-  reader.readAsDataURL(file);
-};
-
-
+  
 async function sendAdpCourseImageToDiscord() {
   const canvas = document.getElementById("adpCourseImage");
   const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
@@ -5390,47 +5659,28 @@ async function sendAdpCourseImageToDiscord() {
 }
 
 
-document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
+document.getElementById("sendAdpCourseImageBtn").onclick = () => {
   if (!window.latestAdpCourseStats) {
     alert("まず『表示』を押して結果を生成してください");
     return;
   }
-
-  // ▼ フィルタ作成
-  const filters = {
-    season: currentSeasonFilter,
-    tier: currentTierFilter,
-    courses: selectedCourses,
-    recent: currentRecentFilter,
-    mode: currentAndOrMode
-  };
-
-  // ▼ stats を取得（await 必須）
-  const stats = await getFilteredAdpCourseStats(filters);
-  window.latestAdpCourseStats = stats;
-
-  // ▼ Canvas と ctx を取得（ここが重要）
-  const canvas = document.getElementById("adpCourseImage");
-  const ctx = canvas.getContext("2d");
-
-  // ▼ 背景画像は state.backgroundImage に入っているので drawAdpCourseImage 内で使う
-  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
-
-  // ▼ Discord送信など既存処理
-  const dataUrl = canvas.toDataURL("image/png");
-  sendAdpCourseImageToDiscord(dataUrl);
-};
-
-const filters = {
-  season: currentSeasonFilter,
-  tier: currentTierFilter,
-  courses: selectedCourses,
-  recent: currentRecentFilter,
-  mode: currentAndOrMode
+  sendAdpCourseImageToDiscord();
 };
 
 
+window.latestAdpCourseStats = stats;
 
+// 背景画像（あなたの設定に合わせて変更）
+const bg = state.backgroundImage || "default_background.png";
+
+drawAdpCourseImage(stats, bg);
+
+function initAdpCourseSelector() {
+  const sel = document.getElementById("adpCourseSelect");
+
+  sel.innerHTML =
+    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+}
 </script>
 
 </body>
