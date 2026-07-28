@@ -504,7 +504,7 @@ const courseList = [
   <div style="margin-bottom:10px;">
     <input id="legacyBackupFileInput" type="file" accept=".txt,.json">
   </div>
-  <button id="convertLegacyBackupBtn">旧バックアップを v3 に変換して保存</button>
+  <button id="convertOldBackupBtn">旧バックアップを v3 に変換して保存</button>
 </div>
 
 <!-- ▲ バックアップ v3 ▲ -->
@@ -2252,75 +2252,106 @@ async function decryptWithPassword(base64, password) {
   return new TextDecoder().decode(plain);
 }
 
-// 旧バックアップ → v3 変換
-document.getElementById("convertLegacyBackupBtn").onclick = async () => {
-  const password = document.getElementById("legacyBackupPassword").value.trim();
-  const fileInput = document.getElementById("legacyBackupFileInput");
+async function convertOldBackupToV3(text, password) {
+  let records = null;
 
+  // ▼ まず JSON かどうか判定
+  try {
+    const obj = JSON.parse(text);
+
+    // ▼ 旧形式①：p/k/d（パスワード付きバックアップ）
+    if (obj.p && obj.k && obj.d) {
+      const ok = await verifyPassword(obj.p, password);
+      if (!ok) throw new Error("パスワードが違います");
+
+      const aesKeyBase64 = await decryptWithPassword(obj.k, password);
+      localStorage.setItem("aesKey", aesKeyBase64);
+
+      const json = await decrypt(obj.d);
+      records = JSON.parse(json);
+    }
+
+    // ▼ 旧形式②：JSON だが p/k/d ではない → AES-GCM Base64 の可能性
+    else {
+      const json = await decrypt(text);
+      records = JSON.parse(json);
+    }
+
+  } catch (e) {
+    // ▼ JSON ではない → 旧形式③：encryptedPassword|encryptedKey|encryptedData
+    if (text.includes("|")) {
+      const [encryptedPassword, encryptedKey, encryptedData] = text.split("|");
+
+      const ok = await verifyPassword(encryptedPassword, password);
+      if (!ok) throw new Error("パスワードが違います");
+
+      const aesKeyBase64 = await decryptWithPassword(encryptedKey, password);
+      localStorage.setItem("aesKey", aesKeyBase64);
+
+      const json = await decrypt(encryptedData);
+      records = JSON.parse(json);
+    }
+
+    // ▼ JSON でも | でもない → AES-GCM Base64 の txt バックアップか TSV/CSV
+    else {
+      try {
+        // ▼ txt バックアップ（AES-GCM Base64 のみ）
+        const json = await decrypt(text);
+        records = JSON.parse(json);
+      } catch {
+        // ▼ TSV/CSV の可能性
+        records = parsePlainTextRecords(text);
+      }
+    }
+  }
+
+  // ▼ 壊れたレコード除去
+  records = records.filter(r =>
+    r.mode &&
+    r.season &&
+    r.tier &&
+    r.timestamp != null
+  );
+
+  // ▼ v3 形式に変換
+  const json = JSON.stringify(records);
+  const hash = await digestMessage(json);
+  const base64 = btoa(json);
+
+  return `MKADP_BACKUP_v3|${hash}|${base64}`;
+}
+
+
+
+
+document.getElementById("convertOldBackupBtn").onclick = async () => {
+  const file = document.getElementById("legacyBackupFileInput").files[0];
+  const password = document.getElementById("legacyBackupPassword").value.trim();
+
+  if (!file) return alert("旧バックアップファイルを選択してください");
   if (!password) return alert("旧バックアップのパスワードを入力してください");
-  if (!fileInput.files.length) return alert("旧バックアップファイルを選択してください");
+
+  const text = await file.text();
 
   try {
-    const text = await fileInput.files[0].text();
-    const obj = JSON.parse(text);   // {p,k,d} を想定
+    const v3 = await convertOldBackupToV3(text, password);
 
-    if (!obj || !obj.p || !obj.k || !obj.d) {
-      return alert("旧バックアップ形式ではありません");
-    }
-
-    // パスワード照合（p は password を password で暗号化したもの）
-    try {
-      const decryptedPw = await decryptWithPassword(obj.p, password);
-      if (decryptedPw !== password) {
-        return alert("パスワードが違います（旧バックアップ）");
-      }
-    } catch {
-      return alert("旧バックアップの復号に失敗しました（パスワード不一致の可能性）");
-    }
-
-    // データ本体 d を復号 → allRecords 配列を取得
-    const json = await decryptWithPassword(obj.d, password); // 旧仕様に合わせて必要なら decrypt() に変更
-    let records = JSON.parse(json);
-
-    if (!Array.isArray(records) || records.length === 0) {
-      return alert("旧バックアップ内にレースデータがありません");
-    }
-
-    // timestamp 補完
-    records = records.map((r, idx) => ({
-      ...r,
-      timestamp: r.timestamp || Date.now() - idx * 1000
-    }));
-
-    // v3 バックアップ構造を生成
-    const backup = {
-      version: "3.0",
-      timestamp: Date.now(),
-      count: records.length,
-      records
-    };
-
-    const encoded = btoa(JSON.stringify(backup));
-    const hash = await sha256(password);   // 既存の sha256 関数を利用
-
-    const content = `MKADP_BACKUP_v3|${hash}|${encoded}`;
-
-    // v3 ファイルとして保存
-    const blob = new Blob([content], { type: "text/plain" });
+    const blob = new Blob([v3], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mkadp_backup_v3_converted_${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = "MKADP_BACKUP_v3.txt";
     a.click();
 
     URL.revokeObjectURL(url);
-    alert(`旧バックアップから v3 への変換完了（${records.length}件）`);
-  } catch (err) {
-    alert("旧バックアップの変換に失敗しました: " + err.message);
+
+    alert("旧バックアップを v3 に変換しました！");
+  } catch (e) {
+    console.error(e);
+    alert("変換に失敗しました。形式が不明か、パスワードが違います。");
   }
 };
-
 
 
 
