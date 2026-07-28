@@ -1799,12 +1799,14 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 async function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open("MKADPDatabase", 1);
+    const req = indexedDB.open("mogiDB", 1);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains("races")) {
-        db.createObjectStore("races", { keyPath: "timestamp" });
+
+      // ★ records ストアだけ使う
+      if (!db.objectStoreNames.contains("records")) {
+        db.createObjectStore("records", { keyPath: "timestamp" });
       }
     };
 
@@ -1813,42 +1815,46 @@ async function openDB() {
   });
 }
 
-async function addRecord(record) {
+
+async function addRaceRecord(record) {
   const db = await openDB();
-  const tx = db.transaction(["races"], "readwrite");
-  const store = tx.objectStore("races");
-  
+  const tx = db.transaction(["records"], "readwrite");
+  const store = tx.objectStore("records");
+
   if (!record.timestamp) {
     record.timestamp = Date.now();
   }
-  
+
   store.add(record);
   await new Promise(res => tx.oncomplete = res);
 }
 
-async function updateRecord(record) {
+
+async function updateRaceRecord(record) {
   const db = await openDB();
-  const tx = db.transaction(["races"], "readwrite");
-  tx.objectStore("races").put(record);
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").put(record);
   await new Promise(res => tx.oncomplete = res);
 }
 
-async function deleteRecord(timestamp) {
+
+async function deleteRaceRecord(timestamp) {
   const db = await openDB();
-  const tx = db.transaction(["races"], "readwrite");
-  tx.objectStore("races").delete(timestamp);
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").delete(timestamp);
   await new Promise(res => tx.oncomplete = res);
 }
+
 
 async function deleteRecordFromDB(timestamp) {
   await deleteRecord(timestamp);
 }
 
-async function getAllRecordsFromDB() {
+async function getAllRacesFromDB() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(["races"], "readonly");
-    const store = tx.objectStore("races");
+    const tx = db.transaction(["records"], "readonly");
+    const store = tx.objectStore("records");
     const req = store.getAll();
     
     req.onsuccess = () => resolve(req.result || []);
@@ -1856,12 +1862,14 @@ async function getAllRecordsFromDB() {
   });
 }
 
-async function clearAllRecordsFromDB() {
+
+async function clearAllRacesFromDB() {
   const db = await openDB();
-  const tx = db.transaction(["races"], "readwrite");
-  tx.objectStore("races").clear();
+  const tx = db.transaction(["records"], "readwrite");
+  tx.objectStore("records").clear();
   await new Promise(res => tx.oncomplete = res);
 }
+
 
 /* ===========================
    重複チェック関数
@@ -2280,29 +2288,53 @@ async function verifyPassword(encryptedPassword, inputPassword) {
 }
 
 async function convertThisBackupToV3(saveText, password) {
+  // ▼ JSON パース（p/k/d）
   const obj = JSON.parse(saveText);
 
   // ▼ パスワード照合
   const ok = await verifyPassword(obj.p, password);
   if (!ok) throw new Error("パスワードが違います");
 
-  // ▼ aesKey を復元
+  // ▼ aesKey 復元
   const aesKeyBase64 = await decryptWithPassword(obj.k, password);
 
-  // ▼ ★ここが絶対に必要★
+  // ▼ decrypt() が使う aesKey をセット（旧方式）
   localStorage.setItem("aesKey", aesKeyBase64);
 
-  // ▼ データ本体を復号
-  const json = await decrypt(obj.d);   // ← ここで OperationError が消える
+  // ▼ データ本体復号（旧 records[]）
+  const json = await decrypt(obj.d);
   let records = JSON.parse(json);
 
-  // ▼ 壊れたレコード除去
-  records = records.filter(r =>
-    r.mode && r.season && r.tier && r.timestamp != null
-  );
+  // ▼ 新方式へ変換（12レースごと）
+  const final = [];
+  let setId = 1;
 
-  // ▼ v3 形式に変換
-  const body = JSON.stringify(records);
+  for (let i = 0; i < records.length; i += 12) {
+    const set = records.slice(i, i + 12);
+    if (set.length < 12) break;
+
+    const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+    const setTimestamp = set[0].timestamp;
+
+    set.forEach(r => {
+      // ★ 新方式フィールドを付与
+      r.totalScore12 = totalScore12;
+      r.setId = setId;
+      r.setTimestamp = setTimestamp;
+
+      final.push(r);
+    });
+
+    setId++;
+  }
+
+  // ▼ DB（records ストア）に保存
+  for (const r of final) {
+    await addRecord(r);   // ★ 新方式レコードを旧ストア名 records に保存
+  }
+
+  // ▼ v3 バックアップ生成（必要なら）
+  const body = JSON.stringify(final);
   const hash = await digestMessage(body);
   const base64 = btoa(body);
 
