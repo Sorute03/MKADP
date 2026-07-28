@@ -2837,6 +2837,13 @@ function getScatterFilteredRecords() {
   return r;
 }
 
+ let currentSeasonFilter = "ALL";
+let currentTierFilter = "ALL";
+let selectedCourses = [];
+let currentRecentFilter = "ALL";
+let currentAndOrMode = "AND";
+ 
+
 function updateStatsView() {
   try {
     const records = getStatsFilteredRecords();
