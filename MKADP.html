@@ -5035,36 +5035,73 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
 };
 
 
-async function drawAdpCourseImage(stats, backgroundUrl) {
-  const canvas = document.getElementById("adpCourseImage");
-  const ctx = canvas.getContext("2d");
+async function drawAdpCourseImage(ctx, w, h) {
 
-  // 背景画像読み込み
-  const bg = new Image();
-  bg.src = backgroundUrl;
-  await bg.decode();
+  // ▼ 背景画像が選択されているか？
+  if (state.backgroundImage) {
+    const img = new Image();
+    img.src = state.backgroundImage;
 
-  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+    try {
+      await img.decode();  // 画像読み込み
 
-  // テキスト設定
-  ctx.fillStyle = "white";
-  ctx.font = "24px 'Noto Sans JP'";
-  ctx.textBaseline = "top";
+      // ▼ 背景フィルタ適用
+      ctx.filter = `
+        brightness(${state.bgBrightness})
+        contrast(${state.bgContrast})
+        blur(${state.bgBlur}px)
+      `;
+      ctx.globalAlpha = state.bgOpacity;
 
-  let y = 40;
-  ctx.fillText("ADP コース比較結果", 40, y);
-  y += 50;
+      // ▼ 背景画像を描画
+      ctx.drawImage(img, 0, 0, w, h);
 
-  stats.forEach(s => {
-    ctx.fillText(`【${s.course}】`, 40, y); y += 30;
-    ctx.fillText(`走行数: ${s.count}`, 60, y); y += 25;
-    ctx.fillText(`平均順位: ${s.avgRank}`, 60, y); y += 25;
-    ctx.fillText(`中央値: ${s.medianRank}`, 60, y); y += 25;
-    ctx.fillText(`勝率(3位以内): ${s.winRate}%`, 60, y); y += 25;
-    ctx.fillText(`平均得点: ${s.avgScore}`, 60, y); y += 40;
-  });
+    } catch (e) {
+      console.warn("背景画像の読み込みに失敗 → 背景色にフォールバックします");
+      drawFallbackColor(ctx, w, h);
+    }
+
+  } else {
+    // ▼ 背景画像なし → 背景色だけ
+    drawFallbackColor(ctx, w, h);
+  }
+
+  // ▼ フィルタ解除
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
+
+  // ▼ 既存のパネル・テキスト描画
+  await drawAdpCoursePanels(ctx);
+  await drawAdpCourseTexts(ctx);
 }
-  
+
+function drawFallbackColor(ctx, w, h) {
+  ctx.filter = `
+    brightness(${state.bgBrightness})
+    contrast(${state.bgContrast})
+    blur(${state.bgBlur}px)
+  `;
+  ctx.globalAlpha = state.bgOpacity;
+
+  ctx.fillStyle = state.bgColor || "#000";
+  ctx.fillRect(0, 0, w, h);
+}
+
+document.getElementById("bgImageInput").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    state.backgroundImage = null;
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.backgroundImage = reader.result;  // Base64 URL
+  };
+  reader.readAsDataURL(file);
+};
+
+
 async function sendAdpCourseImageToDiscord() {
   const canvas = document.getElementById("adpCourseImage");
   const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
