@@ -2412,7 +2412,7 @@ window.addEventListener("load", async () => {
 
   populateSeasonAndTierOptions();
 
-  initAllSelectors();   // ← これだけでOK
+  initAllSelectors();
 
   aiCourse.onchange = updateAICourseView;
   aiSeason.onchange = updateAICourseView;
@@ -2421,7 +2421,6 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
-  
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
@@ -2431,8 +2430,9 @@ window.addEventListener("load", async () => {
   updateScatterView();
   updateLoungeSetView();
 
-  renderRaceHistory();
-  updateStatsView();
+  // ▼ ここを入れ替える
+  renderRaceHistory();   // Canvas を生成
+  updateStatsView();     // Canvas が存在するタイミングで呼ぶ
 });
 
 
