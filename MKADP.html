@@ -1815,7 +1815,7 @@ async function openDB() {
     req.onupgradeneeded = e => {
       const db = e.target.result;
 
-      // ★ records ストアだけ使う
+      // ★ records ストアを必ず作る
       if (!db.objectStoreNames.contains("records")) {
         db.createObjectStore("records", { keyPath: "timestamp" });
       }
