@@ -1827,7 +1827,7 @@ async function openDB() {
 }
 
 
-async function addRaceRecord(record) {
+async function addRecord(record) {
   const db = await openDB();
   const tx = db.transaction(["records"], "readwrite");
   const store = tx.objectStore("records");
@@ -1841,7 +1841,7 @@ async function addRaceRecord(record) {
 }
 
 
-async function updateRaceRecord(record) {
+async function updateRecord(record) {
   const db = await openDB();
   const tx = db.transaction(["records"], "readwrite");
   tx.objectStore("records").put(record);
