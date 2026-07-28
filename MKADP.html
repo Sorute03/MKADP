@@ -3401,7 +3401,10 @@ function initAllSelectors() {
   initAdpCourseSelector();
 }
 
-
+function initAdpCourseSelector() {
+  const sel = document.getElementById("adpCourseSelect");
+  sel.innerHTML = courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+}
 
 function initGrowthSelectors() {
   const tierSel = document.getElementById("growthTier");
