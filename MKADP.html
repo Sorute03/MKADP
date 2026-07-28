@@ -2421,7 +2421,7 @@ window.addEventListener("load", async () => {
   aiRangeSelect.onchange = updateAICourseView;
   aiRangeInput.oninput   = updateAICourseView;
 
-  updateStatsView();
+  
   updateGrowthView();
   updateRadarView();
   updateHeatmapView();
@@ -2432,6 +2432,7 @@ window.addEventListener("load", async () => {
   updateLoungeSetView();
 
   renderRaceHistory();
+  updateStatsView();
 });
 
 
