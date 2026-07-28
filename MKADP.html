@@ -2408,8 +2408,8 @@ function buildSeasonOptions() {
 ========== */
 window.addEventListener("load", async () => {
 
-  // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
-  await loadAllRecords();
+  // ▼ IndexedDB から全レコード読み込み（mogiDB版）
+  allRecords = await getAllRecordsFromDB();
 
   // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
@@ -5100,7 +5100,18 @@ document.getElementById("sendAdpCourseImageBtn").onclick = () => {
   sendAdpCourseImageToDiscord();
 };
 
+const filters = {
+  season: currentSeasonFilter,
+  tier: currentTierFilter,
+  courses: selectedCourses,
+  recent: currentRecentFilter,
+  mode: currentAndOrMode
+};
 
+const stats = await getFilteredAdpCourseStats(filters);  // ★必須
+
+
+  
 window.latestAdpCourseStats = stats;
 
 // 背景画像（あなたの設定に合わせて変更）
