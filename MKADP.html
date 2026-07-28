@@ -4766,8 +4766,17 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 
   const stats = aggregateCourseStats(filtered);
 
+  // ▼ テキストとグラフ
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
+
+  // ▼ 画像生成（ここが重要）
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  window.latestAdpCourseStats = stats;
+
+  await drawAdpCourseImage(ctx, canvas.width, canvas.height);
 };
 
   
