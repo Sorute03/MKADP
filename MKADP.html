@@ -3393,6 +3393,7 @@ function initAllSelectors() {
 }
 
 
+
 function initGrowthSelectors() {
   const tierSel = document.getElementById("growthTier");
   const seasonSel = document.getElementById("growthSeason");
@@ -5110,7 +5111,8 @@ const filters = {
   mode: currentAndOrMode
 };
 
-const stats = await getFilteredAdpCourseStats(filters);  // ★必須
+const stats = getFilteredAdpCourseStats(filters); // await を消す
+
 
 
   
