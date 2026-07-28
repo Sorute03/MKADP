@@ -2484,17 +2484,32 @@ async function importFullBackup(jsonText) {
   // ▼ IndexedDB(records) を復元
   const db = await openDB();
 
-  // 既存データを消す
-  const clearTx = db.transaction(["records"], "readwrite");
-  clearTx.objectStore("records").clear();
-  await new Promise(res => clearTx.oncomplete = res);
+  // 既存データを取得（重複チェック用）
+  const existingTx = db.transaction(["records"], "readonly");
+  const existingStore = existingTx.objectStore("records");
+  const existingRecords = await existingStore.getAll();
+  await new Promise(res => existingTx.oncomplete = res);
 
-  // 新しいデータを入れる
+  // 既存の timestamp をセット化（高速重複チェック）
+  const existingTimestamps = new Set(existingRecords.map(r => r.timestamp));
+
+  // ▼ 新しいデータを入れる
   const tx = db.transaction(["records"], "readwrite");
   const store = tx.objectStore("records");
 
   for (const r of backup.records) {
+
+    // ★ 重複チェック（timestamp）
+    if (existingTimestamps.has(r.timestamp)) {
+      console.log("重複スキップ:", r);
+      continue;
+    }
+
+    // ★ 新規レコードとして追加
     store.put(r);
+
+    // 重複チェック用セットに追加
+    existingTimestamps.add(r.timestamp);
   }
 
   await new Promise(res => tx.oncomplete = res);
