@@ -6006,17 +6006,12 @@ function loadWebhookSettings() {
   if (saved) {
     const obj = JSON.parse(saved);
 
-    // ★ 古い形式（URLだけ）を自動変換
-    if (Array.isArray(obj.list)) {
-      webhookList = obj.list.map(item => {
-        if (typeof item === "string") {
-          return { name: item, url: item };   // 古い形式を救済
-        }
-        return item; // 新形式 {name, url}
-      });
-    } else {
-      webhookList = [];
-    }
+    webhookList = (obj.list || []).map(item => {
+      if (typeof item === "string") {
+        return { name: item, url: item }; // 古い形式救済
+      }
+      return item; // 新形式 {name, url}
+    });
 
     activeWebhookIndex = obj.active ?? -1;
   } else {
@@ -6026,6 +6021,7 @@ function loadWebhookSettings() {
 
   renderWebhookList();
 }
+
 
 
 function saveWebhookSettings() {
@@ -6100,6 +6096,7 @@ function renderWebhookList() {
 
   area.innerHTML = html;
 }
+
 
 
 
