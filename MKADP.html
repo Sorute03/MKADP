@@ -5315,14 +5315,20 @@ async function drawFlag(ctx, country, x, y) {
    ▼ 背景設定（明るさ・コントラスト・ぼかし・透過）
    ============================================================ */
 function setBgImage(file) {
-  if (!file) return;
+  if (!file) {
+    state.backgroundImage = null;
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = () => {
-    state.backgroundImage = reader.result;  // ★ DataURL を保存
+    console.log("背景画像セット:", reader.result.slice(0, 50)); // デバッグ
+    state.backgroundImage = reader.result;  // ★ DataURL
   };
   reader.readAsDataURL(file);
 }
+
+
 
 
 function setBgBrightness(v) { state.bgBrightness = Number(v); }
@@ -5421,7 +5427,7 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 
   const selectedCourses = ids
     .map(id => document.getElementById(id).value)
-    .filter(v => v && v !== ""); // 未選択を除外
+    .filter(v => v && v !== "");
 
   if (selectedCourses.length === 0) {
     return alert("コースを選択してください");
@@ -5439,33 +5445,17 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 
   const stats = aggregateCourseStats(filtered);
 
+  // ▼ 表示
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
 
+  // ▼ 保存
   window.latestAdpCourseStats = stats;
+
+  // ▼ ★ 画像生成（ここを追加）
+  await drawAdpCourseImage(stats, state.backgroundImage);
 };
 
-// 既存の courseList をそのまま使う
-// const courseList = [ ... ] // ← これは既に定義済み前提
-
-function initAdpCourseSelects() {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
-
-  ids.forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-
-    sel.innerHTML =
-      `<option value="">（未選択）</option>` +
-      courseList.map(c => `<option value="${c}">${c}</option>`).join("");
-  });
-}
 
 
 function generateAdpCourseStatsText(stats) {
@@ -5990,17 +5980,12 @@ document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
     return alert("Webhook が選択されていません");
   }
 
-  const { url } = webhookList[activeWebhookIndex];
-
   const stats = window.latestAdpCourseStats;
   if (!Array.isArray(stats)) {
     return alert("まず『表示』を押して結果を生成してください");
   }
 
-  const bg = state.backgroundImage;
-
-  // ★ 正しい呼び出し
-  await drawAdpCourseImage(stats, bg);
+  const { url } = webhookList[activeWebhookIndex];
 
   const canvas = document.getElementById("adpCourseImage");
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
