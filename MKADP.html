@@ -5972,6 +5972,9 @@ function loadWebhookSettings() {
     }
 
     activeWebhookIndex = obj.active ?? -1;
+  } else {
+    webhookList = [];
+    activeWebhookIndex = -1;
   }
 
   renderWebhookList();
@@ -6050,6 +6053,7 @@ function renderWebhookList() {
 
   area.innerHTML = html;
 }
+
 
 
 
