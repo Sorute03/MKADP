@@ -5832,22 +5832,30 @@ document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
 
   const { url } = webhookList[activeWebhookIndex];
 
-  const canvas = document.getElementById("adpCourseImage");
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  // ★ stats はここで取得する
+  const stats = window.latestAdpCourseStats;
+  if (!stats) return alert("まず『表示』を押して結果を生成してください");
 
+  // ★ 背景画像
+  const bg = state.backgroundImage || "default_background.png";
+
+  // ★ 画像生成
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+  await drawAdpCourseImage(ctx, canvas.width, canvas.height, stats, bg);
+
+  // ★ Discord送信
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   const form = new FormData();
   form.append("file", blob, "course_stats.png");
 
-  await fetch(url, {
-    method: "POST",
-    body: form
-  });
+  await fetch(url, { method: "POST", body: form });
 
   alert("画像を送信しました");
 };
 
 
-window.latestAdpCourseStats = stats;
+
 
 // 背景画像（あなたの設定に合わせて変更）
 const bg = state.backgroundImage || "default_background.png";
