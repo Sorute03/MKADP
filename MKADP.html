@@ -5425,8 +5425,8 @@ function initAdpCourseSelects() {
 
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
+  console.log("表示ボタン押された");
 
-  // 5つのセレクトから選択されたコースを取得
   const ids = [
     "adpCourseSelect1",
     "adpCourseSelect2",
@@ -5439,11 +5439,10 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
     .map(id => document.getElementById(id).value)
     .filter(v => v && v !== "");
 
-  if (selectedCourses.length === 0) {
-    return alert("コースを選択してください");
-  }
+  console.log("選択コース:", selectedCourses);
 
   const records = await loadADPIndexedDBRecords();
+  console.log("records 読み込み完了:", records.length);
 
   const filtered = applyAndOrFilter(records, {
     season: adpSeasonSelect.value,
@@ -5453,18 +5452,24 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
     mode: adpModeSelect.value
   }, adpFilterModeSelect.value);
 
+  console.log("filtered:", filtered.length);
+
   const stats = aggregateCourseStats(filtered);
+  console.log("stats:", stats);
 
-  // ▼ 表示
   drawAdpCourseStatsTable(stats);
-  drawAdpCourseStatsChart(stats);
+  console.log("テーブル描画OK");
 
-  // ▼ 保存
+  drawAdpCourseStatsChart(stats);
+  console.log("グラフ描画OK");
+
   window.latestAdpCourseStats = stats;
 
-  // ▼ ★ 画像生成（ここを追加）
+  console.log("画像生成呼び出し:", state.backgroundImage);
   await drawAdpCourseImage(stats, state.backgroundImage);
+  console.log("画像生成完了");
 };
+
 
 
 
