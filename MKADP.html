@@ -3188,14 +3188,21 @@ function drawAvgRankChart(records) {
 }
 
 function drawAvgScoreChart(records) {
-  const ctx = document.getElementById("chartAvgScore").getContext("2d");
+  const canvas = document.getElementById("chartAvgScore");
+  if (!canvas) return;   // ★ DOM が無ければ描画しない
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartAvgScore && typeof window.chartAvgScore.destroy === "function") {
     window.chartAvgScore.destroy();
   }
 
   if (!records.length) {
-    window.chartAvgScore = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
+    window.chartAvgScore = new Chart(ctx, {
+      type: "bar",
+      data: { labels: [], datasets: [] }
+    });
     return;
   }
 
