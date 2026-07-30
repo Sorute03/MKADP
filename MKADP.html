@@ -5315,8 +5315,13 @@ async function drawFlag(ctx, country, x, y) {
    ▼ 背景設定（明るさ・コントラスト・ぼかし・透過）
    ============================================================ */
 function setBgImage(file) {
+  if (!file) return;
+
   const reader = new FileReader();
-  reader.onload = () => state.backgroundImage = reader.result;
+  reader.onload = () => {
+    // ★ DataURL を state に保存する（絶対に数値にならない）
+    state.backgroundImage = reader.result;
+  };
   reader.readAsDataURL(file);
 }
 
@@ -5847,35 +5852,77 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // 背景画像読み込み
+  // ★ 背景画像の安全処理（数値や undefined を防ぐ）
+  let bgSrc = backgroundUrl;
+  if (!bgSrc || typeof bgSrc !== "string" || !bgSrc.startsWith("data:image")) {
+    bgSrc = "default_background.png";   // ← あなたの環境に合わせて変更
+  }
+
   const bg = new Image();
-  bg.src = backgroundUrl;
-  await bg.decode();
+  bg.src = bgSrc;
+
+  try {
+    await bg.decode();
+  } catch (e) {
+    console.error("背景画像 decode に失敗:", e);
+    return;
+  }
 
   ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-  // テキスト設定
+  // ★ テキスト設定
   ctx.fillStyle = "white";
   ctx.font = "24px 'Noto Sans JP'";
   ctx.textBaseline = "top";
 
   let y = 40;
-  ctx.fillText("ADP コース比較結果", 40, y);
+  const x = 40;
+
+  ctx.fillText("ADP コース比較結果", x, y);
   y += 50;
 
   stats.forEach(s => {
-    ctx.fillText(`【${s.course}】`, 40, y); y += 30;
-    ctx.fillText(`走行数: ${s.count}`, 60, y); y += 25;
-    ctx.fillText(`平均順位: ${s.avgRank}`, 60, y); y += 25;
-    ctx.fillText(`中央値: ${s.medianRank}`, 60, y); y += 25;
-    ctx.fillText(`勝率(3位以内): ${s.winRate}%`, 60, y); y += 25;
-    ctx.fillText(`平均得点: ${s.avgScore}`, 60, y); y += 40;
-    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x, y + 90);
-    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x, y + 120);
-    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x, y + 180);
+    ctx.fillText(`【${s.course}】`, x, y); y += 30;
+    ctx.fillText(`走行数: ${s.count}`, x + 20, y); y += 25;
+    ctx.fillText(`平均順位: ${s.avgRank.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`, x + 20, y); y += 25;
+    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x + 20, y); y += 40;
+
+    // ★ Season / Tier があれば表示
+    if (s.season && Object.keys(s.season).length > 0) {
+      ctx.fillText(`Season別:`, x + 20, y); y += 25;
+      Object.keys(s.season).forEach(se => {
+        const obj = s.season[se];
+        ctx.fillText(
+          `${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
+          x + 40,
+          y
+        );
+        y += 25;
+      });
+      y += 10;
+    }
+
+    if (s.tier && Object.keys(s.tier).length > 0) {
+      ctx.fillText(`Tier別:`, x + 20, y); y += 25;
+      Object.keys(s.tier).forEach(t => {
+        const obj = s.tier[t];
+        ctx.fillText(
+          `${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
+          x + 40,
+          y
+        );
+        y += 25;
+      });
+      y += 10;
+    }
+
+    y += 20;
   });
 }
-  
+
 async function sendAdpCourseImageToDiscord() {
   const canvas = document.getElementById("adpCourseImage");
   const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
