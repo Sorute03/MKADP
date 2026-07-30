@@ -5479,29 +5479,38 @@ function generateAdpCourseStatsText(stats) {
     lines.push(`平均ポイント: ${s.avgPoints.toFixed(2)}`);
     lines.push(`勝率: ${(s.winRate * 100).toFixed(1)}%`);
 
-    // Season 別
+    // ★ Season 別（null安全）
     lines.push("\nSeason別:");
-    Object.keys(s.season).forEach(se => {
-      const obj = s.season[se];
-      lines.push(
-        `  ${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-      );
-    });
+    if (s.season && Object.keys(s.season).length > 0) {
+      Object.keys(s.season).forEach(se => {
+        const obj = s.season[se];
+        lines.push(
+          `  ${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
+        );
+      });
+    } else {
+      lines.push("  Seasonデータなし");
+    }
 
-    // Tier 別
+    // ★ Tier 別（null安全）
     lines.push("\nTier別:");
-    Object.keys(s.tier).forEach(t => {
-      const obj = s.tier[t];
-      lines.push(
-        `  ${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-      );
-    });
+    if (s.tier && Object.keys(s.tier).length > 0) {
+      Object.keys(s.tier).forEach(t => {
+        const obj = s.tier[t];
+        lines.push(
+          `  ${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
+        );
+      });
+    } else {
+      lines.push("  Tierデータなし");
+    }
 
     lines.push("\n");
   });
 
   return lines.join("\n");
 }
+
 
   
 
