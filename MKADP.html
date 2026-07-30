@@ -5949,18 +5949,33 @@ function loadWebhookSettings() {
   const saved = localStorage.getItem("mk_webhooks");
   if (saved) {
     const obj = JSON.parse(saved);
-    webhookList = obj.list || [];
+
+    // ★ 古い形式（URLだけ）を自動変換
+    if (Array.isArray(obj.list)) {
+      webhookList = obj.list.map(item => {
+        if (typeof item === "string") {
+          return { name: item, url: item };   // 古い形式を救済
+        }
+        return item; // 新形式 {name, url}
+      });
+    } else {
+      webhookList = [];
+    }
+
     activeWebhookIndex = obj.active ?? -1;
   }
+
   renderWebhookList();
 }
 
+
 function saveWebhookSettings() {
   localStorage.setItem("mk_webhooks", JSON.stringify({
-    list: webhookList,
+    list: webhookList,        // ← {name, url} の配列をそのまま保存
     active: activeWebhookIndex
   }));
 }
+
 
 function addWebhook() {
   const name = document.getElementById("webhookNameInput").value.trim();
@@ -5981,6 +5996,7 @@ function addWebhook() {
   document.getElementById("webhookNameInput").value = "";
   document.getElementById("webhookUrlInput").value = "";
 }
+
 
 function deleteWebhook(index) {
   webhookList.splice(index, 1);
@@ -6025,6 +6041,7 @@ function renderWebhookList() {
 
   area.innerHTML = html;
 }
+
 
 
 </script>
