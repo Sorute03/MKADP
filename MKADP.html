@@ -5414,11 +5414,17 @@ function initAdpCourseSelects() {
 
   ids.forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) return;
+    if (!sel) {
+      console.error("セレクトが存在しない:", id);
+      return;
+    }
 
     sel.innerHTML =
       `<option value="">（未選択）</option>` +
-      courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+      courseList
+        .filter(c => typeof c === "string" && c.length > 0)
+        .map(c => `<option value="${c}">${c}</option>`)
+        .join("");
   });
 }
 
