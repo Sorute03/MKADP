@@ -5463,7 +5463,47 @@ function initAdpCourseSelects() {
 }
 
 
+function generateAdpCourseStatsText(stats) {
+  if (!stats || !stats.length) return "データがありません。";
 
+  let lines = [];
+  lines.push("【コース統計】");
+
+  stats.forEach(s => {
+    lines.push(`\n▼ ${s.course}`);
+    lines.push(`レース数: ${s.count}`);
+    lines.push(`平均順位: ${s.avgRank.toFixed(2)}`);
+    lines.push(`中央値: ${s.medianRank.toFixed(2)}`);
+    lines.push(`標準偏差: ${s.rankStdDev.toFixed(2)}`);
+    lines.push(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`);
+    lines.push(`平均ポイント: ${s.avgPoints.toFixed(2)}`);
+    lines.push(`勝率: ${(s.winRate * 100).toFixed(1)}%`);
+
+    // Season 別
+    lines.push("\nSeason別:");
+    Object.keys(s.season).forEach(se => {
+      const obj = s.season[se];
+      lines.push(
+        `  ${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
+      );
+    });
+
+    // Tier 別
+    lines.push("\nTier別:");
+    Object.keys(s.tier).forEach(t => {
+      const obj = s.tier[t];
+      lines.push(
+        `  ${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
+      );
+    });
+
+    lines.push("\n");
+  });
+
+  return lines.join("\n");
+}
+
+  
 
   
 function drawAdpCourseStatsTable(stats) {
