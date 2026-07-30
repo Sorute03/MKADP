@@ -2579,6 +2579,7 @@ window.addEventListener("load", async () => {
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
+  initAdpCourseSelects(); // ← これが undefined だった
 
 
   // ▼ AI セレクタの onchange を登録
@@ -5402,17 +5403,27 @@ async function getAdpCourseStatsOnly() {
   }));
 }
 
-async function initAdpCourseSelect() {
+async function initAdpCourseSelects() {
   const stats = await getAdpCourseStatsOnly();
-  const sel = document.getElementById("adpCourseSelect");
 
-  stats.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.course;
-    opt.textContent = s.course;
-    sel.appendChild(opt);
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+
+    sel.innerHTML =
+      `<option value="">（未選択）</option>` +
+      stats.map(s => `<option value="${s.course}">${s.course}</option>`).join("");
   });
 }
+
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 
