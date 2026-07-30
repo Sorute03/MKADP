@@ -5427,47 +5427,50 @@ function initAdpCourseSelects() {
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   console.log("表示ボタン押された");
 
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
+  try {
+    const ids = [
+      "adpCourseSelect1",
+      "adpCourseSelect2",
+      "adpCourseSelect3",
+      "adpCourseSelect4",
+      "adpCourseSelect5"
+    ];
 
-  const selectedCourses = ids
-    .map(id => document.getElementById(id).value)
-    .filter(v => v && v !== "");
+    const selectedCourses = ids
+      .map(id => document.getElementById(id).value)
+      .filter(v => v && v !== "");
 
-  console.log("選択コース:", selectedCourses);
+    console.log("選択コース:", selectedCourses);
 
-  const records = await loadADPIndexedDBRecords();
-  console.log("records 読み込み完了:", records.length);
+    const records = await loadADPIndexedDBRecords();
+    console.log("records:", records.length);
 
-  const filtered = applyAndOrFilter(records, {
-    season: adpSeasonSelect.value,
-    tier: adpTierSelect.value,
-    recent: adpRecentSelect.value,
-    courses: selectedCourses,
-    mode: adpModeSelect.value
-  }, adpFilterModeSelect.value);
+    const filtered = applyAndOrFilter(records, {
+      season: adpSeasonSelect.value,
+      tier: adpTierSelect.value,
+      recent: adpRecentSelect.value,
+      courses: selectedCourses,
+      mode: adpModeSelect.value
+    }, adpFilterModeSelect.value);
 
-  console.log("filtered:", filtered.length);
+    console.log("filtered:", filtered.length);
 
-  const stats = aggregateCourseStats(filtered);
-  console.log("stats:", stats);
+    const stats = aggregateCourseStats(filtered);
+    console.log("stats:", stats);
 
-  drawAdpCourseStatsTable(stats);
-  console.log("テーブル描画OK");
+    drawAdpCourseStatsTable(stats);
+    console.log("テーブル描画OK");
 
-  drawAdpCourseStatsChart(stats);
-  console.log("グラフ描画OK");
+    drawAdpCourseStatsChart(stats);
+    console.log("グラフ描画OK");
 
-  window.latestAdpCourseStats = stats;
+    console.log("画像生成呼び出し:", state.backgroundImage);
+    await drawAdpCourseImage(stats, state.backgroundImage);
+    console.log("画像生成完了");
 
-  console.log("画像生成呼び出し:", state.backgroundImage);
-  await drawAdpCourseImage(stats, state.backgroundImage);
-  console.log("画像生成完了");
+  } catch (e) {
+    console.error("表示ボタン処理中に例外:", e);
+  }
 };
 
 
