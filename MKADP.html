@@ -2674,31 +2674,21 @@ function calcStats(records) {
    基本統計 & モード別グラフ
 ========== */
 async function getStatsFilteredRecords() {
-  // ★ DB から直接取得する（古い allRecords を使わない）
   let r = await getAllRecords();
 
   const mode   = statsMode?.value ?? "ALL";
   const season = statsSeason?.value ?? "ALL";
   const tier   = statsTier?.value ?? "ALL";
 
-  // ▼ モード
   if (mode !== "ALL") r = r.filter(x => x.mode === mode);
-
-  // ▼ Season
   if (season !== "ALL") r = r.filter(x => x.season === season);
-
-  // ▼ Tier
   if (tier !== "ALL") r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N（timestamp ソート必須）
   const rangeSel = statsRangeSelect?.value ?? "ALL";
   if (rangeSel !== "ALL") {
-    let N = 0;
-    if (rangeSel === "CUSTOM") {
-      N = Number(statsRangeInput?.value || 0);
-    } else {
-      N = Number(rangeSel);
-    }
+    let N = rangeSel === "CUSTOM"
+      ? Number(statsRangeInput?.value || 0)
+      : Number(rangeSel);
 
     if (N > 0) {
       r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
@@ -3025,9 +3015,12 @@ function updateLoungeSetView() {
 }
 
 function drawWinRateChart(records) {
-  const ctx = document.getElementById("chartWinRate").getContext("2d");
+  const canvas = document.getElementById("chartWinRate");
+  if (!canvas) return;  // ★ DOM が無ければ描画しない
 
-  // ▼ destroy を安全に呼ぶ
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
   if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
     window.chartWinRate.destroy();
   }
