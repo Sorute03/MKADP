@@ -5403,9 +5403,7 @@ async function getAdpCourseStatsOnly() {
   }));
 }
 
-async function initAdpCourseSelects() {
-  const stats = await getAdpCourseStatsOnly();
-
+function initAdpCourseSelects() {
   const ids = [
     "adpCourseSelect1",
     "adpCourseSelect2",
@@ -5420,9 +5418,10 @@ async function initAdpCourseSelects() {
 
     sel.innerHTML =
       `<option value="">（未選択）</option>` +
-      stats.map(s => `<option value="${s.course}">${s.course}</option>`).join("");
+      courseList.map(c => `<option value="${c}">${c}</option>`).join("");
   });
 }
+
 
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
