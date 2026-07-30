@@ -5842,11 +5842,14 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ▼ 背景画像が DataURL かどうか判定
-  const isValidBg = (
-    typeof backgroundUrl === "string" &&
-    backgroundUrl.startsWith("data:image")
-  );
+  // ★ 背景URLが null / undefined / 数値でも絶対に落ちないようにする
+  if (!backgroundUrl || typeof backgroundUrl !== "string") {
+    backgroundUrl = null;
+  }
+
+  const isValidBg =
+    backgroundUrl &&
+    backgroundUrl.startsWith("data:image");
 
   if (isValidBg) {
     const bg = new Image();
@@ -5855,19 +5858,15 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     try {
       await bg.decode();
 
-      // ▼ ★ Canvas フィルタ適用（明るさ・コントラスト・ぼかし）
       ctx.filter = `
         brightness(${state.bgBrightness})
         contrast(${state.bgContrast})
         blur(${state.bgBlur}px)
       `;
-
-      // ▼ ★ 透過度
       ctx.globalAlpha = state.bgOpacity;
 
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-      // ▼ 他の描画に影響しないようにリセット
       ctx.filter = "none";
       ctx.globalAlpha = 1;
 
@@ -5878,12 +5877,11 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     }
 
   } else {
-    // ▼ 背景画像なし → 背景色
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ▼ ここからテキスト描画（あなたの既存コード）
+  // ★ ここからテキスト描画（既存コード）
   ctx.fillStyle = "white";
   ctx.font = "24px 'Noto Sans JP'";
   ctx.textBaseline = "top";
