@@ -5864,32 +5864,38 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   if (isValidBg) {
     const bg = new Image();
     bg.src = backgroundUrl;
-
+  
+    console.log("背景画像 src セット:", bg.src.slice(0, 50));
+  
     try {
       await bg.decode();
-
-      ctx.filter = `
-        brightness(${state.bgBrightness})
-        contrast(${state.bgContrast})
-        blur(${state.bgBlur}px)
-      `;
-      ctx.globalAlpha = state.bgOpacity;
-
+      console.log("背景 decode 成功");
+  
+      ctx.filter =
+        `brightness(${Number(state.bgBrightness)}) ` +
+        `contrast(${Number(state.bgContrast)}) ` +
+        `blur(${Number(state.bgBlur)}px)`;
+  
+      ctx.globalAlpha = Number(state.bgOpacity);
+  
+      console.log("背景 drawImage 実行");
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
+  
       ctx.filter = "none";
       ctx.globalAlpha = 1;
-
+  
     } catch (e) {
       console.error("背景画像 decode に失敗:", e);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-
+  
   } else {
+    console.warn("背景画像が無効:", backgroundUrl);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
 
   // ★ ここからテキスト描画（既存コード）
   ctx.fillStyle = "white";
