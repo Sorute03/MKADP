@@ -702,8 +702,8 @@ const courseList = [
     <h3>背景画像設定（コース比較画像用）</h3>
 
     <label>背景画像</label><br>
-    <input type="file" id="adpCourseBgInput" accept="image/*"><br><br>
-
+    <input type="file" id="adpCourseBgInput" accept="image/*"
+       onchange="setBgImage(this.files[0])">
     <label>明るさ</label><br>
     <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
 
