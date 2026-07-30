@@ -5466,67 +5466,87 @@ function initAdpCourseSelects() {
 
 
   
-function drawAdpCourseStatsTable(list) {
-  const box = document.getElementById("adpCourseStatsResult");
-  box.innerHTML = "";
-
+function drawAdpCourseStatsTable(stats) {
   let html = `
-    <table border="1" style="border-collapse:collapse;">
+    <table border="1" cellpadding="4">
       <tr>
         <th>コース</th>
-        <th>走行数</th>
+        <th>レース数</th>
         <th>平均順位</th>
         <th>中央値</th>
-        <th>勝率(3位以内)</th>
-        <th>平均得点</th>
+        <th>標準偏差</th>
+        <th>トップ3率</th>
+        <th>平均ポイント</th>
+        <th>勝率</th>
       </tr>
   `;
 
-  list.forEach(s => {
+  stats.forEach(s => {
     html += `
       <tr>
         <td>${s.course}</td>
         <td>${s.count}</td>
-        <td>${s.avgRank}</td>
-        <td>${s.medianRank}</td>
-        <td>${s.winRate}%</td>
-        <td>${s.avgScore}</td>
+        <td>${s.avgRank.toFixed(2)}</td>
+        <td>${s.medianRank.toFixed(2)}</td>
+        <td>${s.rankStdDev.toFixed(2)}</td>
+        <td>${(s.top3Rate * 100).toFixed(1)}%</td>
+        <td>${s.avgPoints.toFixed(2)}</td>
+        <td>${(s.winRate * 100).toFixed(1)}%</td>
       </tr>
     `;
   });
 
-  html += "</table>";
-  box.innerHTML = html;
+  html += `</table>`;
+  document.getElementById("adpCourseStatsResult").innerHTML = html;
 }
 
-function drawAdpCourseStatsChart(list) {
+
+let chartAdpCourseStats = null;
+
+function drawAdpCourseStatsChart(stats) {
   const ctx = document.getElementById("adpCourseStatsChart").getContext("2d");
 
-  const labels = list.map(s => s.course);
+  // ★ 既存チャートを安全に破棄
+  if (chartAdpCourseStats && typeof chartAdpCourseStats.destroy === "function") {
+    chartAdpCourseStats.destroy();
+  }
 
-  new Chart(ctx, {
+  // ★ 新しいチャートを作成
+  chartAdpCourseStats = new Chart(ctx, {
     type: "bar",
     data: {
-      labels,
+      labels: stats.map(s => s.course),
       datasets: [
         {
           label: "平均順位",
-          data: list.map(s => s.avgRank),
+          data: stats.map(s => s.avgRank),
+          backgroundColor: "rgba(75, 192, 192, 0.6)"
+        },
+        {
+          label: "中央値順位",
+          data: stats.map(s => s.medianRank),
+          backgroundColor: "rgba(153, 102, 255, 0.6)"
+        },
+        {
+          label: "標準偏差",
+          data: stats.map(s => s.rankStdDev),
+          backgroundColor: "rgba(255, 159, 64, 0.6)"
+        },
+        {
+          label: "トップ3率",
+          data: stats.map(s => s.top3Rate * 100),
           backgroundColor: "rgba(255, 99, 132, 0.6)"
         },
         {
-          label: "平均得点",
-          data: list.map(s => s.avgScore),
+          label: "平均ポイント",
+          data: stats.map(s => s.avgPoints),
           backgroundColor: "rgba(54, 162, 235, 0.6)"
         }
       ]
-    },
-    options: {
-      responsive: false,
-      scales: { y: { beginAtZero: true } }
     }
   });
 }
+
 
 function filterAdpRecords(records, filters) {
   return records.filter(r => {
@@ -5553,39 +5573,57 @@ function applyRecentFilter(records, N) {
 
 
 function aggregateCourseStats(records) {
-  const map = {};
+  const grouped = {};
 
   records.forEach(r => {
-    if (!map[r.course]) {
-      map[r.course] = {
-        count: 0,
-        ranks: [],
-        scores: []
-      };
-    }
-    map[r.course].count++;
-    map[r.course].ranks.push(r.rank);
-    map[r.course].scores.push(r.score);
+    if (!grouped[r.course]) grouped[r.course] = [];
+    grouped[r.course].push(r);
   });
 
-  return Object.entries(map).map(([course, data]) => {
-    const avgRank = data.ranks.reduce((a,b)=>a+b,0) / data.ranks.length;
-    const avgScore = data.scores.reduce((a,b)=>a+b,0) / data.scores.length;
+  const stats = [];
 
-    const sortedRanks = [...data.ranks].sort((a,b)=>a-b);
-    const medianRank = sortedRanks[Math.floor(sortedRanks.length/2)];
+  for (const course in grouped) {
+    const rs = grouped[course];
+    const count = rs.length;
 
-    const winRate = data.ranks.filter(r => r <= 3).length / data.ranks.length;
+    const ranks = rs.map(r => r.rank).sort((a, b) => a - b);
+    const scores = rs.map(r => r.score);
 
-    return {
+    // ★中央値
+    const mid = Math.floor(ranks.length / 2);
+    const medianRank =
+      ranks.length % 2 === 0
+        ? (ranks[mid - 1] + ranks[mid]) / 2
+        : ranks[mid];
+
+    // ★標準偏差
+    const avgRank = ranks.reduce((a, b) => a + b, 0) / count;
+    const rankStdDev = Math.sqrt(
+      ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / count
+    );
+
+    // ★トップ3率
+    const top3Rate = rs.filter(r => r.rank <= 3).length / count;
+
+    // ★平均ポイント
+    const avgPoints = scores.reduce((a, b) => a + b, 0) / count;
+
+    // 既存項目（必要なら追加）
+    const winRate = rs.filter(r => r.rank === 1).length / count;
+
+    stats.push({
       course,
-      count: data.count,
-      avgRank: Number(avgRank.toFixed(2)),
-      avgScore: Number(avgScore.toFixed(2)),
+      count,
+      avgRank,
+      winRate,
       medianRank,
-      winRate: Number((winRate * 100).toFixed(1))
-    };
-  });
+      rankStdDev,
+      top3Rate,
+      avgPoints
+    });
+  }
+
+  return stats;
 }
 
 function applyAndOrFilter(records, filters, mode) {
@@ -5783,6 +5821,9 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     ctx.fillText(`中央値: ${s.medianRank}`, 60, y); y += 25;
     ctx.fillText(`勝率(3位以内): ${s.winRate}%`, 60, y); y += 25;
     ctx.fillText(`平均得点: ${s.avgScore}`, 60, y); y += 40;
+    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x, y + 90);
+    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x, y + 120);
+    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x, y + 180);
   });
 }
   
