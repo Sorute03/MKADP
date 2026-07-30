@@ -5425,52 +5425,42 @@ function initAdpCourseSelects() {
 
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  console.log("表示ボタン押された");
 
-  try {
-    const ids = [
-      "adpCourseSelect1",
-      "adpCourseSelect2",
-      "adpCourseSelect3",
-      "adpCourseSelect4",
-      "adpCourseSelect5"
-    ];
+  // 5つのセレクトから選択されたコースを取得
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
 
-    const selectedCourses = ids
-      .map(id => document.getElementById(id).value)
-      .filter(v => v && v !== "");
+  const selectedCourses = ids
+    .map(id => document.getElementById(id).value)
+    .filter(v => v && v !== "");
 
-    console.log("選択コース:", selectedCourses);
-
-    const records = await loadADPIndexedDBRecords();
-    console.log("records:", records.length);
-
-    const filtered = applyAndOrFilter(records, {
-      season: adpSeasonSelect.value,
-      tier: adpTierSelect.value,
-      recent: adpRecentSelect.value,
-      courses: selectedCourses,
-      mode: adpModeSelect.value
-    }, adpFilterModeSelect.value);
-
-    console.log("filtered:", filtered.length);
-
-    const stats = aggregateCourseStats(filtered);
-    console.log("stats:", stats);
-
-    drawAdpCourseStatsTable(stats);
-    console.log("テーブル描画OK");
-
-    drawAdpCourseStatsChart(stats);
-    console.log("グラフ描画OK");
-
-    console.log("画像生成呼び出し:", state.backgroundImage);
-    await drawAdpCourseImage(stats, state.backgroundImage);
-    console.log("画像生成完了");
-
-  } catch (e) {
-    console.error("表示ボタン処理中に例外:", e);
+  if (selectedCourses.length === 0) {
+    return alert("コースを選択してください");
   }
+
+  const records = await loadADPIndexedDBRecords();
+
+  const filtered = applyAndOrFilter(records, {
+    season: adpSeasonSelect.value,
+    tier: adpTierSelect.value,
+    recent: adpRecentSelect.value,
+    courses: selectedCourses,
+    mode: adpModeSelect.value
+  }, adpFilterModeSelect.value);
+
+  const stats = aggregateCourseStats(filtered);
+
+  drawAdpCourseStatsTable(stats);
+  drawAdpCourseStatsChart(stats);
+
+  window.latestAdpCourseStats = stats;
+
+  await drawAdpCourseImage(stats, state.backgroundImage);
 };
 
 
