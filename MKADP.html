@@ -572,14 +572,22 @@ const courseList = [
   <div id="raceHistoryList"></div>
 </div>
 
-  
+<label>Webhook 名前</label><br>
+<input id="webhookNameInput" type="text" placeholder="例：大会用"><br><br>
+
+<label>Webhook URL</label><br>
+<input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..."><br><br>
+
+<button onclick="addWebhook()">追加</button>
+
+<div id="webhookListArea" style="margin-top:10px;"></div>
+
 <!-- ▼ ラウンジ統計タブ -->
 <div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
 
   <h2>Lounge Stats Viewer</h2>
 
   <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
-  <input id="discordWebhookInput" placeholder="Discord Webhook URL（任意）" style="padding:6px; width:300px;">
   <button id="loadLoungeBtn">データ取得</button>
   <button id="sendDiscordBtn">Discordへ送信</button>
 
@@ -5737,14 +5745,23 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
 };
 
 
-document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
-  if (!window.latestAdpCourseStats) {
-    alert("まず『表示』を押して結果を生成してください");
-    return;
+document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
+  if (activeWebhookIndex === -1) {
+    return alert("Webhook が選択されていません");
   }
 
-  sendAdpCourseStatsToDiscord(window.latestAdpCourseStats);
+  const { url } = webhookList[activeWebhookIndex];
+  const text = generateAdpCourseStatsText(window.latestAdpCourseStats);
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: text })
+  });
+
+  alert("送信しました");
 };
+
 
 
 async function drawAdpCourseImage(stats, backgroundUrl) {
@@ -5816,12 +5833,25 @@ async function sendAdpCourseImageToDiscord() {
 }
 
 
-document.getElementById("sendAdpCourseImageBtn").onclick = () => {
-  if (!window.latestAdpCourseStats) {
-    alert("まず『表示』を押して結果を生成してください");
-    return;
+document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
+  if (activeWebhookIndex === -1) {
+    return alert("Webhook が選択されていません");
   }
-  sendAdpCourseImageToDiscord();
+
+  const { url } = webhookList[activeWebhookIndex];
+
+  const canvas = document.getElementById("adpCourseImage");
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
+  const form = new FormData();
+  form.append("file", blob, "course_stats.png");
+
+  await fetch(url, {
+    method: "POST",
+    body: form
+  });
+
+  alert("画像を送信しました");
 };
 
 
@@ -5838,6 +5868,94 @@ function initAdpCourseSelector() {
   sel.innerHTML =
     courseList.map(c => `<option value="${c}">${c}</option>`).join("");
 }
+
+  
+
+let webhookList = [];
+let activeWebhookIndex = -1;
+
+function loadWebhookSettings() {
+  const saved = localStorage.getItem("mk_webhooks");
+  if (saved) {
+    const obj = JSON.parse(saved);
+    webhookList = obj.list || [];
+    activeWebhookIndex = obj.active ?? -1;
+  }
+  renderWebhookList();
+}
+
+function saveWebhookSettings() {
+  localStorage.setItem("mk_webhooks", JSON.stringify({
+    list: webhookList,
+    active: activeWebhookIndex
+  }));
+}
+
+function addWebhook() {
+  const name = document.getElementById("webhookNameInput").value.trim();
+  const url  = document.getElementById("webhookUrlInput").value.trim();
+
+  if (!name) return alert("Webhook 名を入力してください");
+  if (!url.startsWith("https://discord.com/api/webhooks/")) {
+    return alert("Discord Webhook URL の形式ではありません");
+  }
+
+  webhookList.push({ name, url });
+
+  if (activeWebhookIndex === -1) activeWebhookIndex = 0;
+
+  saveWebhookSettings();
+  renderWebhookList();
+
+  document.getElementById("webhookNameInput").value = "";
+  document.getElementById("webhookUrlInput").value = "";
+}
+
+function deleteWebhook(index) {
+  webhookList.splice(index, 1);
+
+  if (activeWebhookIndex === index) {
+    activeWebhookIndex = webhookList.length ? 0 : -1;
+  }
+
+  saveWebhookSettings();
+  renderWebhookList();
+}
+
+function selectWebhook(index) {
+  activeWebhookIndex = index;
+  saveWebhookSettings();
+  renderWebhookList();
+}
+
+function renderWebhookList() {
+  const area = document.getElementById("webhookListArea");
+  if (!area) return;
+
+  if (!webhookList.length) {
+    area.innerHTML = "<div>登録された Webhook はありません。</div>";
+    return;
+  }
+
+  let html = "";
+  webhookList.forEach((w, i) => {
+    const active = (i === activeWebhookIndex)
+      ? "style='color:#4caf50;font-weight:bold;'"
+      : "";
+
+    html += `
+      <div style="margin-bottom:6px;">
+        <span ${active}>${w.name}</span>
+        <button onclick="selectWebhook(${i})">使用</button>
+        <button onclick="deleteWebhook(${i})">削除</button>
+      </div>
+    `;
+  });
+
+  area.innerHTML = html;
+}
+
+
 </script>
 
 </body>
