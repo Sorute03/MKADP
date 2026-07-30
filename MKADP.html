@@ -5640,7 +5640,7 @@ async function getFilteredAdpCourseStats(filters) {
   // 最大 5 コースに制限
   return stats.slice(0, 5);
 }
-  
+
 function initAdpCourseSelect() {
   const sel = document.getElementById("adpCourseSelect");
 
@@ -5652,19 +5652,13 @@ function initAdpCourseSelect() {
   });
 }
 
-document.getElementById("adpCourseSelect").addEventListener("change", () => {
-  const sel = document.getElementById("adpCourseSelect");
-  const selected = [...sel.selectedOptions];
 
-  if (selected.length > 5) {
-    selected[selected.length - 1].selected = false;
-    alert("最大5コースまで選択できます");
-  }
-});
-  
 function getSelectedWebhookUrl() {
-  return currentWebhookUrl; // あなたの既存変数に合わせて変更
+  if (activeWebhookIndex === -1) return null;
+  return webhookList[activeWebhookIndex].url;
 }
+
+
 
 function buildAdpCourseStatsMessage(stats) {
   let lines = [];
