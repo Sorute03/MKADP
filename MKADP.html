@@ -5992,20 +5992,19 @@ document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
 
   const { url } = webhookList[activeWebhookIndex];
 
-  // ★ stats はここで取得する
   const stats = window.latestAdpCourseStats;
-  if (!stats) return alert("まず『表示』を押して結果を生成してください");
+  if (!Array.isArray(stats)) {
+    return alert("まず『表示』を押して結果を生成してください");
+  }
 
-  // ★ 背景画像
-  const bg = state.backgroundImage || "default_background.png";
+  const bg = state.backgroundImage;
 
-  // ★ 画像生成
+  // ★ 正しい呼び出し
+  await drawAdpCourseImage(stats, bg);
+
   const canvas = document.getElementById("adpCourseImage");
-  const ctx = canvas.getContext("2d");
-  await drawAdpCourseImage(ctx, canvas.width, canvas.height, stats, bg);
-
-  // ★ Discord送信
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
   const form = new FormData();
   form.append("file", blob, "course_stats.png");
 
@@ -6013,9 +6012,6 @@ document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
 
   alert("画像を送信しました");
 };
-
-
-
 
 
 
