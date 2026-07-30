@@ -5319,11 +5319,11 @@ function setBgImage(file) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    // ★ DataURL を state に保存する（絶対に数値にならない）
-    state.backgroundImage = reader.result;
+    state.backgroundImage = reader.result;  // ★ DataURL を保存
   };
   reader.readAsDataURL(file);
 }
+
 
 function setBgBrightness(v) { state.bgBrightness = Number(v); }
 function setBgContrast(v) { state.bgContrast = Number(v); }
@@ -5852,25 +5852,48 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ★ 背景画像の安全処理（数値や undefined を防ぐ）
-  let bgSrc = backgroundUrl;
-  if (!bgSrc || typeof bgSrc !== "string" || !bgSrc.startsWith("data:image")) {
-    bgSrc = "default_background.png";   // ← あなたの環境に合わせて変更
+  // ▼ 背景画像が DataURL かどうか判定
+  const isValidBg = (
+    typeof backgroundUrl === "string" &&
+    backgroundUrl.startsWith("data:image")
+  );
+
+  if (isValidBg) {
+    const bg = new Image();
+    bg.src = backgroundUrl;
+
+    try {
+      await bg.decode();
+
+      // ▼ ★ Canvas フィルタ適用（明るさ・コントラスト・ぼかし）
+      ctx.filter = `
+        brightness(${state.bgBrightness})
+        contrast(${state.bgContrast})
+        blur(${state.bgBlur}px)
+      `;
+
+      // ▼ ★ 透過度
+      ctx.globalAlpha = state.bgOpacity;
+
+      ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+      // ▼ 他の描画に影響しないようにリセット
+      ctx.filter = "none";
+      ctx.globalAlpha = 1;
+
+    } catch (e) {
+      console.error("背景画像 decode に失敗:", e);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+  } else {
+    // ▼ 背景画像なし → 背景色
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  const bg = new Image();
-  bg.src = bgSrc;
-
-  try {
-    await bg.decode();
-  } catch (e) {
-    console.error("背景画像 decode に失敗:", e);
-    return;
-  }
-
-  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-  // ★ テキスト設定
+  // ▼ ここからテキスト描画（あなたの既存コード）
   ctx.fillStyle = "white";
   ctx.font = "24px 'Noto Sans JP'";
   ctx.textBaseline = "top";
@@ -5890,7 +5913,6 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     ctx.fillText(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`, x + 20, y); y += 25;
     ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x + 20, y); y += 40;
 
-    // ★ Season / Tier があれば表示
     if (s.season && Object.keys(s.season).length > 0) {
       ctx.fillText(`Season別:`, x + 20, y); y += 25;
       Object.keys(s.season).forEach(se => {
@@ -5922,6 +5944,7 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     y += 20;
   });
 }
+
 
 async function sendAdpCourseImageToDiscord() {
   const canvas = document.getElementById("adpCourseImage");
