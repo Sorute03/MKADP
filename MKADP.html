@@ -649,6 +649,16 @@ const courseList = [
    <!-- ▼ ADP コースフィルター -->
   <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
     <h3>コース統計フィルター</h3>
+    
+    <!-- Mode -->
+    <label>モード</label><br>
+    <select id="adpModeSelect" style="width:200px;">
+      <option value="ALL">ALL</option>
+      <option value="lounge">ラウンジ</option>
+      <option value="nora">野良</option>
+      <option value="tournament">大会</option>
+    </select>
+    <br><br>
 
     <!-- Season（ラウンジ時のみ有効） -->
     <label>Season</label><br>
@@ -678,15 +688,6 @@ const courseList = [
     </select>
     <br><br>
 
-    <!-- Mode -->
-    <label>モード</label><br>
-    <select id="adpModeSelect" style="width:200px;">
-      <option value="ALL">ALL</option>
-      <option value="lounge">ラウンジ</option>
-      <option value="nora">野良</option>
-      <option value="tournament">大会</option>
-    </select>
-    <br><br>
 
     <!-- AND / OR -->
     <label>フィルター方式</label><br>
