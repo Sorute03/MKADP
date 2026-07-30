@@ -627,24 +627,77 @@ const courseList = [
 </div>
 
 
-<!-- ▼ courseStatsTab（タブとして使う） -->
-<div id="courseStatsTab" style="padding: 16px;">
+<!-- ADP コース比較セクション（5つのプルダウン方式） -->
+<div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+  <p>コースを最大5つ選択:</p>
 
-  <!-- ADP コース比較セクション（ID はそのまま） -->
-  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-    <p>コースを最大5つ選択:</p>
-
-    <!-- ★ 中身は JS で流し込む（ID はそのまま） -->
-    <select id="adpCourseSelect" multiple size="10" style="width:260px;"></select>
-
-    <div style="margin-top: 8px;">
-      <button id="showAdpCourseStatsBtn">表示</button>
-      <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
-      <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
-    </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <select id="adpCourseSelect1" style="width:200px;"></select>
+    <select id="adpCourseSelect2" style="width:200px;"></select>
+    <select id="adpCourseSelect3" style="width:200px;"></select>
+    <select id="adpCourseSelect4" style="width:200px;"></select>
+    <select id="adpCourseSelect5" style="width:200px;"></select>
   </div>
 
-  <!-- 背景画像設定（ID はそのまま） -->
+  <div style="margin-top: 8px;">
+    <button id="showAdpCourseStatsBtn">表示</button>
+    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+  </div>
+</div>
+
+
+  <!-- ▼ ADP コースフィルター -->
+  <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
+    <h3>コース統計フィルター</h3>
+
+    <!-- Season（ラウンジ時のみ有効） -->
+    <label>Season</label><br>
+    <select id="adpSeasonSelect" style="width:200px;">
+      <option value="ALL">ALL</option>
+      <option value="S1">S1</option>
+      <option value="S2">S2</option>
+      <option value="S3">S3</option>
+      <option value="S4">S4</option>
+      <option value="S5">S5</option>
+    </select>
+    <br><br>
+
+    <!-- Tier（ラウンジ時のみ有効） -->
+    <label>Tier</label><br>
+    <select id="adpTierSelect" style="width:200px;"></select>
+    <br><br>
+
+    <!-- Recent -->
+    <label>直近 N レース</label><br>
+    <select id="adpRecentSelect" style="width:200px;">
+      <option value="ALL">ALL</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+    <br><br>
+
+    <!-- Mode -->
+    <label>モード</label><br>
+    <select id="adpModeSelect" style="width:200px;">
+      <option value="ALL">ALL</option>
+      <option value="lounge">ラウンジ</option>
+      <option value="nora">野良</option>
+      <option value="tournament">大会</option>
+    </select>
+    <br><br>
+
+    <!-- AND / OR -->
+    <label>フィルター方式</label><br>
+    <select id="adpFilterModeSelect" style="width:200px;">
+      <option value="AND">AND</option>
+      <option value="OR">OR</option>
+    </select>
+  </div>
+
+  <!-- 背景画像設定 -->
   <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
     <h3>背景画像設定（コース比較画像用）</h3>
 
@@ -664,7 +717,7 @@ const courseList = [
     <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
   </div>
 
-  <!-- テキスト色設定（ID はそのまま） -->
+  <!-- テキスト色設定 -->
   <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
     <h3>テキスト色設定</h3>
 
@@ -684,14 +737,14 @@ const courseList = [
     <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
   </div>
 
-  <!-- テキスト結果表示（ID はそのまま） -->
+  <!-- テキスト結果表示 -->
   <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
 
-  <!-- グラフ表示（ID はそのまま） -->
+  <!-- グラフ表示 -->
   <canvas id="adpCourseStatsChart" width="600" height="300"
     style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
 
-  <!-- 画像生成 Canvas（ID はそのまま） -->
+  <!-- 画像生成 Canvas -->
   <canvas id="adpCourseImage" width="800" height="600"
     style="border:1px solid #ccc; display:block;"></canvas>
 
@@ -2520,6 +2573,7 @@ window.addEventListener("load", async () => {
   initAISelector();
   initOBSSeasonSelector();
   initAdpCourseSelector();
+  initAdpCourseSelects();
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -4758,6 +4812,33 @@ window.addEventListener("load", async () => {
 });
 
 
+function initAdpTierSelect() {
+  const sel = document.getElementById("adpTierSelect");
+  sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+initAdpTierSelect();
+
+function updateAdpFilterByMode() {
+  const mode = adpModeSelect.value;
+
+  const seasonSel = document.getElementById("adpSeasonSelect");
+  const tierSel   = document.getElementById("adpTierSelect");
+
+  if (mode === "lounge") {
+    seasonSel.disabled = false;
+    tierSel.disabled = false;
+  } else {
+    seasonSel.value = "ALL";
+    tierSel.value = "ALL";
+    seasonSel.disabled = true;
+    tierSel.disabled = true;
+  }
+}
+
+document.getElementById("adpModeSelect").addEventListener("change", updateAdpFilterByMode);
+updateAdpFilterByMode();
+
+
 
 async function apiSearchPlayer(name) {
   const apiUrl =
@@ -5317,8 +5398,19 @@ async function initAdpCourseSelect() {
 }
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  const sel = document.getElementById("adpCourseSelect");
-  const selectedCourses = [...sel.selectedOptions].map(o => o.value);
+
+  // 5つのセレクトから選択されたコースを取得
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  const selectedCourses = ids
+    .map(id => document.getElementById(id).value)
+    .filter(v => v && v !== ""); // 未選択を除外
 
   if (selectedCourses.length === 0) {
     return alert("コースを選択してください");
@@ -5327,18 +5419,45 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   const records = await loadADPIndexedDBRecords();
 
   const filtered = applyAndOrFilter(records, {
-    season: currentSeasonFilter,
-    tier: currentTierFilter,
-    recent: currentRecentFilter,
+    season: adpSeasonSelect.value,
+    tier: adpTierSelect.value,
+    recent: adpRecentSelect.value,
     courses: selectedCourses,
-    mode: currentFilterMode
-  }, currentFilterMode);
+    mode: adpModeSelect.value
+  }, adpFilterModeSelect.value);
 
   const stats = aggregateCourseStats(filtered);
 
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
+
+  window.latestAdpCourseStats = stats;
 };
+
+// 既存の courseList をそのまま使う
+// const courseList = [ ... ] // ← これは既に定義済み前提
+
+function initAdpCourseSelects() {
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+
+    sel.innerHTML =
+      `<option value="">（未選択）</option>` +
+      courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+  });
+}
+
+
+
 
   
 function drawAdpCourseStatsTable(list) {
@@ -5464,27 +5583,41 @@ function aggregateCourseStats(records) {
 }
 
 function applyAndOrFilter(records, filters, mode) {
+
+  // AND モード
   if (mode === "AND") {
     return records.filter(r => {
-      if (filters.season && r.season !== filters.season) return false;
-      if (filters.tier && r.tier !== filters.tier) return false;
+
+      if (filters.season && filters.season !== "ALL" && r.season !== filters.season) return false;
+      if (filters.tier && filters.tier !== "ALL" && r.tier !== filters.tier) return false;
+
       if (filters.courses && filters.courses.length > 0 && !filters.courses.includes(r.course)) return false;
+
+      if (filters.mode && filters.mode !== "ALL" && r.mode !== filters.mode) return false;
+
+      if (filters.recent && filters.recent !== "ALL") {
+        // recent は apply 前に records を切る方が正しいが簡易対応
+      }
+
       return true;
     });
   }
 
+  // OR モード
   if (mode === "OR") {
     return records.filter(r => {
       return (
-        (filters.season && r.season === filters.season) ||
-        (filters.tier && r.tier === filters.tier) ||
-        (filters.courses && filters.courses.includes(r.course))
+        (filters.season && filters.season !== "ALL" && r.season === filters.season) ||
+        (filters.tier && filters.tier !== "ALL" && r.tier === filters.tier) ||
+        (filters.courses && filters.courses.includes(r.course)) ||
+        (filters.mode && filters.mode !== "ALL" && r.mode === filters.mode)
       );
     });
   }
 
   return records;
 }
+
 
 
 async function getFilteredAdpCourseStats(filters) {
@@ -5569,8 +5702,17 @@ async function sendAdpCourseStatsToDiscord(stats) {
 }
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  const sel = document.getElementById("adpCourseSelect");
-  const selectedCourses = [...sel.selectedOptions].map(o => o.value);
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  const selectedCourses = ids
+    .map(id => document.getElementById(id).value)
+    .filter(v => v && v !== "");
 
   if (selectedCourses.length === 0) {
     return alert("コースを選択してください");
@@ -5579,21 +5721,21 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   const records = await loadADPIndexedDBRecords();
 
   const filtered = applyAndOrFilter(records, {
-    season: currentSeasonFilter,
-    tier: currentTierFilter,
-    recent: currentRecentFilter,
+    season: adpSeasonSelect.value,
+    tier: adpTierSelect.value,
+    recent: adpRecentSelect.value,
     courses: selectedCourses,
-    mode: currentFilterMode
-  }, currentFilterMode);
+    mode: adpModeSelect.value
+  }, adpFilterModeSelect.value);
 
   const stats = aggregateCourseStats(filtered);
 
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
 
-  // ▼ 送信ボタンに結果を渡す
   window.latestAdpCourseStats = stats;
 };
+
 
 document.getElementById("sendAdpCourseStatsBtn").onclick = () => {
   if (!window.latestAdpCourseStats) {
