@@ -646,16 +646,7 @@ const courseList = [
     <select id="adpCourseSelect4" style="width:200px;"></select>
     <select id="adpCourseSelect5" style="width:200px;"></select>
   </div>
-
-  <div style="margin-top: 8px;">
-    <button id="showAdpCourseStatsBtn">表示</button>
-    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
-    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
-  </div>
-</div>
-
-
-  <!-- ▼ ADP コースフィルター -->
+   <!-- ▼ ADP コースフィルター -->
   <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
     <h3>コース統計フィルター</h3>
 
@@ -756,8 +747,15 @@ const courseList = [
   <canvas id="adpCourseImage" width="800" height="600"
     style="border:1px solid #ccc; display:block;"></canvas>
 
+  <div style="margin-top: 8px;">
+    <button id="showAdpCourseStatsBtn">表示</button>
+    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+  </div>
 </div>
 
+
+ 
 
   
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
@@ -2580,7 +2578,6 @@ window.addEventListener("load", async () => {
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
-  initAdpCourseSelector();
   initAdpCourseSelects();
 
   // ▼ AI セレクタの onchange を登録
@@ -5862,12 +5859,6 @@ const bg = state.backgroundImage || "default_background.png";
 
 drawAdpCourseImage(stats, bg);
 
-function initAdpCourseSelector() {
-  const sel = document.getElementById("adpCourseSelect");
-
-  sel.innerHTML =
-    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
-}
 
   
 
