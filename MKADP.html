@@ -2673,12 +2673,13 @@ function calcStats(records) {
 /* ==========
    基本統計 & モード別グラフ
 ========== */
-function getStatsFilteredRecords() {
-  let r = [...allRecords];
+async function getStatsFilteredRecords() {
+  // ★ DB から直接取得する（古い allRecords を使わない）
+  let r = await getAllRecords();
 
-  const mode   = statsMode.value;
-  const season = statsSeason.value;
-  const tier   = statsTier.value;
+  const mode   = statsMode?.value ?? "ALL";
+  const season = statsSeason?.value ?? "ALL";
+  const tier   = statsTier?.value ?? "ALL";
 
   // ▼ モード
   if (mode !== "ALL") r = r.filter(x => x.mode === mode);
@@ -2689,18 +2690,17 @@ function getStatsFilteredRecords() {
   // ▼ Tier
   if (tier !== "ALL") r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const rangeSel = statsRangeSelect.value;
+  // ▼ 直近 N（timestamp ソート必須）
+  const rangeSel = statsRangeSelect?.value ?? "ALL";
   if (rangeSel !== "ALL") {
     let N = 0;
     if (rangeSel === "CUSTOM") {
-      N = Number(statsRangeInput.value || 0);
+      N = Number(statsRangeInput?.value || 0);
     } else {
       N = Number(rangeSel);
     }
 
     if (N > 0) {
-      // ★ DB版では timestamp でソートしてから slice
       r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       r = r.slice(-N);
     }
@@ -2708,6 +2708,7 @@ function getStatsFilteredRecords() {
 
   return r;
 }
+
 
 
 function getGrowthFilteredRecords() {
@@ -2945,32 +2946,39 @@ function getScatterFilteredRecords() {
   return r;
 }
 
-function updateStatsView() {
-  const records = getStatsFilteredRecords();
+async function updateStatsView() {
+  const records = await getStatsFilteredRecords();
+  if (!records) return;
 
   const count = records.length;
   const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
   const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
   const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
 
-  document.getElementById("basicStats").innerHTML = `
-    <p>対象レース数：${count}</p>
-    <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
-  `;
-
-  const lounge12 = records.filter(r => r.totalScore12);
-  if (lounge12.length) {
-    const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-    document.getElementById("avgTotalScore12Text").innerText =
-      `12レース平均合計スコア：${avg12.toFixed(1)}点`;
-  } else {
-    document.getElementById("avgTotalScore12Text").innerText = "";
+  const basicStatsEl = document.getElementById("basicStats");
+  if (basicStatsEl) {
+    basicStatsEl.innerHTML = `
+      <p>対象レース数：${count}</p>
+      <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
+    `;
   }
 
-  drawWinRateChart(records);
-  drawAvgRankChart(records);
-  drawAvgScoreChart(records);
+  const avg12El = document.getElementById("avgTotalScore12Text");
+  if (avg12El) {
+    const lounge12 = records.filter(r => r.totalScore12);
+    if (lounge12.length) {
+      const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
+      avg12El.innerText = `12レース平均合計スコア：${avg12.toFixed(1)}点`;
+    } else {
+      avg12El.innerText = "";
+    }
+  }
+
+  if (typeof drawWinRateChart === "function") drawWinRateChart(records);
+  if (typeof drawAvgRankChart === "function") drawAvgRankChart(records);
+  if (typeof drawAvgScoreChart === "function") drawAvgScoreChart(records);
 }
+
 
 function updateGrowthView() {
   const records = getGrowthFilteredRecords();
