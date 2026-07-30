@@ -3148,14 +3148,21 @@ function drawHeatmap(map) {
 
 
 function drawAvgRankChart(records) {
-  const ctx = document.getElementById("chartAvgRank").getContext("2d");
+  const canvas = document.getElementById("chartAvgRank");
+  if (!canvas) return;   // ★ DOM が無ければ描画しない
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartAvgRank && typeof window.chartAvgRank.destroy === "function") {
     window.chartAvgRank.destroy();
   }
 
   if (!records.length) {
-    window.chartAvgRank = new Chart(ctx, { type: "bar", data: { labels: [], datasets: [] } });
+    window.chartAvgRank = new Chart(ctx, {
+      type: "bar",
+      data: { labels: [], datasets: [] }
+    });
     return;
   }
 
