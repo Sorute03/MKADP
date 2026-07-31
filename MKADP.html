@@ -194,6 +194,13 @@
 <body>
 <script>
 
+const state = {
+  backgroundImage: null,
+  bgBrightness: 1,
+  bgContrast: 1,
+  bgOpacity: 1,
+  bgBlur: 0
+};
 // Tier 一覧（ALL は分析用のみ）
 const loungeTiers = ["ALL","X","S","A","B","BC","C","CD","D","DE","E","EF","F","FG","G","SQ"];
 
@@ -5641,13 +5648,7 @@ function applyAllFilters(history) {
    ============================================================ */
 
 // ▼ state（必ず最初に定義する）
-const state = {
-  backgroundImage: null,
-  bgBrightness: 1,
-  bgContrast: 1,
-  bgOpacity: 1,
-  bgBlur: 0
-};
+
 
 /* ============================================================
    ▼ 汎用パネル描画
