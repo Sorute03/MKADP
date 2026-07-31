@@ -4905,6 +4905,9 @@ window.addEventListener("load", () => {
 
 
 
+
+
+
 window.addEventListener("load", async () => {
   const isOBS = location.search.includes("obs");
   const frame = document.getElementById("overlayFrame");
@@ -4949,6 +4952,49 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
+function extractPlayerIdFromUrl(url) {
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
+}
+
+function extractSeasonFromUrl(url) {
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
+}
+
+
+
+async function fetchWorldData(playerId, season) {
+
+  const proxy = "https://script.google.com/macros/s/あなたのGAS-ID/exec";
+
+  const detailsUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}`;
+  const historyUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/history`;
+
+  const seasonUrl = season !== "ALL"
+    ? `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/season/${season}`
+    : null;
+
+  const [detailsRes, historyRes] = await Promise.all([
+    fetch(detailsUrl),
+    fetch(historyUrl)
+  ]);
+
+  const details = await detailsRes.json();
+  const history = await historyRes.json();
+
+  let seasonData = null;
+  if (seasonUrl) {
+    const seasonRes = await fetch(seasonUrl);
+    seasonData = await seasonRes.json();
+  }
+
+  return { details, history, seasonData };
+}
+
+
+  
 
 
 function extractPlayerIdFromUrl(url) {
@@ -5272,14 +5318,14 @@ async function onLoadLoungeStats() {
   const playerId = extractPlayerIdFromUrl(url);
   if (!playerId) return alert("URL から player_id を取得できませんでした");
 
-  const seasonFromUrl = extractSeasonFromUrl(url);
-  document.getElementById("loungeSeasonSelect").value = seasonFromUrl;
+  const season = extractSeasonFromUrl(url);
+  document.getElementById("loungeSeasonSelect").value = season;
 
-  const lounge = await fetchLoungeData(playerId);
+  const world = await fetchWorldData(playerId, season);
 
-  const filteredHistory = filterLoungeHistory(lounge.history);
+  const filteredHistory = filterLoungeHistory(world.history);
 
-  const stats = aggregateLoungeStats(lounge.details, filteredHistory);
+  const stats = aggregateLoungeStats(world.details, filteredHistory);
 
   drawLoungeStatsTable(stats);
   drawLoungeMMRChart(stats);
@@ -5288,7 +5334,7 @@ async function onLoadLoungeStats() {
   window.latestLoungeStats = stats;
 }
 
-
+  
 function activateLoungeTab() {
 
   const imgCanvas = document.getElementById("loungeImageCanvas");
@@ -5300,11 +5346,7 @@ function activateLoungeTab() {
   chartCanvas.height = 300;
 
   const btn = document.getElementById("loadLoungeBtn");
-  if (btn) {
-    btn.onclick = onLoadLoungeStats;
-  } else {
-    console.error("loadLoungeBtn が存在しません");
-  }
+  if (btn) btn.onclick = onLoadLoungeStats;
 
   const bgInput = document.getElementById("loungeBgInput");
   if (bgInput) bgInput.onchange = onLoungeBgChange;
@@ -5319,7 +5361,6 @@ function activateLoungeTab() {
     drawLoungeImage(window.latestLoungeStats);
   }
 }
-
 
 
   
