@@ -5253,6 +5253,86 @@ document.getElementById("loadLoungeBtn").onclick = async () => {
 };
 
 
+async function onLoadLoungeStats() {
+
+  console.log("onLoadLoungeStats: 開始");
+
+  // ▼ URL入力欄から取得
+  const url = document.getElementById("loungeUrlInput").value.trim();
+  if (!url) {
+    alert("URL を入力してください");
+    return;
+  }
+
+  // ▼ player_id 抽出
+  const playerId = extractPlayerIdFromUrl(url);
+  if (!playerId) {
+    alert("URL から player_id を取得できませんでした");
+    return;
+  }
+  console.log("player_id:", playerId);
+
+  // ▼ URLから season を自動反映
+  const seasonFromUrl = extractSeasonFromUrl(url);
+  document.getElementById("loungeSeasonSelect").value = seasonFromUrl;
+
+  // ▼ APIからデータ取得
+  const lounge = await fetchLoungeData(playerId);
+  console.log("Lounge details:", lounge.details);
+  console.log("Lounge history:", lounge.history);
+
+  // ▼ Season / Tier / Recent / Mode フィルター
+  const filteredHistory = filterLoungeHistory(lounge.history);
+
+  // ▼ 集計（MMR推移、平均スコア、勝敗など）
+  const stats = aggregateLoungeStats(lounge.details, filteredHistory);
+
+  // ▼ テーブル表示
+  drawLoungeStatsTable(stats);
+
+  // ▼ MMR変異グラフ（Canvas）
+  drawLoungeMMRChart(stats);
+
+  // ▼ ラウンジ画像生成（背景フィルタ + テキスト + MMRグラフ合成）
+  await drawLoungeImage(stats);
+
+  // ▼ 最新データを保存（タブ切り替え時の再描画用）
+  window.latestLoungeStats = stats;
+
+  console.log("onLoadLoungeStats: 完了");
+}
+
+
+function activateLoungeTab() {
+
+  // ▼ Canvas サイズ復元（非表示時に 0 になるため）
+  const imgCanvas = document.getElementById("loungeImageCanvas");
+  imgCanvas.width = 1000;
+  imgCanvas.height = 600;
+
+  const chartCanvas = document.getElementById("loungeMMRChart");
+  chartCanvas.width = 1000;
+  chartCanvas.height = 300;
+
+  // ▼ onclick をここで登録（HTMLが確実に存在するタイミング）
+  document.getElementById("loadLoungeBtn").onclick = onLoadLoungeStats;
+
+  // ▼ 背景設定イベントもここで登録
+  document.getElementById("loungeBgInput").onchange = onLoungeBgChange;
+  document.getElementById("loungeBgBrightness").oninput = e => state.loungeBgBrightness = Number(e.target.value);
+  document.getElementById("loungeBgContrast").oninput = e => state.loungeBgContrast = Number(e.target.value);
+  document.getElementById("loungeBgOpacity").oninput = e => state.loungeBgOpacity = Number(e.target.value);
+  document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Number(e.target.value);
+
+  // ▼ 前回の結果があれば再描画
+  if (window.latestLoungeStats) {
+    drawLoungeMMRChart(window.latestLoungeStats);
+    drawLoungeImage(window.latestLoungeStats);
+  }
+}
+
+
+  
 
   
 
