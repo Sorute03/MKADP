@@ -1424,20 +1424,34 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 
 <script>
 document.getElementById("backToAnalysisBtn").onclick = () => {
+
+  // ▼ 全タブを閉じる
   document.querySelectorAll(".tabContent").forEach(tab => {
     tab.style.display = "none";
   });
 
+  // ▼ タブボタンの active をリセット
   document.querySelectorAll(".tabBtn").forEach(b => {
     b.classList.remove("active");
   });
 
+  // ▼ 分析タブを表示
   document.getElementById("analysisTab").style.display = "block";
   document.querySelector('[data-tab="analysisTab"]').classList.add("active");
 
   // ▼ 分析タブを最新化
   refreshModeView();
+
+  // ▼ ★ コース stats タブを閉じたので Canvas を復元（安全対策）
+  const imgCanvas = document.getElementById("adpCourseImage");
+  imgCanvas.width = 800;
+  imgCanvas.height = 600;
+
+  const chartCanvas = document.getElementById("adpCourseStatsChart");
+  chartCanvas.width = 600;
+  chartCanvas.height = 300;
 };
+
 </script>
 
 
@@ -2639,6 +2653,61 @@ function refreshAllAnalysisViews() {
   updateScatterView();
   updateLoungeSetView();
 }
+
+document.querySelectorAll(".tabBtn").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.tab;
+
+    // すべてのタブを非表示
+    document.querySelectorAll(".tabContent").forEach(tab => {
+      tab.style.display = "none";
+    });
+
+    // タブボタンの active をリセット
+    document.querySelectorAll(".tabBtn").forEach(b => {
+      b.classList.remove("active");
+    });
+
+    // 対象タブを表示
+    document.getElementById(target).style.display = "block";
+    btn.classList.add("active");
+
+    // ▼ タブ別の処理
+    if (target === "historyTab") {
+      renderRaceHistory(getGloballyFilteredRecords());
+
+    } else if (target === "analysisTab") {
+      refreshModeView();
+
+    } else if (target === "coursestatsTab") {
+      // ★ コース stats タブを開いたときの処理
+      activateCourseStatsTab();
+    }
+  };
+});
+  
+
+function activateCourseStatsTab() {
+
+  // 非表示 Canvas はサイズが 0 になるため復元
+  const imgCanvas = document.getElementById("adpCourseImage");
+  imgCanvas.width = 800;
+  imgCanvas.height = 600;
+
+  const chartCanvas = document.getElementById("adpCourseStatsChart");
+  chartCanvas.width = 600;
+  chartCanvas.height = 300;
+
+  // 表示ボタンの onclick をここで登録
+  document.getElementById("showAdpCourseStatsBtn").onclick = runCourseStats;
+
+  // もし前回の結果があれば再描画
+  if (window.latestAdpCourseStats) {
+    drawAdpCourseStatsChart(window.latestAdpCourseStats);
+    drawAdpCourseImage(window.latestAdpCourseStats, state.backgroundImage);
+  }
+}
+
 
 
 
@@ -6121,6 +6190,87 @@ function renderWebhookList() {
   area.innerHTML = html;
 }
 
+async function runCourseStats() {
+
+  console.log("runCourseStats: 開始");
+
+  // 5つのセレクトから選択されたコースを取得
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  const selectedCourses = ids
+    .map(id => document.getElementById(id).value)
+    .filter(v => v && v !== "");
+
+  if (selectedCourses.length === 0) {
+    return alert("コースを選択してください");
+  }
+
+  const records = await loadADPIndexedDBRecords();
+
+  const filtered = applyAndOrFilter(records, {
+    season: adpSeasonSelect.value,
+    tier: adpTierSelect.value,
+    recent: adpRecentSelect.value,
+    courses: selectedCourses,
+    mode: adpModeSelect.value
+  }, adpFilterModeSelect.value);
+
+  const stats = aggregateCourseStats(filtered);
+
+  drawAdpCourseStatsTable(stats);
+  drawAdpCourseStatsChart(stats);
+
+  window.latestAdpCourseStats = stats;
+
+  await drawAdpCourseImage(stats, state.backgroundImage);
+
+  console.log("runCourseStats: 完了");
+}
+
+async function onShowAdpCourseStats() {
+
+  // 5つのセレクトから選択されたコースを取得
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
+  const selectedCourses = ids
+    .map(id => document.getElementById(id).value)
+    .filter(v => v && v !== "");
+
+  if (selectedCourses.length === 0) {
+    return alert("コースを選択してください");
+  }
+
+  const records = await loadADPIndexedDBRecords();
+
+  const filtered = applyAndOrFilter(records, {
+    season: adpSeasonSelect.value,
+    tier: adpTierSelect.value,
+    recent: adpRecentSelect.value,
+    courses: selectedCourses,
+    mode: adpModeSelect.value
+  }, adpFilterModeSelect.value);
+
+  const stats = aggregateCourseStats(filtered);
+
+  drawAdpCourseStatsTable(stats);
+  drawAdpCourseStatsChart(stats);
+
+  window.latestAdpCourseStats = stats;
+
+  await drawAdpCourseImage(stats, state.backgroundImage);
+}
 
 
 
