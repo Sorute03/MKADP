@@ -1463,14 +1463,18 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
     btn.classList.add("active");
 
     if (target === "historyTab") {
-      // ▼ 最新データで履歴を描画
       renderRaceHistory(getGloballyFilteredRecords());
+
     } else if (target === "analysisTab") {
-      // ▼ 分析タブを開いたときも最新化
       refreshModeView();
+
+    } else if (target === "loungeTab") {
+      // ★★★ これが必要 ★★★
+      activateLoungeTab();
     }
   };
 });
+
 </script>
 
 <script>
