@@ -587,52 +587,96 @@ const courseList = [
 
   <h2>Lounge Stats Viewer</h2>
 
-  <input id="playerNameInput" placeholder="プレイヤー名" style="padding:6px;">
+  <!-- ▼ URL入力欄 -->
+  <label>ラウンジURL</label><br>
+  <input id="loungeUrlInput" placeholder="https://lounge.mkcentral.com/mkworld/PlayerDetails/15479?season=3" style="width:400px; padding:6px;">
   <button id="loadLoungeBtn">データ取得</button>
-  <button id="sendDiscordBtn">Discordへ送信</button>
+  <button id="sendLoungeDiscordBtn">Discordへ送信</button>
+
+  <h3>フィルター</h3>
+
+  <label>Season</label><br>
+  <select id="loungeSeasonSelect" style="width:200px;">
+    <option value="ALL">ALL</option>
+    <option value="1">S1</option>
+    <option value="2">S2</option>
+    <option value="3">S3</option>
+    <option value="4">S4</option>
+    <option value="5">S5</option>
+    <option value="6">S6</option>
+    <option value="7">S7</option>
+    <option value="8">S8</option>
+    <option value="9">S9</option>
+    <option value="10">S10</option>
+  </select>
+  <br><br>
+
+  <label>Tier</label><br>
+  <select id="loungeTierSelect" style="width:200px;">
+    <option value="ALL">ALL</option>
+    <option value="X">X</option>
+    <option value="S">S</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="BC">BC</option>
+    <option value="C">C</option>
+    <option value="CD">CD</option>
+    <option value="D">D</option>
+    <option value="DE">DE</option>
+    <option value="E">E</option>
+    <option value="EF">EF</option>
+    <option value="F">F</option>
+    <option value="FG">FG</option>
+    <option value="G">G</option>
+    <option value="SQ">SQ</option>
+  </select>
+  <br><br>
+
+  <label>直近 N 試合</label><br>
+  <select id="loungeRecentSelect" style="width:200px;">
+    <option value="ALL">ALL</option>
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+  </select>
+  <br><br>
+
+  <label>モード</label><br>
+  <select id="loungeModeSelect" style="width:200px;">
+    <option value="ALL">ALL</option>
+    <option value="12">12P</option>
+    <option value="24">24P</option>
+  </select>
+  <br><br>
 
   <div id="loungeStats" style="margin-top:20px;"></div>
 
-  <canvas id="loungeCanvas" width="1000" height="500" style="margin-top:20px;"></canvas>
-    <label>コース別データを合成:</label>
-  <select id="mergeCourseDataSelect">
-    <option value="off">使わない</option>
-    <option value="on">ADPデータを合成する</option>
-  </select>
+  <!-- ▼ グラフ Canvas（MMR変異グラフ） -->
+  <canvas id="loungeMMRChart" width="1000" height="300" style="margin-top:20px;"></canvas>
 
-  <label>Season:</label>
-  <select id="seasonSelect">
-    <option value="ALL">ALL</option>
-    <option value="1">Season 1</option>
-    <option value="2">Season 2</option>
-    <option value="3">Season 3</option>
-    <option value="4">Season 4</option>
-    <option value="5">Season 5</option>
-    <option value="6">Season 6</option>
-    <option value="7">Season 7</option>
-    <option value="8">Season 8</option>
-    <option value="9">Season 9</option>
-    <option value="10">Season 10</option>
-  </select>
+  <!-- ▼ 画像生成 Canvas -->
+  <canvas id="loungeImageCanvas" width="1000" height="600" style="margin-top:20px; border:1px solid #ccc;"></canvas>
 
-  <h3>背景画像設定</h3>
-  <input type="file" id="bgImageInput" accept="image/*" onchange="setBgImage(this.files[0])">
+  <h3>背景画像設定（ラウンジ画像用）</h3>
+
+  <label>背景画像</label><br>
+  <input type="file" id="loungeBgInput" accept="image/*">
   
-  <label>明るさ</label>
-  <input type="range" id="bgBrightnessInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgBrightness(this.value)">
+  <label>明るさ</label><br>
+  <input type="range" id="loungeBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
   
-  <label>コントラスト</label>
-  <input type="range" id="bgContrastInput" min="0.2" max="2" step="0.01" value="1" onchange="setBgContrast(this.value)">
+  <label>コントラスト</label><br>
+  <input type="range" id="loungeBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
   
-  <label>透過度</label>
-  <input type="range" id="bgOpacityInput" min="0" max="1" step="0.01" value="1" onchange="setBgOpacity(this.value)">
+  <label>透過度</label><br>
+  <input type="range" id="loungeBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
   
-  <label>ぼかし(px)</label>
-  <input type="range" id="bgBlurInput" min="0" max="20" step="1" value="0" onchange="setBgBlur(this.value)">
-  
-  
+  <label>ぼかし(px)</label><br>
+  <input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
 
 </div>
+
   
 <!-- ADP コース比較セクション（5つのプルダウン方式） -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;"> 
@@ -4890,6 +4934,318 @@ window.addEventListener("load", async () => {
 });
 
 
+
+function extractPlayerIdFromUrl(url) {
+  try {
+    const u = new URL(url);
+    const parts = u.pathname.split("/");
+    const id = parts[parts.length - 1];
+    return /^\d+$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractSeasonFromUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.searchParams.get("season") || "ALL";
+  } catch {
+    return "ALL";
+  }
+}
+
+state.loungeBackgroundImage = null;
+state.loungeBgBrightness = 1;
+state.loungeBgContrast = 1;
+state.loungeBgOpacity = 1;
+state.loungeBgBlur = 0;
+
+document.getElementById("loungeBgInput").onchange = e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => state.loungeBackgroundImage = reader.result;
+  reader.readAsDataURL(file);
+};
+
+document.getElementById("loungeBgBrightness").oninput = e => state.loungeBgBrightness = Number(e.target.value);
+document.getElementById("loungeBgContrast").oninput = e => state.loungeBgContrast = Number(e.target.value);
+document.getElementById("loungeBgOpacity").oninput = e => state.loungeBgOpacity = Number(e.target.value);
+document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Number(e.target.value);
+
+
+
+
+async function fetchLoungeData(playerId) {
+  const detailsUrl = `https://lounge-api.mk8dx.net/players/${playerId}`;
+  const historyUrl = `https://lounge-api.mk8dx.net/players/${playerId}/history`;
+
+  const [detailsRes, historyRes] = await Promise.all([
+    fetch(detailsUrl),
+    fetch(historyUrl)
+  ]);
+
+  return {
+    details: await detailsRes.json(),
+    history: await historyRes.json()
+  };
+}
+
+
+function filterLoungeHistory(history) {
+
+  const season = loungeSeasonSelect.value;
+  const tier = loungeTierSelect.value;
+  const recent = loungeRecentSelect.value;
+  const mode = loungeModeSelect.value;
+
+  let result = history;
+
+  // ▼ Season が ALL のときは何もしない（全シーズン結合）
+  if (season !== "ALL") {
+    result = result.filter(h => String(h.season) === season);
+  }
+
+  if (tier !== "ALL") {
+    result = result.filter(h => h.tier === tier);
+  }
+
+  if (mode !== "ALL") {
+    result = result.filter(h => String(h.mode) === mode);
+  }
+
+  if (recent !== "ALL") {
+    result = result.slice(-Number(recent));
+  }
+
+  return result;
+}
+
+
+
+async function drawLoungeImage(stats) {
+
+  const canvas = document.getElementById("loungeImageCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ▼ 背景画像
+  if (state.loungeBackgroundImage) {
+    const bg = new Image();
+    bg.src = state.loungeBackgroundImage;
+    await bg.decode();
+
+    ctx.filter = `
+      brightness(${state.loungeBgBrightness})
+      contrast(${state.loungeBgContrast})
+      blur(${state.loungeBgBlur}px)
+    `;
+    ctx.globalAlpha = state.loungeBgOpacity;
+
+    ctx.drawImage(bg, 0, 0, W, H);
+
+    ctx.filter = "none";
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ▼ テキスト描画
+  ctx.fillStyle = "white";
+  ctx.font = "32px sans-serif";
+
+  ctx.fillText(`Name: ${stats.name}`, 40, 60);
+  ctx.fillText(`MMR: ${stats.mmr}`, 40, 120);
+  ctx.fillText(`Peak MMR: ${stats.peak_mmr}`, 40, 180);
+  ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
+  ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
+  ctx.fillText(`Top Score: ${stats.top_score}`, 40, 360);
+  ctx.fillText(`Wins: ${stats.wins}`, 40, 420);
+  ctx.fillText(`Losses: ${stats.losses}`, 40, 480);
+  ctx.fillText(`直近10試合 MMR収支: ${stats.mmr_diff_10}`, 40, 540);
+  ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
+  ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
+
+  // ▼ MMR変異グラフ（合成）
+  const mmr = stats.mmr_history;
+  if (mmr.length > 1) {
+
+    const gx = 500;      // グラフ左端
+    const gy = 80;       // グラフ上端
+    const gw = 450;      // グラフ幅
+    const gh = 300;      // グラフ高さ
+
+    // 枠線
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(gx, gy, gw, gh);
+
+    const minMMR = Math.min(...mmr);
+    const maxMMR = Math.max(...mmr);
+
+    ctx.strokeStyle = "#00aaff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    mmr.forEach((v, i) => {
+      const px = gx + (i / (mmr.length - 1)) * gw;
+      const py = gy + gh - ((v - minMMR) / (maxMMR - minMMR)) * gh;
+
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+
+    ctx.stroke();
+
+    // タイトル
+    ctx.fillStyle = "white";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("MMR変異グラフ", gx, gy - 10);
+  }
+}
+
+
+
+function aggregateLoungeStats(details, history) {
+
+  const scores = history.map(h => h.score);
+  const mmrs = history.map(h => h.mmr_after);
+
+  const mmrDiff10 = history.slice(-10)
+    .reduce((a, b) => a + (b.mmr_after - b.mmr_before), 0);
+
+  return {
+    name: details.name,
+    mmr: details.mmr,
+    peak_mmr: details.max_mmr,
+    avg_score: scores.reduce((a,b)=>a+b,0) / scores.length,
+    nosq_avg_score: scores.filter(s => s !== 0).reduce((a,b)=>a+b,0) / scores.filter(s => s !== 0).length,
+    top_score: Math.max(...scores),
+    wins: history.filter(h => h.placement === 1).length,
+    losses: history.filter(h => h.placement > 1).length,
+    mmr_diff_10: mmrDiff10,
+    mmr_rank: details.rank_mmr,
+    peak_mmr_rank: details.rank_max_mmr,
+
+    // ▼ Season=ALL のときは全シーズンの MMR を結合した配列になる
+    mmr_history: mmrs,
+
+    history
+  };
+}
+
+function drawLoungeMMRChart(stats) {
+
+  const ctx = document.getElementById("loungeMMRChart").getContext("2d");
+
+  const labels = stats.mmr_history.map((_, i) => i + 1);
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: loungeSeasonSelect.value === "ALL"
+          ? "MMR推移（全シーズン）"
+          : `MMR推移（Season ${loungeSeasonSelect.value})`,
+        data: stats.mmr_history,
+        borderColor: "white",
+        backgroundColor: "rgba(255,255,255,0.2)"
+      }]
+    },
+    options: {
+      scales: {
+        x: { ticks: { color: "white" } },
+        y: { ticks: { color: "white" } }
+      }
+    }
+  });
+}
+
+
+
+async function drawLoungeImage(stats) {
+
+  const canvas = document.getElementById("loungeImageCanvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // ▼ 背景画像がある場合はフィルタ適用して描画
+  if (state.loungeBackgroundImage) {
+    const bg = new Image();
+    bg.src = state.loungeBackgroundImage;
+    await bg.decode();
+
+    ctx.filter = `
+      brightness(${state.loungeBgBrightness})
+      contrast(${state.loungeBgContrast})
+      blur(${state.loungeBgBlur}px)
+    `;
+    ctx.globalAlpha = state.loungeBgOpacity;
+
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+    ctx.filter = "none";
+    ctx.globalAlpha = 1;
+  } else {
+    // ▼ デフォルト背景（色だけ）
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // ▼ テキスト描画
+  ctx.fillStyle = "white";
+  ctx.font = "32px sans-serif";
+
+  ctx.fillText(`Name: ${stats.name}`, 40, 60);
+  ctx.fillText(`MMR: ${stats.mmr}`, 40, 120);
+  ctx.fillText(`Peak MMR: ${stats.peak_mmr}`, 40, 180);
+  ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
+  ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
+  ctx.fillText(`Top Score: ${stats.top_score}`, 40, 360);
+  ctx.fillText(`Wins: ${stats.wins}`, 40, 420);
+  ctx.fillText(`Losses: ${stats.losses}`, 40, 480);
+  ctx.fillText(`直近10試合 MMR収支: ${stats.mmr_diff_10}`, 40, 540);
+  ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
+  ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
+}
+
+  
+
+document.getElementById("loadLoungeBtn").onclick = async () => {
+
+  const url = loungeUrlInput.value.trim();
+  if (!url) return alert("URL を入力してください");
+
+  const playerId = extractPlayerIdFromUrl(url);
+  if (!playerId) return alert("URL から player_id を取得できませんでした");
+
+  const season = extractSeasonFromUrl(url);
+  loungeSeasonSelect.value = season;
+
+  const lounge = await fetchLoungeData(playerId);
+
+  const filteredHistory = filterLoungeHistory(lounge.history);
+
+  const stats = aggregateLoungeStats(lounge.details, filteredHistory);
+
+  drawLoungeStatsTable(stats);
+  drawLoungeMMRChart(stats);
+  await drawLoungeImage(stats, state.backgroundImage);
+
+  window.latestLoungeStats = stats;
+};
+
+
+
+  
+
 function initAdpTierSelect() {
   const sel = document.getElementById("adpTierSelect");
   sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
@@ -6271,6 +6627,7 @@ async function onShowAdpCourseStats() {
 
   await drawAdpCourseImage(stats, state.backgroundImage);
 }
+
 
 
 
