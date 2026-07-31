@@ -5030,13 +5030,14 @@ document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Numb
 
 async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
 
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
   const base = "https://lounge.mkcentral.com/api/player";
 
-  const detailsUrl = `${base}/${playerId}?game=${game}`;
-  const historyUrl = `${base}/${playerId}/history?game=${game}`;
+  const detailsUrl = `${proxy}?url=${base}/${playerId}?game=${game}`;
+  const historyUrl = `${proxy}?url=${base}/${playerId}/history?game=${game}`;
 
   const seasonUrl = season !== "ALL"
-    ? `${base}/${playerId}/season/${season}?game=${game}`
+    ? `${proxy}?url=${base}/${playerId}/season/${season}?game=${game}`
     : null;
 
   const [detailsRes, historyRes] = await Promise.all([
@@ -5055,6 +5056,8 @@ async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
 
   return { details, history, seasonData };
 }
+
+
 
 
 
