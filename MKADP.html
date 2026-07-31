@@ -633,126 +633,129 @@ const courseList = [
   
 
 </div>
-
-
+  
 <!-- ADP コース比較セクション（5つのプルダウン方式） -->
-<div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-  <p>コースを最大5つ選択:</p>
+<div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;"> 
 
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <select id="adpCourseSelect1" style="width:200px;"></select>
-    <select id="adpCourseSelect2" style="width:200px;"></select>
-    <select id="adpCourseSelect3" style="width:200px;"></select>
-    <select id="adpCourseSelect4" style="width:200px;"></select>
-    <select id="adpCourseSelect5" style="width:200px;"></select>
+  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+    <p>コースを最大5つ選択:</p>
+  
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <select id="adpCourseSelect1" style="width:200px;"></select>
+      <select id="adpCourseSelect2" style="width:200px;"></select>
+      <select id="adpCourseSelect3" style="width:200px;"></select>
+      <select id="adpCourseSelect4" style="width:200px;"></select>
+      <select id="adpCourseSelect5" style="width:200px;"></select>
+    </div>
+     <!-- ▼ ADP コースフィルター -->
+    <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
+      <h3>コース統計フィルター</h3>
+      
+      <!-- Mode -->
+      <label>モード</label><br>
+      <select id="adpModeSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="lounge">ラウンジ</option>
+        <option value="nora">野良</option>
+        <option value="tournament">大会</option>
+      </select>
+      <br><br>
+  
+      <!-- Season（ラウンジ時のみ有効） -->
+      <label>Season</label><br>
+      <select id="adpSeasonSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="S1">S1</option>
+        <option value="S2">S2</option>
+        <option value="S3">S3</option>
+        <option value="S4">S4</option>
+        <option value="S5">S5</option>
+      </select>
+      <br><br>
+  
+      <!-- Tier（ラウンジ時のみ有効） -->
+      <label>Tier</label><br>
+      <select id="adpTierSelect" style="width:200px;"></select>
+      <br><br>
+  
+      <!-- Recent -->
+      <label>直近 N レース</label><br>
+      <select id="adpRecentSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <br><br>
+  
+  
+      <!-- AND / OR -->
+      <label>フィルター方式</label><br>
+      <select id="adpFilterModeSelect" style="width:200px;">
+        <option value="AND">AND</option>
+        <option value="OR">OR</option>
+      </select>
+    </div>
+  
+    <!-- 背景画像設定 -->
+    <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
+      <h3>背景画像設定（コース比較画像用）</h3>
+  
+      <label>背景画像</label><br>
+      <input type="file" id="adpCourseBgInput" accept="image/*"
+         onchange="setBgImage(this.files[0])">
+      <label>明るさ</label><br>
+      <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
+  
+      <label>コントラスト</label><br>
+      <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
+  
+      <label>透過度</label><br>
+      <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
+  
+      <label>ぼかし(px)</label><br>
+      <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
+    </div>
+  
+    <!-- テキスト色設定 -->
+    <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
+      <h3>テキスト色設定</h3>
+  
+      <label>テキスト色</label><br>
+      <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
+  
+      <label>縁取り色</label><br>
+      <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
+  
+      <label>縁取り太さ(px)</label><br>
+      <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
+  
+      <label>影の濃さ(px)</label><br>
+      <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
+  
+      <label>影の色</label><br>
+      <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+    </div>
+  
+    <!-- テキスト結果表示 -->
+    <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+  
+    <!-- グラフ表示 -->
+    <canvas id="adpCourseStatsChart" width="600" height="300"
+      style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
+  
+    <!-- 画像生成 Canvas -->
+    <canvas id="adpCourseImage" width="800" height="600"
+      style="border:1px solid #ccc; display:block;"></canvas>
+  
+    <div style="margin-top: 8px;">
+      <button id="showAdpCourseStatsBtn">表示</button>
+      <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+    </div>
   </div>
-   <!-- ▼ ADP コースフィルター -->
-  <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
-    <h3>コース統計フィルター</h3>
-    
-    <!-- Mode -->
-    <label>モード</label><br>
-    <select id="adpModeSelect" style="width:200px;">
-      <option value="ALL">ALL</option>
-      <option value="lounge">ラウンジ</option>
-      <option value="nora">野良</option>
-      <option value="tournament">大会</option>
-    </select>
-    <br><br>
-
-    <!-- Season（ラウンジ時のみ有効） -->
-    <label>Season</label><br>
-    <select id="adpSeasonSelect" style="width:200px;">
-      <option value="ALL">ALL</option>
-      <option value="S1">S1</option>
-      <option value="S2">S2</option>
-      <option value="S3">S3</option>
-      <option value="S4">S4</option>
-      <option value="S5">S5</option>
-    </select>
-    <br><br>
-
-    <!-- Tier（ラウンジ時のみ有効） -->
-    <label>Tier</label><br>
-    <select id="adpTierSelect" style="width:200px;"></select>
-    <br><br>
-
-    <!-- Recent -->
-    <label>直近 N レース</label><br>
-    <select id="adpRecentSelect" style="width:200px;">
-      <option value="ALL">ALL</option>
-      <option value="10">10</option>
-      <option value="20">20</option>
-      <option value="50">50</option>
-      <option value="100">100</option>
-    </select>
-    <br><br>
-
-
-    <!-- AND / OR -->
-    <label>フィルター方式</label><br>
-    <select id="adpFilterModeSelect" style="width:200px;">
-      <option value="AND">AND</option>
-      <option value="OR">OR</option>
-    </select>
-  </div>
-
-  <!-- 背景画像設定 -->
-  <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
-    <h3>背景画像設定（コース比較画像用）</h3>
-
-    <label>背景画像</label><br>
-    <input type="file" id="adpCourseBgInput" accept="image/*"
-       onchange="setBgImage(this.files[0])">
-    <label>明るさ</label><br>
-    <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-
-    <label>コントラスト</label><br>
-    <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-
-    <label>透過度</label><br>
-    <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-
-    <label>ぼかし(px)</label><br>
-    <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
-  </div>
-
-  <!-- テキスト色設定 -->
-  <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
-    <h3>テキスト色設定</h3>
-
-    <label>テキスト色</label><br>
-    <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
-
-    <label>縁取り色</label><br>
-    <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
-
-    <label>縁取り太さ(px)</label><br>
-    <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
-
-    <label>影の濃さ(px)</label><br>
-    <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
-
-    <label>影の色</label><br>
-    <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
-  </div>
-
-  <!-- テキスト結果表示 -->
-  <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
-
-  <!-- グラフ表示 -->
-  <canvas id="adpCourseStatsChart" width="600" height="300"
-    style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
-
-  <!-- 画像生成 Canvas -->
-  <canvas id="adpCourseImage" width="800" height="600"
-    style="border:1px solid #ccc; display:block;"></canvas>
-
-  <div style="margin-top: 8px;">
-    <button id="showAdpCourseStatsBtn">表示</button>
-    <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
-    <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
-  </div>
+</div>
 
 
  
