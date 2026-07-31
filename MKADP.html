@@ -2693,6 +2693,9 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
 </script>   <!-- ★★★ 必須 ★★★ -->
 
 <script>
+let webhookList = [];
+
+  
 function refreshAllAnalysisViews() {
   updateStatsView();
   updateGrowthView();
@@ -6448,7 +6451,7 @@ document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
 
   
 
-let webhookList = [];
+
 let activeWebhookIndex = -1;
 
 function loadWebhookSettings() {
