@@ -2693,7 +2693,9 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
 </script>   <!-- ★★★ 必須 ★★★ -->
 
 <script>
+let activeWebhookIndex = 0;
 let webhookList = [];
+
 
   
 function refreshAllAnalysisViews() {
@@ -5305,7 +5307,7 @@ async function onLoadLoungeStats() {
 
 function activateLoungeTab() {
 
-  // ▼ Canvas サイズ復元（非表示時に 0 になるため）
+  // ▼ Canvas サイズ復元
   const imgCanvas = document.getElementById("loungeImageCanvas");
   imgCanvas.width = 1000;
   imgCanvas.height = 600;
@@ -5315,10 +5317,17 @@ function activateLoungeTab() {
   chartCanvas.height = 300;
 
   // ▼ onclick をここで登録（HTMLが確実に存在するタイミング）
-  document.getElementById("loadLoungeBtn").onclick = onLoadLoungeStats;
+  const btn = document.getElementById("loadLoungeBtn");
+  if (btn) {
+    btn.onclick = onLoadLoungeStats;
+  } else {
+    console.error("loadLoungeBtn が存在しません（HTMLより前に実行されている）");
+  }
 
-  // ▼ 背景設定イベントもここで登録
-  document.getElementById("loungeBgInput").onchange = onLoungeBgChange;
+  // ▼ 背景設定イベント
+  const bgInput = document.getElementById("loungeBgInput");
+  if (bgInput) bgInput.onchange = onLoungeBgChange;
+
   document.getElementById("loungeBgBrightness").oninput = e => state.loungeBgBrightness = Number(e.target.value);
   document.getElementById("loungeBgContrast").oninput = e => state.loungeBgContrast = Number(e.target.value);
   document.getElementById("loungeBgOpacity").oninput = e => state.loungeBgOpacity = Number(e.target.value);
@@ -5330,6 +5339,7 @@ function activateLoungeTab() {
     drawLoungeImage(window.latestLoungeStats);
   }
 }
+
 
 
   
