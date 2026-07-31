@@ -4965,15 +4965,15 @@ function extractSeasonFromUrl(url) {
 
 
 
-async function fetchWorldData(playerId, season) {
+async function fetchWorldData(playerId, game, season) {
 
-  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
+  const base = "https://lounge.mkcentral.com/api/player";
 
-  const detailsUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}`;
-  const historyUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/history`;
+  const detailsUrl = `${base}/${playerId}?game=${game}`;
+  const historyUrl = `${base}/${playerId}/history?game=${game}`;
 
   const seasonUrl = season !== "ALL"
-    ? `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/season/${season}`
+    ? `${base}/${playerId}/season/${season}?game=${game}`
     : null;
 
   const [detailsRes, historyRes] = await Promise.all([
@@ -4995,27 +4995,17 @@ async function fetchWorldData(playerId, season) {
 
 
   
-
-
 function extractPlayerIdFromUrl(url) {
-  try {
-    const u = new URL(url);
-    const parts = u.pathname.split("/");
-    const id = parts[parts.length - 1];
-    return /^\d+$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
 }
 
 function extractSeasonFromUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.searchParams.get("season") || "ALL";
-  } catch {
-    return "ALL";
-  }
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
 }
+
 
 state.loungeBackgroundImage = null;
 state.loungeBgBrightness = 1;
@@ -5038,25 +5028,34 @@ document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Numb
 
 
 
-async function fetchLoungeData(playerId) {
+async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
 
-  const detailsUrl = `https://mkcentral.com/api/lounge/players/${playerId}`;
-  const historyUrl = `https://mkcentral.com/api/lounge/players/${playerId}/history`;
+  const base = "https://lounge.mkcentral.com/api/player";
+
+  const detailsUrl = `${base}/${playerId}?game=${game}`;
+  const historyUrl = `${base}/${playerId}/history?game=${game}`;
+
+  const seasonUrl = season !== "ALL"
+    ? `${base}/${playerId}/season/${season}?game=${game}`
+    : null;
 
   const [detailsRes, historyRes] = await Promise.all([
     fetch(detailsUrl),
     fetch(historyUrl)
   ]);
 
-  if (!detailsRes.ok || !historyRes.ok) {
-    throw new Error("Lounge API fetch failed");
+  const details = await detailsRes.json();
+  const history = await historyRes.json();
+
+  let seasonData = null;
+  if (seasonUrl) {
+    const seasonRes = await fetch(seasonUrl);
+    seasonData = await seasonRes.json();
   }
 
-  return {
-    details: await detailsRes.json(),
-    history: await historyRes.json()
-  };
+  return { details, history, seasonData };
 }
+
 
 
 function filterLoungeHistory(history) {
@@ -5316,12 +5315,11 @@ async function onLoadLoungeStats() {
   if (!url) return alert("URL を入力してください");
 
   const playerId = extractPlayerIdFromUrl(url);
-  if (!playerId) return alert("URL から player_id を取得できませんでした");
-
   const season = extractSeasonFromUrl(url);
-  document.getElementById("loungeSeasonSelect").value = season;
 
-  const world = await fetchWorldData(playerId, season);
+  const game = "mkworld24p"; // ← ここは12P/24P切り替え可能
+
+  const world = await fetchWorldData(playerId, game, season);
 
   const filteredHistory = filterLoungeHistory(world.history);
 
