@@ -5352,16 +5352,32 @@ async function onLoadLoungeStats() {
 
   const url = document.getElementById("loungeUrlInput").value.trim();
   const playerId = extractPlayerIdFromUrl(url);
-  const season = extractSeasonFromUrl(url);
+  let season = extractSeasonFromUrl(url);
 
-  // JSON（ランキング API）
+  let htmlParsed;
+
+  if (season === "ALL") {
+
+    const html12 = await fetchWorldHTML(playerId, 1, 12);
+    const parsed12 = parseWorldHTML(html12);
+
+    const html24 = await fetchWorldHTML(playerId, 1, 24);
+    const parsed24 = parseWorldHTML(html24);
+
+    htmlParsed = {
+      name: parsed12.name || parsed24.name,
+      currentMMR: parsed12.currentMMR || parsed24.currentMMR,
+      peakMMR: parsed12.peakMMR || parsed24.peakMMR,
+      history: [...parsed12.history, ...parsed24.history]
+    };
+
+  } else {
+
+    const html = await fetchWorldHTML(playerId, season, 12);
+    htmlParsed = parseWorldHTML(html);
+  }
+
   const leaderboard = await fetchWorldLeaderboard(playerId, season);
-
-  // HTML（PlayerDetails）
-  const html = await fetchWorldHTML(playerId, season, 1);
-  const htmlParsed = parseWorldHTML(html);
-
-  // 統合
   const stats = aggregateWorldStats(leaderboard, htmlParsed);
 
   drawLoungeStatsTable(stats);
