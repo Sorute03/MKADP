@@ -4965,15 +4965,15 @@ function extractSeasonFromUrl(url) {
 
 
 
-async function fetchWorldData(playerId, game, season) {
+async function fetchWorldData(playerId, season = "ALL") {
 
-  const base = "https://lounge.mkcentral.com/api/player";
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
 
-  const detailsUrl = `${base}/${playerId}?game=${game}`;
-  const historyUrl = `${base}/${playerId}/history?game=${game}`;
+  const detailsUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}`;
+  const historyUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/history`;
 
   const seasonUrl = season !== "ALL"
-    ? `${base}/${playerId}/season/${season}?game=${game}`
+    ? `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/season/${season}`
     : null;
 
   const [detailsRes, historyRes] = await Promise.all([
@@ -4993,6 +4993,29 @@ async function fetchWorldData(playerId, game, season) {
   return { details, history, seasonData };
 }
 
+
+async function fetchWorldHTML(playerId, season = "1") {
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
+  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
+  const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
+  return await res.text(); // HTML が返る
+}
+
+
+function parseWorldHTML(html) {
+
+  const mmrMatch = html.match(/<dt>\s*MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
+  const peakMatch = html.match(/<dt>\s*Peak MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
+
+  const currentMMR = mmrMatch ? Number(mmrMatch[1].replace(/,/g, "")) : null;
+  const peakMMR = peakMatch ? Number(peakMatch[1].replace(/,/g, "")) : null;
+
+  // ★ 履歴（MMR変動）
+  const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  const history = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  return { currentMMR, peakMMR, history };
+}
 
   
 function extractPlayerIdFromUrl(url) {
@@ -5341,14 +5364,13 @@ async function onLoadLoungeStats() {
   const playerId = extractPlayerIdFromUrl(url);
   const season = extractSeasonFromUrl(url);
 
-  const game = "mkworld24p"; // ← ここは12P/24P切り替え可能
+  // ★ HTML を取得
+  const html = await fetchWorldHTML(playerId, season);
 
-  const world = await fetchWorldData(playerId, game, season);
+  // ★ HTML を解析して stats を作る
+  const stats = parseWorldHTML(html);
 
-  const filteredHistory = filterLoungeHistory(world.history);
-
-  const stats = aggregateLoungeStats(world.details, filteredHistory);
-
+  // ★ グラフ・画像生成は stats を使う
   drawLoungeStatsTable(stats);
   drawLoungeMMRChart(stats);
   await drawLoungeImage(stats);
