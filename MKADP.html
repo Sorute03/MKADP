@@ -5357,13 +5357,31 @@ async function drawLoungeImage(stats) {
 
 
 async function onLoadLoungeStats() {
+
+  const urlInput = document.getElementById("loungeUrlInput");
+  if (!urlInput) {
+    alert("URL入力欄が見つかりません");
+    return;
+  }
+
+  const url = urlInput.value.trim();
+  if (!url) {
+    alert("ラウンジURLを入力してください");
+    return;
+  }
+
+  const playerId = extractPlayerIdFromUrl(url);
+  if (!playerId) {
+    alert("URL から playerId を取得できません");
+    return;
+  }
+
+  let season = extractSeasonFromUrl(url);
+  if (!season) season = "ALL";
+
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("season:", season);
-
-  const url = document.getElementById("loungeUrlInput").value.trim();
-  const playerId = extractPlayerIdFromUrl(url);
-  let season = extractSeasonFromUrl(url);
 
   // ▼ Season=ALL のときは 12P と 24P を結合
   let htmlParsed;
@@ -5375,9 +5393,7 @@ async function onLoadLoungeStats() {
 
     const html24 = await fetchWorldHTML(playerId, 1, 24);
     const parsed24 = parseWorldHTML(html24);
-    console.log("htmlParsed:", htmlParsed);
 
-    
     htmlParsed = {
       name: parsed12.name || parsed24.name,
       currentMMR: parsed12.currentMMR || parsed24.currentMMR,
@@ -5391,6 +5407,8 @@ async function onLoadLoungeStats() {
     htmlParsed = parseWorldHTML(html);
   }
 
+  console.log("htmlParsed:", htmlParsed);
+
   // ▼ ランキング API（MMR・順位・直近10試合など）
   const leaderboard = await fetchWorldLeaderboard(playerId, season);
   console.log("leaderboard:", leaderboard);
@@ -5399,10 +5417,6 @@ async function onLoadLoungeStats() {
   const stats = aggregateWorldStats(leaderboard, htmlParsed);
   console.log("stats:", stats);
 
-  // ▼ drawLoungeStatsTable は存在しないので削除
-  // drawLoungeStatsTable(details, history, courseStats); ← これがエラーの原因
-
-  // ▼ 新方式の描画関数を使う
   drawLoungeStats({
     details: {
       name: stats.name,
@@ -5417,12 +5431,12 @@ async function onLoadLoungeStats() {
     courseStats: null
   });
 
-
   drawLoungeMMRChart(stats);
   await drawLoungeImage(stats);
 
   window.latestLoungeStats = stats;
 }
+
 
 
 
