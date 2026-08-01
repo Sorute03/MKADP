@@ -5052,91 +5052,82 @@ function parseWorldHTML_Season1(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ============================
-  // ① 名前（Season1 は h2 が多い）
-  // ============================
-  const nameEl = doc.querySelector("h2, .player-name");
-  if (nameEl) result.name = nameEl.textContent.trim();
-
-  // ============================
-  // ② 国旗（Season1 は flag-icon が無い場合がある）
-  // ============================
-  const flagEl = doc.querySelector("img[src*='flags']");
-  if (flagEl) {
-    const src = flagEl.getAttribute("src");
-    const match = src.match(/flags\/(.*?)\.png/);
-    if (match) result.country = match[1].toUpperCase();
+  // ① 名前（Season1 は h1/h2 のどちらか）
+  const nameEl = doc.querySelector("h1, h2");
+  if (nameEl) {
+    // "Sorute - Silver" → 名前だけ抽出
+    result.name = nameEl.textContent.split("-")[0].trim();
   }
 
-  // ============================
-  // ③ Current MMR（Season1 は dt/dd の構造）
-  // ============================
-  const currentMMREl = doc.querySelector("dt:contains('MMR') + dd");
-  if (currentMMREl) {
-    const mmr = currentMMREl.textContent.replace(/\D+/g, "");
-    result.currentMMR = Number(mmr);
+  // ② Country
+  const countryDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Country");
+  if (countryDt) {
+    const dd = countryDt.nextElementSibling;
+    if (dd) result.country = dd.textContent.trim();
   }
 
-  // ============================
-  // ④ Peak MMR（Season1 は存在しない場合がある）
-  // ============================
-  const peakMMREl = doc.querySelector("dt:contains('Peak MMR') + dd");
-  if (peakMMREl) {
-    const mmr = peakMMREl.textContent.replace(/\D+/g, "");
-    result.peakMMR = Number(mmr);
+  // ③ Rank（順位）
+  const rankDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt) {
+    const dd = rankDt.nextElementSibling;
+    if (dd) result.rank = dd.textContent.trim();
   }
 
-  // ============================
-  // ⑤ ランク（Season1 は rank-text が無い）
-  // ============================
-  const rankEl = doc.querySelector(".rank-icon, .rank-text");
-  if (rankEl) {
-    const txt = rankEl.textContent.trim().toLowerCase();
-    if (txt.includes("iron")) result.rank = "Iron";
-    else if (txt.includes("bronze")) result.rank = "Bronze";
-    else if (txt.includes("silver")) result.rank = "Silver";
-    else if (txt.includes("gold")) result.rank = "Gold";
-    else if (txt.includes("platinum")) result.rank = "Platinum";
-    else if (txt.includes("diamond")) result.rank = "Diamond";
-    else if (txt.includes("master")) result.rank = "Master";
+  // ④ Current MMR
+  const mmrDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt) {
+    const dd = mmrDt.nextElementSibling;
+    if (dd) {
+      result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
+    }
   }
 
-  // ============================
-  // ⑥ 勝ち数 / 負け数（Season1 は W-L の表記が違う）
-  // ============================
-  const wlEl = doc.querySelector(".stats-box, .win-loss");
-  if (wlEl) {
-    const txt = wlEl.textContent;
-    const wins = txt.match(/Wins?\s*:\s*(\d+)/i);
-    const losses = txt.match(/Losses?\s*:\s*(\d+)/i);
-    if (wins) result.wins = Number(wins[1]);
-    if (losses) result.losses = Number(losses[1]);
+  // ⑤ Peak MMR（Season1 は存在しない場合がある）
+  const peakDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt) {
+    const dd = peakDt.nextElementSibling;
+    if (dd) {
+      result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
+    }
   }
 
-  // ============================
-  // ⑦ MMR 履歴（Season1 は class が rank-*）
-  // ============================
-  const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
-  result.mmrHistory = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
+  // ⑥ Win-Loss（Season1 は表記が違う）
+  const wlDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlDt) {
+    const dd = wlDt.nextElementSibling;
+    if (dd) {
+      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
+      if (match) {
+        result.wins = Number(match[1]);
+        result.losses = Number(match[2]);
+      }
+    }
+  }
 
-  // ============================
-  // ⑧ 直近試合履歴（Season1 はテーブル構造）
-  // ============================
+  // ⑦ 試合履歴（Season1 は table）
   const rows = doc.querySelectorAll("table tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
-    if (cols.length < 3) return;
+    if (cols.length < 4) return;
 
-    const opponent = cols[0].textContent.trim();
-    const changeTxt = cols[1].textContent.trim();
-    const change = Number(changeTxt.replace(/[^\d-]/g, ""));
-    const date = cols[2].textContent.trim();
+    const event = cols[0].textContent.trim();
+    const date = cols[1].textContent.trim();
+    const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
+    const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
 
-    result.history.push({ opponent, change, date });
+    result.history.push({ event, date, delta, mmr });
+    result.mmrHistory.push(mmr);
   });
 
   return result;
 }
+
+  
 
 function parseWorldHTML_Season2(html) {
   const result = {
@@ -5154,83 +5145,75 @@ function parseWorldHTML_Season2(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ============================
-  // ① 名前（Season2 は h2）
-  // ============================
-  const nameEl = doc.querySelector("h2");
-  if (nameEl) result.name = nameEl.textContent.trim();
-
-  // ============================
-  // ② 国旗
-  // ============================
-  const flagEl = doc.querySelector("img[src*='/flags/']");
-  if (flagEl) {
-    const src = flagEl.getAttribute("src");
-    const match = src.match(/flags\/(.*?)\.png/);
-    if (match) result.country = match[1].toUpperCase();
+  // ① 名前（h1）
+  const nameEl = doc.querySelector("h1");
+  if (nameEl) {
+    // "Sorute - Silver" → 名前だけ抽出
+    result.name = nameEl.textContent.split("-")[0].trim();
   }
 
-  // ============================
-  // ③ Current MMR
-  // ============================
-  const mmrMatch = html.match(/<dt>\s*MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
-  if (mmrMatch) {
-    result.currentMMR = Number(mmrMatch[1].replace(/,/g, ""));
+  // ② Country
+  const countryEl = doc.querySelector("dt:nth-child(9) + dd");
+  if (countryEl) {
+    result.country = countryEl.textContent.trim();
   }
 
-  // ============================
-  // ④ Peak MMR
-  // ============================
-  const peakMatch = html.match(/<dt>\s*Peak MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
-  if (peakMatch) {
-    result.peakMMR = Number(peakMatch[1].replace(/,/g, ""));
+  // ③ Rank（順位）
+  const rankEl = doc.querySelector("dt:nth-child(1) + dd");
+  if (rankEl) {
+    result.rank = rankEl.textContent.trim();
   }
 
-  // ============================
-  // ⑤ ランク（Season2 は rank-icon が無い）
-  // ============================
-  const rankMatch = html.match(/<dt>\s*Rank\s*<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/i);
-  if (rankMatch) {
-    result.rank = rankMatch[1].trim();
+  // ④ Current MMR
+  const mmrEl = doc.querySelector("dt:nth-child(3) + dd");
+  if (mmrEl) {
+    result.currentMMR = Number(mmrEl.textContent.replace(/\D+/g, ""));
   }
 
-  // ============================
-  // ⑥ 勝ち数 / 負け数
-  // ============================
-  const winsMatch = html.match(/Wins:\s*(\d+)/i);
-  const lossesMatch = html.match(/Losses:\s*(\d+)/i);
-  if (winsMatch) result.wins = Number(winsMatch[1]);
-  if (lossesMatch) result.losses = Number(lossesMatch[1]);
+  // ⑤ Peak MMR
+  const peakEl = doc.querySelector("dt:nth-child(5) + dd");
+  if (peakEl) {
+    result.peakMMR = Number(peakEl.textContent.replace(/\D+/g, ""));
+  }
 
-  // ============================
-  // ⑦ MMR 履歴（rank-*）
-  // ============================
-  const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
-  result.mmrHistory = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
+  // ⑥ Win-Loss (Last 10)
+  const wlEl = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlEl) {
+    const dd = wlEl.nextElementSibling;
+    if (dd) {
+      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
+      if (match) {
+        result.wins = Number(match[1]);
+        result.losses = Number(match[2]);
+      }
+    }
+  }
 
-  // ============================
-  // ⑧ 直近試合履歴（Season2 は table）
-  // ============================
-  const rows = doc.querySelectorAll("table tr");
+  // ⑦ 試合履歴（table）
+  const rows = doc.querySelectorAll("table.table-dark tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
-    if (cols.length < 3) return;
+    if (cols.length < 4) return;
 
-    const opponent = cols[0].textContent.trim();
-    const changeTxt = cols[1].textContent.trim();
-    const change = Number(changeTxt.replace(/[^\d-]/g, ""));
-    const date = cols[2].textContent.trim();
+    const event = cols[0].textContent.trim();
+    const date = cols[1].textContent.trim();
+    const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
+    const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
 
-    result.history.push({ opponent, change, date });
+    result.history.push({ event, date, delta, mmr });
+    result.mmrHistory.push(mmr);
   });
 
   return result;
 }
 
+
 function parseWorldHTML(html, season) {
   if (season == 1) return parseWorldHTML_Season1(html);
   return parseWorldHTML_Season2(html);
 }
+
 
 
 function parseWorldHTML_ALL(htmlList) {
