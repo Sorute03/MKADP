@@ -955,6 +955,7 @@ openModalBtn.onclick = () => {
   editingTimestamp = null;          // 新規モード
   initModalSelectors();
   updateModalMode();
+  initGrowthSelectors();
   modal.classList.add("show");
 };
 
@@ -1466,6 +1467,7 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
       renderRaceHistory(getGloballyFilteredRecords());
 
     } else if (target === "analysisTab") {
+      initGrowthSelectors();
       refreshModeView();
 
     } else if (target === "loungeTab") {
@@ -3680,17 +3682,24 @@ function renderLoungeSets(records) {
 ========== */
 
 function initGrowthSelectors() {
-  const tierSel = document.getElementById("growthTier");
+  const tierSel   = document.getElementById("growthTier");
   const seasonSel = document.getElementById("growthSeason");
   const courseSel = document.getElementById("growthCourse");
 
-  tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
-  seasonSel.innerHTML = buildSeasonOptions();
+  if (tierSel) {
+    tierSel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
 
+  if (seasonSel) {
+    seasonSel.innerHTML = buildSeasonOptions();
+  }
 
-  // courseList は②で定義される前提
-  courseSel.innerHTML = ["ALL"].concat(courseList).map(c => `<option value="${c}">${c}</option>`).join("");
+  if (courseSel) {
+    courseSel.innerHTML = ["ALL"].concat(courseList)
+      .map(c => `<option value="${c}">${c}</option>`).join("");
+  }
 }
+
 
 
 /* ==========
