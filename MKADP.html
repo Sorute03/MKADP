@@ -5007,33 +5007,28 @@ async function fetchWorldData(playerId, season = "ALL") {
 
 
 async function fetchWorldHTML(playerId, season, mode) {
-  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
+  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
   const url = `${proxy}?url=https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
 
   const res = await fetch(url);
   const txt = await res.text();
-
-  // ★ HTML が返ってくるのは正常なので削除する
-  return txt;
+  return txt; // ★ HTML は正常なのでそのまま返す
 }
+
 
 
 
 
 async function fetchWorldLeaderboard(playerId, season) {
-  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
+  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
   const url = `${proxy}?url=https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
 
   const res = await fetch(url);
   const txt = await res.text();
-
-  try {
-    return JSON.parse(txt);
-  } catch {
-    console.error("fetchWorldLeaderboard: JSON parse error", txt);
-    return null;
-  }
+  try { return JSON.parse(txt); }
+  catch { return null; }
 }
+
 
 
 
