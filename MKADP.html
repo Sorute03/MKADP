@@ -5723,9 +5723,13 @@ function buildMKCUrl(playerId, season) {
 
 async function onLoadLoungeStats() {
 
-  const url = document.getElementById("loungeUrlInput").value.trim();
-  const playerId = extractPlayerIdFromUrl(url);
-  const selectedSeason = extractSeasonFromUrl(url);
+  // ▼ プレイヤー選択チェック
+  if (activePlayerIndex === -1) {
+    return alert("プレイヤーが選択されていません");
+  }
+
+  const playerId = playerIdList[activePlayerIndex].id;
+  const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
@@ -5733,9 +5737,10 @@ async function onLoadLoungeStats() {
 
   let stats;
 
+  // ★★★ Season=ALL のときは全シーズンを取得して統合 ★★★
   if (selectedSeason === "ALL") {
 
-    const latestSeason = 3;
+    const latestSeason = 3; // 必要なら自動取得に変更可能
     const htmlList = [];
 
     for (let s = 1; s <= latestSeason; s++) {
@@ -5750,6 +5755,7 @@ async function onLoadLoungeStats() {
 
   } else {
 
+    // ★★★ 単一シーズン処理 ★★★
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
     console.log("detailsUrl:", detailsUrl);
 
@@ -5759,6 +5765,7 @@ async function onLoadLoungeStats() {
 
   console.log("stats:", stats);
 
+  // ▼ 表示用 stats
   drawLoungeStats({
     details: {
       name: stats.name,
@@ -5773,14 +5780,17 @@ async function onLoadLoungeStats() {
     courseStats: null
   });
 
+  // ▼ グラフ
   drawLoungeMMRChart(stats);
 
-  // ★★★ ここが重要 ★★★
+  // ▼ 画像生成用 stats
   const imgStats = convertStatsForImage(stats);
   await drawLoungeImage(imgStats);
 
+  // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
+
 
 
 
