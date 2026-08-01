@@ -660,10 +660,10 @@ const courseList = [
   <div id="loungeStats" style="margin-top:20px;"></div>
 
   <!-- ▼ グラフ Canvas（MMR変異グラフ） -->
-  <canvas id="loungeMMRChart" width="1000" height="300" style="margin-top:20px;"></canvas>
+  <canvas id="loungeMMRChart" width="1000" height="500" style="margin-top:20px;"></canvas>
 
   <!-- ▼ 画像生成 Canvas -->
-  <canvas id="loungeImageCanvas" width="1000" height="600" style="margin-top:20px; border:1px solid #ccc;"></canvas>
+  <canvas id="loungeImageCanvas" width="1600" height="1100" style="margin-top:20px; border:1px solid #ccc;"></canvas>
 
   <h3>背景画像設定（ラウンジ画像用）</h3>
 
@@ -797,7 +797,7 @@ const courseList = [
       style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
   
     <!-- 画像生成 Canvas -->
-    <canvas id="adpCourseImage" width="800" height="600"
+    <canvas id="adpCourseImage" width="1600" height="1100"
       style="border:1px solid #ccc; display:block;"></canvas>
   
     <div style="margin-top: 8px;">
@@ -5488,8 +5488,24 @@ function filterLoungeHistory(history) {
   return result;
 }
 
+function getTierColor(tier) {
+  if (!tier) return "#00aaff"; // fallback
+
+  const t = tier.toLowerCase();
+
+  if (t.includes("iron")) return "#6e6e6e";
+  if (t.includes("bronze")) return "#cd7f32";
+  if (t.includes("silver")) return "#c0c0c0";
+  if (t.includes("gold")) return "#ffd700";
+  if (t.includes("platinum")) return "#4fd3ff";
+  if (t.includes("diamond")) return "#72e0ff";
+  if (t.includes("master")) return "#ff4f4f";
+
+  return "#00aaff"; // fallback
+}
 
 
+  
 async function drawLoungeImage(stats) {
 
   const canvas = document.getElementById("loungeImageCanvas");
