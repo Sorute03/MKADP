@@ -5237,25 +5237,25 @@ async function drawLoungeImage(stats) {
 
 
 function aggregateWorldStats(leaderboard, htmlParsed) {
-  return {
-    // JSON（ランキング API）
-    name: leaderboard.name,
-    mmr: leaderboard.mmr,
-    peak_mmr: leaderboard.maxMmr,
-    win_rate: leaderboard.winRate,
-    wins_last_10: leaderboard.winsLastTen,
-    losses_last_10: leaderboard.lossesLastTen,
-    gain_loss_last_10: leaderboard.gainLossLastTen,
-    events_played: leaderboard.eventsPlayed,
-    largest_gain: leaderboard.largestGain,
-    mmr_rank: leaderboard.mmrRank.name,
-    peak_mmr_rank: leaderboard.maxMmrRank.name,
-    avg_score_24p: leaderboard.averageScore24P,
 
-    // HTML（PlayerDetails）
-    mmr_history: htmlParsed.mmr_history
-  };
-}
+  if (!leaderboard) {
+    return {
+      name: htmlParsed.name || "Unknown",
+      mmr: htmlParsed.currentMMR || 0,
+      peak_mmr: htmlParsed.peakMMR || 0,
+      win_rate: 0,
+      wins_last_10: 0,
+      losses_last_10: 0,
+      gain_loss_last_10: 0,
+      events_played: 0,
+      largest_gain: 0,
+      mmr_rank: "N/A",
+      peak_mmr_rank: "N/A",
+      avg_score_24p: 0,
+      mmr_history: htmlParsed.history || []
+    };
+  }
+
 
 
 function drawLoungeMMRChart(stats) {
