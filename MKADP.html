@@ -5006,8 +5006,10 @@ async function fetchWorldHTML(playerId, season="1", page="1") {
 }
 
 async function fetchWorldLeaderboard(playerId, season, game="mkworld24p") {
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
   const url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${game}&season=${season}`;
-  const res = await fetch(url);
+
+  const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
   const json = await res.json();
 
   return json.data.find(p => p.id === Number(playerId)) || null;
@@ -6757,6 +6759,19 @@ async function onShowAdpCourseStats() {
 }
 
 
+function onLoungeBgChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.loungeBackgroundImage = reader.result;
+    if (window.latestLoungeStats) {
+      drawLoungeImage(window.latestLoungeStats);
+    }
+  };
+  reader.readAsDataURL(file);
+}
 
 
 
