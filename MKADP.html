@@ -5052,7 +5052,8 @@ function parseWorldHTML_Season1(html) {
     partnerAve: 0,     // ★ Partner Average Score
     partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
     history: [],
-    mmrHistory: []
+    mmrHistory: [],
+    eventsPlayed: 0    // ★ 追加：試合数
   };
 
   const parser = new DOMParser();
@@ -5172,8 +5173,12 @@ function parseWorldHTML_Season1(html) {
     result.mmrHistory.push(mmr);
   });
 
+  // ★★★ 追加：イベント数（試合数）
+  result.eventsPlayed = result.history.length;
+
   return result;
 }
+
 
 
   
@@ -5194,7 +5199,8 @@ function parseWorldHTML_Season2(html) {
     partnerAve: 0,     // ★ Partner Average Score
     partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
     history: [],
-    mmrHistory: []
+    mmrHistory: [],
+    eventsPlayed: 0    // ★ 追加：試合数
   };
 
   const parser = new DOMParser();
@@ -5310,6 +5316,9 @@ function parseWorldHTML_Season2(html) {
     result.mmrHistory.push(mmr);
   });
 
+  // ★★★ 追加：イベント数（試合数）
+  result.eventsPlayed = result.history.length;
+
   return result;
 }
 
@@ -5332,7 +5341,6 @@ function parseWorldHTML_ALL(htmlList) {
     wins: 0,
     losses: 0,
 
-    // ★ 追加項目（Season2/3で取れる）
     ave: 0,
     aveNoSQ: 0,
     aveLast10: 0,
@@ -5349,49 +5357,40 @@ function parseWorldHTML_ALL(htmlList) {
         ? parseWorldHTML_Season1(html)
         : parseWorldHTML_Season2(html);
 
-    // 安全ガード
     parsed.mmrHistory = parsed.mmrHistory || [];
     parsed.history = parsed.history || [];
 
-    // 最新シーズンの情報を優先
     merged.name = parsed.name;
     merged.tier = parsed.tier || merged.tier;
     merged.country = parsed.country;
     merged.currentMMR = parsed.currentMMR;
 
-    // Peak MMR は最大値
     merged.peakMMR = Math.max(merged.peakMMR, parsed.peakMMR);
-
-    // Rank（順位）は最新シーズン優先
     merged.rank = parsed.rank;
 
-    // 勝敗は合計
     merged.wins += parsed.wins;
     merged.losses += parsed.losses;
 
-    // ★ AVE 系は合計ではなく「平均」を取る必要がある
-    // Season1 に存在しない場合があるので 0 のときは無視
     if (parsed.ave > 0) merged.ave += parsed.ave;
     if (parsed.aveNoSQ > 0) merged.aveNoSQ += parsed.aveNoSQ;
     if (parsed.aveLast10 > 0) merged.aveLast10 += parsed.aveLast10;
     if (parsed.partnerAve > 0) merged.partnerAve += parsed.partnerAve;
     if (parsed.partnerAveNoSQ > 0) merged.partnerAveNoSQ += parsed.partnerAveNoSQ;
 
-    // MMR履歴を結合
     merged.mmrHistory.push(...parsed.mmrHistory);
-
-    // 試合履歴を結合
     merged.history.push(...parsed.history);
   });
 
-  // ★ AVE 系は「シーズン数で割る」
   const seasonCount = htmlList.length;
 
-  if (merged.ave > 0) merged.ave = merged.ave / seasonCount;
-  if (merged.aveNoSQ > 0) merged.aveNoSQ = merged.aveNoSQ / seasonCount;
-  if (merged.aveLast10 > 0) merged.aveLast10 = merged.aveLast10 / seasonCount;
-  if (merged.partnerAve > 0) merged.partnerAve = merged.partnerAve / seasonCount;
-  if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ = merged.partnerAveNoSQ / seasonCount;
+  if (merged.ave > 0) merged.ave /= seasonCount;
+  if (merged.aveNoSQ > 0) merged.aveNoSQ /= seasonCount;
+  if (merged.aveLast10 > 0) merged.aveLast10 /= seasonCount;
+  if (merged.partnerAve > 0) merged.partnerAve /= seasonCount;
+  if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ /= seasonCount;
+
+  // ★★★ 追加：イベント数（試合数）
+  merged.eventsPlayed = merged.history.length;
 
   return merged;
 }
