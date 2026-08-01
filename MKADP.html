@@ -5042,9 +5042,15 @@ function parseWorldHTML_Season1(html) {
     country: "",
     currentMMR: 0,
     peakMMR: 0,
-    rank: "",
+    rank: "",          // 順位
+    tier: "",          // ★ Iron / Bronze / Silver / Gold / Platinum / Diamond / Master
     wins: 0,
     losses: 0,
+    ave: 0,            // ★ Average Score
+    aveNoSQ: 0,        // ★ Average Score (No SQ)
+    aveLast10: 0,      // ★ Average Score (Last 10)
+    partnerAve: 0,     // ★ Partner Average Score
+    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
     history: [],
     mmrHistory: []
   };
@@ -5052,11 +5058,13 @@ function parseWorldHTML_Season1(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前（Season1 は h1/h2 のどちらか）
+  // ① 名前 + 段位（Iron / Bronze / Silver / Gold / Platinum / Diamond / Master）
   const nameEl = doc.querySelector("h1, h2");
   if (nameEl) {
-    // "Sorute - Silver" → 名前だけ抽出
-    result.name = nameEl.textContent.split("-")[0].trim();
+    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const parts = txt.split("-");
+    result.name = parts[0].trim();
+    result.tier = parts[1]?.trim() || "";
   }
 
   // ② Country
@@ -5109,7 +5117,47 @@ function parseWorldHTML_Season1(html) {
     }
   }
 
-  // ⑦ 試合履歴（Season1 は table）
+  // ⑦ Average Score
+  const aveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt) {
+    const dd = aveDt.nextElementSibling;
+    if (dd) result.ave = Number(dd.textContent);
+  }
+
+  // ⑧ Average Score (No SQ)
+  const aveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt) {
+    const dd = aveNoSQDt.nextElementSibling;
+    if (dd) result.aveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑨ Average Score (Last 10)
+  const aveLast10Dt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt) {
+    const dd = aveLast10Dt.nextElementSibling;
+    if (dd) result.aveLast10 = Number(dd.textContent);
+  }
+
+  // ⑩ Partner Average Score
+  const partnerAveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt) {
+    const dd = partnerAveDt.nextElementSibling;
+    if (dd) result.partnerAve = Number(dd.textContent);
+  }
+
+  // ⑪ Partner Average Score (No SQ)
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt) {
+    const dd = partnerAveNoSQDt.nextElementSibling;
+    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑫ 試合履歴（Season1 は table）
   const rows = doc.querySelectorAll("table tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -5127,6 +5175,7 @@ function parseWorldHTML_Season1(html) {
   return result;
 }
 
+
   
 
 function parseWorldHTML_Season2(html) {
@@ -5135,9 +5184,15 @@ function parseWorldHTML_Season2(html) {
     country: "",
     currentMMR: 0,
     peakMMR: 0,
-    rank: "",
+    rank: "",          // 順位
+    tier: "",          // ★ Silver / Gold / Platinum など
     wins: 0,
     losses: 0,
+    ave: 0,            // ★ Average Score
+    aveNoSQ: 0,        // ★ Average Score (No SQ)
+    aveLast10: 0,      // ★ Average Score (Last 10)
+    partnerAve: 0,     // ★ Partner Average Score
+    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
     history: [],
     mmrHistory: []
   };
@@ -5145,42 +5200,52 @@ function parseWorldHTML_Season2(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前（h1）
+  // ① 名前 + 段位（Silver / Gold / Platinum）
   const nameEl = doc.querySelector("h1");
   if (nameEl) {
-    // "Sorute - Silver" → 名前だけ抽出
-    result.name = nameEl.textContent.split("-")[0].trim();
+    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const parts = txt.split("-");
+    result.name = parts[0].trim();
+    result.tier = parts[1]?.trim() || "";
   }
 
   // ② Country
-  const countryEl = doc.querySelector("dt:nth-child(9) + dd");
-  if (countryEl) {
-    result.country = countryEl.textContent.trim();
+  const countryDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Country");
+  if (countryDt) {
+    const dd = countryDt.nextElementSibling;
+    if (dd) result.country = dd.textContent.trim();
   }
 
   // ③ Rank（順位）
-  const rankEl = doc.querySelector("dt:nth-child(1) + dd");
-  if (rankEl) {
-    result.rank = rankEl.textContent.trim();
+  const rankDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt) {
+    const dd = rankDt.nextElementSibling;
+    if (dd) result.rank = dd.textContent.trim();
   }
 
   // ④ Current MMR
-  const mmrEl = doc.querySelector("dt:nth-child(3) + dd");
-  if (mmrEl) {
-    result.currentMMR = Number(mmrEl.textContent.replace(/\D+/g, ""));
+  const mmrDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt) {
+    const dd = mmrDt.nextElementSibling;
+    if (dd) result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
   }
 
   // ⑤ Peak MMR
-  const peakEl = doc.querySelector("dt:nth-child(5) + dd");
-  if (peakEl) {
-    result.peakMMR = Number(peakEl.textContent.replace(/\D+/g, ""));
+  const peakDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt) {
+    const dd = peakDt.nextElementSibling;
+    if (dd) result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
   }
 
   // ⑥ Win-Loss (Last 10)
-  const wlEl = [...doc.querySelectorAll("dt")]
+  const wlDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.includes("Win - Loss"));
-  if (wlEl) {
-    const dd = wlEl.nextElementSibling;
+  if (wlDt) {
+    const dd = wlDt.nextElementSibling;
     if (dd) {
       const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
       if (match) {
@@ -5190,7 +5255,47 @@ function parseWorldHTML_Season2(html) {
     }
   }
 
-  // ⑦ 試合履歴（table）
+  // ⑦ Average Score
+  const aveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt) {
+    const dd = aveDt.nextElementSibling;
+    if (dd) result.ave = Number(dd.textContent);
+  }
+
+  // ⑧ Average Score (No SQ)
+  const aveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt) {
+    const dd = aveNoSQDt.nextElementSibling;
+    if (dd) result.aveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑨ Average Score (Last 10)
+  const aveLast10Dt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt) {
+    const dd = aveLast10Dt.nextElementSibling;
+    if (dd) result.aveLast10 = Number(dd.textContent);
+  }
+
+  // ⑩ Partner Average Score
+  const partnerAveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt) {
+    const dd = partnerAveDt.nextElementSibling;
+    if (dd) result.partnerAve = Number(dd.textContent);
+  }
+
+  // ⑪ Partner Average Score (No SQ)
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt) {
+    const dd = partnerAveNoSQDt.nextElementSibling;
+    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑫ 試合履歴（table）
   const rows = doc.querySelectorAll("table.table-dark tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -5208,7 +5313,7 @@ function parseWorldHTML_Season2(html) {
   return result;
 }
 
-
+  
 function parseWorldHTML(html, season) {
   if (season == 1) return parseWorldHTML_Season1(html);
   return parseWorldHTML_Season2(html);
@@ -5219,14 +5324,23 @@ function parseWorldHTML(html, season) {
 function parseWorldHTML_ALL(htmlList) {
   const merged = {
     name: "Unknown",
+    tier: "",
     country: "",
     currentMMR: 0,
     peakMMR: 0,
     rank: "",
     wins: 0,
     losses: 0,
+
+    // ★ 追加項目（Season2/3で取れる）
+    ave: 0,
+    aveNoSQ: 0,
+    aveLast10: 0,
+    partnerAve: 0,
+    partnerAveNoSQ: 0,
+
     history: [],
-    mmrHistory: []   // ★ 必ず初期化
+    mmrHistory: []
   };
 
   htmlList.forEach(({ html, season }) => {
@@ -5235,19 +5349,33 @@ function parseWorldHTML_ALL(htmlList) {
         ? parseWorldHTML_Season1(html)
         : parseWorldHTML_Season2(html);
 
-    // ★ mmrHistory が undefined の場合に備える
+    // 安全ガード
     parsed.mmrHistory = parsed.mmrHistory || [];
     parsed.history = parsed.history || [];
 
     // 最新シーズンの情報を優先
     merged.name = parsed.name;
+    merged.tier = parsed.tier || merged.tier;
     merged.country = parsed.country;
     merged.currentMMR = parsed.currentMMR;
+
+    // Peak MMR は最大値
     merged.peakMMR = Math.max(merged.peakMMR, parsed.peakMMR);
+
+    // Rank（順位）は最新シーズン優先
+    merged.rank = parsed.rank;
 
     // 勝敗は合計
     merged.wins += parsed.wins;
     merged.losses += parsed.losses;
+
+    // ★ AVE 系は合計ではなく「平均」を取る必要がある
+    // Season1 に存在しない場合があるので 0 のときは無視
+    if (parsed.ave > 0) merged.ave += parsed.ave;
+    if (parsed.aveNoSQ > 0) merged.aveNoSQ += parsed.aveNoSQ;
+    if (parsed.aveLast10 > 0) merged.aveLast10 += parsed.aveLast10;
+    if (parsed.partnerAve > 0) merged.partnerAve += parsed.partnerAve;
+    if (parsed.partnerAveNoSQ > 0) merged.partnerAveNoSQ += parsed.partnerAveNoSQ;
 
     // MMR履歴を結合
     merged.mmrHistory.push(...parsed.mmrHistory);
@@ -5256,8 +5384,18 @@ function parseWorldHTML_ALL(htmlList) {
     merged.history.push(...parsed.history);
   });
 
+  // ★ AVE 系は「シーズン数で割る」
+  const seasonCount = htmlList.length;
+
+  if (merged.ave > 0) merged.ave = merged.ave / seasonCount;
+  if (merged.aveNoSQ > 0) merged.aveNoSQ = merged.aveNoSQ / seasonCount;
+  if (merged.aveLast10 > 0) merged.aveLast10 = merged.aveLast10 / seasonCount;
+  if (merged.partnerAve > 0) merged.partnerAve = merged.partnerAve / seasonCount;
+  if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ = merged.partnerAveNoSQ / seasonCount;
+
   return merged;
 }
+
 
 
 
