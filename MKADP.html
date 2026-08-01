@@ -2740,11 +2740,15 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
       refreshModeView();
 
     } else if (target === "coursestatsTab") {
-      // ★ コース stats タブを開いたときの処理
       activateCourseStatsTab();
+
+    } else if (target === "loungeTab") {
+      // ★ これを追加する！
+      activateLoungeTab();
     }
   };
 });
+
   
 
 function activateCourseStatsTab() {
