@@ -5007,18 +5007,36 @@ async function fetchWorldData(playerId, season = "ALL") {
 
 
 async function fetchWorldHTML(playerId, season, mode) {
-  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
+  const url = `${proxy}?url=https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+
   const res = await fetch(url);
-  return await res.text();
+  const txt = await res.text();
+
+  if (!txt || txt.startsWith("<")) {
+    console.error("fetchWorldHTML: GAS returned HTML (Cloudflare error)", txt);
+    return "";
+  }
+
+  return txt;
 }
+
 
 
 async function fetchWorldLeaderboard(playerId, season) {
-  const url = `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
-  const res = await fetch(url);
-  return await res.json();
-}
+  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
+  const url = `${proxy}?url=https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
 
+  const res = await fetch(url);
+  const txt = await res.text();
+
+  try {
+    return JSON.parse(txt);
+  } catch {
+    console.error("fetchWorldLeaderboard: JSON parse error", txt);
+    return null;
+  }
+}
 
 
 
@@ -5078,31 +5096,25 @@ document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Numb
 
 async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
 
-  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
+  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
 
-  const detailsUrl = `${proxy}?url=https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`;
-  const historyUrl = `${proxy}?url=https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`;
-
-  const seasonUrl = season !== "ALL"
-    ? `${proxy}?url=https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}`
-    : null;
-
-  const safeJson = async (res) => {
+  const safeJson = async (url) => {
+    const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
     const txt = await res.text();
-    if (!txt || txt.trim() === "" || txt.startsWith("<")) return null;
     try { return JSON.parse(txt); }
     catch { return null; }
   };
 
-  const details = await safeJson(await fetch(detailsUrl));
-  const history = await safeJson(await fetch(historyUrl));
-  const seasonData = seasonUrl ? await safeJson(await fetch(seasonUrl)) : null;
+  const details = await safeJson(`https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`);
+  const history = await safeJson(`https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`);
 
-  if (!details || !history) return null;
+  let seasonData = null;
+  if (season !== "ALL") {
+    seasonData = await safeJson(`https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}`);
+  }
 
   return { details, history, seasonData };
 }
-
 
 
 
