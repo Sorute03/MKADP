@@ -5488,21 +5488,7 @@ function filterLoungeHistory(history) {
   return result;
 }
 
-function getTierColor(tier) {
-  if (!tier) return "#00aaff"; // fallback
 
-  const t = tier.toLowerCase();
-
-  if (t.includes("iron")) return "#6e6e6e";
-  if (t.includes("bronze")) return "#cd7f32";
-  if (t.includes("silver")) return "#c0c0c0";
-  if (t.includes("gold")) return "#ffd700";
-  if (t.includes("platinum")) return "#4fd3ff";
-  if (t.includes("diamond")) return "#72e0ff";
-  if (t.includes("master")) return "#ff4f4f";
-
-  return "#00aaff"; // fallback
-}
 
 
   
@@ -7168,6 +7154,22 @@ function onLoungeBgChange(e) {
     }
   };
   reader.readAsDataURL(file);
+}
+  
+function getTierColor(tier) {
+  if (!tier) return "#00aaff"; // fallback
+
+  const t = tier.toLowerCase();
+
+  if (t.includes("iron")) return "#6e6e6e";
+  if (t.includes("bronze")) return "#cd7f32";
+  if (t.includes("silver")) return "#c0c0c0";
+  if (t.includes("gold")) return "#ffd700";
+  if (t.includes("platinum")) return "#4fd3ff";
+  if (t.includes("diamond")) return "#72e0ff";
+  if (t.includes("master")) return "#ff4f4f";
+
+  return "#00aaff"; // fallback
 }
 
 
