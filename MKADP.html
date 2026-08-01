@@ -5343,14 +5343,18 @@ async function drawLoungeImage(stats) {
   ctx.fillText(`Name: ${stats.name}`, 40, 60);
   ctx.fillText(`MMR: ${stats.mmr}`, 40, 120);
   ctx.fillText(`Peak MMR: ${stats.peak_mmr}`, 40, 180);
-  ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
-  ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
-  ctx.fillText(`Top Score: ${stats.top_score}`, 40, 360);
+  
+  // ★ MKWorld API には avg_score / nosq_avg_score が無いので削除
+  // ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
+  // ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
+  
+  ctx.fillText(`Top Score: ${stats.top_score ?? "-"}`, 40, 360);
   ctx.fillText(`Wins: ${stats.wins}`, 40, 420);
   ctx.fillText(`Losses: ${stats.losses}`, 40, 480);
   ctx.fillText(`直近10試合 MMR収支: ${stats.mmr_diff_10}`, 40, 540);
   ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
   ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
+
 }
 
   
