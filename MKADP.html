@@ -5691,58 +5691,7 @@ function drawLoungeMMRChart(stats) {
 
 
 
-async function drawLoungeImage(stats) {
 
-  const canvas = document.getElementById("loungeImageCanvas");
-  const ctx = canvas.getContext("2d");
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // ▼ 背景画像がある場合はフィルタ適用して描画
-  if (state.loungeBackgroundImage) {
-    const bg = new Image();
-    bg.src = state.loungeBackgroundImage;
-    await bg.decode();
-
-    ctx.filter = `
-      brightness(${state.loungeBgBrightness})
-      contrast(${state.loungeBgContrast})
-      blur(${state.loungeBgBlur}px)
-    `;
-    ctx.globalAlpha = state.loungeBgOpacity;
-
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
-  } else {
-    // ▼ デフォルト背景（色だけ）
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // ▼ テキスト描画
-  ctx.fillStyle = "white";
-  ctx.font = "32px sans-serif";
-
-  ctx.fillText(`Name: ${stats.name}`, 40, 60);
-  ctx.fillText(`MMR: ${stats.mmr}`, 40, 120);
-  ctx.fillText(`Peak MMR: ${stats.peak_mmr}`, 40, 180);
-  
-  // ★ MKWorld API には avg_score / nosq_avg_score が無いので削除
-  // ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
-  // ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
-  
-  ctx.fillText(`Top Score: ${stats.top_score ?? "-"}`, 40, 360);
-  ctx.fillText(`Wins: ${stats.wins}`, 40, 420);
-  ctx.fillText(`Losses: ${stats.losses}`, 40, 480);
-  ctx.fillText(`直近10試合 MMR収支: ${stats.mmr_diff_10}`, 40, 540);
-  ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
-  ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
-
-}
-
-  
 
 function buildMKCUrl(playerId, season) {
 
@@ -5771,7 +5720,6 @@ async function onLoadLoungeStats() {
 
   let stats;
 
-  // ★★★ シーズン ALL のときは全シーズンを取得して統合 ★★★
   if (selectedSeason === "ALL") {
 
     const latestSeason = 3;
@@ -5789,7 +5737,6 @@ async function onLoadLoungeStats() {
 
   } else {
 
-    // ★★★ 通常の単一シーズン処理 ★★★
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
     console.log("detailsUrl:", detailsUrl);
 
@@ -5799,7 +5746,6 @@ async function onLoadLoungeStats() {
 
   console.log("stats:", stats);
 
-  // ▼ テーブル描画
   drawLoungeStats({
     details: {
       name: stats.name,
@@ -5814,18 +5760,13 @@ async function onLoadLoungeStats() {
     courseStats: null
   });
 
-  // ▼ グラフ描画
   drawLoungeMMRChart(stats);
 
-  // ▼ ★★★ ここを差し替える ★★★
-  // ▼ ★★★ 画像用に stats を変換する ★★★
+  // ★★★ ここが重要 ★★★
   const imgStats = convertStatsForImage(stats);
-  
-  // ▼ 画像生成
   await drawLoungeImage(imgStats);
-  
-  window.latestLoungeStats = stats;
 
+  window.latestLoungeStats = stats;
 }
 
 
