@@ -5008,9 +5008,15 @@ async function fetchWorldData(playerId, season = "ALL") {
 
 async function fetchWorldHTML(playerId, season, mode) {
   const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
-  const url = `${proxy}?url=https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
 
-  const res = await fetch(url);
+  // ★ URL を完成させる
+  const targetUrl =
+    `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+
+  // ★ encode して GAS に渡す
+  const encoded = encodeURIComponent(targetUrl);
+
+  const res = await fetch(`${proxy}?url=${encoded}`);
   return await res.text();
 }
 
@@ -5019,19 +5025,22 @@ async function fetchWorldHTML(playerId, season, mode) {
 
 
 
+
 async function fetchWorldLeaderboard(playerId, season) {
   const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
-  const url = `${proxy}?url=https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
 
-  const res = await fetch(url);
+  // ★ URL を完成させる
+  const targetUrl =
+    `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
+
+  // ★ encode して GAS に渡す
+  const encoded = encodeURIComponent(targetUrl);
+
+  const res = await fetch(`${proxy}?url=${encoded}`);
   const txt = await res.text();
 
-  try {
-    return JSON.parse(txt);
-  } catch {
-    console.error("fetchWorldLeaderboard: JSON parse error", txt);
-    return null;
-  }
+  try { return JSON.parse(txt); }
+  catch { return null; }
 }
 
 
@@ -5371,48 +5380,20 @@ async function onLoadLoungeStats() {
     return;
   }
 
-  const url = urlInput.value.trim();
-  if (!url) {
-    alert("ラウンジURLを入力してください");
-    return;
-  }
-
+  const url = document.getElementById("loungeUrlInput").value.trim();
   const playerId = extractPlayerIdFromUrl(url);
-  if (!playerId) {
-    alert("URL から playerId を取得できません");
-    return;
-  }
-
-  let season = extractSeasonFromUrl(url);
-  if (!season) season = "ALL";
+  const season = extractSeasonFromUrl(url);
+  
 
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("season:", season);
 
-  // ▼ Season=ALL のときは 12P と 24P を結合
-  let htmlParsed;
 
-  if (season === "ALL") {
 
-    const html12 = await fetchWorldHTML(playerId, 1, 12);
-    const parsed12 = parseWorldHTML(html12);
+  const html = await fetchWorldHTML(playerId, season, 12);
+  htmlParsed = parseWorldHTML(html);
 
-    const html24 = await fetchWorldHTML(playerId, 1, 24);
-    const parsed24 = parseWorldHTML(html24);
-
-    htmlParsed = {
-      name: parsed12.name || parsed24.name,
-      currentMMR: parsed12.currentMMR || parsed24.currentMMR,
-      peakMMR: parsed12.peakMMR || parsed24.peakMMR,
-      history: [...parsed12.history, ...parsed24.history]
-    };
-
-  } else {
-
-    const html = await fetchWorldHTML(playerId, season, 12);
-    htmlParsed = parseWorldHTML(html);
-  }
 
   console.log("htmlParsed:", htmlParsed);
 
