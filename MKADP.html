@@ -5574,7 +5574,7 @@ async function drawLoungeImage(stats) {
     const minMMR = Math.min(...mmr);
     const maxMMR = Math.max(...mmr);
 
-    ctx.strokeStyle = "#00aaff";
+    ctx.strokeStyle = getTierColor(stats.tier);
     ctx.lineWidth = 3;
     ctx.beginPath();
 
@@ -6235,7 +6235,7 @@ function drawMMRGraph(ctx, history) {
   const minR = Math.min(...ratings);
   const maxR = Math.max(...ratings);
 
-  ctx.strokeStyle = "#00aaff";
+  ctx.strokeStyle = getTierColor(stats.tier);
   ctx.lineWidth = 3;
   ctx.beginPath();
 
