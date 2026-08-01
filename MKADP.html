@@ -5267,21 +5267,27 @@ function aggregateWorldStats(leaderboard, htmlParsed) {
 
 
 
+let loungeMMRChartInstance = null;
+
 function drawLoungeMMRChart(stats) {
 
   const ctx = document.getElementById("loungeMMRChart").getContext("2d");
 
+  // ★ 既存チャートを破棄
+  if (loungeMMRChartInstance && typeof loungeMMRChartInstance.destroy === "function") {
+    loungeMMRChartInstance.destroy();
+  }
+
   const labels = stats.mmr_history.map((_, i) => i + 1);
 
-  // ★ Season に応じて色を決定
   const season = Number(loungeSeasonSelect.value);
   const rankInfo = season === 1
     ? getRankInfoV1(stats.mmr)
     : getRankInfoV2(stats.mmr);
 
-  const lineColor = rankInfo.color;   // ★ ここが線の色になる
+  const lineColor = rankInfo.color;
 
-  new Chart(ctx, {
+  loungeMMRChartInstance = new Chart(ctx, {
     type: "line",
     data: {
       labels,
@@ -5290,8 +5296,8 @@ function drawLoungeMMRChart(stats) {
           ? "MMR推移（Season 1）"
           : `MMR推移（Season ${season})`,
         data: stats.mmr_history,
-        borderColor: lineColor,                 // ★ 色反映
-        backgroundColor: lineColor + "33"       // ★ 半透明背景（任意）
+        borderColor: lineColor,
+        backgroundColor: lineColor + "33"
       }]
     },
     options: {
@@ -5302,7 +5308,6 @@ function drawLoungeMMRChart(stats) {
     }
   });
 }
-
 
 
 
