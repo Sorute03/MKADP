@@ -594,9 +594,21 @@ const courseList = [
 
   <h2>Lounge Stats Viewer</h2>
 
-  <!-- ▼ URL入力欄 -->
-  <label>ラウンジURL</label><br>
-  <input id="loungeUrlInput" placeholder="https://lounge.mkcentral.com/mkworld/PlayerDetails/15479?season=3" style="width:400px; padding:6px;">
+ <h3>プレイヤーID管理</h3>
+
+  <label>名前</label><br>
+  <input id="playerNameInput" placeholder="Sorute" style="width:200px; padding:6px;"><br><br>
+  
+  <label>プレイヤーID</label><br>
+  <input id="playerIdInput" placeholder="15479" style="width:200px; padding:6px;"><br><br>
+  
+  <button id="addPlayerIdBtn">追加</button>
+  <button id="deletePlayerIdBtn">削除</button>
+  
+  <h4>登録プレイヤー</h4>
+  <div id="playerIdListBox" style="border:1px solid #666; padding:10px; width:300px; min-height:100px;"></div>
+  
+  <br>
   <button id="loadLoungeBtn">データ取得</button>
   <button id="sendLoungeDiscordBtn">Discordへ送信</button>
 
@@ -7165,6 +7177,106 @@ function getTierColor(tier) {
   return "#00aaff"; // fallback
 }
 
+let playerIdList = [];
+let activePlayerIndex = -1;
+
+// ▼ 起動時に読み込み
+function loadPlayerIdList() {
+  const raw = localStorage.getItem("mkadp_player_ids");
+  if (!raw) return;
+  try {
+    playerIdList = JSON.parse(raw);
+  } catch {
+    playerIdList = [];
+  }
+}
+
+// ▼ 保存
+function savePlayerIdList() {
+  localStorage.setItem("mkadp_player_ids", JSON.stringify(playerIdList));
+}
+
+// ▼ 表示
+function renderPlayerIdList() {
+  const box = document.getElementById("playerIdListBox");
+  box.innerHTML = "";
+
+  playerIdList.forEach((p, i) => {
+    const div = document.createElement("div");
+    div.textContent = `${p.name} (ID: ${p.id})`;
+    div.style.padding = "6px";
+    div.style.cursor = "pointer";
+
+    if (i === activePlayerIndex) {
+      div.style.background = "#444";
+      div.style.color = "white";
+    }
+
+    div.onclick = () => {
+      activePlayerIndex = i;
+      renderPlayerIdList();
+    };
+
+    box.appendChild(div);
+  });
+}
+
+// ▼ 追加
+document.getElementById("addPlayerIdBtn").onclick = () => {
+  const name = document.getElementById("playerNameInput").value.trim();
+  const id = document.getElementById("playerIdInput").value.trim();
+
+  if (!name || !id) return alert("名前とIDを入力してください");
+
+  playerIdList.push({ name, id });
+  savePlayerIdList();
+  renderPlayerIdList();
+};
+
+// ▼ 削除
+document.getElementById("deletePlayerIdBtn").onclick = () => {
+  if (activePlayerIndex === -1) return alert("削除するプレイヤーが選択されていません");
+
+  playerIdList.splice(activePlayerIndex, 1);
+  activePlayerIndex = -1;
+  savePlayerIdList();
+  renderPlayerIdList();
+};
+
+// ▼ データ取得ボタン
+document.getElementById("loadLoungeBtn").onclick = async () => {
+  if (activePlayerIndex === -1) return alert("プレイヤーが選択されていません");
+
+  const playerId = playerIdList[activePlayerIndex].id;
+  const season = document.getElementById("loungeSeasonSelect").value;
+
+  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
+
+  console.log("Fetch URL:", url);
+
+  const html = await fetchWorldHTML(url);
+  await parseAndDisplayLoungeStats(html, season);
+};
+
+// ▼ Discord送信（ADPと同じ形式）
+document.getElementById("sendLoungeDiscordBtn").onclick = async () => {
+  if (activeWebhookIndex === -1) return alert("Webhook が選択されていません");
+
+  const { url } = webhookList[activeWebhookIndex];
+  const canvas = document.getElementById("loungeImageCanvas");
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  const form = new FormData();
+  form.append("file", blob, "lounge_stats.png");
+
+  await fetch(url, { method: "POST", body: form });
+
+  alert("画像を送信しました");
+};
+
+// ▼ 初期化
+loadPlayerIdList();
+renderPlayerIdList();
 
 
 </script>
