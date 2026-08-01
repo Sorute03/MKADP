@@ -5979,41 +5979,35 @@ function drawLoungeStats(data) {
 
 
   
-async function sendCanvasToDiscord() {
-  const input = document.getElementById("webhookUrlInput");
-  if (!input) {
-    alert("Webhook URL 入力欄が見つかりません");
-    return;
+document.getElementById("sendLoungeDiscordBtn").onclick = async () => {
+  if (activeWebhookIndex === -1) {
+    return alert("Webhook が選択されていません");
   }
 
-  const webhookUrl = input.value.trim();
-  if (!webhookUrl) {
-    alert("Webhook URL を入力してください");
-    return;
-  }
+  const { url } = webhookList[activeWebhookIndex];
 
   const canvas = document.getElementById("loungeImageCanvas");
+  if (!canvas) {
+    return alert("Canvas が見つかりません");
+  }
 
-  canvas.toBlob(async (blob) => {
-    const form = new FormData();
-    form.append("payload_json", JSON.stringify({
-      content: "Lounge Stats 画像です",
-      username: "MKWorld Bot"
-    }));
-    form.append("file", blob, "stats.png");
+  // ★ canvas.toBlob を Promise 化して await で扱う
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      body: form
-    });
+  const form = new FormData();
+  form.append("file", blob, "lounge_stats.png");
 
-    alert(res.ok ? "Discordに送信しました" : "送信失敗");
-  }, "image/png");
-}
+  await fetch(url, {
+    method: "POST",
+    body: form
+  });
+
+  alert("画像を送信しました");
+};
 
 
 
-document.getElementById("sendLoungeDiscordBtn").onclick = sendCanvasToDiscord;
+
 
 
 /******************************************************
