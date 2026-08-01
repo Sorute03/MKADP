@@ -5005,43 +5005,37 @@ async function fetchWorldData(playerId, season = "ALL") {
   return { details, history, seasonData };
 }
 
+function buildPlayerDetailsUrl(playerId, season, mode) {
+  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+}
 
-async function fetchWorldHTML(playerId, season, mode) {
+function buildLeaderboardUrl(playerId, season) {
+  return `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
+}
+
+
+async function fetchWorldHTML(targetUrl) {
   const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
 
-  // ★ URL を完成させる
-  const targetUrl =
-    `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
-
-  // ★ encode して GAS に渡す
   const encoded = encodeURIComponent(targetUrl);
-
   const res = await fetch(`${proxy}?url=${encoded}`);
+
   return await res.text();
 }
 
 
 
-
-
-
-
-async function fetchWorldLeaderboard(playerId, season) {
+async function fetchWorldLeaderboard(targetUrl) {
   const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
 
-  // ★ URL を完成させる
-  const targetUrl =
-    `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
-
-  // ★ encode して GAS に渡す
   const encoded = encodeURIComponent(targetUrl);
-
   const res = await fetch(`${proxy}?url=${encoded}`);
-  const txt = await res.text();
 
+  const txt = await res.text();
   try { return JSON.parse(txt); }
   catch { return null; }
 }
+
 
 
 
@@ -5374,34 +5368,30 @@ async function drawLoungeImage(stats) {
 
 async function onLoadLoungeStats() {
 
-  const urlInput = document.getElementById("loungeUrlInput");
-  if (!urlInput) {
-    alert("URL入力欄が見つかりません");
-    return;
-  }
-
   const url = document.getElementById("loungeUrlInput").value.trim();
   const playerId = extractPlayerIdFromUrl(url);
   const season = extractSeasonFromUrl(url);
-  
 
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("season:", season);
 
+  // ★ URL を先に完成させる
+  const detailsUrl = buildPlayerDetailsUrl(playerId, season, 24);
+  const leaderboardUrl = buildLeaderboardUrl(playerId, season);
 
+  console.log("detailsUrl:", detailsUrl);
+  console.log("leaderboardUrl:", leaderboardUrl);
 
-  const html = await fetchWorldHTML(playerId, season, 12);
-  htmlParsed = parseWorldHTML(html);
-
+  // ★ 完成した URL を fetch に渡す
+  const html = await fetchWorldHTML(detailsUrl);
+  const htmlParsed = parseWorldHTML(html);
 
   console.log("htmlParsed:", htmlParsed);
 
-  // ▼ ランキング API（MMR・順位・直近10試合など）
-  const leaderboard = await fetchWorldLeaderboard(playerId, season);
+  const leaderboard = await fetchWorldLeaderboard(leaderboardUrl);
   console.log("leaderboard:", leaderboard);
 
-  // ▼ MKWorld 用の stats オブジェクトを生成
   const stats = aggregateWorldStats(leaderboard, htmlParsed);
   console.log("stats:", stats);
 
@@ -5424,6 +5414,7 @@ async function onLoadLoungeStats() {
 
   window.latestLoungeStats = stats;
 }
+
 
 
 
