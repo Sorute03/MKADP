@@ -5024,7 +5024,6 @@ async function fetchWorldHTML(targetUrl) {
 }
 
 
-
 async function fetchWorldLeaderboard(targetUrl) {
   const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
 
@@ -5037,28 +5036,247 @@ async function fetchWorldLeaderboard(targetUrl) {
 }
 
 
+function parseWorldHTML_Season1(html) {
+  const result = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",
+    wins: 0,
+    losses: 0,
+    history: [],
+    mmrHistory: []
+  };
 
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
 
+  // ============================
+  // ① 名前（Season1 は h2 が多い）
+  // ============================
+  const nameEl = doc.querySelector("h2, .player-name");
+  if (nameEl) result.name = nameEl.textContent.trim();
 
+  // ============================
+  // ② 国旗（Season1 は flag-icon が無い場合がある）
+  // ============================
+  const flagEl = doc.querySelector("img[src*='flags']");
+  if (flagEl) {
+    const src = flagEl.getAttribute("src");
+    const match = src.match(/flags\/(.*?)\.png/);
+    if (match) result.country = match[1].toUpperCase();
+  }
 
-function parseWorldHTML(html) {
+  // ============================
+  // ③ Current MMR（Season1 は dt/dd の構造）
+  // ============================
+  const currentMMREl = doc.querySelector("dt:contains('MMR') + dd");
+  if (currentMMREl) {
+    const mmr = currentMMREl.textContent.replace(/\D+/g, "");
+    result.currentMMR = Number(mmr);
+  }
 
-  const nameMatch = html.match(/<h2[^>]*>([^<]+)<\/h2>/);
-  const name = nameMatch ? nameMatch[1].trim() : "Unknown";
+  // ============================
+  // ④ Peak MMR（Season1 は存在しない場合がある）
+  // ============================
+  const peakMMREl = doc.querySelector("dt:contains('Peak MMR') + dd");
+  if (peakMMREl) {
+    const mmr = peakMMREl.textContent.replace(/\D+/g, "");
+    result.peakMMR = Number(mmr);
+  }
 
-  const currentMMRMatch = html.match(/Current MMR[^>]*>\s*([\d,]+)/i);
-  const currentMMR = currentMMRMatch ? Number(currentMMRMatch[1].replace(/,/g, "")) : 0;
+  // ============================
+  // ⑤ ランク（Season1 は rank-text が無い）
+  // ============================
+  const rankEl = doc.querySelector(".rank-icon, .rank-text");
+  if (rankEl) {
+    const txt = rankEl.textContent.trim().toLowerCase();
+    if (txt.includes("iron")) result.rank = "Iron";
+    else if (txt.includes("bronze")) result.rank = "Bronze";
+    else if (txt.includes("silver")) result.rank = "Silver";
+    else if (txt.includes("gold")) result.rank = "Gold";
+    else if (txt.includes("platinum")) result.rank = "Platinum";
+    else if (txt.includes("diamond")) result.rank = "Diamond";
+    else if (txt.includes("master")) result.rank = "Master";
+  }
 
-  const peakMMRMatch = html.match(/Peak MMR[^>]*>\s*([\d,]+)/i);
-  const peakMMR = peakMMRMatch ? Number(peakMMRMatch[1].replace(/,/g, "")) : 0;
+  // ============================
+  // ⑥ 勝ち数 / 負け数（Season1 は W-L の表記が違う）
+  // ============================
+  const wlEl = doc.querySelector(".stats-box, .win-loss");
+  if (wlEl) {
+    const txt = wlEl.textContent;
+    const wins = txt.match(/Wins?\s*:\s*(\d+)/i);
+    const losses = txt.match(/Losses?\s*:\s*(\d+)/i);
+    if (wins) result.wins = Number(wins[1]);
+    if (losses) result.losses = Number(losses[1]);
+  }
 
-  const historyMatches = [...html.matchAll(/MMR Change[^>]*>\s*([\d,]+)/gi)];
-  const history = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
+  // ============================
+  // ⑦ MMR 履歴（Season1 は class が rank-*）
+  // ============================
+  const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  result.mmrHistory = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
 
-  return { name, currentMMR, peakMMR, history };
+  // ============================
+  // ⑧ 直近試合履歴（Season1 はテーブル構造）
+  // ============================
+  const rows = doc.querySelectorAll("table tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("td");
+    if (cols.length < 3) return;
+
+    const opponent = cols[0].textContent.trim();
+    const changeTxt = cols[1].textContent.trim();
+    const change = Number(changeTxt.replace(/[^\d-]/g, ""));
+    const date = cols[2].textContent.trim();
+
+    result.history.push({ opponent, change, date });
+  });
+
+  return result;
+}
+
+function parseWorldHTML_Season2(html) {
+  const result = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",
+    wins: 0,
+    losses: 0,
+    history: [],
+    mmrHistory: []
+  };
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // ============================
+  // ① 名前（Season2 は h2）
+  // ============================
+  const nameEl = doc.querySelector("h2");
+  if (nameEl) result.name = nameEl.textContent.trim();
+
+  // ============================
+  // ② 国旗
+  // ============================
+  const flagEl = doc.querySelector("img[src*='/flags/']");
+  if (flagEl) {
+    const src = flagEl.getAttribute("src");
+    const match = src.match(/flags\/(.*?)\.png/);
+    if (match) result.country = match[1].toUpperCase();
+  }
+
+  // ============================
+  // ③ Current MMR
+  // ============================
+  const mmrMatch = html.match(/<dt>\s*MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
+  if (mmrMatch) {
+    result.currentMMR = Number(mmrMatch[1].replace(/,/g, ""));
+  }
+
+  // ============================
+  // ④ Peak MMR
+  // ============================
+  const peakMatch = html.match(/<dt>\s*Peak MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
+  if (peakMatch) {
+    result.peakMMR = Number(peakMatch[1].replace(/,/g, ""));
+  }
+
+  // ============================
+  // ⑤ ランク（Season2 は rank-icon が無い）
+  // ============================
+  const rankMatch = html.match(/<dt>\s*Rank\s*<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/i);
+  if (rankMatch) {
+    result.rank = rankMatch[1].trim();
+  }
+
+  // ============================
+  // ⑥ 勝ち数 / 負け数
+  // ============================
+  const winsMatch = html.match(/Wins:\s*(\d+)/i);
+  const lossesMatch = html.match(/Losses:\s*(\d+)/i);
+  if (winsMatch) result.wins = Number(winsMatch[1]);
+  if (lossesMatch) result.losses = Number(lossesMatch[1]);
+
+  // ============================
+  // ⑦ MMR 履歴（rank-*）
+  // ============================
+  const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
+  result.mmrHistory = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
+
+  // ============================
+  // ⑧ 直近試合履歴（Season2 は table）
+  // ============================
+  const rows = doc.querySelectorAll("table tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("td");
+    if (cols.length < 3) return;
+
+    const opponent = cols[0].textContent.trim();
+    const changeTxt = cols[1].textContent.trim();
+    const change = Number(changeTxt.replace(/[^\d-]/g, ""));
+    const date = cols[2].textContent.trim();
+
+    result.history.push({ opponent, change, date });
+  });
+
+  return result;
+}
+
+function parseWorldHTML(html, season) {
+  if (season == 1) return parseWorldHTML_Season1(html);
+  return parseWorldHTML_Season2(html);
 }
 
 
+
+function parseWorldHTML_ALL(htmlList) {
+  const merged = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",
+    wins: 0,
+    losses: 0,
+    history: [],
+    mmrHistory: []
+  };
+
+  htmlList.forEach(({ html, season }) => {
+    const parsed =
+      season == 1
+        ? parseWorldHTML_Season1(html)
+        : parseWorldHTML_Season2(html);
+
+    // 名前・国旗は最新シーズン優先
+    merged.name = parsed.name;
+    merged.country = parsed.country;
+
+    // 最新シーズンの MMR を採用
+    merged.currentMMR = parsed.currentMMR;
+    merged.peakMMR = Math.max(merged.peakMMR, parsed.peakMMR);
+
+    // 勝敗は合計
+    merged.wins += parsed.wins;
+    merged.losses += parsed.losses;
+
+    // MMR 履歴を結合
+    merged.mmrHistory.push(...parsed.mmrHistory);
+
+    // 試合履歴を結合
+    merged.history.push(...parsed.history);
+  });
+
+  // 履歴を日付順にソート
+  merged.history.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return merged;
+}
 
 
   
@@ -5364,48 +5582,72 @@ async function drawLoungeImage(stats) {
 
   
 
+function buildMKCUrl(playerId, season) {
+
+  // ★ Season1 は p を付けない
+  if (season == 1) {
+    return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
+  }
+
+  // ★ Season2 以降は p を自動決定（MKADP は 24 が標準）
+  const p = 24;
+
+  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
+}
+
 
 
 async function onLoadLoungeStats() {
 
   const url = document.getElementById("loungeUrlInput").value.trim();
   const playerId = extractPlayerIdFromUrl(url);
-  const season = extractSeasonFromUrl(url);
+  const selectedSeason = extractSeasonFromUrl(url);
 
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
-  console.log("season:", season);
+  console.log("selectedSeason:", selectedSeason);
 
-  // ★ URL を先に完成させる
-  const detailsUrl = buildPlayerDetailsUrl(playerId, season, 24);
-  const leaderboardUrl = buildLeaderboardUrl(playerId, season);
+  let stats;
 
-  console.log("detailsUrl:", detailsUrl);
-  console.log("leaderboardUrl:", leaderboardUrl);
+  // ★★★ シーズン ALL のときは全シーズンを取得して統合 ★★★
+  if (selectedSeason === "ALL") {
 
-  // ★ 完成した URL を fetch に渡す
-  const html = await fetchWorldHTML(detailsUrl);
-  const htmlParsed = parseWorldHTML(html);
+    const latestSeason = 3; // ← MKWorld の最新シーズンに合わせて変更
+    const htmlList = [];
 
-  console.log("htmlParsed:", htmlParsed);
+    for (let s = 1; s <= latestSeason; s++) {
+      const url = buildMKCUrl(playerId, s);
+      console.log("Fetching Season", s, "URL:", url);
 
-  const leaderboard = await fetchWorldLeaderboard(leaderboardUrl);
-  console.log("leaderboard:", leaderboard);
+      const html = await fetchWorldHTML(url);
+      htmlList.push({ html, season: s });
+    }
 
-  const stats = aggregateWorldStats(leaderboard, htmlParsed);
+    stats = parseWorldHTML_ALL(htmlList);
+
+  } else {
+
+    // ★★★ 通常の単一シーズン処理 ★★★
+    const detailsUrl = buildMKCUrl(playerId, selectedSeason);
+    console.log("detailsUrl:", detailsUrl);
+
+    const html = await fetchWorldHTML(detailsUrl);
+    stats = parseWorldHTML(html, selectedSeason);
+  }
+
   console.log("stats:", stats);
 
   drawLoungeStats({
     details: {
       name: stats.name,
-      mmr: stats.mmr,
-      peak_mmr: stats.peak_mmr,
+      mmr: stats.currentMMR,
+      peak_mmr: stats.peakMMR,
       wins: stats.wins,
       losses: stats.losses,
-      mmr_rank: stats.mmr_rank,
-      peak_mmr_rank: stats.peak_mmr_rank
+      mmr_rank: stats.rank,
+      peak_mmr_rank: stats.rank
     },
-    history: stats.mmr_history,
+    history: stats.mmrHistory,
     courseStats: null
   });
 
