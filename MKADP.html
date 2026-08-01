@@ -4994,12 +4994,13 @@ async function fetchWorldData(playerId, season = "ALL") {
 }
 
 
-async function fetchWorldHTML(playerId, season = "1") {
+async function fetchWorldHTML(playerId, season = "1", page = "1") {
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
+  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${page}`;
   const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
   return await res.text(); // HTML が返る
 }
+
 
 
 function parseWorldHTML(html) {
@@ -5365,8 +5366,8 @@ async function onLoadLoungeStats() {
   const playerId = extractPlayerIdFromUrl(url);
   const season = extractSeasonFromUrl(url);
 
-  // ★ HTML を取得
-  const html = await fetchWorldHTML(playerId, season);
+  // ★ PlayerDetails HTML を取得
+  const html = await fetchWorldHTML(playerId, season, 1);
 
   // ★ HTML を解析して stats を作る
   const stats = parseWorldHTML(html);
@@ -5378,6 +5379,7 @@ async function onLoadLoungeStats() {
 
   window.latestLoungeStats = stats;
 }
+
 
 
   
