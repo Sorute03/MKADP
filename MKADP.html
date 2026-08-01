@@ -5011,9 +5011,9 @@ async function fetchWorldHTML(playerId, season, mode) {
   const url = `${proxy}?url=https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
 
   const res = await fetch(url);
-  const txt = await res.text();
-  return txt; // ★ HTML は正常なのでそのまま返す
+  return await res.text();
 }
+
 
 
 
@@ -5025,9 +5025,15 @@ async function fetchWorldLeaderboard(playerId, season) {
 
   const res = await fetch(url);
   const txt = await res.text();
-  try { return JSON.parse(txt); }
-  catch { return null; }
+
+  try {
+    return JSON.parse(txt);
+  } catch {
+    console.error("fetchWorldLeaderboard: JSON parse error", txt);
+    return null;
+  }
 }
+
 
 
 
