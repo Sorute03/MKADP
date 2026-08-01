@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1785567283-462936",
+  "timestamp": 1785567283,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "シュポポコースター",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "マリオサーキット",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "サンサンさばく",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ピーチスタジアム→キノピオファクトリー",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "どんぐりツリーハウス",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "プクプクフォールズ",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ヘイホーカーニバル",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ノコノコビーチ",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1785567141989,
+      "totalScore12": 62
+    }
+  ]
+}
