@@ -5006,22 +5006,19 @@ async function fetchWorldData(playerId, season = "ALL") {
 }
 
 
-async function fetchWorldHTML(playerId, season="1", page="1") {
-  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${page}`;
-  const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
+async function fetchWorldHTML(playerId, season, mode) {
+  const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+  const res = await fetch(url);
   return await res.text();
 }
 
-async function fetchWorldLeaderboard(playerId, season, game="mkworld24p") {
-  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-  const url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${game}&season=${season}`;
 
-  const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
-  const json = await res.json();
-
-  return json.data.find(p => p.id === Number(playerId)) || null;
+async function fetchWorldLeaderboard(playerId, season) {
+  const url = `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
+  const res = await fetch(url);
+  return await res.json();
 }
+
 
 
 
