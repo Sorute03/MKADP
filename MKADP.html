@@ -5363,6 +5363,7 @@ async function onLoadLoungeStats() {
   const playerId = extractPlayerIdFromUrl(url);
   let season = extractSeasonFromUrl(url);
 
+  // ▼ Season=ALL のときは 12P と 24P を結合
   let htmlParsed;
 
   if (season === "ALL") {
@@ -5386,10 +5387,30 @@ async function onLoadLoungeStats() {
     htmlParsed = parseWorldHTML(html);
   }
 
+  // ▼ ランキング API（MMR・順位・直近10試合など）
   const leaderboard = await fetchWorldLeaderboard(playerId, season);
+
+  // ▼ MKWorld 用の stats オブジェクトを生成
   const stats = aggregateWorldStats(leaderboard, htmlParsed);
 
-  drawLoungeStatsTable(stats);
+  // ▼ drawLoungeStatsTable は存在しないので削除
+  // drawLoungeStatsTable(details, history, courseStats); ← これがエラーの原因
+
+  // ▼ 新方式の描画関数を使う
+  drawLoungeStats({
+    details: {
+      name: htmlParsed.name,
+      mmr: stats.mmr,
+      peak_mmr: stats.peak_mmr,
+      wins: stats.wins_last_10,
+      losses: stats.losses_last_10,
+      mmr_rank: stats.mmr_rank,
+      peak_mmr_rank: stats.peak_mmr_rank
+    },
+    history: htmlParsed.history,
+    courseStats: null
+  });
+
   drawLoungeMMRChart(stats);
   await drawLoungeImage(stats);
 
