@@ -5603,6 +5603,49 @@ function aggregateWorldStats(leaderboard, htmlParsed) {
   };
 }
 
+function convertStatsForImage(stats) {
+  return {
+    name: stats.name,
+
+    // MMR
+    mmr: stats.currentMMR,
+    peak_mmr: stats.peakMMR,
+
+    // Rank（順位）
+    mmr_rank: stats.rank,
+    peak_mmr_rank: stats.rank, // Season3 は Peak Rank が無い
+
+    // Wins / Losses
+    wins_last_10: stats.wins,
+    losses_last_10: stats.losses,
+
+    // Win Rate
+    win_rate: stats.wins + stats.losses > 0
+      ? stats.wins / (stats.wins + stats.losses)
+      : 0,
+
+    // Gain/Loss (Last 10)
+    gain_loss_last_10: stats.gainLossLast10 ?? 0,
+
+    // Events Played
+    events_played: stats.eventsPlayed ?? 0,
+
+    // Largest Gain
+    largest_gain: stats.largestGain ?? 0,
+
+    // グラフ用
+    mmr_history: stats.mmrHistory ?? [],
+
+    // Top Score（Season3 の ave を流用）
+    ave_score: stats.ave ?? "-",
+
+    // 直近10試合 MMR収支（Season3 HTML には無いので自作）
+    mmr_diff_10: stats.mmrHistory?.length >= 10
+      ? stats.mmrHistory[stats.mmrHistory.length - 1] -
+        stats.mmrHistory[stats.mmrHistory.length - 10]
+      : 0
+  };
+}
 
 
 let loungeMMRChartInstance = null;
@@ -5742,7 +5785,7 @@ async function onLoadLoungeStats() {
   // ★★★ シーズン ALL のときは全シーズンを取得して統合 ★★★
   if (selectedSeason === "ALL") {
 
-    const latestSeason = 3; // ← MKWorld の最新シーズンに合わせて変更
+    const latestSeason = 3;
     const htmlList = [];
 
     for (let s = 1; s <= latestSeason; s++) {
@@ -5767,6 +5810,7 @@ async function onLoadLoungeStats() {
 
   console.log("stats:", stats);
 
+  // ▼ テーブル描画
   drawLoungeStats({
     details: {
       name: stats.name,
@@ -5781,8 +5825,12 @@ async function onLoadLoungeStats() {
     courseStats: null
   });
 
+  // ▼ グラフ描画
   drawLoungeMMRChart(stats);
-  await drawLoungeImage(stats);
+
+  // ▼ ★★★ ここを差し替える ★★★
+  const imgStats = convertStatsForImage(stats);
+  await drawLoungeImage(imgStats);
 
   window.latestLoungeStats = stats;
 }
