@@ -5090,44 +5090,22 @@ async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
     ? `${proxy}?url=https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}`
     : null;
 
-  const [detailsRes, historyRes] = await Promise.all([
-    fetch(detailsUrl),
-    fetch(historyUrl)
-  ]);
+  const safeJson = async (res) => {
+    const txt = await res.text();
+    if (!txt || txt.trim() === "" || txt.startsWith("<")) return null;
+    try { return JSON.parse(txt); }
+    catch { return null; }
+  };
 
-  const detailsText = await detailsRes.text();
-  const historyText = await historyRes.text();
+  const details = await safeJson(await fetch(detailsUrl));
+  const history = await safeJson(await fetch(historyUrl));
+  const seasonData = seasonUrl ? await safeJson(await fetch(seasonUrl)) : null;
 
-  let details, history;
-
-  try {
-    details = JSON.parse(detailsText);
-  } catch {
-    console.error("details JSON parse error:", detailsText);
-    throw new Error("details JSON parse error");
-  }
-
-  try {
-    history = JSON.parse(historyText);
-  } catch {
-    console.error("history JSON parse error:", historyText);
-    throw new Error("history JSON parse error");
-  }
-
-  let seasonData = null;
-  if (seasonUrl) {
-    const seasonRes = await fetch(seasonUrl);
-    const seasonText = await seasonRes.text();
-    try {
-      seasonData = JSON.parse(seasonText);
-    } catch {
-      console.error("season JSON parse error:", seasonText);
-      throw new Error("season JSON parse error");
-    }
-  }
+  if (!details || !history) return null;
 
   return { details, history, seasonData };
 }
+
 
 
 
