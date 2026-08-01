@@ -5623,35 +5623,7 @@ function drawLoungeStats(data) {
 }
 
 
-function drawLoungeGraph(history, color) {
-  const canvas = document.getElementById("loungeCanvas");
-  const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  if (!history.length) return;
-
-  const ratings = history.map(h => h.mmr);
-  const minR = Math.min(...ratings);
-  const maxR = Math.max(...ratings);
-
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-
-  history.forEach((h, i) => {
-    const x = (i / (history.length - 1)) * (canvas.width - 40) + 20;
-    const y = canvas.height - 40 - ((h.mmr - minR) / (maxR - minR)) * (canvas.height - 80);
-    if (i === 0) ctx.moveTo(x,y);
-    else ctx.lineTo(x,y);
-  });
-
-  ctx.stroke();
-
-  ctx.fillStyle = color;
-  ctx.fillText("Rating History", 20, 20);
-}
 
   
 async function sendCanvasToDiscord() {
