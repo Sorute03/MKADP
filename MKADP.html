@@ -5256,23 +5256,25 @@ async function drawLoungeImage(stats) {
 
 function aggregateWorldStats(leaderboard, htmlParsed) {
 
-  if (!leaderboard) {
-    return {
-      name: htmlParsed.name || "Unknown",
-      mmr: htmlParsed.currentMMR || 0,
-      peak_mmr: htmlParsed.peakMMR || 0,
-      win_rate: 0,
-      wins_last_10: 0,
-      losses_last_10: 0,
-      gain_loss_last_10: 0,
-      events_played: 0,
-      largest_gain: 0,
-      mmr_rank: "N/A",
-      peak_mmr_rank: "N/A",
-      avg_score_24p: 0,
-      mmr_history: htmlParsed.history || []
-    };
-  }
+  const name = htmlParsed.name || "Unknown";
+  const mmr = leaderboard?.mmr ?? htmlParsed.currentMMR ?? 0;
+  const peak_mmr = leaderboard?.peak_mmr ?? htmlParsed.peakMMR ?? 0;
+
+  const mmr_history = htmlParsed.history || [];
+
+  return {
+    name,
+    mmr,
+    peak_mmr,
+
+    wins: leaderboard?.wins ?? 0,
+    losses: leaderboard?.losses ?? 0,
+
+    mmr_rank: leaderboard?.mmr_rank ?? "-",
+    peak_mmr_rank: leaderboard?.peak_mmr_rank ?? "-",
+
+    mmr_history
+  };
 }
 
 
@@ -5418,17 +5420,18 @@ async function onLoadLoungeStats() {
   // ▼ 新方式の描画関数を使う
   drawLoungeStats({
     details: {
-      name: htmlParsed.name,
+      name: stats.name,
       mmr: stats.mmr,
       peak_mmr: stats.peak_mmr,
-      wins: stats.wins_last_10,
-      losses: stats.losses_last_10,
+      wins: stats.wins,
+      losses: stats.losses,
       mmr_rank: stats.mmr_rank,
       peak_mmr_rank: stats.peak_mmr_rank
     },
-    history: htmlParsed.history,
+    history: stats.mmr_history,
     courseStats: null
   });
+
 
   drawLoungeMMRChart(stats);
   await drawLoungeImage(stats);
