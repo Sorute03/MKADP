@@ -5013,13 +5013,10 @@ async function fetchWorldHTML(playerId, season, mode) {
   const res = await fetch(url);
   const txt = await res.text();
 
-  if (!txt || txt.startsWith("<")) {
-    console.error("fetchWorldHTML: GAS returned HTML (Cloudflare error)", txt);
-    return "";
-  }
-
+  // ★ HTML が返ってくるのは正常なので削除する
   return txt;
 }
+
 
 
 
