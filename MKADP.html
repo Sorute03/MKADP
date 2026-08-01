@@ -4994,29 +4994,31 @@ async function fetchWorldData(playerId, season = "ALL") {
 }
 
 
-async function fetchWorldHTML(playerId, season = "1", page = "1") {
+async function fetchWorldHTML(playerId, season="1", page="1") {
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
   const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${page}`;
   const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
-  return await res.text(); // HTML が返る
+  return await res.text();
+}
+
+async function fetchWorldLeaderboard(playerId, season, game="mkworld24p") {
+  const url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${game}&season=${season}`;
+  const res = await fetch(url);
+  const json = await res.json();
+
+  return json.data.find(p => p.id === Number(playerId)) || null;
 }
 
 
 
 function parseWorldHTML(html) {
 
-  const mmrMatch = html.match(/<dt>\s*MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
-  const peakMatch = html.match(/<dt>\s*Peak MMR\s*<\/dt>\s*<dd[^>]*>([\d,]+)<\/dd>/i);
-
-  const currentMMR = mmrMatch ? Number(mmrMatch[1].replace(/,/g, "")) : null;
-  const peakMMR = peakMatch ? Number(peakMatch[1].replace(/,/g, "")) : null;
-
-  // ★ 履歴（MMR変動）
   const historyMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
   const history = historyMatches.map(m => Number(m[1].replace(/,/g, "")));
 
-  return { currentMMR, peakMMR, history };
+  return { mmr_history: history };
 }
+
 
 
   
@@ -5170,25 +5172,28 @@ async function drawLoungeImage(stats) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ▼ テキスト描画
+  // ▼ テキスト描画（MKWorld 用）
   ctx.fillStyle = "white";
   ctx.font = "32px sans-serif";
 
   ctx.fillText(`Name: ${stats.name}`, 40, 60);
   ctx.fillText(`MMR: ${stats.mmr}`, 40, 120);
   ctx.fillText(`Peak MMR: ${stats.peak_mmr}`, 40, 180);
-  ctx.fillText(`Ave Score: ${stats.avg_score.toFixed(2)}`, 40, 240);
-  ctx.fillText(`NoSQ Ave: ${stats.nosq_avg_score.toFixed(2)}`, 40, 300);
-  ctx.fillText(`Top Score: ${stats.top_score}`, 40, 360);
-  ctx.fillText(`Wins: ${stats.wins}`, 40, 420);
-  ctx.fillText(`Losses: ${stats.losses}`, 40, 480);
-  ctx.fillText(`直近10試合 MMR収支: ${stats.mmr_diff_10}`, 40, 540);
+
+  ctx.fillText(`Win Rate: ${(stats.win_rate * 100).toFixed(1)}%`, 40, 240);
+  ctx.fillText(`Wins (Last 10): ${stats.wins_last_10}`, 40, 300);
+  ctx.fillText(`Losses (Last 10): ${stats.losses_last_10}`, 40, 360);
+  ctx.fillText(`Gain/Loss (Last 10): ${stats.gain_loss_last_10}`, 40, 420);
+
+  ctx.fillText(`Events Played: ${stats.events_played}`, 40, 480);
+  ctx.fillText(`Largest Gain: ${stats.largest_gain}`, 40, 540);
+
   ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
   ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
 
   // ▼ MMR変異グラフ（合成）
   const mmr = stats.mmr_history;
-  if (mmr.length > 1) {
+  if (mmr && mmr.length > 1) {
 
     const gx = 500;      // グラフ左端
     const gy = 80;       // グラフ上端
@@ -5225,34 +5230,27 @@ async function drawLoungeImage(stats) {
 }
 
 
-
-function aggregateLoungeStats(details, history) {
-
-  const scores = history.map(h => h.score);
-  const mmrs = history.map(h => h.mmr_after);
-
-  const mmrDiff10 = history.slice(-10)
-    .reduce((a, b) => a + (b.mmr_after - b.mmr_before), 0);
-
+function aggregateWorldStats(leaderboard, htmlParsed) {
   return {
-    name: details.name,
-    mmr: details.mmr,
-    peak_mmr: details.max_mmr,
-    avg_score: scores.reduce((a,b)=>a+b,0) / scores.length,
-    nosq_avg_score: scores.filter(s => s !== 0).reduce((a,b)=>a+b,0) / scores.filter(s => s !== 0).length,
-    top_score: Math.max(...scores),
-    wins: history.filter(h => h.placement === 1).length,
-    losses: history.filter(h => h.placement > 1).length,
-    mmr_diff_10: mmrDiff10,
-    mmr_rank: details.rank_mmr,
-    peak_mmr_rank: details.rank_max_mmr,
+    // JSON（ランキング API）
+    name: leaderboard.name,
+    mmr: leaderboard.mmr,
+    peak_mmr: leaderboard.maxMmr,
+    win_rate: leaderboard.winRate,
+    wins_last_10: leaderboard.winsLastTen,
+    losses_last_10: leaderboard.lossesLastTen,
+    gain_loss_last_10: leaderboard.gainLossLastTen,
+    events_played: leaderboard.eventsPlayed,
+    largest_gain: leaderboard.largestGain,
+    mmr_rank: leaderboard.mmrRank.name,
+    peak_mmr_rank: leaderboard.maxMmrRank.name,
+    avg_score_24p: leaderboard.averageScore24P,
 
-    // ▼ Season=ALL のときは全シーズンの MMR を結合した配列になる
-    mmr_history: mmrs,
-
-    history
+    // HTML（PlayerDetails）
+    mmr_history: htmlParsed.mmr_history
   };
 }
+
 
 function drawLoungeMMRChart(stats) {
 
@@ -5260,17 +5258,25 @@ function drawLoungeMMRChart(stats) {
 
   const labels = stats.mmr_history.map((_, i) => i + 1);
 
+  // ★ Season に応じて色を決定
+  const season = Number(loungeSeasonSelect.value);
+  const rankInfo = season === 1
+    ? getRankInfoV1(stats.mmr)
+    : getRankInfoV2(stats.mmr);
+
+  const lineColor = rankInfo.color;   // ★ ここが線の色になる
+
   new Chart(ctx, {
     type: "line",
     data: {
       labels,
       datasets: [{
-        label: loungeSeasonSelect.value === "ALL"
-          ? "MMR推移（全シーズン）"
-          : `MMR推移（Season ${loungeSeasonSelect.value})`,
+        label: season === 1
+          ? "MMR推移（Season 1）"
+          : `MMR推移（Season ${season})`,
         data: stats.mmr_history,
-        borderColor: "white",
-        backgroundColor: "rgba(255,255,255,0.2)"
+        borderColor: lineColor,                 // ★ 色反映
+        backgroundColor: lineColor + "33"       // ★ 半透明背景（任意）
       }]
     },
     options: {
@@ -5281,6 +5287,7 @@ function drawLoungeMMRChart(stats) {
     }
   });
 }
+
 
 
 
@@ -5333,52 +5340,31 @@ async function drawLoungeImage(stats) {
 
   
 
-document.getElementById("loadLoungeBtn").onclick = async () => {
-
-  const url = loungeUrlInput.value.trim();
-  if (!url) return alert("URL を入力してください");
-
-  const playerId = extractPlayerIdFromUrl(url);
-  if (!playerId) return alert("URL から player_id を取得できませんでした");
-
-  const season = extractSeasonFromUrl(url);
-  loungeSeasonSelect.value = season;
-
-  const lounge = await fetchLoungeData(playerId);
-
-  const filteredHistory = filterLoungeHistory(lounge.history);
-
-  const stats = aggregateLoungeStats(lounge.details, filteredHistory);
-
-  drawLoungeStatsTable(stats);
-  drawLoungeMMRChart(stats);
-  await drawLoungeImage(stats, state.backgroundImage);
-
-  window.latestLoungeStats = stats;
-};
 
 
 async function onLoadLoungeStats() {
 
   const url = document.getElementById("loungeUrlInput").value.trim();
-  if (!url) return alert("URL を入力してください");
-
   const playerId = extractPlayerIdFromUrl(url);
   const season = extractSeasonFromUrl(url);
 
-  // ★ PlayerDetails HTML を取得
+  // JSON（ランキング API）
+  const leaderboard = await fetchWorldLeaderboard(playerId, season);
+
+  // HTML（PlayerDetails）
   const html = await fetchWorldHTML(playerId, season, 1);
+  const htmlParsed = parseWorldHTML(html);
 
-  // ★ HTML を解析して stats を作る
-  const stats = parseWorldHTML(html);
+  // 統合
+  const stats = aggregateWorldStats(leaderboard, htmlParsed);
 
-  // ★ グラフ・画像生成は stats を使う
   drawLoungeStatsTable(stats);
   drawLoungeMMRChart(stats);
   await drawLoungeImage(stats);
 
   window.latestLoungeStats = stats;
 }
+
 
 
 
@@ -5394,7 +5380,7 @@ function activateLoungeTab() {
   chartCanvas.height = 300;
 
   const btn = document.getElementById("loadLoungeBtn");
-  if (btn) btn.onclick = onLoadLoungeStats;
+  if (btn) btn.onclick = onLoadLoungeStats;  // ★ MKWorld版だけ
 
   const bgInput = document.getElementById("loungeBgInput");
   if (bgInput) bgInput.onchange = onLoungeBgChange;
@@ -5727,29 +5713,6 @@ async function mergeLoungeWithADP(details, history) {
 }
 
 
-document.getElementById("loadLoungeBtn").onclick = async () => {
-  const name = document.getElementById("playerNameInput").value.trim();
-  if (!name) return alert("名前を入力してください");
-
-  const player = await apiSearchPlayer(name);
-  const details = await apiPlayerDetails(player.player_id);
-  const history = await apiPlayerHistory(player.player_id);
-
-  const mergeCourse = document.getElementById("mergeCourseDataSelect").value === "on";
-
-  let finalData;
-
-  if (mergeCourse) {
-    finalData = await mergeLoungeWithADP(details, history);
-  } else {
-    finalData = { details, history, courseStats: null };
-  }
-
-  window._loungeName = name;
-  window._loungeData = finalData;
-
-  drawLoungeStats(finalData);
-};
 
 function filterByFormat(history, format) {
   if (format === "ALL") return history;
