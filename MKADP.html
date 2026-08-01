@@ -2652,7 +2652,7 @@ window.addEventListener("load", async () => {
   initAISelector();
   initOBSSeasonSelector();
   initAdpCourseSelects(); // ← これが undefined だった
-
+  initGrowthSelectors() {
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -5263,6 +5263,7 @@ function aggregateWorldStats(leaderboard, htmlParsed) {
       mmr_history: htmlParsed.history || []
     };
   }
+}
 
 
 
