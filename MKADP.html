@@ -5031,13 +5031,12 @@ document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Numb
 async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
 
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-  const base = "https://lounge.mkcentral.com/api/player";
 
-  const detailsUrl = `${proxy}?url=${base}/${playerId}?game=${game}`;
-  const historyUrl = `${proxy}?url=${base}/${playerId}/history?game=${game}`;
+  const detailsUrl = `${proxy}?url=https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`;
+  const historyUrl = `${proxy}?url=https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`;
 
   const seasonUrl = season !== "ALL"
-    ? `${proxy}?url=${base}/${playerId}/season/${season}?game=${game}`
+    ? `${proxy}?url=https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}`
     : null;
 
   const [detailsRes, historyRes] = await Promise.all([
@@ -5045,13 +5044,35 @@ async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
     fetch(historyUrl)
   ]);
 
-  const details = await detailsRes.json();
-  const history = await historyRes.json();
+  const detailsText = await detailsRes.text();
+  const historyText = await historyRes.text();
+
+  let details, history;
+
+  try {
+    details = JSON.parse(detailsText);
+  } catch {
+    console.error("details JSON parse error:", detailsText);
+    throw new Error("details JSON parse error");
+  }
+
+  try {
+    history = JSON.parse(historyText);
+  } catch {
+    console.error("history JSON parse error:", historyText);
+    throw new Error("history JSON parse error");
+  }
 
   let seasonData = null;
   if (seasonUrl) {
     const seasonRes = await fetch(seasonUrl);
-    seasonData = await seasonRes.json();
+    const seasonText = await seasonRes.text();
+    try {
+      seasonData = JSON.parse(seasonText);
+    } catch {
+      console.error("season JSON parse error:", seasonText);
+      throw new Error("season JSON parse error");
+    }
   }
 
   return { details, history, seasonData };
