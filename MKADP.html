@@ -5655,10 +5655,19 @@ function drawLoungeGraph(history, color) {
 
   
 async function sendCanvasToDiscord() {
-  const webhookUrl = document.getElementById("discordWebhookInput").value.trim();
-  if (!webhookUrl) { alert("Webhook URL を入力してください"); return; }
+  const input = document.getElementById("webhookUrlInput");
+  if (!input) {
+    alert("Webhook URL 入力欄が見つかりません");
+    return;
+  }
 
-  const canvas = document.getElementById("loungeCanvas");
+  const webhookUrl = input.value.trim();
+  if (!webhookUrl) {
+    alert("Webhook URL を入力してください");
+    return;
+  }
+
+  const canvas = document.getElementById("loungeImageCanvas");
 
   canvas.toBlob(async (blob) => {
     const form = new FormData();
@@ -5676,6 +5685,7 @@ async function sendCanvasToDiscord() {
     alert(res.ok ? "Discordに送信しました" : "送信失敗");
   }, "image/png");
 }
+
 
 
 document.getElementById("sendLoungeDiscordBtn").onclick = sendCanvasToDiscord;
