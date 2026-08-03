@@ -2,103 +2,106 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<title>MK Overlay (Local)</title>
+
 <style>
-body {
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  height: 100vh;
-}
+  body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: sans-serif;
+    color: white;
+  }
 
-#overlay {
-  background-color: rgba(0,0,0,0.5);
-  color: white;
-  padding: 8px;
-  font-size: 24px;
-  border-radius: 6px;
-  font-family: sans-serif;
-  line-height: 1.6;
-  word-wrap: break-word;
-}
+  #overlayBox {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.55);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 24px;
+    line-height: 1.6;
+    min-width: 300px;
+  }
 
-#pwBox {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.4);
-  padding: 6px;
-  border-radius: 6px;
-}
-#pw {
-  font-size: 20px;
-  padding: 4px;
-}
+  #pwBox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.4);
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  #pwInput {
+    font-size: 20px;
+    padding: 4px;
+  }
 </style>
 </head>
 <body>
 
 <div id="pwBox">
-  <input id="pw" placeholder="Password">
+  <input id="pwInput" placeholder="Password">
+  <button id="savePwBtn">保存</button>
 </div>
 
-<div id="overlay">読み込み中...</div>
+<div id="overlayBox">待機中...</div>
 
 <script>
-// ★ 最新の Web アプリ URL（GAS の doGet/doPost と一致させる）
-const baseUrl = "https://script.google.com/macros/s/AKfycbx1T6bXyvhAqyZUIwCfJfrvlWEh633Hp-jPY1kGXRQZgTgDYHlrEeLjIjBrqzrjQW2b/exec";
-
-// ▼ 現在のコース名を取得（mode=key）
-function fetchCurrentKey(pw) {
-  return fetch(baseUrl + "?password=" + encodeURIComponent(pw) + "&mode=key&t=" + Date.now())
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        console.error("パスワードエラー");
-        return "";
-      }
-      return data.key;
-    })
-    .catch(err => {
-      console.error("key取得エラー:", err);
-      return "";
-    });
-}
-
-// ▼ コース名を使ってオーバーレイ内容を取得
-function fetchOverlay(pw, key) {
-  return fetch(baseUrl + "?password=" + encodeURIComponent(pw) + "&key=" + encodeURIComponent(key) + "&t=" + Date.now())
-    .then(res => res.json())
-    .catch(err => {
-      console.error("overlay取得エラー:", err);
-      return { html: "エラー: " + err };
-    });
-}
-
-// ▼ オーバーレイ更新処理
-function updateOverlay() {
-  const pw = document.getElementById("pw").value.trim();
-  if (!pw) return;
-
-  fetchCurrentKey(pw)
-    .then(key => {
-      if (!key) return;
-      return fetchOverlay(pw, key);
-    })
-    .then(data => {
-      if (data && data.html) {
-        document.getElementById("overlay").innerHTML = data.html;
-      }
-    });
-}
-
-// ▼ 初回ロード & 5秒ごと更新
-window.onload = function() {
-  updateOverlay();
-  setInterval(updateOverlay, 5000);
+// ★ パスワード保存
+document.getElementById("savePwBtn").onclick = () => {
+  const pw = document.getElementById("pwInput").value.trim();
+  if (!pw) return alert("パスワードを入力してください");
+  localStorage.setItem("overlayPassword", pw);
+  alert("保存しました");
 };
+
+// ★ 起動時にパスワード読み込み
+(function loadPw() {
+  const pw = localStorage.getItem("overlayPassword");
+  if (pw) document.getElementById("pwInput").value = pw;
+})();
+
+// ★ BroadcastChannel 受信
+const channel = new BroadcastChannel("mk_overlay_channel");
+
+channel.onmessage = (e) => {
+  const { password, payload } = e.data;
+
+  const localPw = localStorage.getItem("overlayPassword");
+
+  if (password !== localPw) {
+    console.log("パスワード不一致");
+    return;
+  }
+
+  renderOverlay(payload);
+};
+
+// ★ overlay 描画
+function renderOverlay(payload) {
+  if (!payload) return;
+
+  const box = document.getElementById("overlayBox");
+
+  const course = payload.nextCourse || "コース不明";
+  const s = payload.nextCourseStats || {};
+
+  const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
+  const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
+
+  box.innerHTML = `
+    <div><b>${course}</b></div>
+    <div>平均順位：${fmt(s.avgRank)}位</div>
+    <div>平均得点：${fmt(s.avgScore)}点</div>
+    <div>試行回数：${s.count}回</div>
+    <div>上位率：${percent(s.topRate)}</div>
+    <div>中位率：${percent(s.midRate)}</div>
+    <div>下位率：${percent(s.bottomRate)}</div>
+  `;
+}
 </script>
 
 </body>
