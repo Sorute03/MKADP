@@ -2754,6 +2754,34 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
     btn.textContent = "12レースセット一覧を表示";
   }
 };
+  
+window.addEventListener("DOMContentLoaded", () => {
+
+  // ★ overlayPasswordInput が存在する時だけ値をセット
+  const pwInput = document.getElementById("overlayPasswordInput");
+  if (pwInput) {
+    const pw = localStorage.getItem("overlayPassword") || "";
+    pwInput.value = pw;
+  }
+
+  // ★ saveOverlayPasswordBtn が存在する時だけ onclick をセット
+  const saveBtn = document.getElementById("saveOverlayPasswordBtn");
+  if (saveBtn && pwInput) {
+    saveBtn.onclick = () => {
+      const pw = pwInput.value.trim();
+      localStorage.setItem("overlayPassword", pw);
+    };
+  }
+
+  // ★ 他の初期化もここにまとめる
+  if (typeof initLoungeTierSelect === "function") {
+    initLoungeTierSelect();
+  }
+
+  if (typeof courseStatsSource !== "undefined" && courseStatsSource) {
+    initADPRecords();
+  }
+});
 
 
 async function initADPRecords() {
@@ -7453,31 +7481,6 @@ function sendOverlay(payload) {
 }
 
 
-window.addEventListener("DOMContentLoaded", () => {
-
-  // ★ overlayPasswordInput が存在する時だけ値をセット
-  const pwInput = document.getElementById("overlayPasswordInput");
-  if (pwInput) {
-    const pw = localStorage.getItem("overlayPassword") || "";
-    pwInput.value = pw;
-  }
-
-  // ★ saveOverlayPasswordBtn が存在する時だけ onclick をセット
-  const saveBtn = document.getElementById("saveOverlayPasswordBtn");
-  if (saveBtn && pwInput) {
-    saveBtn.onclick = () => {
-      const pw = pwInput.value.trim();
-      if (!pw) return alert("パスワードを入力してください");
-      localStorage.setItem("overlayPassword", pw);
-      alert("保存しました");
-    };
-  }
-
-  // ★ courseStatsSource を使う処理はここで初期化
-  if (typeof courseStatsSource !== "undefined" && courseStatsSource) {
-    initADPRecords();  // ← ここで呼べば「未初期化エラー」が消える
-  }
-});
 
 
 </script>
