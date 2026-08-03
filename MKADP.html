@@ -7456,14 +7456,17 @@ async function sendLoungeOverlay(stats) {
 
 
 
-setInterval(() => {
-  const nextCourse = getNextCourseFromModal();
-  if (!nextCourse) return;
+const channel = new BroadcastChannel("mk_overlay_channel");
 
-  if (!courseStatsSource) return; // ★ stats がまだ無いなら送らない
+function sendOverlay(payload) {
+  const password = localStorage.getItem("overlayPassword");
 
-  sendLoungeOverlay(courseStatsSource);
-}, 1000);
+  channel.postMessage({
+    password,
+    payload
+  });
+}
+
 
 </script>
 
