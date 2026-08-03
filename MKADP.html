@@ -7448,8 +7448,7 @@ async function sendLoungeOverlay(stats) {
   await fetch("https://script.google.com/macros/s/AKfycbyEOw3krjBn6NBYsvDNmzXNtESrMwF6VohfjTq77-8WNUIeCiKF6cEHLGA5337kAEfm/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, payload }),
-    mode: "no-cors"
+    body: JSON.stringify({ password, payload })
   });
 }
 
