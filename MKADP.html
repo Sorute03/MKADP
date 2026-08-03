@@ -7415,26 +7415,15 @@ async function sendLoungeOverlay(stats) {
   });
 }
 
-let latestStats = null;
 
-// ★ 5秒ごとに stats を更新
-setInterval(async () => {
-  const playerName = document.getElementById("playerNameInput").value.trim();
-  if (!playerName) return;
-
-  const stats = await fetchLoungeStats(playerName);
-  latestStats = stats;
-
-  console.log("stats更新:", stats);
-}, 5000);
-
-// ★ 1秒ごとにオーバーレイ送信
 setInterval(() => {
-  if (!latestStats) return; // ← ★これが必須
+  const nextCourse = getNextCourseFromModal();
+  if (!nextCourse) return;  // ★ nextCourse が null のときは送らない
 
   console.log("Overlay送信:", latestStats);
   sendLoungeOverlay(latestStats);
-}, 1000);
+
+}, 1000); // ★ 1秒ごと
 
 </script>
 
