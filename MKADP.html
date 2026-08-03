@@ -7352,6 +7352,14 @@ loadPlayerIdList();
 renderPlayerIdList();
 
 
+async function loadRecordsFromIndexedDB() {
+  const records = await readRecords(); // ← あなたの既存処理
+
+  // ★ これが絶対必要
+  createCourseStatsSource(records);
+}
+
+
 
 // ★ Season 1〜30 を生成
 function populateSeasonOptions() {
