@@ -15,15 +15,16 @@
       const pw = document.getElementById("pw").value.trim();
       if (!pw) return;
 
-      // ★ GET で最新データを取得（GAS の doGet に完全対応）
-      const url =
-        "https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec"
-        + "?password=" + encodeURIComponent(pw)
-        + "&v=" + Date.now(); // ★ キャッシュ破壊（必須）
+      const res = await fetch(
+        "https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pw })
+        }
+      );
 
-      const res = await fetch(url);
       const data = await res.json();
-
       if (data.error) return;
 
       const s = data.nextCourseStats;
