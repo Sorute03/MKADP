@@ -7420,8 +7420,8 @@ setInterval(() => {
   const nextCourse = getNextCourseFromModal();
   if (!nextCourse) return;  // ★ nextCourse が null のときは送らない
 
-  console.log("Overlay送信:", latestStats);
-  sendLoungeOverlay(latestStats);
+  
+  sendLoungeOverlay();
 
 }, 1000); // ★ 1秒ごと
 
