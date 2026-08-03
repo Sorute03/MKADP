@@ -850,7 +850,7 @@ const courseList = [
 
     <!-- Tier -->
     <label>Tier</label><br>
-    <select id="loungeTierSelect" style="width:200px;">
+    <select id="loungeTierSelect2" style="width:200px;">
       <!-- JS で loungeTiers を生成 -->
     </select>
 
@@ -2667,7 +2667,7 @@ function populateSeasonAndTierOptions() {
   const tierSelects = [
     statsTier, growthTier, radarTier, heatmapTier,
     rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier,loungeTierSelect
+    loungeSetTier,loungeTierSelect2
   ];
 
   // ▼ Season（buildSeasonOptions に統一）
@@ -7278,7 +7278,7 @@ function populateSeasonOptions() {
 
 
 function initloungeTierSelect() {
-  const sel = document.getElementById("loungeTierSelect");
+  const sel = document.getElementById("loungeTierSelect2");
   sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
 }
 initloungeTierSelect();
