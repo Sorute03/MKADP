@@ -16,7 +16,7 @@
       if (!pw) return;
 
       const res = await fetch(
-        "https://script.google.com/macros/s/あなたのGAS-ID/exec?password=" + pw
+        "https://script.google.com/macros/s/AKfycbyEOw3krjBn6NBYsvDNmzXNtESrMwF6VohfjTq77-8WNUIeCiKF6cEHLGA5337kAEfm/exec?password=" + pw
       );
 
       const data = await res.json();
@@ -49,7 +49,6 @@
         "試行回数: " + s.count;
     }
 
-    // ★ 1秒に1回更新（1000ms）
-    setInterval(poll, 1000);
+    setInterval(poll, 1000); // ★ 1秒更新
   </script>
 </body>
