@@ -24,59 +24,18 @@
     line-height: 1.6;
     min-width: 300px;
   }
-
-  #pwBox {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.4);
-    padding: 6px;
-    border-radius: 6px;
-  }
-
-  #pwInput {
-    font-size: 20px;
-    padding: 4px;
-  }
 </style>
 </head>
 <body>
 
-<div id="pwBox">
-  <input id="pwInput" placeholder="Password">
-  <button id="savePwBtn">保存</button>
-</div>
-
 <div id="overlayBox">待機中...</div>
 
 <script>
-// ★ パスワード保存
-document.getElementById("savePwBtn").onclick = () => {
-  const pw = document.getElementById("pwInput").value.trim();
-  if (!pw) return alert("パスワードを入力してください");
-  localStorage.setItem("overlayPassword", pw);
-  alert("保存しました");
-};
-
-// ★ 起動時にパスワード読み込み
-(function loadPw() {
-  const pw = localStorage.getItem("overlayPassword");
-  if (pw) document.getElementById("pwInput").value = pw;
-})();
-
-// ★ BroadcastChannel 受信
+// ★ BroadcastChannel 受信（パスワードなし）
 const channel = new BroadcastChannel("mk_overlay_channel");
 
 channel.onmessage = (e) => {
-  const { password, payload } = e.data;
-
-  const localPw = localStorage.getItem("overlayPassword");
-
-  if (password !== localPw) {
-    console.log("パスワード不一致");
-    return;
-  }
-
+  const { payload } = e.data;
   renderOverlay(payload);
 };
 
