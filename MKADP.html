@@ -826,16 +826,6 @@ const courseList = [
 
 
 <h3>オーバーレイ設定</h3>
-
-<label>オーバーレイパスワード</label><br>
-<input id="overlayPasswordInput" type="password" placeholder="Overlay Password" style="width:200px; padding:6px;">
-<button id="saveOverlayPasswordBtn">保存</button>
-
-<div style="margin-top:10px; font-size:14px; color:#ccc;">
-  ※ OBSオーバーレイ側で同じパスワードを入力するとデータが取得できます
-</div>
-
-  
 <div id="overlayFilterBox" style="margin:10px 0;">
 
   <!-- モード選択 -->
@@ -852,7 +842,7 @@ const courseList = [
 
     <!-- Season -->
     <label>シーズン</label><br>
-    <select id="loungeSeasonSelect" style="width:200px;">
+    <select id="loungeSeasonSelect2" style="width:200px;">
       <!-- JS で 1〜30 を生成 -->
     </select>
 
@@ -2670,14 +2660,14 @@ function populateSeasonAndTierOptions() {
   const seasonSelects = [
     statsSeason, growthSeason, radarSeason, heatmapSeason,
     rankSeason, aiSeason, bubbleSeason, scatterSeason,
-    loungeSetSeason
+    loungeSetSeason,loungeSeasonSelect2
   ];
 
   // ▼ Tier を持つ全セレクト
   const tierSelects = [
     statsTier, growthTier, radarTier, heatmapTier,
     rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier
+    loungeSetTier,loungeTierSelect
   ];
 
   // ▼ Season（buildSeasonOptions に統一）
@@ -7286,13 +7276,7 @@ function populateSeasonOptions() {
   }
 }
 
-// ★ Tier を生成
-function populateTierOptions() {
-  const sel = document.getElementById("loungeTierSelect");
-  sel.innerHTML = loungeTiers
-    .map(t => `<option value="${t}">${t}</option>`)
-    .join("");
-}
+
 
 // ★ モード切替（ラウンジのときだけ Season / Tier を表示）
 document.getElementById("overlayModeSelect").addEventListener("change", () => {
@@ -7402,7 +7386,7 @@ function getFilteredStatsForOverlay(stats) {
   let filtered = [...stats.history];
 
   // ★ Season（ラウンジのときだけ UI が表示される）
-  const season = document.getElementById("loungeSeasonSelect").value;
+  const season = document.getElementById("loungeSeasonSelect2").value;
   if (season !== "ALL") {
     filtered = filtered.filter(r => r.season == season);
   }
