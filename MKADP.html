@@ -589,6 +589,18 @@ const courseList = [
 
 <div id="webhookListArea" style="margin-top:10px;"></div>
 
+
+<h3>オーバーレイ設定</h3>
+
+<label>オーバーレイパスワード</label><br>
+<input id="overlayPasswordInput" type="password" placeholder="Overlay Password" style="width:200px; padding:6px;">
+<button id="saveOverlayPasswordBtn">保存</button>
+
+<div style="margin-top:10px; font-size:14px; color:#ccc;">
+  ※ OBSオーバーレイ側で同じパスワードを入力するとデータが取得できます
+</div>
+
+
 <!-- ▼ ラウンジ統計タブ -->
 <div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
 
@@ -7287,6 +7299,118 @@ document.getElementById("sendLoungeDiscordBtn").onclick = async () => {
 // ▼ 初期化
 loadPlayerIdList();
 renderPlayerIdList();
+
+  
+
+function calcCourseStats(stats, courseName) {
+  const matches = stats.history.filter(h => h.event === courseName);
+
+  if (matches.length === 0) {
+    return {
+      count: 0,
+      avgRank: 0,
+      avgScore: 0,
+      winRate: 0,
+      topRate: 0,
+      midRate: 0,
+      bottomRate: 0
+    };
+  }
+
+  let totalRank = 0;
+  let totalScore = 0;
+
+  let wins = 0;
+  let top = 0;
+  let mid = 0;
+  let bottom = 0;
+
+  for (const m of matches) {
+    totalRank += m.rank;
+    totalScore += m.score;
+
+    if (m.rank === 1) wins++;
+    if (m.rank <= 5) top++;
+    else if (m.rank <= 15) mid++;
+    else bottom++;
+  }
+
+  const count = matches.length;
+
+  return {
+    count,
+    avgRank: totalRank / count,
+    avgScore: totalScore / count,
+    winRate: wins / count,
+    topRate: top / count,
+    midRate: mid / count,
+    bottomRate: bottom / count
+  };
+}
+
+document.getElementById("saveOverlayPasswordBtn").onclick = () => {
+  const pw = document.getElementById("overlayPasswordInput").value.trim();
+  if (!pw) return alert("パスワードを入力してください");
+
+  localStorage.setItem("overlayPassword", pw);
+  alert("オーバーレイパスワードを保存しました");
+};
+
+
+
+function loadOverlayPassword() {
+  const pw = localStorage.getItem("overlayPassword");
+  if (pw) {
+    document.getElementById("overlayPasswordInput").value = pw;
+  }
+}
+
+loadOverlayPassword();
+
+  
+
+function getFilteredStatsForOverlay(stats) {
+  let filtered = [...stats.history];
+
+  const season = document.getElementById("loungeSeasonSelect").value;
+  if (season !== "ALL") filtered = filtered.filter(r => r.season == season);
+
+  const mode = document.getElementById("loungeModeSelect").value;
+  if (mode !== "ALL") filtered = filtered.filter(r => r.mode == mode);
+
+  const tier = document.getElementById("loungeTierSelect").value;
+  if (tier !== "ALL") filtered = filtered.filter(r => r.tier == tier);
+
+  const recent = document.getElementById("loungeRecentSelect").value;
+  if (recent !== "ALL") filtered = filtered.slice(-Number(recent));
+
+  return { history: filtered };
+}
+
+
+
+async function sendLoungeOverlay(stats) {
+  const password = localStorage.getItem("overlayPassword");
+
+  const filteredStats = getFilteredStatsForOverlay(stats);
+
+  const nextCourse = getNextCourseFromModal();
+  const nextCourseStats = nextCourse
+    ? calcCourseStats(filteredStats, nextCourse)
+    : null;
+
+  const payload = {
+    nextCourse,
+    nextCourseStats
+  };
+
+  await fetch("https://script.google.com/macros/s/AKfycbyEOw3krjBn6NBYsvDNmzXNtESrMwF6VohfjTq77-8WNUIeCiKF6cEHLGA5337kAEfm/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password, payload }),
+    mode: "no-cors"
+  });
+}
 
 
 </script>
