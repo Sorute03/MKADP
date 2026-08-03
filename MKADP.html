@@ -7459,12 +7459,7 @@ async function sendLoungeOverlay(stats) {
 const channel = new BroadcastChannel("mk_overlay_channel");
 
 function sendOverlay(payload) {
-  const password = localStorage.getItem("overlayPassword");
-
-  channel.postMessage({
-    password,
-    payload
-  });
+  channel.postMessage({ payload });
 }
 
 
