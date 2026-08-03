@@ -834,13 +834,17 @@ const courseList = [
 <div style="margin-top:10px; font-size:14px; color:#ccc;">
   ※ OBSオーバーレイ側で同じパスワードを入力するとデータが取得できます
 </div>
+
+  
 <div id="overlayFilterBox" style="margin:10px 0;">
 
   <!-- モード選択 -->
   <label>モード</label><br>
   <select id="overlayModeSelect" style="width:200px;">
-    <option value="COURSE">コース</option>
-    <option value="LOUNGE">ラウンジ</option>
+    <option value="ALL">ALL</option>
+    <option value="lounge">ラウンジ</option>
+    <option value="nora">野良</option>
+    <option value="tournament">大会</option>
   </select>
 
   <!-- ラウンジ専用フィルター（Season / Tier） -->
@@ -849,9 +853,7 @@ const courseList = [
     <!-- Season -->
     <label>シーズン</label><br>
     <select id="loungeSeasonSelect" style="width:200px;">
-      <option value="ALL">ALL</option>
-      <!-- 1〜30 を自動生成 -->
-      <!-- JS で生成するのでここは空でOK -->
+      <!-- JS で 1〜30 を生成 -->
     </select>
 
     <br><br>
@@ -859,7 +861,7 @@ const courseList = [
     <!-- Tier -->
     <label>Tier</label><br>
     <select id="loungeTierSelect" style="width:200px;">
-      <!-- JS で loungeTiers を入れる -->
+      <!-- JS で loungeTiers を生成 -->
     </select>
 
   </div>
@@ -872,10 +874,11 @@ const courseList = [
     <option value="10">10</option>
     <option value="20">20</option>
     <option value="50">50</option>
-    <option value="100">100</option> <!-- ★追加 -->
+    <option value="100">100</option>
   </select>
 
 </div>
+
 
 
   
@@ -7347,7 +7350,6 @@ renderPlayerIdList();
 
 
 
-
 // ★ Season 1〜30 を生成
 function populateSeasonOptions() {
   const sel = document.getElementById("loungeSeasonSelect");
@@ -7370,14 +7372,13 @@ document.getElementById("overlayModeSelect").addEventListener("change", () => {
   const mode = document.getElementById("overlayModeSelect").value;
   const loungeFilters = document.getElementById("loungeFilters");
 
-  if (mode === "LOUNGE") {
+  if (mode === "lounge") {
     loungeFilters.style.display = "block";
   } else {
     loungeFilters.style.display = "none";
   }
 });
 
-// ★ 初期化
 
 
 
@@ -7473,17 +7474,29 @@ function loadOverlayPassword() {
 function getFilteredStatsForOverlay(stats) {
   let filtered = [...stats.history];
 
+  // ★ Season（ラウンジのときだけ UI が表示される）
   const season = document.getElementById("loungeSeasonSelect").value;
-  if (season !== "ALL") filtered = filtered.filter(r => r.season == season);
+  if (season !== "ALL") {
+    filtered = filtered.filter(r => r.season == season);
+  }
 
-  const mode = document.getElementById("loungeModeSelect").value;
-  if (mode !== "ALL") filtered = filtered.filter(r => r.mode == mode);
+  // ★ Mode（ALL のときはフィルターしない）
+  const mode = document.getElementById("overlayModeSelect").value;
+  if (mode !== "ALL") {
+    filtered = filtered.filter(r => r.mode == mode);
+  }
 
+  // ★ Tier（ラウンジのときだけ UI が表示される）
   const tier = document.getElementById("loungeTierSelect").value;
-  if (tier !== "ALL") filtered = filtered.filter(r => r.tier == tier);
+  if (tier !== "ALL") {
+    filtered = filtered.filter(r => r.tier == tier);
+  }
 
+  // ★ Recent（ALL のときはフィルターしない）
   const recent = document.getElementById("loungeRecentSelect").value;
-  if (recent !== "ALL") filtered = filtered.slice(-Number(recent));
+  if (recent !== "ALL") {
+    filtered = filtered.slice(-Number(recent));
+  }
 
   return { history: filtered };
 }
