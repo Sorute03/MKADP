@@ -1,0 +1,34 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1785755359-933792",
+  "timestamp": 1785755359,
+  "races": [
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "キラーシップ→クッパキャッスル",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1785730375816
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "クッパキャッスル→ホネホネツイスター",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1785730559226
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "トロフィーシティ",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1785731075773
+    }
+  ]
+}
