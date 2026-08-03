@@ -2755,29 +2755,7 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
   }
 };
   
-function initOverlayControls() {
-  const pwInput = document.getElementById("overlayPasswordInput");
-  const saveBtn = document.getElementById("saveOverlayPasswordBtn");
 
-  // DOM がまだ無い → 100ms 後に再試行
-  if (!pwInput || !saveBtn) {
-    setTimeout(initOverlayControls, 100);
-    return;
-  }
-
-  // ★ DOM が存在するので安全に初期化できる
-  const pw = localStorage.getItem("overlayPassword") || "";
-  pwInput.value = pw;
-
-  saveBtn.onclick = () => {
-    localStorage.setItem("overlayPassword", pwInput.value.trim());
-  };
-
-  console.log("overlay controls initialized");
-}
-
-// ★ ページ読み込み後に初期化開始
-window.addEventListener("load", initOverlayControls);
 
 
 async function initADPRecords() {
@@ -7391,22 +7369,11 @@ function calcCourseStats(stats, courseName) {
 }
 
 
-document.getElementById("saveOverlayPasswordBtn").onclick = () => {
-  const pw = document.getElementById("overlayPasswordInput").value.trim();
-  if (!pw) return alert("パスワードを入力してください");
-
-  localStorage.setItem("overlayPassword", pw);
-  alert("オーバーレイパスワードを保存しました");
-};
 
 
 
-function loadOverlayPassword() {
-  const pw = localStorage.getItem("overlayPassword");
-  if (pw) {
-    document.getElementById("overlayPasswordInput").value = pw;
-  }
-}
+
+
 
 
 
