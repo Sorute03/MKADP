@@ -834,6 +834,49 @@ const courseList = [
 <div style="margin-top:10px; font-size:14px; color:#ccc;">
   ※ OBSオーバーレイ側で同じパスワードを入力するとデータが取得できます
 </div>
+<div id="overlayFilterBox" style="margin:10px 0;">
+
+  <!-- モード選択 -->
+  <label>モード</label><br>
+  <select id="overlayModeSelect" style="width:200px;">
+    <option value="COURSE">コース</option>
+    <option value="LOUNGE">ラウンジ</option>
+  </select>
+
+  <!-- ラウンジ専用フィルター（Season / Tier） -->
+  <div id="loungeFilters" style="margin-top:10px; display:none;">
+
+    <!-- Season -->
+    <label>シーズン</label><br>
+    <select id="loungeSeasonSelect" style="width:200px;">
+      <option value="ALL">ALL</option>
+      <!-- 1〜30 を自動生成 -->
+      <!-- JS で生成するのでここは空でOK -->
+    </select>
+
+    <br><br>
+
+    <!-- Tier -->
+    <label>Tier</label><br>
+    <select id="loungeTierSelect" style="width:200px;">
+      <!-- JS で loungeTiers を入れる -->
+    </select>
+
+  </div>
+
+  <!-- 共通フィルター -->
+  <br><br>
+  <label>Recent</label><br>
+  <select id="loungeRecentSelect" style="width:200px;">
+    <option value="ALL">ALL</option>
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="50">50</option>
+    <option value="100">100</option> <!-- ★追加 -->
+  </select>
+
+</div>
+
 
   
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
@@ -2671,12 +2714,14 @@ window.addEventListener("load", async () => {
   // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
 
- 
+  loadOverlayPassword();
   initRadarSelector();
   initAISelector();
   initOBSSeasonSelector();
   initAdpCourseSelects(); // ← これが undefined だった
   initGrowthSelectors() 
+  populateSeasonOptions();
+  populateTierOptions();
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -7300,10 +7345,65 @@ document.getElementById("sendLoungeDiscordBtn").onclick = async () => {
 loadPlayerIdList();
 renderPlayerIdList();
 
+
+
+
+// ★ Season 1〜30 を生成
+function populateSeasonOptions() {
+  const sel = document.getElementById("loungeSeasonSelect");
+  sel.innerHTML = `<option value="ALL">ALL</option>`;
+  for (let i = 1; i <= 30; i++) {
+    sel.innerHTML += `<option value="${i}">${i}</option>`;
+  }
+}
+
+// ★ Tier を生成
+function populateTierOptions() {
+  const sel = document.getElementById("loungeTierSelect");
+  sel.innerHTML = loungeTiers
+    .map(t => `<option value="${t}">${t}</option>`)
+    .join("");
+}
+
+// ★ モード切替（ラウンジのときだけ Season / Tier を表示）
+document.getElementById("overlayModeSelect").addEventListener("change", () => {
+  const mode = document.getElementById("overlayModeSelect").value;
+  const loungeFilters = document.getElementById("loungeFilters");
+
+  if (mode === "LOUNGE") {
+    loungeFilters.style.display = "block";
+  } else {
+    loungeFilters.style.display = "none";
+  }
+});
+
+// ★ 初期化
+
+
+
+
+  
+
+let courseStatsSource = null;
+
+// ★ records は ADP IndexedDB から読み込んだ生データ
+function createCourseStatsSource(records) {
+  courseStatsSource = {
+    history: records   // ★ calcCourseStats が使う形式に合わせる
+  };
+}
+
+async function loadCourseStats(records) {
+  courseStatsSource = {
+    history: records   // ★ calcCourseStats が使う形式に合わせる
+  };
+}
+
+
   
 
 function calcCourseStats(stats, courseName) {
-  const matches = stats.history.filter(h => h.event === courseName);
+  const matches = stats.history.filter(h => h.course === courseName);
 
   if (matches.length === 0) {
     return {
@@ -7348,6 +7448,7 @@ function calcCourseStats(stats, courseName) {
   };
 }
 
+
 document.getElementById("saveOverlayPasswordBtn").onclick = () => {
   const pw = document.getElementById("overlayPasswordInput").value.trim();
   if (!pw) return alert("パスワードを入力してください");
@@ -7365,7 +7466,7 @@ function loadOverlayPassword() {
   }
 }
 
-loadOverlayPassword();
+
 
   
 
@@ -7390,17 +7491,14 @@ function getFilteredStatsForOverlay(stats) {
 
 
 async function sendLoungeOverlay(stats) {
-  console.log("nextCourse:", getNextCourseFromModal());
-
   const password = localStorage.getItem("overlayPassword");
 
   const filteredStats = getFilteredStatsForOverlay(stats);
 
   const nextCourse = getNextCourseFromModal();
-  
-  const nextCourseStats = nextCourse
-    ? calcCourseStats(filteredStats, nextCourse)
-    : null;
+  if (!nextCourse) return;
+
+  const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
   const payload = {
     nextCourse,
@@ -7416,14 +7514,15 @@ async function sendLoungeOverlay(stats) {
 }
 
 
+
 setInterval(() => {
   const nextCourse = getNextCourseFromModal();
-  if (!nextCourse) return;  // ★ nextCourse が null のときは送らない
+  if (!nextCourse) return;
 
-  
-  sendLoungeOverlay();
+  if (!courseStatsSource) return; // ★ stats がまだ無いなら送らない
 
-}, 1000); // ★ 1秒ごと
+  sendLoungeOverlay(courseStatsSource);
+}, 1000);
 
 </script>
 
