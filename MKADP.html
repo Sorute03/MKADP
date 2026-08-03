@@ -7502,7 +7502,6 @@ function getFilteredStatsForOverlay(stats) {
 }
 
 
-
 async function sendLoungeOverlay(stats) {
   const password = localStorage.getItem("overlayPassword");
 
@@ -7512,9 +7511,10 @@ async function sendLoungeOverlay(stats) {
   if (!nextCourse) return;
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
-  console.log("nextCourseStats");
+  console.log("nextCourseStats", nextCourseStats);
+
   const payload = {
-    nextCourse,S
+    nextCourse,
     nextCourseStats
   };
 
@@ -7525,6 +7525,7 @@ async function sendLoungeOverlay(stats) {
     mode: "no-cors"
   });
 }
+
 
 
 
