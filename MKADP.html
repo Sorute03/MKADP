@@ -7445,10 +7445,11 @@ async function sendLoungeOverlay(stats) {
     nextCourseStats
   };
 
-  await fetch("https://script.google.com/macros/s/AKfycbwMx32nHyrHY4p18ifSrTpqVHy4Tgg28NKgrriJzG55a0HP4KM0Rd4sopUVcEbJ77Fn/exec", {
+  await fetch("https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, payload })
+    body: JSON.stringify({ password, payload }),
+    mode: "no-cors"
   });
 }
 
