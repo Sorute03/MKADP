@@ -21,7 +21,7 @@
 
       const data = await res.json();
       if (data.error) return;
-
+      console.log("Overlay Data:", data); // ★ 追加
       const s = data.nextCourseStats;
 
       document.getElementById("nextCourse").textContent =
