@@ -1,59 +1,105 @@
-<body style="background: transparent; color: white; font-size: 24px;">
-  <input id="pw" placeholder="Password" style="font-size:20px; padding:4px;">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 100vh;
+}
 
-  <div id="nextCourse"></div>
-  <div id="avgRank"></div>
-  <div id="avgScore"></div>
-  <div id="winRate"></div>
-  <div id="topRate"></div>
-  <div id="midRate"></div>
-  <div id="bottomRate"></div>
-  <div id="count"></div>
+#overlay {
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 8px;
+  font-size: 24px;
+  border-radius: 6px;
+  font-family: sans-serif;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
 
-  <script>
-    async function poll() {
-      const pw = document.getElementById("pw").value.trim();
-      if (!pw) return;
+#pwBox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.4);
+  padding: 6px;
+  border-radius: 6px;
+}
+#pw {
+  font-size: 20px;
+  padding: 4px;
+}
+</style>
+</head>
+<body>
 
-      // ★ GET（GAS の doGet に完全対応）
-      // ★ キャッシュ破壊のため v=Date.now() を付ける
-      const url =
-        "https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec"
-        + "?password=" + encodeURIComponent(pw)
-        + "&v=" + Date.now();
+<div id="pwBox">
+  <input id="pw" placeholder="Password">
+</div>
 
-      const res = await fetch(url);
-      const data = await res.json();
+<div id="overlay">読み込み中...</div>
 
-      if (data.error) return;
+<script>
+// ★ 最新の Web アプリ URL（GAS の doGet/doPost と一致させる）
+const baseUrl = "https://script.google.com/macros/s/AKfycbxgfB9ENdqrMt_kLzmOera70f_wKWo3Yv5kVmwrlB7f6IUphMFLfoTLKGqNoozF67BB/exec";
 
-      const s = data.nextCourseStats;
+// ▼ 現在のコース名を取得（mode=key）
+function fetchCurrentKey(pw) {
+  return fetch(baseUrl + "?password=" + encodeURIComponent(pw) + "&mode=key&t=" + Date.now())
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        console.error("パスワードエラー");
+        return "";
+      }
+      return data.key;
+    })
+    .catch(err => {
+      console.error("key取得エラー:", err);
+      return "";
+    });
+}
 
-      document.getElementById("nextCourse").textContent =
-        "Next Course: " + data.nextCourse;
+// ▼ コース名を使ってオーバーレイ内容を取得
+function fetchOverlay(pw, key) {
+  return fetch(baseUrl + "?password=" + encodeURIComponent(pw) + "&key=" + encodeURIComponent(key) + "&t=" + Date.now())
+    .then(res => res.json())
+    .catch(err => {
+      console.error("overlay取得エラー:", err);
+      return { html: "エラー: " + err };
+    });
+}
 
-      document.getElementById("avgRank").textContent =
-        "平均順位: " + s.avgRank.toFixed(2);
+// ▼ オーバーレイ更新処理
+function updateOverlay() {
+  const pw = document.getElementById("pw").value.trim();
+  if (!pw) return;
 
-      document.getElementById("avgScore").textContent =
-        "平均得点: " + s.avgScore.toFixed(2);
+  fetchCurrentKey(pw)
+    .then(key => {
+      if (!key) return;
+      return fetchOverlay(pw, key);
+    })
+    .then(data => {
+      if (data && data.html) {
+        document.getElementById("overlay").innerHTML = data.html;
+      }
+    });
+}
 
-      document.getElementById("winRate").textContent =
-        "勝率: " + Math.round(s.winRate * 100) + "%";
+// ▼ 初回ロード & 5秒ごと更新
+window.onload = function() {
+  updateOverlay();
+  setInterval(updateOverlay, 5000);
+};
+</script>
 
-      document.getElementById("topRate").textContent =
-        "上位率(1〜5): " + Math.round(s.topRate * 100) + "%";
-
-      document.getElementById("midRate").textContent =
-        "中位率(6〜15): " + Math.round(s.midRate * 100) + "%";
-
-      document.getElementById("bottomRate").textContent =
-        "下位率(16〜24): " + Math.round(s.bottomRate * 100) + "%";
-
-      document.getElementById("count").textContent =
-        "試行回数: " + s.count;
-    }
-
-    setInterval(poll, 1000);
-  </script>
 </body>
+</html>
