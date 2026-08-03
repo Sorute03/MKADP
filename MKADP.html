@@ -2719,7 +2719,7 @@ window.addEventListener("load", async () => {
 
   // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
-
+  initADPRecords();
   loadOverlayPassword();
   initRadarSelector();
   initAISelector();
@@ -2766,6 +2766,16 @@ document.getElementById("toggleLoungeSetBtn").onclick = () => {
 };
 
 
+async function initADPRecords() {
+  const records = await loadADPIndexedDBRecords();
+
+  // ★ これが絶対必要
+  courseStatsSource = {
+    history: records
+  };
+
+  console.log("courseStatsSource 初期化完了", courseStatsSource);
+}
 
 /* ==========
    ユーティリティ
