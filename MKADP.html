@@ -7277,6 +7277,12 @@ function populateSeasonOptions() {
 }
 
 
+function initloungeTierSelect() {
+  const sel = document.getElementById("loungeTierSelect");
+  sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+initloungeTierSelect()();
+
 
 // ★ モード切替（ラウンジのときだけ Season / Tier を表示）
 document.getElementById("overlayModeSelect").addEventListener("change", () => {
