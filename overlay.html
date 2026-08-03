@@ -1,0 +1,55 @@
+<body style="background: transparent; color: white; font-size: 24px;">
+  <input id="pw" placeholder="Password" style="font-size:20px; padding:4px;">
+
+  <div id="nextCourse"></div>
+  <div id="avgRank"></div>
+  <div id="avgScore"></div>
+  <div id="winRate"></div>
+  <div id="topRate"></div>
+  <div id="midRate"></div>
+  <div id="bottomRate"></div>
+  <div id="count"></div>
+
+  <script>
+    async function poll() {
+      const pw = document.getElementById("pw").value.trim();
+      if (!pw) return;
+
+      const res = await fetch(
+        "https://script.google.com/macros/s/あなたのGAS-ID/exec?password=" + pw
+      );
+
+      const data = await res.json();
+      if (data.error) return;
+
+      const s = data.nextCourseStats;
+
+      document.getElementById("nextCourse").textContent =
+        "Next Course: " + data.nextCourse;
+
+      document.getElementById("avgRank").textContent =
+        "平均順位: " + s.avgRank.toFixed(2);
+
+      document.getElementById("avgScore").textContent =
+        "平均得点: " + s.avgScore.toFixed(2);
+
+      document.getElementById("winRate").textContent =
+        "勝率: " + Math.round(s.winRate * 100) + "%";
+
+      document.getElementById("topRate").textContent =
+        "上位率(1〜5): " + Math.round(s.topRate * 100) + "%";
+
+      document.getElementById("midRate").textContent =
+        "中位率(6〜15): " + Math.round(s.midRate * 100) + "%";
+
+      document.getElementById("bottomRate").textContent =
+        "下位率(16〜24): " + Math.round(s.bottomRate * 100) + "%";
+
+      document.getElementById("count").textContent =
+        "試行回数: " + s.count;
+    }
+
+    // ★ 1秒に1回更新（1000ms）
+    setInterval(poll, 1000);
+  </script>
+</body>
