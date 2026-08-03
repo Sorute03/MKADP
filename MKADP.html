@@ -1384,6 +1384,9 @@ function generateRaceInputs(count) {
 
     courseSelect.onchange = () => {
       saveNextCourse();
+      if (courseStatsSource) {
+        sendLoungeOverlay(courseStatsSource);
+      }
     };
   }
 
