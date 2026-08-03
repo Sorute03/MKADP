@@ -15,13 +15,17 @@
       const pw = document.getElementById("pw").value.trim();
       if (!pw) return;
 
-      const res = await fetch(
-        "https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec?password=" + pw
-      );
+      // ★ GET で最新データを取得（GAS の doGet に完全対応）
+      const url =
+        "https://script.google.com/macros/s/AKfycbw0SS1TZDkdZCVUwgyNlEI2ScwiFi6fz0mQ6rASoiIMTmGt_7wpeGmMSgGO1kLJj0BX/exec"
+        + "?password=" + encodeURIComponent(pw)
+        + "&v=" + Date.now(); // ★ キャッシュ破壊（必須）
 
+      const res = await fetch(url);
       const data = await res.json();
+
       if (data.error) return;
-      console.log("Overlay Data:", data); // ★ 追加
+
       const s = data.nextCourseStats;
 
       document.getElementById("nextCourse").textContent =
@@ -49,6 +53,6 @@
         "試行回数: " + s.count;
     }
 
-    setInterval(poll, 1000); // ★ 1秒更新
+    setInterval(poll, 1000);
   </script>
 </body>
