@@ -1,0 +1,25 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1785730029-484111",
+  "timestamp": 1785730029,
+  "races": [
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "シュポポコースター",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1785729838325
+    },
+    {
+      "mode": "nora",
+      "season": null,
+      "tier": null,
+      "course": "キラーシップ",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1785730001182
+    }
+  ]
+}
