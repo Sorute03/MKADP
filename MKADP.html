@@ -7390,11 +7390,14 @@ function getFilteredStatsForOverlay(stats) {
 
 
 async function sendLoungeOverlay(stats) {
+  console.log("nextCourse:", getNextCourseFromModal());
+
   const password = localStorage.getItem("overlayPassword");
 
   const filteredStats = getFilteredStatsForOverlay(stats);
 
   const nextCourse = getNextCourseFromModal();
+  
   const nextCourseStats = nextCourse
     ? calcCourseStats(filteredStats, nextCourse)
     : null;
