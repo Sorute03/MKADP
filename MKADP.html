@@ -2037,6 +2037,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </div>
 </div>
 
+<script id="mkadp-data" type="application/json">{}</script>
 
 <script>
 
@@ -7447,30 +7448,30 @@ function getFilteredStatsForOverlay(stats) {
   return { history: filtered };
 }
 
+function updateOverlayJson(payload) {
+  const tag = document.getElementById("mkadp-data");
+  tag.textContent = JSON.stringify(payload);
+}
+
+
 
 async function sendLoungeOverlay(stats) {
-  const password = localStorage.getItem("overlayPassword");
-
   const filteredStats = getFilteredStatsForOverlay(stats);
 
   const nextCourse = getNextCourseFromModal();
   if (!nextCourse) return;
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
-  console.log("nextCourseStats", nextCourseStats);
 
   const payload = {
     nextCourse,
     nextCourseStats
   };
 
-  await fetch("https://script.google.com/macros/s/AKfycbx1T6bXyvhAqyZUIwCfJfrvlWEh633Hp-jPY1kGXRQZgTgDYHlrEeLjIjBrqzrjQW2b/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, payload }),
-    mode: "no-cors"
-  });
+  // ★ ここが AJAX pull 用の唯一の送信処理
+  updateOverlayJson(payload);
 }
+
 
 
 
