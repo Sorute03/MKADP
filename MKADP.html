@@ -7556,7 +7556,6 @@ function rebuildOverlayUserSelect() {
 
 
 async function updateOverlayJsonForUser(user, payload) {
-  // 1. 現在の overlay.json を取得（壊れていても安全に初期化）
   let json = {};
   try {
     const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
@@ -7566,13 +7565,11 @@ async function updateOverlayJsonForUser(user, payload) {
     json = {};
   }
 
-  // 2. ユーザーのデータを更新
   json[user] = {
     ...payload,
     updatedAt: Date.now()
   };
 
-  // 3. 古いユーザーを自動削除（30日以上更新なし）
   const THRESHOLD = 30 * 24 * 60 * 60 * 1000;
   for (const u in json) {
     if (Date.now() - json[u].updatedAt > THRESHOLD) {
@@ -7580,16 +7577,17 @@ async function updateOverlayJsonForUser(user, payload) {
     }
   }
 
-  // 4. GitHub Actions workflow を起動（Secrets は Actions 内で展開）
-  const DISPATCH_TOKEN = MKADP_TOKEN; // ← 弱い token（workflow_dispatch 用）
+  // ★ ADP が使うのは弱いトークンだけ
+  const DISPATCH_TOKEN = GITHUB_DISPATCH_TOKEN;
 
-  const url = "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
+  const url =
+    "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
 
   const body = {
     ref: "main",
     inputs: {
       user,
-      payload: JSON.stringify(json) // ← overlay.json 全体を渡す
+      payload: JSON.stringify(json)
     }
   };
 
@@ -7609,6 +7607,7 @@ async function updateOverlayJsonForUser(user, payload) {
 
   console.log("GitHub Actions dispatched for overlay.json update");
 }
+
 
 
 const channel = new BroadcastChannel("mk_overlay_channel");
