@@ -591,6 +591,18 @@ const courseList = [
   <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab">コース別stats</button>
 </div>
+
+
+<div>
+  <input id="overlayUserInput" placeholder="ユーザー名を入力">
+  <button onclick="registerOverlayUser()">登録</button>
+</div>
+
+<select id="overlayUserSelect"></select>
+
+
+
+
   
 <!-- ▼ レース一覧タブ -->
 <div id="historyTab" class="tabContent" style="display:none;">
@@ -2038,6 +2050,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 <script id="mkadp-data" type="application/json">{}</script>
+<div id="overlayJsonContainer"></div>
 
 <script>
 
@@ -2756,7 +2769,8 @@ window.addEventListener("load", async () => {
   initAdpCourseSelects(); // ← これが undefined だった
   initGrowthSelectors() 
   populateSeasonOptions();
-
+  rebuildOverlayUserSelect();
+  rebuildOverlayUserScriptTags();
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -7468,13 +7482,43 @@ async function sendLoungeOverlay(stats) {
     nextCourseStats
   };
 
-  // ★ ここが AJAX pull 用の唯一の送信処理
-  updateOverlayJson(payload);
+  // ★ 現在選択中のユーザー
+  const user = document.getElementById("overlayUserSelect").value;
+
+  updateOverlayJsonForUser(user, payload);
+}
+
+function getOverlayUsers() {
+  return JSON.parse(localStorage.getItem("overlayUsers") || "[]");
+}
+
+function saveOverlayUsers(users) {
+  localStorage.setItem("overlayUsers", JSON.stringify(users));
 }
 
 
+function registerOverlayUser() {
+  const name = document.getElementById("overlayUserInput").value.trim();
+  if (!name) return;
+
+  const users = getOverlayUsers();
+  if (!users.includes(name)) {
+    users.push(name);
+    saveOverlayUsers(users);
+    rebuildOverlayUserSelect();
+    rebuildOverlayUserScriptTags();
+  }
+}
 
 
+function updateOverlayJsonForUser(user, payload) {
+  const tag = document.getElementById(`mkadp-data-${user}`);
+  if (!tag) {
+    console.warn(`mkadp-data-${user} が存在しません`);
+    return;
+  }
+  tag.textContent = JSON.stringify(payload);
+}
 
 const channel = new BroadcastChannel("mk_overlay_channel");
 
@@ -7482,6 +7526,14 @@ function sendOverlay(payload) {
   channel.postMessage({ payload });
 }
 
+function rebuildOverlayUserScriptTags() {
+  const container = document.getElementById("overlayJsonContainer");
+  const users = getOverlayUsers();
+
+  container.innerHTML = users
+    .map(u => `<script id="mkadp-data-${u}" type="application/json">{}</script>`)
+    .join("");
+}
 
 
 
@@ -7521,6 +7573,8 @@ function sendOverlay(payload) {
     // 例：ADP 内部からこう呼べば overlay が更新される
     // renderOverlay({ nextCourse: "コース名", nextCourseStats: {...} });
 </script>
+
+
 </body>
 </html>
 
