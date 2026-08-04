@@ -31,15 +31,30 @@
 <div id="overlayBox">待機中...</div>
 
 <script>
-// ★ ADP からの受信（BroadcastChannel）
-const channel = new BroadcastChannel("mk_overlay_channel");
+// ======================================================
+// ★ ADP.html を AJAX で読み取り、埋め込まれた JSON を抽出
+// ======================================================
+async function fetchAdpData() {
+  try {
+    // GitHub Pages 上の MKADP.html を取得
+    const html = await fetch("MKADP.html").then(r => r.text());
 
-channel.onmessage = (e) => {
-  const { payload } = e.data;
-  renderOverlay(payload);
-};
+    // HTML を DOM として解析
+    const doc = new DOMParser().parseFromString(html, "text/html");
 
-// ★ overlay 描画
+    // ADP 側が埋め込んだ JSON を抽出
+    const jsonText = doc.getElementById("mkadp-data").textContent;
+
+    return JSON.parse(jsonText);
+  } catch (e) {
+    console.error("ADP データ取得失敗", e);
+    return null;
+  }
+}
+
+// ======================================================
+// ★ overlay 描画（あなたの現行コードをそのまま使用）
+// ======================================================
 function renderOverlay(payload) {
   if (!payload) return;
 
@@ -61,6 +76,15 @@ function renderOverlay(payload) {
     <div>下位率：${percent(s.bottomRate)}</div>
   `;
 }
+
+// ======================================================
+// ★ 1秒ごとに ADP の最新データを取得して描画（リアルタイム）
+// ======================================================
+setInterval(async () => {
+  const payload = await fetchAdpData();
+  if (payload) renderOverlay(payload);
+}, 1000);
+
 </script>
 
 </body>
