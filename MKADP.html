@@ -7510,6 +7510,14 @@ function registerOverlayUser() {
   }
 }
 
+function rebuildOverlayUserSelect() {
+  const sel = document.getElementById("overlayUserSelect");
+  const users = getOverlayUsers();
+
+  sel.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join("");
+}
+
+
 
 function updateOverlayJsonForUser(user, payload) {
   const tag = document.getElementById(`mkadp-data-${user}`);
