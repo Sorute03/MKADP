@@ -7561,6 +7561,10 @@ function rebuildOverlayUserScriptTags() {
   }
 }
 
+window.addEventListener("DOMContentLoaded", () => {
+  rebuildOverlayUserSelect();
+  rebuildOverlayUserScriptTags();
+});
 
 
 
