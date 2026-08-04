@@ -7486,17 +7486,19 @@ async function sendLoungeOverlay(stats) {
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
+  // ★ GitHub Actions に渡す payload（ユーザー別データ）
   const payload = {
     nextCourse,
-    nextCourseStats
+    nextCourseStats,
+    updatedAt: Date.now()
   };
 
   console.log("ADP → overlay payload:", payload);
 
-  // ★ ユーザー名（multi-user の選択値）
+  // ★ multi-user の選択値
   const user = document.getElementById("overlayUserSelect").value;
 
-  // ★ 1つの overlay.json にユーザー別データを書き込む
+  // ★ GitHub Actions を起動して overlay.json を更新
   await updateOverlayJsonForUser(user, payload);
 }
 
@@ -7510,10 +7512,28 @@ function saveOverlayUsers(users) {
 }
 
 
-function registerOverlayUser() {
+async function registerOverlayUser() {
   const name = document.getElementById("overlayUserInput").value.trim();
-  if (!name) return;
+  if (!name) return alert("ユーザー名を入力してください");
 
+  // ▼ overlay.json を読み込んで既存ユーザー一覧を取得
+  let existingUsers = [];
+  try {
+    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+    const json = await res.json();
+    existingUsers = Object.keys(json); // overlay.json のユーザー一覧
+  } catch (e) {
+    console.warn("overlay.json が読めないため重複チェックをスキップします");
+  }
+
+  // ▼ 大文字小文字を統一して重複チェック
+  const isDuplicate = existingUsers.some(u => u.toLowerCase() === name.toLowerCase());
+  if (isDuplicate) {
+    alert("このユーザー名は既に登録されています");
+    return;
+  }
+
+  // ▼ ローカルのユーザー一覧にも追加
   const users = getOverlayUsers();
   if (!users.includes(name)) {
     users.push(name);
@@ -7521,7 +7541,10 @@ function registerOverlayUser() {
     rebuildOverlayUserSelect();
     rebuildOverlayUserScriptTags();
   }
+
+  alert("ユーザー登録が完了しました");
 }
+
 
 function rebuildOverlayUserSelect() {
   const sel = document.getElementById("overlayUserSelect");
@@ -7533,9 +7556,15 @@ function rebuildOverlayUserSelect() {
 
 
 async function updateOverlayJsonForUser(user, payload) {
-  // 1. 現在の overlay.json を取得
-  const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
-  const json = await res.json();
+  // 1. 現在の overlay.json を取得（壊れていても安全に初期化）
+  let json = {};
+  try {
+    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+    json = await res.json();
+  } catch (e) {
+    console.warn("overlay.json が壊れているため初期化します");
+    json = {};
+  }
 
   // 2. ユーザーのデータを更新
   json[user] = {
@@ -7551,13 +7580,34 @@ async function updateOverlayJsonForUser(user, payload) {
     }
   }
 
-  // 4. GitHub API で overlay.json を更新
-  await githubUpdateFile(
-    "MKADP/overlay.json",
-    JSON.stringify(json, null, 2)
-  );
+  // 4. GitHub Actions workflow を起動（Secrets は Actions 内で展開）
+  const DISPATCH_TOKEN = GITHUB_DISPATCH_TOKEN; // ← 弱い token（workflow_dispatch 用）
 
-  console.log("overlay.json updated:", json);
+  const url = "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
+
+  const body = {
+    ref: "main",
+    inputs: {
+      user,
+      payload: JSON.stringify(json) // ← overlay.json 全体を渡す
+    }
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": `token ${DISPATCH_TOKEN}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    console.error("GitHub Actions dispatch failed:", await res.text());
+    return;
+  }
+
+  console.log("GitHub Actions dispatched for overlay.json update");
 }
 
 
@@ -7633,6 +7683,25 @@ async function githubUpdateFile(path, content) {
   }
 
   console.log("GitHub 更新成功:", path);
+}
+
+
+
+async function isUserNameDuplicate(newUserName) {
+  try {
+    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+    const json = await res.json();
+
+    // 既存ユーザー一覧
+    const existingUsers = Object.keys(json);
+
+    // 重複チェック（大文字小文字も統一）
+    return existingUsers.some(u => u.toLowerCase() === newUserName.toLowerCase());
+
+  } catch (e) {
+    console.warn("overlay.json が読めないため重複チェックをスキップします");
+    return false; // 読めない場合は重複扱いしない
+  }
 }
 
 
