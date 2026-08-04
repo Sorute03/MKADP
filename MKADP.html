@@ -7597,7 +7597,7 @@ async function updateOverlayJsonForUser(user, payload) {
     method: "POST",
     headers: {
       "Accept": "application/vnd.github+json",
-      "Authorization": `token ${DISPATCH_TOKEN}`
+      "Authorization": `token ${MKADP_TOKEN}`
     },
     body: JSON.stringify(body)
   });
@@ -7646,7 +7646,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 async function githubUpdateFile(path, content) {
-  const token = GITHUB_TOKEN; // ← あなたの既存の GitHub Token 変数
+  const token = MKADP_TOKEN; // ← あなたの既存の GitHub Token 変数
   const repo = "sorute03/MKADP"; // ← あなたのリポジトリ名
 
   // 1. 現在のファイルの SHA を取得（更新時に必要）
