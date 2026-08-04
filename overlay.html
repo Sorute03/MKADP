@@ -49,13 +49,19 @@ async function fetchOverlayJson() {
     const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
     const json = await res.json();
 
+    if (!json || typeof json !== "object") {
+      console.warn("overlay.json が不正です:", json);
+      return null;
+    }
+
+    const payload = json[USER] || null;
+
     console.log("=== overlay JSON check ===");
     console.log("USER:", USER);
-    console.log("json:", json);
-    console.log("json[USER]:", json[USER]);
+    console.log("payload:", payload);
     console.log("==========================");
 
-    return json[USER] || null;
+    return payload;
 
   } catch (e) {
     console.error("overlay.json 取得失敗", e);
@@ -67,9 +73,12 @@ async function fetchOverlayJson() {
 // ★ overlay 描画
 // ======================================================
 function renderOverlay(payload) {
-  if (!payload) return;
-
   const box = document.getElementById("overlayBox");
+
+  if (!payload) {
+    box.innerHTML = "待機中...";
+    return;
+  }
 
   const course = payload.nextCourse || "コース不明";
   const s = payload.nextCourseStats || {};
@@ -81,7 +90,7 @@ function renderOverlay(payload) {
     <div><b>${course}</b></div>
     <div>平均順位：${fmt(s.avgRank)}位</div>
     <div>平均得点：${fmt(s.avgScore)}点</div>
-    <div>試行回数：${s.count}回</div>
+    <div>試行回数：${s.count ?? 0}回</div>
     <div>上位率：${percent(s.topRate)}</div>
     <div>中位率：${percent(s.midRate)}</div>
     <div>下位率：${percent(s.bottomRate)}</div>
@@ -93,8 +102,7 @@ function renderOverlay(payload) {
 // ======================================================
 setInterval(async () => {
   const payload = await fetchOverlayJson();
-  console.log("overlay payload:", payload);
-  if (payload) renderOverlay(payload);
+  renderOverlay(payload);
 }, 1000);
 
 </script>
