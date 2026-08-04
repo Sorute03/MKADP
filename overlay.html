@@ -46,7 +46,15 @@ if (!USER) {
 // ======================================================
 async function fetchOverlayJson() {
   try {
-    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now(), {
+      cache: "no-store"
+    });
+
+    if (!res.ok) {
+      console.error("overlay.json の取得に失敗:", res.status);
+      return null;
+    }
+
     const json = await res.json();
 
     if (!json || typeof json !== "object") {
