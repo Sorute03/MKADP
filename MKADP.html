@@ -7595,6 +7595,45 @@ window.addEventListener("DOMContentLoaded", () => {
   rebuildOverlayUserScriptTags();
 });
 
+async function githubUpdateFile(path, content) {
+  const token = GITHUB_TOKEN; // ← あなたの既存の GitHub Token 変数
+  const repo = "sorute03/MKADP"; // ← あなたのリポジトリ名
+
+  // 1. 現在のファイルの SHA を取得（更新時に必要）
+  const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    headers: {
+      "Authorization": `token ${token}`,
+      "Accept": "application/vnd.github.v3+json"
+    }
+  });
+
+  let sha = null;
+  if (getRes.ok) {
+    const fileInfo = await getRes.json();
+    sha = fileInfo.sha;
+  }
+
+  // 2. ファイルを更新（新規作成も同じ API）
+  const updateRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `token ${token}`,
+      "Accept": "application/vnd.github.v3+json"
+    },
+    body: JSON.stringify({
+      message: "Update overlay.json",
+      content: btoa(unescape(encodeURIComponent(content))),
+      sha: sha
+    })
+  });
+
+  if (!updateRes.ok) {
+    console.error("GitHub 更新失敗", await updateRes.text());
+    throw new Error("GitHub 更新失敗");
+  }
+
+  console.log("GitHub 更新成功:", path);
+}
 
 
 </script>
