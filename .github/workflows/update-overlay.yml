@@ -1,40 +1,20 @@
-name: Update Overlay JSON
+name: Update overlay.json
 
 on:
-  workflow_dispatch:
-    inputs:
-      user:
-        description: "User name"
-        required: true
-      payload:
-        description: "JSON payload"
-        required: true
+  repository_dispatch:
+    types: [overlay_update]
 
 jobs:
-  update:
+  update-overlay:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare overlay.json
+      - name: Update overlay.json
         run: |
-          FILE="overlay.json"
-
-          # 既存ファイルが無ければ初期化
-          if [ ! -f "$FILE" ]; then
-            echo "{}" > "$FILE"
-          fi
-
-          # 現在の JSON を読み込み
-          CONTENT=$(cat "$FILE")
-
-          # jq でユーザーのデータを更新
-          echo "$CONTENT" | \
-            jq --arg user "${{ github.event.inputs.user }}" \
-               --argjson payload "${{ github.event.inputs.payload }}" \
-               '.[$user] = $payload' > overlay.json
+          echo '${{ github.event.client_payload.payload }}' > overlay.json
 
       - name: Commit & Push
         uses: stefanzweifel/git-auto-commit-action@v5
