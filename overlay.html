@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>MK Overlay (Local)</title>
+<title>MK Overlay Only</title>
 
 <style>
   body {
@@ -31,7 +31,7 @@
 <div id="overlayBox">待機中...</div>
 
 <script>
-// ★ BroadcastChannel 受信（パスワードなし）
+// ★ ADP からの受信（BroadcastChannel）
 const channel = new BroadcastChannel("mk_overlay_channel");
 
 channel.onmessage = (e) => {
