@@ -7581,7 +7581,7 @@ async function updateOverlayJsonForUser(user, payload) {
   }
 
   // 4. GitHub Actions workflow を起動（Secrets は Actions 内で展開）
-  const DISPATCH_TOKEN = GITHUB_DISPATCH_TOKEN; // ← 弱い token（workflow_dispatch 用）
+  const DISPATCH_TOKEN = MKADP_TOKEN; // ← 弱い token（workflow_dispatch 用）
 
   const url = "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
 
@@ -7597,7 +7597,7 @@ async function updateOverlayJsonForUser(user, payload) {
     method: "POST",
     headers: {
       "Accept": "application/vnd.github+json",
-      "Authorization": `token ${MKADP_TOKEN}`
+      "Authorization": `token ${DISPATCH_TOKEN}`
     },
     body: JSON.stringify(body)
   });
