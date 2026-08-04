@@ -7556,8 +7556,9 @@ function rebuildOverlayUserSelect() {
 
 
 async function updateOverlayJsonForUser(user, payload) {
-  // overlay.json 全体を作る（今のロジックそのまま）
   let json = {};
+
+  // 1. 現在の overlay.json を取得
   try {
     const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
     json = await res.json();
@@ -7566,11 +7567,13 @@ async function updateOverlayJsonForUser(user, payload) {
     json = {};
   }
 
+  // 2. ユーザーのデータを更新
   json[user] = {
     ...payload,
     updatedAt: Date.now()
   };
 
+  // 3. 古いユーザーを自動削除（30日以上更新なし）
   const THRESHOLD = 30 * 24 * 60 * 60 * 1000;
   for (const u in json) {
     if (Date.now() - json[u].updatedAt > THRESHOLD) {
@@ -7578,17 +7581,22 @@ async function updateOverlayJsonForUser(user, payload) {
     }
   }
 
-  // ★ GitHub Pages 上の “中継エンドポイント” に投げる
-  await fetch("https://sorute03.github.io/MKADP/dispatch.html", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      event_type: "overlay_update",
-      payload: JSON.stringify(json)
-    })
-  });
+  // 4. GAS に送信（★ トークン不要）
+  try {
+    await fetch("https://script.google.com/macros/s/AKfycbwZHKyvPG0C97fiSolz342PEJ7ekzM0DpLDD51UBRfS-mWB048GCNILzCcYsV8U78-B/exec", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user,
+        payload: json
+      })
+    });
 
-  console.log("repository_dispatch requested for overlay.json update");
+    console.log("GAS に overlay 更新リクエスト送信完了");
+
+  } catch (e) {
+    console.error("GAS 送信失敗:", e);
+  }
 }
 
 
