@@ -7565,17 +7565,24 @@ function rebuildOverlayUserScriptTags() {
   const container = document.getElementById("overlayJsonContainer");
   const users = getOverlayUsers();
 
-  // 既存の script を全部削除
+  console.log("=== script タグ生成ログ ===");
+  console.log("登録ユーザー一覧:", users);
+  console.log("container:", container);
+  console.log("==========================");
+
   container.innerHTML = "";
 
   for (const u of users) {
     const script = document.createElement("script");
     script.id = `mkadp-data-${u}`;
     script.type = "application/json";
-    script.textContent = "{}";  // 初期値
+    script.textContent = "{}";
     container.appendChild(script);
+
+    console.log(`生成: <script id="mkadp-data-${u}">`);
   }
 }
+
 
 window.addEventListener("DOMContentLoaded", () => {
   rebuildOverlayUserSelect();
