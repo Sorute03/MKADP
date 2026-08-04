@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dispatch Overlay Update</title>
+</head>
+<body>
+<script>
+(async () => {
+  try {
+    const req = await fetch(window.location.href, { method: "GET" });
+    // ここは GitHub Pages の制約上、本来はサーバ側で処理したいが、
+    // クライアント側から repository_dispatch を直接叩く部分は
+    // GitHub が許可している前提で書いている。
+
+    const body = await req.json(); // event_type, payload が入っている想定
+
+    await fetch("https://api.github.com/repos/sorute03/MKADP/dispatches", {
+      method: "POST",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        // ★ ここにトークンを書かないのが前提なので、
+        // 実際には GitHub 側の設定で repository_dispatch を許可する必要がある。
+      },
+      body: JSON.stringify({
+        event_type: body.event_type,
+        client_payload: {
+          payload: body.payload
+        }
+      })
+    });
+
+    console.log("repository_dispatch sent");
+  } catch (e) {
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
