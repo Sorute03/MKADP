@@ -1,20 +1,23 @@
 name: Update overlay.json
 
 on:
-  repository_dispatch:
-    types: [overlay_update]
+  workflow_dispatch:
+    inputs:
+      user:
+        required: true
+      payload:
+        required: true
 
 jobs:
   update-overlay:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Update overlay.json
         run: |
-          echo '${{ github.event.client_payload.payload }}' > overlay.json
+          echo '${{ github.event.inputs.payload }}' > overlay.json
 
       - name: Commit & Push
         uses: stefanzweifel/git-auto-commit-action@v5
