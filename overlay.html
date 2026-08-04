@@ -36,16 +36,29 @@
 // ======================================================
 async function fetchAdpData() {
   try {
-    // GitHub Pages 上の MKADP.html を取得
     const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html").then(r => r.text());
-
-    // HTML を DOM として解析
     const doc = new DOMParser().parseFromString(html, "text/html");
 
-    // ADP 側が埋め込んだ JSON を抽出
-    const jsonText = doc.getElementById("mkadp-data").textContent;
+    const tag = doc.getElementById(`mkadp-data-${USER}`);
 
-    return JSON.parse(jsonText);
+    // ★ JSON 確認（ここが重要）
+    console.log("=== overlay JSON check ===");
+    console.log("USER:", USER);
+    console.log("tag:", tag);
+    console.log("tag?.textContent:", tag?.textContent);
+
+    if (!tag) {
+      console.warn("mkadp-data-" + USER + " が ADP.html に存在しません");
+      return null;
+    }
+
+    const json = JSON.parse(tag.textContent);
+
+    console.log("parsed JSON:", json);
+    console.log("==========================");
+
+    return json;
+
   } catch (e) {
     console.error("ADP データ取得失敗", e);
     return null;
