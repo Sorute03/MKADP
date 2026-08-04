@@ -7484,7 +7484,10 @@ async function sendLoungeOverlay(stats) {
   const filteredStats = getFilteredStatsForOverlay(stats);
 
   const nextCourse = getNextCourseFromModal();
-  if (!nextCourse) return;
+  if (!nextCourse) {
+    console.warn("sendLoungeOverlay: nextCourse が取得できません");
+    return;
+  }
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
@@ -7493,8 +7496,13 @@ async function sendLoungeOverlay(stats) {
     nextCourseStats
   };
 
-  // ★ 現在選択中のユーザー
   const user = document.getElementById("overlayUserSelect").value;
+
+  console.log("=== ADP → overlay 送信ログ ===");
+  console.log("選択ユーザー:", user);
+  console.log("payload:", payload);
+  console.log("mkadp-data タグ:", document.getElementById(`mkadp-data-${user}`));
+  console.log("==============================");
 
   updateOverlayJsonForUser(user, payload);
 }
@@ -7532,10 +7540,18 @@ function rebuildOverlayUserSelect() {
 
 function updateOverlayJsonForUser(user, payload) {
   const tag = document.getElementById(`mkadp-data-${user}`);
+
+  console.log("=== JSON 書き込みログ ===");
+  console.log("user:", user);
+  console.log("tag:", tag);
+  console.log("書き込む JSON:", JSON.stringify(payload));
+  console.log("========================");
+
   if (!tag) {
     console.warn(`mkadp-data-${user} が存在しません`);
     return;
   }
+
   tag.textContent = JSON.stringify(payload);
 }
 
