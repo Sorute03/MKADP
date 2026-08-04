@@ -32,7 +32,7 @@
 
 <script>
 // ======================================================
-// ★ URL パラメータから user を取得（登録式 multi-user のキー）
+// ★ URL パラメータから user を取得
 // ======================================================
 const params = new URLSearchParams(location.search);
 const USER = params.get("user");
@@ -42,41 +42,29 @@ if (!USER) {
 }
 
 // ======================================================
-// ★ ADP.html を fetch → mkadp-data-USER を抽出
+// ★ overlay.json を fetch → ユーザーのデータを抽出
 // ======================================================
-async function fetchAdpData() {
+async function fetchOverlayJson() {
   try {
-    const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html?=v2").then(r => r.text());
-    const doc = new DOMParser().parseFromString(html, "text/html");
-
-    // ★ 登録式なので mkadp-data-USER を読む
-    const tag = doc.getElementById("mkadp-data");
-
+    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+    const json = await res.json();
 
     console.log("=== overlay JSON check ===");
     console.log("USER:", USER);
-    console.log("tag:", tag);
-    console.log("tag?.textContent:", tag?.textContent);
-
-    if (!tag) {
-      console.warn(`mkadp-data-${USER} が ADP.html に存在しません`);
-      return null;
-    }
-
-    const json = JSON.parse(tag.textContent);
-    console.log("parsed JSON:", json);
+    console.log("json:", json);
+    console.log("json[USER]:", json[USER]);
     console.log("==========================");
 
-    return json;
+    return json[USER] || null;
 
   } catch (e) {
-    console.error("ADP データ取得失敗", e);
+    console.error("overlay.json 取得失敗", e);
     return null;
   }
 }
 
 // ======================================================
-// ★ overlay 描画（あなたの現行コード）
+// ★ overlay 描画
 // ======================================================
 function renderOverlay(payload) {
   if (!payload) return;
@@ -101,10 +89,10 @@ function renderOverlay(payload) {
 }
 
 // ======================================================
-// ★ 1秒ごとに ADP の最新データを取得して描画
+// ★ 1秒ごとに overlay.json を取得して描画
 // ======================================================
 setInterval(async () => {
-  const payload = await fetchAdpData();
+  const payload = await fetchOverlayJson();
   console.log("overlay payload:", payload);
   if (payload) renderOverlay(payload);
 }, 1000);
