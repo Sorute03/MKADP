@@ -7578,7 +7578,7 @@ async function updateOverlayJsonForUser(user, payload) {
   }
 
   // ★ ADP が使うのは弱いトークンだけ
-  const DISPATCH_TOKEN = GITHUB_DISPATCH_TOKEN;
+  const DISPATCH_TOKEN = DISPATCH_TOKEN;
 
   const url =
     "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
