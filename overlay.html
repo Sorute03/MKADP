@@ -37,7 +37,7 @@
 async function fetchAdpData() {
   try {
     // GitHub Pages 上の MKADP.html を取得
-    const html = await fetch("MKADP.html").then(r => r.text());
+    const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html").then(r => r.text());
 
     // HTML を DOM として解析
     const doc = new DOMParser().parseFromString(html, "text/html");
