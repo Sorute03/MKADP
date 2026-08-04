@@ -593,12 +593,23 @@ const courseList = [
 </div>
 
 
-<div>
-  <input id="overlayUserInput" placeholder="ユーザー名を入力">
-  <button onclick="registerOverlayUser()">登録</button>
-</div>
+<!-- ▼ Overlay multi-user 設定 -->
+<div style="margin-top:20px; padding:10px; border:1px solid #666;">
+  <h3>Overlay ユーザー登録</h3>
 
-<select id="overlayUserSelect"></select>
+  <div style="margin-bottom:10px;">
+    <input id="overlayUserInput" placeholder="ユーザー名を入力" style="width:200px;">
+    <button onclick="registerOverlayUser()">登録</button>
+  </div>
+
+  <div style="margin-bottom:10px;">
+    <label>送信先ユーザー：</label>
+    <select id="overlayUserSelect"></select>
+  </div>
+
+  <!-- ▼ JSON 埋め込み領域（ユーザーごとに script を自動生成） -->
+  <div id="overlayJsonContainer"></div>
+</div>
 
 
 
@@ -2050,7 +2061,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 <script id="mkadp-data" type="application/json">{}</script>
-<div id="overlayJsonContainer"></div>
+
 
 <script>
 
