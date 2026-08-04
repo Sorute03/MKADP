@@ -7549,10 +7549,18 @@ function rebuildOverlayUserScriptTags() {
   const container = document.getElementById("overlayJsonContainer");
   const users = getOverlayUsers();
 
-  container.innerHTML = users
-    .map(u => `<script id="mkadp-data-${u}" type="application/json">{}</script>`)
-    .join("");
+  // 既存の script を全部削除
+  container.innerHTML = "";
+
+  for (const u of users) {
+    const script = document.createElement("script");
+    script.id = `mkadp-data-${u}`;
+    script.type = "application/json";
+    script.textContent = "{}";  // 初期値
+    container.appendChild(script);
+  }
 }
+
 
 
 
