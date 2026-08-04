@@ -46,7 +46,7 @@ if (!USER) {
 // ======================================================
 async function fetchAdpData() {
   try {
-    const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html=v2").then(r => r.text());
+    const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html?=v2").then(r => r.text());
     const doc = new DOMParser().parseFromString(html, "text/html");
 
     // ★ 登録式なので mkadp-data-USER を読む
