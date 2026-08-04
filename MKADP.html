@@ -188,6 +188,39 @@
       border: 1px solid #e0e0e0;
     }
 
+
+    
+    /* 通常時は overlayBox を隠す */
+    #overlayBox {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.55);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 24px;
+      line-height: 1.6;
+      min-width: 300px;
+      color: #fff;
+      font-family: sans-serif;
+    }
+
+    /* overlay-only モードのときに ADP UI を全部消す */
+    .overlay-only #mainUI,
+    .overlay-only #header,
+    .overlay-only #footer,
+    .overlay-only #settingsPanel,
+    .overlay-only #adpControls {
+      display: none !important;
+    }
+
+    .overlay-only #overlayBox {
+      display: block !important;
+    }
+  </style>
+
+    
   </style>
 </head>
 
@@ -1573,6 +1606,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 };
 
 </script>
+
+<!-- オーバーレイ専用ボックス -->
+<div id="overlayBox">待機中...</div>
+
+ 
+
 
 
 
@@ -7446,6 +7485,43 @@ function sendOverlay(payload) {
 
 
 </script>
+<script>
+// URL パラメータから overlay モードかどうか判定
+  const params = new URLSearchParams(location.search);
+  const overlayMode = params.has("overlay");
+
+   if (overlayMode) {
+    // body に overlay-only クラスを付ける
+     document.body.classList.add("overlay-only");
+   }
+
+    // ここは ADP 側から overlay を更新するための関数例
+    // 実際の MKADP の構造に合わせて中身を差し替えてOK
+  function renderOverlay(payload) {
+    if (!payload) return;
+    const box = document.getElementById("overlayBox");
+    const course = payload.nextCourse || "コース不明";
+  　const s = payload.nextCourseStats || {};
+
+    const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
+    const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
+
+    box.innerHTML = `
+      <div><b>${course}</b></div>
+      <div>平均順位：${fmt(s.avgRank)}位</div>
+      <div>平均得点：${fmt(s.avgScore)}点</div>
+      <div>試行回数：${s.count}回</div>
+      <div>上位率：${percent(s.topRate)}</div>
+      <div>中位率：${percent(s.midRate)}</div>
+      <div>下位率：${percent(s.bottomRate)}</div>
+    `;
+  　}
+
+    // 例：ADP 内部からこう呼べば overlay が更新される
+    // renderOverlay({ nextCourse: "コース名", nextCourseStats: {...} });
+</script>
+</body>
+</html>
 
 </body>
 </html>
