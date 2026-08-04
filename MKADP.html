@@ -7556,6 +7556,7 @@ function rebuildOverlayUserSelect() {
 
 
 async function updateOverlayJsonForUser(user, payload) {
+  // overlay.json 全体を作る（今のロジックそのまま）
   let json = {};
   try {
     const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
@@ -7577,35 +7578,17 @@ async function updateOverlayJsonForUser(user, payload) {
     }
   }
 
-  // ★ ADP が使うのは弱いトークンだけ
-  const DISPATCH_TOKEN = DISPATCH_TOKEN;
-
-  const url =
-    "https://api.github.com/repos/sorute03/MKADP/actions/workflows/update-overlay.yml/dispatches";
-
-  const body = {
-    ref: "main",
-    inputs: {
-      user,
-      payload: JSON.stringify(json)
-    }
-  };
-
-  const res = await fetch(url, {
+  // ★ GitHub Pages 上の “中継エンドポイント” に投げる
+  await fetch("https://sorute03.github.io/MKADP/dispatch.html", {
     method: "POST",
-    headers: {
-      "Accept": "application/vnd.github+json",
-      "Authorization": `token ${DISPATCH_TOKEN}`
-    },
-    body: JSON.stringify(body)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event_type: "overlay_update",
+      payload: JSON.stringify(json)
+    })
   });
 
-  if (!res.ok) {
-    console.error("GitHub Actions dispatch failed:", await res.text());
-    return;
-  }
-
-  console.log("GitHub Actions dispatched for overlay.json update");
+  console.log("repository_dispatch requested for overlay.json update");
 }
 
 
