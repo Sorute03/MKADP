@@ -32,28 +32,37 @@
 
 <script>
 // ======================================================
-// ★ ADP.html を AJAX で読み取り、埋め込まれた JSON を抽出
+// ★ URL パラメータから user を取得（登録式 multi-user のキー）
+// ======================================================
+const params = new URLSearchParams(location.search);
+const USER = params.get("user");
+
+if (!USER) {
+  console.error("overlay: ?user=◯◯ が指定されていません");
+}
+
+// ======================================================
+// ★ ADP.html を fetch → mkadp-data-USER を抽出
 // ======================================================
 async function fetchAdpData() {
   try {
     const html = await fetch("https://sorute03.github.io/MKADP/MKADP.html").then(r => r.text());
     const doc = new DOMParser().parseFromString(html, "text/html");
 
+    // ★ 登録式なので mkadp-data-USER を読む
     const tag = doc.getElementById(`mkadp-data-${USER}`);
 
-    // ★ JSON 確認（ここが重要）
     console.log("=== overlay JSON check ===");
     console.log("USER:", USER);
     console.log("tag:", tag);
     console.log("tag?.textContent:", tag?.textContent);
 
     if (!tag) {
-      console.warn("mkadp-data-" + USER + " が ADP.html に存在しません");
+      console.warn(`mkadp-data-${USER} が ADP.html に存在しません`);
       return null;
     }
 
     const json = JSON.parse(tag.textContent);
-
     console.log("parsed JSON:", json);
     console.log("==========================");
 
@@ -66,7 +75,7 @@ async function fetchAdpData() {
 }
 
 // ======================================================
-// ★ overlay 描画（あなたの現行コードをそのまま使用）
+// ★ overlay 描画（あなたの現行コード）
 // ======================================================
 function renderOverlay(payload) {
   if (!payload) return;
@@ -91,10 +100,11 @@ function renderOverlay(payload) {
 }
 
 // ======================================================
-// ★ 1秒ごとに ADP の最新データを取得して描画（リアルタイム）
+// ★ 1秒ごとに ADP の最新データを取得して描画
 // ======================================================
 setInterval(async () => {
   const payload = await fetchAdpData();
+  console.log("overlay payload:", payload);
   if (payload) renderOverlay(payload);
 }, 1000);
 
