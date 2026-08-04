@@ -7493,8 +7493,13 @@ async function sendLoungeOverlay(stats) {
 
   console.log("ADP → overlay payload:", payload);
 
-  updateOverlayJson(payload);
+  // ★ ユーザー名（multi-user の選択値）
+  const user = document.getElementById("overlayUserSelect").value;
+
+  // ★ 1つの overlay.json にユーザー別データを書き込む
+  await updateOverlayJsonForUser(user, payload);
 }
+
 
 function getOverlayUsers() {
   return JSON.parse(localStorage.getItem("overlayUsers") || "[]");
@@ -7527,22 +7532,34 @@ function rebuildOverlayUserSelect() {
 
 
 
-function updateOverlayJsonForUser(user, payload) {
-  const tag = document.getElementById(`mkadp-data-${user}`);
+async function updateOverlayJsonForUser(user, payload) {
+  // 1. 現在の overlay.json を取得
+  const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
+  const json = await res.json();
 
-  console.log("=== JSON 書き込みログ ===");
-  console.log("user:", user);
-  console.log("tag:", tag);
-  console.log("書き込む JSON:", JSON.stringify(payload));
-  console.log("========================");
+  // 2. ユーザーのデータを更新
+  json[user] = {
+    ...payload,
+    updatedAt: Date.now()
+  };
 
-  if (!tag) {
-    console.warn(`mkadp-data-${user} が存在しません`);
-    return;
+  // 3. 古いユーザーを自動削除（30日以上更新なし）
+  const THRESHOLD = 30 * 24 * 60 * 60 * 1000;
+  for (const u in json) {
+    if (Date.now() - json[u].updatedAt > THRESHOLD) {
+      delete json[u];
+    }
   }
 
-  tag.textContent = JSON.stringify(payload);
+  // 4. GitHub API で overlay.json を更新
+  await githubUpdateFile(
+    "MKADP/overlay.json",
+    JSON.stringify(json, null, 2)
+  );
+
+  console.log("overlay.json updated:", json);
 }
+
 
 const channel = new BroadcastChannel("mk_overlay_channel");
 
