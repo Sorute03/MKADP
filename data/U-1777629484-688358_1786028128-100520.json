@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1786028128-100520",
+  "timestamp": 1786028128,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ソルティータウン",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ヘイホーカーニバル",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "シュポポコースター",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "どんぐりツリーハウス",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ホネホネツイスター",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "プクプクフォールズ",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ピーチスタジアム→トロフィーシティ",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "サンサンさばく",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "レインボーロード",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "DKスノーマウンテン",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ワリオシップ",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "DE",
+      "course": "ロゼッタてんもんだい",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1786027983639,
+      "totalScore12": 74
+    }
+  ]
+}
