@@ -40,35 +40,72 @@
 const params = new URLSearchParams(location.search);
 const USER = params.get("user");
 
+console.log("[overlay] USER =", USER);
+
 if (!USER) {
-  console.error("overlay: ?user=◯◯ が指定されていません");
+  console.error("[overlay] ?user=◯◯ が指定されていません");
 }
 
 // ======================================================
-// ★ PeerJS で ADP からのデータを受信
+// ★ PeerJS 初期化（ログ強化版）
 // ======================================================
+console.log("[overlay] PeerJS を初期化します…");
+
 const peer = new Peer("overlay-" + USER);
 
-peer.on("open", () => {
-  console.log("overlay PeerID:", "overlay-" + USER);
+peer.on("open", id => {
+  console.log("[overlay] PeerID open:", id);
 });
 
+peer.on("error", err => {
+  console.error("[overlay] PeerJS error:", err);
+});
+
+peer.on("disconnected", () => {
+  console.warn("[overlay] PeerJS disconnected");
+});
+
+peer.on("close", () => {
+  console.warn("[overlay] PeerJS connection closed");
+});
+
+// ======================================================
+// ★ ADP からの接続を受け取る（ログ強化版）
+// ======================================================
 peer.on("connection", conn => {
-  console.log("ADP と接続:", conn.peer);
+  console.log("[overlay] ADP と接続:", conn.peer);
+
+  conn.on("open", () => {
+    console.log("[overlay] conn.open: 接続成功");
+  });
 
   conn.on("data", payload => {
-    console.log("受信 payload:", payload);
+    console.log("[overlay] 受信 payload:", payload);
     renderOverlay(payload);
+  });
+
+  conn.on("error", err => {
+    console.error("[overlay] conn error:", err);
+  });
+
+  conn.on("close", () => {
+    console.warn("[overlay] conn closed");
   });
 });
 
 // ======================================================
-// ★ overlay 描画（あなたの既存コードをそのまま使用）
+// ★ overlay 描画（既存のまま）
 // ======================================================
 function renderOverlay(payload) {
-  if (!payload) return;
+  console.log("[overlay] renderOverlay 呼び出し:", payload);
 
   const box = document.getElementById("overlayBox");
+
+  if (!payload) {
+    box.innerHTML = "待機中...";
+    return;
+  }
+
   const course = payload.nextCourse || "コース不明";
   const s = payload.nextCourseStats || {};
 
@@ -86,6 +123,5 @@ function renderOverlay(payload) {
   `;
 }
 </script>
-
 </body>
 </html>
