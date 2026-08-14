@@ -7486,7 +7486,7 @@ async function sendLoungeOverlay(stats) {
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
-  // ★ GitHub Actions に渡す payload（ユーザー別データ）
+  // ★ overlay に送る payload（GitHub Actions ではなく PeerJS 用）
   const payload = {
     nextCourse,
     nextCourseStats,
@@ -7498,8 +7498,8 @@ async function sendLoungeOverlay(stats) {
   // ★ multi-user の選択値
   const user = document.getElementById("overlayUserSelect").value;
 
-  // ★ GitHub Actions を起動して overlay.json を更新
-  await updateOverlayJsonForUser(user, payload);
+  // ★ PeerJS で overlay-only.html に直接送信
+  sendOverlayToPeer(user, payload);
 }
 
 
@@ -7694,6 +7694,24 @@ async function isUserNameDuplicate(newUserName) {
   }
 }
 
+
+let peer;
+let conn;
+
+function initPeer() {
+  peer = new Peer(); // 自分の PeerID は自動生成
+}
+
+function sendOverlayToPeer(user, payload) {
+  if (!peer) initPeer();
+
+  if (!conn) {
+    conn = peer.connect("overlay-" + user); // overlay-only.html 側の PeerID
+    conn.on("open", () => console.log("overlay に接続完了"));
+  }
+
+  conn.send(payload);
+}
 
 </script>
 <script>
