@@ -30,6 +30,8 @@
 
 <div id="overlayBox">待機中...</div>
 
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <script>
 // ======================================================
 // ★ URL パラメータから user を取得
@@ -42,43 +44,25 @@ if (!USER) {
 }
 
 // ======================================================
-// ★ overlay.json を fetch → ユーザーのデータを抽出
+// ★ PeerJS で ADP からのデータを受信
 // ======================================================
-async function fetchOverlayJson() {
-  try {
-    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now(), {
-      cache: "no-store"
-    });
+const peer = new Peer("overlay-" + USER);
 
-    if (!res.ok) {
-      console.error("overlay.json の取得に失敗:", res.status);
-      return null;
-    }
+peer.on("open", () => {
+  console.log("overlay PeerID:", "overlay-" + USER);
+});
 
-    const json = await res.json();
+peer.on("connection", conn => {
+  console.log("ADP と接続:", conn.peer);
 
-    if (!json || typeof json !== "object") {
-      console.warn("overlay.json が不正です:", json);
-      return null;
-    }
-
-    const payload = json[USER] || null;
-
-    console.log("=== overlay JSON check ===");
-    console.log("USER:", USER);
-    console.log("payload:", payload);
-    console.log("==========================");
-
-    return payload;
-
-  } catch (e) {
-    console.error("overlay.json 取得失敗", e);
-    return null;
-  }
-}
+  conn.on("data", payload => {
+    console.log("受信 payload:", payload);
+    renderOverlay(payload);
+  });
+});
 
 // ======================================================
-// ★ overlay 描画
+// ★ overlay 描画（既存のまま）
 // ======================================================
 function renderOverlay(payload) {
   const box = document.getElementById("overlayBox");
@@ -104,15 +88,6 @@ function renderOverlay(payload) {
     <div>下位率：${percent(s.bottomRate)}</div>
   `;
 }
-
-// ======================================================
-// ★ 1秒ごとに overlay.json を取得して描画
-// ======================================================
-setInterval(async () => {
-  const payload = await fetchOverlayJson();
-  renderOverlay(payload);
-}, 1000);
-
 </script>
 
 </body>
