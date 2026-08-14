@@ -7699,18 +7699,39 @@ let peer;
 let conn;
 
 function initPeer() {
-  peer = new Peer(); // 自分の PeerID は自動生成
+  peer = new Peer();
+
+  peer.on("open", id => {
+    console.log("[ADP] PeerID open:", id);
+  });
+
+  peer.on("error", err => {
+    console.error("[ADP] PeerJS error:", err);
+  });
 }
 
-function sendOverlayToPeer(user, payload) {
+async function sendOverlayToPeer(user, payload) {
   if (!peer) initPeer();
 
-  if (!conn) {
-    conn = peer.connect("overlay-" + user); // overlay-only.html 側の PeerID
-    conn.on("open", () => console.log("overlay に接続完了"));
-  }
+  console.log("[ADP] connect to:", "overlay-" + user);
 
-  conn.send(payload);
+  if (!conn) {
+    conn = peer.connect("overlay-" + user);
+
+    conn.on("open", () => {
+      console.log("[ADP] conn.open: 接続成功");
+      conn.send(payload);
+      console.log("[ADP] 送信:", payload);
+    });
+
+    conn.on("error", err => {
+      console.error("[ADP] conn error:", err);
+    });
+
+  } else {
+    console.log("[ADP] 既存接続に送信:", payload);
+    conn.send(payload);
+  }
 }
 
 </script>
