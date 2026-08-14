@@ -30,6 +30,7 @@
 
 <div id="overlayBox">待機中...</div>
 
+<!-- ★ PeerJS を読み込む -->
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
@@ -62,16 +63,12 @@ peer.on("connection", conn => {
 });
 
 // ======================================================
-// ★ overlay 描画（既存のまま）
+// ★ overlay 描画（あなたの既存コードをそのまま使用）
 // ======================================================
 function renderOverlay(payload) {
+  if (!payload) return;
+
   const box = document.getElementById("overlayBox");
-
-  if (!payload) {
-    box.innerHTML = "待機中...";
-    return;
-  }
-
   const course = payload.nextCourse || "コース不明";
   const s = payload.nextCourseStats || {};
 
