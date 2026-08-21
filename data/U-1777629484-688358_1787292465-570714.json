@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1787292465-570714",
+  "timestamp": 1787292465,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "プクプクフォールズ",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "シュポポコースター",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "クッパキャッスル",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ショーニューロード→おばけシネマ",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "キノピオファクトリー",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ヘイホーカーニバル",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "キラーシップ",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ワリオスタジアム",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "マリオサーキット",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "レインボーロード",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1787237840737,
+      "totalScore12": 44
+    }
+  ]
+}
