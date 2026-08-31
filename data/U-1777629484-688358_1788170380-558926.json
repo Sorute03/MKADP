@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1788170380-558926",
+  "timestamp": 1788170380,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ハテナしんでん",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "サンサンさばく",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 13,
+      "score": 5,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "どんぐりツリーハウス",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "マリオサーキット",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ヘイホーカーニバル",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "シュポポコースター",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "クッパキャッスル",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "クッパキャッスル→チョコマウンテン",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "キラーシップ",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "モーモーカントリー",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "アイスビルディング",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1788170210972,
+      "totalScore12": 61
+    }
+  ]
+}
