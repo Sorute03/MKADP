@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1788959449-352211",
+  "timestamp": 1788959449,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ピーチビーチ",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ソルティータウン",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "プクプクフォールズ",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "リバーサイドサファリ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "どんぐりツリーハウス",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ショーニューロード",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ワリオスタジアム",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "キラーシップ",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "シュポポコースター",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "ワリオシップ",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "E",
+      "course": "どんぐりツリーハウス→おばけシネマ",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1788958927644,
+      "totalScore12": 61
+    }
+  ]
+}
