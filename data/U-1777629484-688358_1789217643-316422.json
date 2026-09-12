@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1789217643-316422",
+  "timestamp": 1789217643,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "ワリオスタジアム",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "サンサンさばく",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "どんぐりツリーハウス",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "おばけぬま2",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 2,
+      "score": 12,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "レインボーロード",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "ソルティータウン",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "プクプクフォールズ",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "ハテナしんでん",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "アイスビルディング",
+      "rank": 20,
+      "score": 3,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    },
+    {
+      "mode": "lounge",
+      "season": "ALL",
+      "tier": "X",
+      "course": "おばけシネマ",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1789217492277,
+      "totalScore12": 78
+    }
+  ]
+}
