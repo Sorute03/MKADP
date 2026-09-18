@@ -893,6 +893,30 @@ const courseList = [
 
 <h3>オーバーレイ設定</h3>
 <div id="overlayFilterBox" style="margin:10px 0;">
+  <h3>OBS WebSocket接続</h3>
+  
+  <div>
+    <label>ホスト</label>
+    <input id="obsHost" value="localhost">
+  </div>
+  
+  <div>
+    <label>ポート</label>
+    <input id="obsPort" value="4455">
+  </div>
+  
+  <div>
+    <label>パスワード</label>
+    <input id="obsPassword" type="password">
+  </div>
+  
+  <div style="margin-top:10px;">
+    <button onclick="connectOBS()">接続</button>
+    <button onclick="disconnectOBS()">切断</button>
+  </div>
+  
+  <div id="obsStatus">
+    未接続
 
   <!-- モード選択 -->
   <label>モード</label><br>
