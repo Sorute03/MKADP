@@ -7551,28 +7551,38 @@ async function disconnectOBS() {
   
 
 function getFilteredStatsForOverlay(stats) {
+  if (!stats || !stats.history) return { history: [] };
+
   let filtered = [...stats.history];
 
-  // ★ Season（ラウンジのときだけ UI が表示される）
-  const season = document.getElementById("loungeSeasonSelect2").value;
+  // 安全に要素を取得するヘルパー関数
+  const getValue = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : "ALL";
+  };
+
+  // ★ Season (loungeSeasonSelect2 または loungeSeasonSelect の両方に対応)
+  const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
+  const season = seasonEl ? seasonEl.value : "ALL";
   if (season !== "ALL") {
     filtered = filtered.filter(r => r.season == season);
   }
 
-  // ★ Mode（ALL のときはフィルターしない）
-  const mode = document.getElementById("overlayModeSelect").value;
+  // ★ Mode
+  const mode = getValue("overlayModeSelect");
   if (mode !== "ALL") {
     filtered = filtered.filter(r => r.mode == mode);
   }
 
-  // ★ Tier（ラウンジのときだけ UI が表示される）
-  const tier = document.getElementById("loungeTierSelect").value;
+  // ★ Tier (loungeTierSelect または loungeTierSelect2 の両方に対応)
+  const tierEl = document.getElementById("loungeTierSelect") || document.getElementById("loungeTierSelect2");
+  const tier = tierEl ? tierEl.value : "ALL";
   if (tier !== "ALL") {
     filtered = filtered.filter(r => r.tier == tier);
   }
 
-  // ★ Recent（ALL のときはフィルターしない）
-  const recent = document.getElementById("loungeRecentSelect").value;
+  // ★ Recent
+  const recent = getValue("loungeRecentSelect");
   if (recent !== "ALL") {
     filtered = filtered.slice(-Number(recent));
   }
@@ -7587,23 +7597,37 @@ function updateOverlayJson(payload) {
 
 
 async function sendLoungeOverlay(stats) {
-  const filteredStats = getFilteredStatsForOverlay(stats);
-  const nextCourse = getNextCourseFromModal();
-  if (!nextCourse) return;
+  try {
+    const filteredStats = getFilteredStatsForOverlay(stats);
+    const nextCourse = typeof getNextCourseFromModal === "function" ? getNextCourseFromModal() : null;
+    
+    if (!nextCourse) {
+      console.warn("[sendLoungeOverlay] コースが選択されていないため送信をスキップしました");
+      return;
+    }
 
-  const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
+    const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
-  const payload = {
-    nextCourse,
-    nextCourseStats,
-    updatedAt: Date.now()
-  };
+    const payload = {
+      nextCourse,
+      nextCourseStats,
+      updatedAt: Date.now()
+    };
 
-  console.log("ADP → overlay payload:", payload);
+    console.log("★ 送信用 payload 作成完了:", payload);
 
-  
-  // ★ OBSへも同時にデータ送信
-  await sendOverlayOBS(payload);
+    // ★ PeerJS 送信（要素が存在する場合のみ）
+    const userSelect = document.getElementById("overlayUserSelect");
+    if (userSelect && typeof sendOverlayToPeer === "function") {
+      sendOverlayToPeer(userSelect.value, payload);
+    }
+
+    // ★ OBS WebSocket 送信
+    await sendOverlayOBS(payload);
+
+  } catch (err) {
+    console.error("[sendLoungeOverlay] 送信処理エラー:", err);
+  }
 }
 
 
