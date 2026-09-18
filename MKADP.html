@@ -4974,23 +4974,7 @@ setInterval(() => {
   sendDataToWorker();
 }, 5 * 60 * 1000); // 5分ごとにチェック
 
-window.addEventListener("load", () => {
-  const isLocal = location.protocol === "file:";
 
-  if (isLocal) {
-    // 方式選択を無効化
-
-    // Blob 方式も ?obs 方式も使えないので警告
-    alert(
-      "OBS で使用するには、ローカルファイル (file://) ではなく\n" +
-      "ローカルWebサーバー (http://localhost) で開く必要があります。\n\n" +
-      "例:\n" +
-      "・VSCode の Live Server\n" +
-      "・python -m http.server\n" +
-      "・Web Server for Chrome\n"
-    );
-  }
-});
 
 
 
