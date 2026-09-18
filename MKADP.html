@@ -7520,7 +7520,6 @@ async function sendLoungeOverlay(stats) {
 
   const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
 
-  // ★ overlay に送る payload（GitHub Actions ではなく PeerJS 用）
   const payload = {
     nextCourse,
     nextCourseStats,
@@ -7529,55 +7528,12 @@ async function sendLoungeOverlay(stats) {
 
   console.log("ADP → overlay payload:", payload);
 
-  // ★ multi-user の選択値
-  const user = document.getElementById("overlayUserSelect").value;
-
-  // ★ PeerJS で overlay-only.html に直接送信
-  sendOverlayToPeer(user, payload);
+  
+  // ★ OBSへも同時にデータ送信
+  await sendOverlayOBS(payload);
 }
 
 
-function getOverlayUsers() {
-  return JSON.parse(localStorage.getItem("overlayUsers") || "[]");
-}
-
-function saveOverlayUsers(users) {
-  localStorage.setItem("overlayUsers", JSON.stringify(users));
-}
-
-
-async function registerOverlayUser() {
-  const name = document.getElementById("overlayUserInput").value.trim();
-  if (!name) return alert("ユーザー名を入力してください");
-
-  // ▼ overlay.json を読み込んで既存ユーザー一覧を取得
-  let existingUsers = [];
-  try {
-    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
-    const json = await res.json();
-    existingUsers = Object.keys(json); // overlay.json のユーザー一覧
-  } catch (e) {
-    console.warn("overlay.json が読めないため重複チェックをスキップします");
-  }
-
-  // ▼ 大文字小文字を統一して重複チェック
-  const isDuplicate = existingUsers.some(u => u.toLowerCase() === name.toLowerCase());
-  if (isDuplicate) {
-    alert("このユーザー名は既に登録されています");
-    return;
-  }
-
-  // ▼ ローカルのユーザー一覧にも追加
-  const users = getOverlayUsers();
-  if (!users.includes(name)) {
-    users.push(name);
-    saveOverlayUsers(users);
-    rebuildOverlayUserSelect();
-    rebuildOverlayUserScriptTags();
-  }
-
-  alert("ユーザー登録が完了しました");
-}
 
 
 function rebuildOverlayUserSelect() {
@@ -7589,79 +7545,39 @@ function rebuildOverlayUserSelect() {
 
 
 
-async function updateOverlayJsonForUser(user, payload) {
-  let json = {};
 
-  // 1. 現在の overlay.json を取得
+
+
+
+async function sendOverlayOBS(payload) {
+  if (!obs || !payload) return;
+
+  const course = payload.nextCourse || "コース不明";
+  const s = payload.nextCourseStats || {};
+
+  const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v ?? "-");
+  const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v ?? "-");
+
+  const text = [
+    course,
+    `平均順位：${fmt(s.avgRank)}位`,
+    `平均得点：${fmt(s.avgScore)}点`,
+    `試行回数：${s.count ?? "-"}回`,
+    `上位率：${percent(s.topRate)}`,
+    `中位率：${percent(s.midRate)}`,
+    `下位率：${percent(s.bottomRate)}`
+  ].join("\n");
+
   try {
-    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
-    json = await res.json();
-  } catch (e) {
-    console.warn("overlay.json が壊れているため初期化します");
-    json = {};
-  }
-
-  // 2. ユーザーのデータを更新
-  json[user] = {
-    ...payload,
-    updatedAt: Date.now()
-  };
-
-  // 3. 古いユーザーを自動削除（30日以上更新なし）
-  const THRESHOLD = 30 * 24 * 60 * 60 * 1000;
-  for (const u in json) {
-    if (Date.now() - json[u].updatedAt > THRESHOLD) {
-      delete json[u];
-    }
-  }
-
-  // 4. GAS に送信（★ トークン不要）
-  try {
-    await fetch("https://script.google.com/macros/s/AKfycbwZHKyvPG0C97fiSolz342PEJ7ekzM0DpLDD51UBRfS-mWB048GCNILzCcYsV8U78-B/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user,
-        payload: json
-      })
+    await obs.call("SetInputSettings", {
+      inputName: "MK_SCORE",
+      inputSettings: { text }
     });
-
-    console.log("GAS に overlay 更新リクエスト送信完了");
-
   } catch (e) {
-    console.error("GAS 送信失敗:", e);
+    console.error("OBS送信エラー:", e);
   }
 }
 
-
-
-const channel = new BroadcastChannel("mk_overlay_channel");
-
-function sendOverlay(payload) {
-  channel.postMessage({ payload });
-}
-
-function rebuildOverlayUserScriptTags() {
-  const container = document.getElementById("overlayJsonContainer");
-  const users = getOverlayUsers();
-
-  console.log("=== script タグ生成ログ ===");
-  console.log("登録ユーザー一覧:", users);
-  console.log("container:", container);
-  console.log("==========================");
-
-  container.innerHTML = "";
-
-  for (const u of users) {
-    const script = document.createElement("script");
-    script.id = `mkadp-data-${u}`;
-    script.type = "application/json";
-    script.textContent = "{}";
-    container.appendChild(script);
-
-    console.log(`生成: <script id="mkadp-data-${u}">`);
-  }
-}
 
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -7669,115 +7585,9 @@ window.addEventListener("DOMContentLoaded", () => {
   rebuildOverlayUserScriptTags();
 });
 
-async function githubUpdateFile(path, content) {
-  const token = MKADP_TOKEN; // ← あなたの既存の GitHub Token 変数
-  const repo = "sorute03/MKADP"; // ← あなたのリポジトリ名
-
-  // 1. 現在のファイルの SHA を取得（更新時に必要）
-  const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-    headers: {
-      "Authorization": `token ${token}`,
-      "Accept": "application/vnd.github.v3+json"
-    }
-  });
-
-  let sha = null;
-  if (getRes.ok) {
-    const fileInfo = await getRes.json();
-    sha = fileInfo.sha;
-  }
-
-  // 2. ファイルを更新（新規作成も同じ API）
-  const updateRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-    method: "PUT",
-    headers: {
-      "Authorization": `token ${token}`,
-      "Accept": "application/vnd.github.v3+json"
-    },
-    body: JSON.stringify({
-      message: "Update overlay.json",
-      content: btoa(unescape(encodeURIComponent(content))),
-      sha: sha
-    })
-  });
-
-  if (!updateRes.ok) {
-    console.error("GitHub 更新失敗", await updateRes.text());
-    throw new Error("GitHub 更新失敗");
-  }
-
-  console.log("GitHub 更新成功:", path);
-}
 
 
 
-async function isUserNameDuplicate(newUserName) {
-  try {
-    const res = await fetch("https://sorute03.github.io/MKADP/overlay.json?v=" + Date.now());
-    const json = await res.json();
-
-    // 既存ユーザー一覧
-    const existingUsers = Object.keys(json);
-
-    // 重複チェック（大文字小文字も統一）
-    return existingUsers.some(u => u.toLowerCase() === newUserName.toLowerCase());
-
-  } catch (e) {
-    console.warn("overlay.json が読めないため重複チェックをスキップします");
-    return false; // 読めない場合は重複扱いしない
-  }
-}
-
-
-let peer;
-let conn;
-
-function initPeer() {
-  peer = new Peer();
-
-  peer.on("open", id => {
-    console.log("[ADP] PeerID open:", id);
-  });
-
-  peer.on("error", err => {
-    console.error("[ADP] PeerJS error:", err);
-  });
-}
-
-async function sendOverlayToPeer(user, payload) {
-  if (!peer) initPeer();
-
-  console.log("[ADP] connect to:", "overlay-" + user);
-
-  if (!conn) {
-    conn = peer.connect("overlay-" + user);
-
-    conn.on("open", () => {
-      console.log("[ADP] conn.open: 接続成功");
-      conn.send(payload);
-      console.log("[ADP] 送信:", payload);
-    });
-
-    conn.on("error", err => {
-      console.error("[ADP] conn error:", err);
-    });
-
-  } else {
-    console.log("[ADP] 既存接続に送信:", payload);
-    conn.send(payload);
-  }
-}
-
-</script>
-<script>
-// URL パラメータから overlay モードかどうか判定
-  const params = new URLSearchParams(location.search);
-  const overlayMode = params.has("overlay");
-
-   if (overlayMode) {
-    // body に overlay-only クラスを付ける
-     document.body.classList.add("overlay-only");
-   }
 
     // ここは ADP 側から overlay を更新するための関数例
     // 実際の MKADP の構造に合わせて中身を差し替えてOK
@@ -7803,6 +7613,84 @@ async function sendOverlayToPeer(user, payload) {
 
     // 例：ADP 内部からこう呼べば overlay が更新される
     // renderOverlay({ nextCourse: "コース名", nextCourseStats: {...} });
+
+
+
+  function saveOBSSettings() {
+  localStorage.setItem(
+    "obsSettings",
+    JSON.stringify({
+      host: document.getElementById("obsHost").value,
+      port: document.getElementById("obsPort").value,
+      password: document.getElementById("obsPassword").value
+    })
+  );
+}
+
+function loadOBSSettings() {
+  const raw =
+    localStorage.getItem("obsSettings");
+
+  if (!raw) return;
+
+  const s = JSON.parse(raw);
+
+  obsHost.value = s.host || "localhost";
+  obsPort.value = s.port || "4455";
+  obsPassword.value = s.password || "";
+}
+
+
+const obs = new OBSWebSocket();
+
+async function connectOBS() {
+
+  try {
+
+    const host =
+      document.getElementById("obsHost").value;
+
+    const port =
+      document.getElementById("obsPort").value;
+
+    const password =
+      document.getElementById("obsPassword").value;
+
+    await obs.connect(
+      `ws://${host}:${port}`,
+      password
+    );
+
+    document.getElementById(
+      "obsStatus"
+    ).textContent = "接続成功";
+
+    saveOBSSettings();
+
+  } catch(e) {
+
+    document.getElementById(
+      "obsStatus"
+    ).textContent = "接続失敗";
+
+    console.error(e);
+
+  }
+}
+
+async function disconnectOBS() {
+
+  try {
+
+    await obs.disconnect();
+
+    obsStatus.textContent = "切断";
+
+  } catch(e) {
+    console.error(e);
+  }
+
+}
 </script>
 
 
