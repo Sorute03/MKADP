@@ -7470,7 +7470,81 @@ function calcCourseStats(stats, courseName) {
 
 
 
+function saveOBSSettings() {
+  localStorage.setItem(
+    "obsSettings",
+    JSON.stringify({
+      host: document.getElementById("obsHost").value,
+      port: document.getElementById("obsPort").value,
+      password: document.getElementById("obsPassword").value
+    })
+  );
+}
 
+function loadOBSSettings() {
+  const raw =
+    localStorage.getItem("obsSettings");
+
+  if (!raw) return;
+
+  const s = JSON.parse(raw);
+
+  obsHost.value = s.host || "localhost";
+  obsPort.value = s.port || "4455";
+  obsPassword.value = s.password || "";
+}
+
+
+const obs = new OBSWebSocket();
+
+async function connectOBS() {
+
+  try {
+
+    const host =
+      document.getElementById("obsHost").value;
+
+    const port =
+      document.getElementById("obsPort").value;
+
+    const password =
+      document.getElementById("obsPassword").value;
+
+    await obs.connect(
+      `ws://${host}:${port}`,
+      password
+    );
+
+    document.getElementById(
+      "obsStatus"
+    ).textContent = "接続成功";
+
+    saveOBSSettings();
+
+  } catch(e) {
+
+    document.getElementById(
+      "obsStatus"
+    ).textContent = "接続失敗";
+
+    console.error(e);
+
+  }
+}
+
+async function disconnectOBS() {
+
+  try {
+
+    await obs.disconnect();
+
+    obsStatus.textContent = "切断";
+
+  } catch(e) {
+    console.error(e);
+  }
+
+}
 
 
   
@@ -7600,81 +7674,6 @@ async function sendOverlayOBS(payload) {
 
 
 
-  function saveOBSSettings() {
-  localStorage.setItem(
-    "obsSettings",
-    JSON.stringify({
-      host: document.getElementById("obsHost").value,
-      port: document.getElementById("obsPort").value,
-      password: document.getElementById("obsPassword").value
-    })
-  );
-}
-
-function loadOBSSettings() {
-  const raw =
-    localStorage.getItem("obsSettings");
-
-  if (!raw) return;
-
-  const s = JSON.parse(raw);
-
-  obsHost.value = s.host || "localhost";
-  obsPort.value = s.port || "4455";
-  obsPassword.value = s.password || "";
-}
-
-
-const obs = new OBSWebSocket();
-
-async function connectOBS() {
-
-  try {
-
-    const host =
-      document.getElementById("obsHost").value;
-
-    const port =
-      document.getElementById("obsPort").value;
-
-    const password =
-      document.getElementById("obsPassword").value;
-
-    await obs.connect(
-      `ws://${host}:${port}`,
-      password
-    );
-
-    document.getElementById(
-      "obsStatus"
-    ).textContent = "接続成功";
-
-    saveOBSSettings();
-
-  } catch(e) {
-
-    document.getElementById(
-      "obsStatus"
-    ).textContent = "接続失敗";
-
-    console.error(e);
-
-  }
-}
-
-async function disconnectOBS() {
-
-  try {
-
-    await obs.disconnect();
-
-    obsStatus.textContent = "切断";
-
-  } catch(e) {
-    console.error(e);
-  }
-
-}
 </script>
 
 
