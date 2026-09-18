@@ -2814,8 +2814,6 @@ window.addEventListener("load", async () => {
   initAdpCourseSelects(); // ← これが undefined だった
   initGrowthSelectors() 
   populateSeasonOptions();
-  rebuildOverlayUserSelect();
-  rebuildOverlayUserScriptTags();
 
   // ▼ AI セレクタの onchange を登録
   aiCourse.onchange = updateAICourseView;
@@ -7536,13 +7534,6 @@ async function sendLoungeOverlay(stats) {
 
 
 
-function rebuildOverlayUserSelect() {
-  const sel = document.getElementById("overlayUserSelect");
-  const users = getOverlayUsers();
-
-  sel.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join("");
-}
-
 
 
 
@@ -7577,13 +7568,6 @@ async function sendOverlayOBS(payload) {
     console.error("OBS送信エラー:", e);
   }
 }
-
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  rebuildOverlayUserSelect();
-  rebuildOverlayUserScriptTags();
-});
 
 
 
