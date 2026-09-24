@@ -4889,12 +4889,12 @@ async function fetchWorldData(playerId, season = "ALL") {
   return { details, history, seasonData };
 }
 
-function buildPlayerDetailsUrl(playerId, season, mode) {
-  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+function buildPlayerDetailsUrl(playerId, season) {
+  return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 }
 
 function buildLeaderboardUrl(playerId, season) {
-  return `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
+  return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 }
 
 
@@ -5582,13 +5582,13 @@ function buildMKCUrl(playerId, season) {
 
   // ★ Season1 は p を付けない
   if (season == 1) {
-    return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
+    return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
   }
 
   // ★ Season2 以降は p を自動決定（MKADP は 24 が標準）
   const p = 24;
 
-  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
+  return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 }
 
 
@@ -5765,8 +5765,8 @@ async function apiPlayerHistory(playerId) {
 
 async function fetchRateHistory(playerId, season, playerCount = 3000) {
   const url = season === 1
-    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
-    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+    ? `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`
+    : `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
   const html = await res.text();
@@ -5783,8 +5783,8 @@ async function fetchRateHistory(playerId, season, playerCount = 3000) {
 
 async function fetchRateHistory(playerId, season, playerCount = 3000) {
   const url = season === 1
-    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
-    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
+    ? `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`
+    : `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
   const html = await res.text();
