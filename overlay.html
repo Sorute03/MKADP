@@ -21,11 +21,11 @@
     background: rgba(0,0,0,0.55);
     padding: 12px 16px;
     border-radius: 8px;
-    font-size: 24px;
-    line-height: 1.6;
-    min-width: 300px;
+    font-size: 20px; /* 文字サイズはお好みに応じて調整してください */
+    line-height: 1.5;
+    white-space: nowrap; /* 各行が自動改行されないように固定 */
   }
-
+  
   /* ★ OBS設定パネル（OBS画面でのインタラクト時のみ使用） */
   #configBox {
     position: absolute;
@@ -199,6 +199,9 @@ async function initOBS() {
 // ======================================================
 // 3. 共通 描画処理
 // ======================================================
+// ======================================================
+// 3. 共通 描画処理（3行レイアウト）
+// ======================================================
 function renderOverlay(payload) {
   console.log("[overlay] renderOverlay 呼び出し:", payload);
 
@@ -217,15 +220,10 @@ function renderOverlay(payload) {
 
   box.innerHTML = `
     <div><b>${course}</b></div>
-    <div>平均順位：${fmt(s.avgRank)}位</div>
-    <div>平均得点：${fmt(s.avgScore)}点</div>
-    <div>試行回数：${s.count ?? 0}回</div>
-    <div>上位率：${percent(s.topRate)}</div>
-    <div>中位率：${percent(s.midRate)}</div>
-    <div>下位率：${percent(s.bottomRate)}</div>
+    <div>平均順位：${fmt(s.avgRank)}位 / 平均得点：${fmt(s.avgScore)}点 / 試行回数：${s.count ?? 0}回</div>
+    <div>上位率：${percent(s.topRate)} / 中位率：${percent(s.midRate)} / 下位率：${percent(s.bottomRate)}</div>
   `;
 }
-
 // 初期化
 window.addEventListener("DOMContentLoaded", () => {
   loadSettings();
