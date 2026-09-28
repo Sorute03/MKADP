@@ -7624,27 +7624,15 @@ async function sendLoungeOverlay(stats) {
 async function sendOverlayOBS(payload) {
   if (!obs || !payload) return;
 
-  const course = payload.nextCourse || "コース不明";
-  const s = payload.nextCourseStats || {};
-
-  const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v ?? "-");
-  const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v ?? "-");
-
-  const text = [
-    course,
-    `平均順位：${fmt(s.avgRank)}位`,
-    `平均得点：${fmt(s.avgScore)}点`,
-    `試行回数：${s.count ?? "-"}回`,
-    `上位率：${percent(s.topRate)}`,
-    `中位率：${percent(s.midRate)}`,
-    `下位率：${percent(s.bottomRate)}`
-  ].join("\n");
-
   try {
-    await obs.call("SetInputSettings", {
-      inputName: "MK_SCORE",
-      inputSettings: { text }
+   
+    await obs.call("BroadcastCustomEvent", {
+      eventData: {
+        type: "MKADP_OVERLAY_UPDATE",
+        payload: payload
+      }
     });
+    console.log("OBS CustomEvent 送信成功:", payload);
   } catch (e) {
     console.error("OBS送信エラー:", e);
   }
