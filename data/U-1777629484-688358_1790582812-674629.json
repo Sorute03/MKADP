@@ -1,0 +1,127 @@
+{
+  "userId": "U-1777629484-688358",
+  "batchId": "1790582812-674629",
+  "timestamp": 1790582812,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "おばけぬま2",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "どんぐりツリーハウス",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "マリオサーキット",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "ソルティータウン",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "ヘイホーカーニバル",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "サンサンさばく→ノコノコビーチ",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "シュポポコースター",
+      "rank": 5,
+      "score": 9,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "ノコノコビーチ",
+      "rank": 9,
+      "score": 7,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "リバーサイドサファリ",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "キラーシップ",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "D",
+      "course": "アイスビルディング",
+      "rank": 17,
+      "score": 4,
+      "timestamp": 1790582206824,
+      "totalScore12": 68
+    }
+  ]
+}
