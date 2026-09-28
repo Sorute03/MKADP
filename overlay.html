@@ -13,6 +13,7 @@
     color: white;
   }
 
+  /* 表示ボックス */
   #overlayBox {
     position: absolute;
     bottom: 20px;
@@ -24,77 +25,179 @@
     line-height: 1.6;
     min-width: 300px;
   }
+
+  /* ★ OBS設定パネル（OBS画面でのインタラクト時のみ使用） */
+  #configBox {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 999;
+  }
+
+  #configBox input {
+    margin: 4px 0;
+    padding: 6px;
+    width: 180px;
+    display: block;
+    border: 1px solid #666;
+    border-radius: 4px;
+    background: #222;
+    color: #fff;
+  }
+
+  #configBox button {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  #statusText {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #f87171;
+  }
 </style>
+
+<!-- ★ PeerJS ライブラリ -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<!-- ★ OBS WebSocket ライブラリ -->
+<script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.3/dist/obs-ws.min.js"></script>
 </head>
 <body>
 
-<div id="overlayBox">待機中...</div>
+<!-- OBS接続設定フォーム -->
+<div id="configBox">
+  <b>OBS WebSocket 接続設定</b>
+  <input type="text" id="obsHost" placeholder="localhost" value="localhost">
+  <input type="text" id="obsPort" placeholder="4455" value="4455">
+  <input type="password" id="obsPassword" placeholder="OBSパスワード">
+  <button onclick="initOBS()">接続して非表示</button>
+  <div id="statusText"></div>
+</div>
 
-<!-- ★ PeerJS を読み込む -->
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<div id="overlayBox">待機中...</div>
 
 <script>
 // ======================================================
-// ★ URL パラメータから user を取得
+// 1. PeerJS 連携処理
 // ======================================================
 const params = new URLSearchParams(location.search);
 const USER = params.get("user");
 
 console.log("[overlay] USER =", USER);
 
-if (!USER) {
-  console.error("[overlay] ?user=◯◯ が指定されていません");
+if (USER) {
+  console.log("[overlay] PeerJS を初期化します…");
+  const peer = new Peer("overlay-" + USER);
+
+  peer.on("open", id => {
+    console.log("[overlay] PeerID open:", id);
+  });
+
+  peer.on("error", err => {
+    console.error("[overlay] PeerJS error:", err);
+  });
+
+  peer.on("disconnected", () => {
+    console.warn("[overlay] PeerJS disconnected");
+  });
+
+  peer.on("close", () => {
+    console.warn("[overlay] PeerJS connection closed");
+  });
+
+  peer.on("connection", conn => {
+    console.log("[overlay] ADP と接続:", conn.peer);
+
+    conn.on("open", () => {
+      console.log("[overlay] conn.open: 接続成功");
+    });
+
+    conn.on("data", payload => {
+      console.log("[overlay] PeerJS 受信 payload:", payload);
+      renderOverlay(payload);
+    });
+
+    conn.on("error", err => {
+      console.error("[overlay] conn error:", err);
+    });
+
+    conn.on("close", () => {
+      console.warn("[overlay] conn closed");
+    });
+  });
+} else {
+  console.log("[overlay] ?user パラメータなし。PeerJS 連携はスキップします");
 }
 
 // ======================================================
-// ★ PeerJS 初期化（ログ強化版）
+// 2. OBS WebSocket 連携処理
 // ======================================================
-console.log("[overlay] PeerJS を初期化します…");
+const obs = new OBSWebSocket();
 
-const peer = new Peer("overlay-" + USER);
+function saveSettings() {
+  localStorage.setItem("obsHost_overlay", document.getElementById("obsHost").value);
+  localStorage.setItem("obsPort_overlay", document.getElementById("obsPort").value);
+  localStorage.setItem("obsPassword_overlay", document.getElementById("obsPassword").value);
+}
 
-peer.on("open", id => {
-  console.log("[overlay] PeerID open:", id);
-});
+function loadSettings() {
+  const host = localStorage.getItem("obsHost_overlay") || "localhost";
+  const port = localStorage.getItem("obsPort_overlay") || "4455";
+  const pass = localStorage.getItem("obsPassword_overlay") || "";
 
-peer.on("error", err => {
-  console.error("[overlay] PeerJS error:", err);
-});
+  document.getElementById("obsHost").value = host;
+  document.getElementById("obsPort").value = port;
+  document.getElementById("obsPassword").value = pass;
+}
 
-peer.on("disconnected", () => {
-  console.warn("[overlay] PeerJS disconnected");
-});
+async function initOBS() {
+  const host = document.getElementById("obsHost").value.trim() || "localhost";
+  const port = document.getElementById("obsPort").value.trim() || "4455";
+  const password = document.getElementById("obsPassword").value;
+  const statusText = document.getElementById("statusText");
 
-peer.on("close", () => {
-  console.warn("[overlay] PeerJS connection closed");
-});
+  saveSettings();
+
+  try {
+    console.log("[overlay] OBS WebSocket 接続試行...");
+    statusText.style.color = "#facc15";
+    statusText.textContent = "接続中...";
+
+    // イベント重複登録を防止
+    obs.removeAllListeners("CustomEvent");
+    obs.on("CustomEvent", (data) => {
+      console.log("[overlay] OBS イベント受信:", data);
+      
+      const eventData = data.eventData || data;
+      if (eventData && eventData.type === "MKADP_OVERLAY_UPDATE") {
+        renderOverlay(eventData.payload);
+      }
+    });
+
+    await obs.connect(`ws://${host}:${port}`, password);
+
+    console.log("[overlay] OBS WebSocket 接続成功");
+    document.getElementById("configBox").style.display = "none";
+
+  } catch (e) {
+    console.error("[overlay] OBS WebSocket 接続失敗:", e);
+    statusText.style.color = "#f87171";
+    statusText.textContent = "接続失敗: パスワードを確認してください";
+  }
+}
 
 // ======================================================
-// ★ ADP からの接続を受け取る（ログ強化版）
-// ======================================================
-peer.on("connection", conn => {
-  console.log("[overlay] ADP と接続:", conn.peer);
-
-  conn.on("open", () => {
-    console.log("[overlay] conn.open: 接続成功");
-  });
-
-  conn.on("data", payload => {
-    console.log("[overlay] 受信 payload:", payload);
-    renderOverlay(payload);
-  });
-
-  conn.on("error", err => {
-    console.error("[overlay] conn error:", err);
-  });
-
-  conn.on("close", () => {
-    console.warn("[overlay] conn closed");
-  });
-});
-
-// ======================================================
-// ★ overlay 描画（既存のまま）
+// 3. 共通 描画処理
 // ======================================================
 function renderOverlay(payload) {
   console.log("[overlay] renderOverlay 呼び出し:", payload);
@@ -122,6 +225,12 @@ function renderOverlay(payload) {
     <div>下位率：${percent(s.bottomRate)}</div>
   `;
 }
+
+// 初期化
+window.addEventListener("DOMContentLoaded", () => {
+  loadSettings();
+  initOBS(); // OBS接続を自動試行
+});
 </script>
 </body>
 </html>
