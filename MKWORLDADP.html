@@ -7685,7 +7685,7 @@ document.getElementById('downloadMkadpBtn').addEventListener('click', function()
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'MKWORLDADP'; // 保存時のファイル名
+        a.download = 'MKWORLDADP(ローカルファイル版)'; // 保存時のファイル名
         document.body.appendChild(a);
         a.click();
         a.remove();
