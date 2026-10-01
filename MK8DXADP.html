@@ -348,8 +348,10 @@ const courseList = [
 <button id="downloadMkadpBtn" class="btn-mkadp-download">
   📁 MK8DXADP(ローカルファイル版)をダウンロード
 </button>
-
-
+<button id="downloadoverlayBtn" class="btn-mkadp-download">
+  📁   obs専用配信表示オーバーレイをダウンロード
+</button>
+<br>
 <button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
 
   <!-- ▼ パスワード付きバックアップ UI ▼ -->
@@ -7518,6 +7520,26 @@ document.getElementById('downloadMkadpBtn').addEventListener('click', function()
       });
   });
 
+document.getElementById('downloadoverlayBtn').addEventListener('click', function() {
+    const fileUrl = 'https://sorute03.github.io/MKADP/overlay.html';
+    
+    fetch(fileUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'overlay.html'; // 保存時のファイル名
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        // クロスドメイン(CORS)等でfetchが失敗した場合はフォールバック
+        window.location.href = fileUrl;
+      });
+  });
 
 
 </script>
