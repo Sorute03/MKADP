@@ -521,13 +521,9 @@ const courseList = [
 
 <h2>MKWorld ラウンジ分析（配布ページ）</h2>
 <!-- MKWorld ラウンジ分析（配布版）ダウンロードボタン -->
-<div class="download-box">
-  <a href="https://sorute03.github.io/MKADP/MKWORLDADP.html" 
-     download="MKWORLDADP.html" 
-     class="btn-mkadp-download">
-     📁 MKWorldADP(ローカルファイル版)をダウンロード
-  </a>
-</div>
+<button id="downloadMkadpBtn" class="btn-mkadp-download">
+  📁 MKWorldADP(ローカルファイル版)をダウンロード
+</button>
 <button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
 
   <!-- ▼ パスワード付きバックアップ UI ▼ -->
@@ -7677,6 +7673,36 @@ async function sendOverlayOBS(payload) {
     // renderOverlay({ nextCourse: "コース名", nextCourseStats: {...} });
 
 
+
+
+<div class="download-box">
+  <a href="" 
+     download="MKWORLDADP.html" 
+     class="btn-mkadp-download">
+     📁 MKWorldADP(ローカルファイル版)をダウンロード
+  </a>
+</div>
+
+document.getElementById('downloadMkadpBtn').addEventListener('click', function() {
+    const fileUrl = 'https://sorute03.github.io/MKADP/MKWORLDADP.html';
+    
+    fetch(fileUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'MKWORLDADP'; // 保存時のファイル名
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        // クロスドメイン(CORS)等でfetchが失敗した場合はフォールバック
+        window.location.href = fileUrl;
+      });
+  });
 
 </script>
 
