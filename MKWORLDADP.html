@@ -7697,6 +7697,27 @@ document.getElementById('downloadMkadpBtn').addEventListener('click', function()
       });
   });
 
+
+document.getElementById('downloadoverlayBtn').addEventListener('click', function() {
+    const fileUrl = 'https://sorute03.github.io/MKADP/overlay.html';
+    
+    fetch(fileUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'overlay.html'; // 保存時のファイル名
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        // クロスドメイン(CORS)等でfetchが失敗した場合はフォールバック
+        window.location.href = fileUrl;
+      });
+  });
 </script>
 
 
