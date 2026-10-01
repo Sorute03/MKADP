@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MK All Database Program（MKADP）| 概要サイト</title>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #e2e8f0;
+      --accent-bg: #eff6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+    }
+
+    .header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+
+    .tag {
+      display: inline-block;
+      background-color: #dbeafe;
+      color: #1e40af;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .description {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 28px 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* アクションボタン */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+    }
+
+    /* 機能ガイドステップ */
+    .guide-step {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: bold;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-size: 0.9rem;
+      margin-right: 8px;
+    }
+
+    .guide-step h3 {
+      display: flex;
+      align-items: center;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .guide-step p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-left: 36px;
+    }
+
+    /* 機能詳細グリッド */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature-card {
+      background-color: var(--accent-bg);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .feature-card h4 {
+      color: #1e40af;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+
+    .feature-card ul {
+      list-style: none;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .feature-card ul li {
+      margin-bottom: 6px;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .feature-card ul li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- メインカード -->
+    <div class="card">
+      <div class="header">
+        <span class="tag">配布・分析ツール</span>
+        <h1>MK All Database Program</h1>
+        <p class="description">
+          MKWorld及びMK8DXラウンジでの対戦データやスコアを簡単に可視化・分析するためのWebブラウザ対応ツールです。
+        </p>
+      </div>
+
+      <div class="btn-group">
+        <a href="https://sorute03.github.io/MKADP/MKADP.html" target="_blank" class="btn btn-primary">
+          🌐 ツールを直接開く
+        </a>
+        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/MKADP.html" download="MKADP.html" class="btn btn-secondary">
+          📥 ファイルをダウンロード (.html)
+        </a>
+      </div>
+    </div>
+
+    <!-- 各機能の詳しい使い方 -->
+    <div class="card">
+      <h2 class="section-title">📊 各機能の解説と使い方</h2>
+      
+        <div class="feature-card">
+          <h4>1. レースグラフ＆傾向分析</h4>
+          <ul>
+            <li>コースごとの得意・不得意の分析データ出力</li>
+            <li>安定度や平均順位などのスタッツ分析</li>
+            <li>様々な表やランキングで客観的なスタッツ分析が可能！</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <h4>2. 分析結果の出力・共有</h4>
+          <ul>
+            <li>ローカル環境でのファイル保存に対応!</li>
+            <li>webhookURLを使いコースごとの分析データをDiscordに送信共有可能!</li>
+            <li>さらにwebhookURLがあればラウンジstatsも表示&送信可能!</li>
+          </ul>
+          
+        </div>
+        <div class="feature-card">
+          <h4>3. 配信者用オーバーレイ搭載!</h4>
+          <ul>
+            <li>obsのWebSoket機能を使い配信画面に分析データを表示可能!</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 基本的な利用手順 -->
+    <div class="card">
+      <h2 class="section-title">🚀 ツールのご利用手順</h2>
+
+      <div class="guide-step">
+        <h3><span class="step-number">1</span> ツールを起動する</h3>
+        <p>「ツールを直接開く」ボタンをクリックするか、ダウンロードした <code>MKADP.html</code> ファイルをブラウザ（Chrome, Edge, Safari等）で開きます。</p>
+      </div>
+
+      <div class="guide-step">
+        <h3><span class="step-number">2</span> 順位データを入力する</h3>
+        <p>レース登録フォームにラウンジや大会や野良の各レース順位等情報を入力し、「保存」ボタンを押します。</p>
+      </div>
+
+      <div class="guide-step">
+        <h3><span class="step-number">3</span> グラフと分析結果を確認する</h3>
+        <p>自動生成された分析データ、推移グラフを確認して戦況を振り返ります。</p>
+      </div>
+
+      <div class="guide-step">
+        <h3><span class="step-number">4</span> 結果をコピー・保存する</h3>
+        <p>Discord等に共有するか、分析データを保存します。</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Developer: レモちゃん♪ | MKADP (MKWorld All Database Program)</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
