@@ -1,0 +1,127 @@
+{
+  "userId": "U-1791096971-530532",
+  "batchId": "1791098246-974731",
+  "timestamp": 1791098246,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "シュポポコースター",
+      "rank": 8,
+      "score": 7,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "おばけぬま3",
+      "rank": 24,
+      "score": 1,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ヘイホーカーニバル",
+      "rank": 14,
+      "score": 5,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "クッパキャッスル",
+      "rank": 10,
+      "score": 6,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ワリオスタジアム",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "ロゼッタてんもんだい",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "レインボーロード",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "おばけぬま1",
+      "rank": 11,
+      "score": 6,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "どんぐりツリーハウス",
+      "rank": 3,
+      "score": 10,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "DKうちゅうセンター",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "SQ",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 7,
+      "score": 8,
+      "timestamp": 1791096854954,
+      "totalScore12": 66
+    }
+  ]
+}
