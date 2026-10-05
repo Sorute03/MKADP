@@ -1,0 +1,127 @@
+{
+  "userId": "U-1791096971-530532",
+  "batchId": "1791187735-606668",
+  "timestamp": 1791187735,
+  "races": [
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "トロフィーシティ→シュポポコースター",
+      "rank": 12,
+      "score": 6,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "シュポポコースター",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ソルティータウン→DKスノーマウンテン",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "おばけぬま2",
+      "rank": 21,
+      "score": 3,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ヘイホーカーニバル",
+      "rank": 4,
+      "score": 9,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "ハテナしんでん",
+      "rank": 23,
+      "score": 2,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "おばけぬま3",
+      "rank": 22,
+      "score": 2,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "おばけシネマ→ショーニューロード",
+      "rank": 19,
+      "score": 3,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "DKスノーマウンテン",
+      "rank": 16,
+      "score": 4,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "クッパキャッスル",
+      "rank": 15,
+      "score": 5,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "SFCノコノコビーチ",
+      "rank": 18,
+      "score": 4,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    },
+    {
+      "mode": "lounge",
+      "season": "S3",
+      "tier": "CD",
+      "course": "バニラレイク",
+      "rank": 6,
+      "score": 8,
+      "timestamp": 1791187546461,
+      "totalScore12": 52
+    }
+  ]
+}
