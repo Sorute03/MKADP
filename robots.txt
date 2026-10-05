@@ -1,0 +1,6 @@
+# すべての検索エンジン・クローラーにクロールを許可
+User-agent: *
+Allow: /
+
+# サイトマップの場所（サイトマップを作成・設置している場合）
+Sitemap: https://sorute03.github.io/MKADP/sitemap.xml
