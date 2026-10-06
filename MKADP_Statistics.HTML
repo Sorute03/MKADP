@@ -305,37 +305,71 @@ async function fetchStatsFromGitHub() {
   }
 }
 
+// 取得先ベースURLの定義
+const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Sorute03/MKADP/main/MKADP/data/';
+
+/**
+ * GitHubから指定されたゲームの暗号化 JSON ファイルを取得・復号する
+ */
 async function loadAndDecryptGameData(targetGameType) {
   targetGameType = targetGameType.toUpperCase();
 
-  if (!rawGamesData || !rawGamesData[targetGameType]) {
-    console.warn(`ゲーム [${targetGameType}] のデータが存在しません。`);
-    activeRecordsCache = [];
-    renderStats();
-    return;
-  }
-
-  let secretKey = localStorage.getItem('MKADP_SECRET_KEY');
-  if (!secretKey) {
-    secretKey = prompt('データの解読に必要な暗号キーを入力してください:');
-    if (!secretKey) return;
-  }
+  // ファイル名（小文字）の組み立て (例: mk8dx_records.json)
+  const fileName = `${targetGameType.toLowerCase()}_records.json`;
+  const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
 
   try {
-    const encryptedBase64 = rawGamesData[targetGameType].data;
-    activeRecordsCache = await decryptData(encryptedBase64, secretKey);
+    const res = await fetch(fileUrl, { cache: 'no-cache' });
+    if (!res.ok) {
+      console.warn(`ゲーム [${targetGameType}] のデータファイル (${fileName}) がGitHub上に存在しません。`);
+      activeRecordsCache = [];
+      renderStats();
+      return;
+    }
+
+    // JSON パース
+    const payload = await res.json();
+
+    // 暗号化文字列（payload.data）の存在チェック
+    if (!payload || !payload.data) {
+      console.warn(`ゲーム [${targetGameType}] のデータ形式が正しくありません。`);
+      activeRecordsCache = [];
+      renderStats();
+      return;
+    }
+
+    // 暗号キーの準備
+    let secretKey = localStorage.getItem('MKADP_SECRET_KEY');
+    if (!secretKey) {
+      secretKey = prompt('データの解読に必要な暗号キーを入力してください:');
+      if (!secretKey) return;
+    }
+
+    // AES-GCM 復号化の実行
+    activeRecordsCache = await decryptData(payload.data, secretKey);
     localStorage.setItem('MKADP_SECRET_KEY', secretKey);
 
-    console.log(`✅ [${targetGameType}] のデータを復号しました:`, activeRecordsCache);
+    console.log(`✅ [${targetGameType}] のデータを正常に復号しました:`, activeRecordsCache);
     renderStats();
 
   } catch (err) {
     console.error('❌ 復号エラー:', err);
     localStorage.removeItem('MKADP_SECRET_KEY');
-    alert('暗号キーが間違っています。');
+    alert('暗号キーが間違っているか、データ復号に失敗しました。');
   }
 }
 
+/**
+ * 初期読み込みエントリポイント
+ */
+async function fetchStatsFromGitHub() {
+  const selectedGame = document.getElementById('filter-game').value;
+  const targetGame = (selectedGame === 'ALL') ? 'MK8DX' : selectedGame;
+
+  // コースドロップダウンを同期・データ読み込み
+  updateCourseDropdown(targetGame);
+  await loadAndDecryptGameData(targetGame);
+}
 // ==========================================
 // 3. AND / OR 条件評価関数
 // ==========================================
