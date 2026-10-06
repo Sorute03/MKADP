@@ -7548,11 +7548,23 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
         window.location.href = fileUrl;
       });
   });
+
+/**
+ * ADP (Mogi Track / Race Management)
+ * DB: mogiDB / Store: records
+ * 
+ * - レコード生成 (createRaceRecord)
+ * - 統計用展開データ生成 (createStatsRecord)
+ * - 0:00 / 12:00 定時自動全データ送信 & バッチ内重複チェック & Cloudflare Workers 送信
+ */
+
+// ==========================================
+// 1. 定数・設定定義
+// ==========================================
 const GAME_TYPE = 'MK8DX'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
 const DB_NAME = 'mogiDB';
 const STORE_NAME = 'records';
 const WORKER_URL = 'https://your-worker-name.subdomain.workers.dev/api/sync'; // ★ご自身の Worker URL に置き換えてください
-
 
 
 // ==========================================
@@ -7634,7 +7646,7 @@ function markMogiDBRecordsAsSynced(updatedRecords) {
  */
 function createRecordSignature(record) {
   const ts = record.timestamp || record.timestamp_iso || record.created_at || '';
-  const game = record.game_type || 'MK8DX';
+  const game = record.game_type || GAME_TYPE || 'MK8DX';
   const mode = record.mode || 'lounge';
   const season = record.season || 1;
 
@@ -7653,31 +7665,18 @@ function createRecordSignature(record) {
 }
 
 /**
- * タイムスタンプや順位情報を用いた重複チェック関数
+ * 今回送信する全データバッチ内での単一重複のみを除外する関数
  */
-function sanitizeAndDeduplicate(unSyncedList, fullList) {
+function sanitizeAndDeduplicateBatch(allList) {
   const seenSignatures = new Set();
   const validRecords = [];
 
-  // 1. 既に synced = 1 となっている送信済みデータのシグネチャを取得
-  const alreadySyncedSignatures = new Set(
-    fullList
-      .filter(r => Number(r.synced) === 1)
-      .map(r => createRecordSignature(r))
-  );
-
-  for (const record of unSyncedList) {
+  for (const record of allList) {
     const signature = createRecordSignature(record);
 
-    // 過去に送信済みのデータと一致する場合はスキップ
-    if (alreadySyncedSignatures.has(signature)) {
-      console.warn(`[Sync] 送信済みデータと内容・タイムスタンプが重複しているためスキップ:`, signature);
-      continue;
-    }
-
-    // 未送信バッチ内での重複判定
+    // 今回のバッチ内での重複判定（同一ID/シグネチャの二重登録を保護）
     if (seenSignatures.has(signature)) {
-      console.warn(`[Sync] バッチ内での重複レコードを検知したためスキップ:`, signature);
+      console.warn(`[Sync] バッチ内での重複レコードを検知したため除外:`, signature);
       continue;
     }
 
@@ -7699,6 +7698,7 @@ async function sendToCloudflareWorker(payload) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        game_type: GAME_TYPE, // Worker 側でゲームタイトルを識別できるよう付与
         sent_at: new Date().toISOString(),
         records: payload
       })
@@ -7717,49 +7717,47 @@ async function sendToCloudflareWorker(payload) {
 }
 
 /**
- * 定時同期実行メイン関数
+ * 定時同期実行メイン関数（毎回全データを送信）
  */
 async function runScheduledSync() {
-  
+  console.log('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
 
   try {
     // 1. mogiDB から全データ取得
     const allRecords = await getAllRecordsFromMogiDB();
 
-    // 2. 未送信データ (synced === 0) を抽出
-    const unSyncedRecords = allRecords.filter(record => Number(record.synced) === 0);
-
-    if (unSyncedRecords.length === 0) {
+    if (allRecords.length === 0) {
+      console.log('[Sync] DB内に送信可能なレコードがありません。');
       updateLastSyncTime();
       return;
     }
 
-    
+    console.log(`[Sync] DB内データ ${allRecords.length} 件を取得。バッチ内重複チェックを開始します。`);
 
-    // 3. タイムスタンプ・順位情報で重複チェック
-    const validRecordsToSend = sanitizeAndDeduplicate(unSyncedRecords, allRecords);
+    // 2. 送信データバッチ内での重複チェック
+    const validRecordsToSend = sanitizeAndDeduplicateBatch(allRecords);
 
     if (validRecordsToSend.length === 0) {
-      console.warn('[Sync] 送信対象となる有効なデータがありませんでした（すべて重複）。');
+      console.warn('[Sync] 送信対象となる有効なデータがありませんでした。');
       return;
     }
 
-    // 4. 送信用ペイロード作成 (生データ + 統計用展開データ)
+    // 3. 送信用ペイロード作成 (生データ + 統計用展開データ)
     const payload = validRecordsToSend.map(record => {
       return {
         rawRecord: record,
-        statsRecords: createStatsRecord(record)
+        statsRecords: typeof createStatsRecord === 'function' ? createStatsRecord(record) : []
       };
     });
 
-    // 5. Cloudflare Workers に送信
+    // 4. Cloudflare Workers に全データを送信
     const sendSuccess = await sendToCloudflareWorker(payload);
 
     if (sendSuccess) {
-      // 6. DB上の synced を 1 に更新
+      // 5. DB上の全レコードの synced を 1 に更新
       await markMogiDBRecordsAsSynced(validRecordsToSend);
       updateLastSyncTime();
-      console.log(`[Sync] ${validRecordsToSend.length} 件のデータを Worker へ送信し、synced=1 に更新しました。`);
+      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータを Worker へ正常送信し、synced=1 に更新しました。`);
     } else {
       console.error('[Sync] Cloudflare Workers への送信に失敗しました。次回定時で再実行します。');
     }
@@ -7833,8 +7831,6 @@ function initFixedTimeSyncScheduler() {
 document.addEventListener('DOMContentLoaded', () => {
   initFixedTimeSyncScheduler();
 });
-
-
 </script>
 
 
