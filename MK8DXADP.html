@@ -7734,7 +7734,7 @@ async function runScheduledSync() {
       return;
     }
 
-    console.log(`[Sync] 未送信データ ${unSyncedRecords.length} 件を検出。重複チェックを開始します。`);
+    
 
     // 3. タイムスタンプ・順位情報で重複チェック
     const validRecordsToSend = sanitizeAndDeduplicate(unSyncedRecords, allRecords);
