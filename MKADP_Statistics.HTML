@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Mogi Track - コース詳細分析 & ランキングダッシュボード</title>
+  <style>
+    body { font-family: sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* 検索フィルターエリア */
+    .filter-card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
+    }
+    .match-mode-selector {
+      display: flex; align-items: center; gap: 20px; background: #f0f4f9;
+      padding: 10px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 14px;
+    }
+    .match-mode-selector label { cursor: pointer; font-weight: bold; color: #333; }
+
+    .filter-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;
+    }
+    .filter-group { display: flex; flex-direction: column; }
+    .filter-group label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
+    .filter-group select, .filter-group input {
+      padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;
+    }
+    .filter-actions { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: #0066ff; color: white; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+
+    /* サマリーカードエリア */
+    .stats-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;
+    }
+    .stat-box {
+      background: white; border-radius: 12px; padding: 20px; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .stat-box .number { font-size: 26px; font-weight: bold; color: #0066ff; margin-top: 5px; }
+
+    /* 結果テーブル */
+    .table-container { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .data-table th, .data-table td { padding: 12px 14px; border-bottom: 1px solid #eee; font-size: 14px; white-space: nowrap; }
+    .data-table th { background: #f8f9fa; color: #444; font-size: 13px; }
+    .rank-badge { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; font-weight: bold; font-size: 12px; }
+    .rank-1 { background: #ffd700; color: #333; }
+    .rank-2 { background: #c0c0c0; color: #333; }
+    .rank-3 { background: #e59866; color: white; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🏎️ コースデータ・ランキング詳細分析</h2>
+
+  <!-- 絞り込み条件フォーム -->
+  <div class="filter-card">
+    <div class="match-mode-selector">
+      <span><strong>条件指定モード:</strong></span>
+      <label><input type="radio" name="match-mode" value="AND" checked> すべての条件に一致 (AND)</label>
+      <label><input type="radio" name="match-mode" value="OR"> いずれかの条件に一致 (OR)</label>
+    </div>
+
+    <div class="filter-grid">
+      <div class="filter-group">
+        <label for="filter-game">ゲームタイトル</label>
+        <select id="filter-game">
+          <option value="ALL">すべて (指定なし)</option>
+          <option value="MKWORLD">MKWORLD</option>
+          <option value="MK8DX">MK8DX</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-mode">モード</label>
+        <select id="filter-mode">
+          <option value="ALL">すべて (指定なし)</option>
+          <option value="lounge">ラウンジ (Lounge)</option>
+          <option value="nora">野良 (Nora)</option>
+          <option value="tournament">大会 (Tournament)</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-season">シーズン</label>
+        <select id="filter-season">
+          <option value="ALL">すべて (指定なし)</option>
+          <option value="1">Season 1</option>
+          <option value="2">Season 2</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-start-date">開始日</label>
+        <input type="date" id="filter-start-date">
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-end-date">終了日</label>
+        <input type="date" id="filter-end-date">
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-course">コース検索 (カンマ区切りで複数可)</label>
+        <input type="text" id="filter-course" placeholder="例: マリオ, スタジアム">
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-secondary" id="btn-reset">条件リセット</button>
+      <button class="btn btn-primary" id="btn-apply">検索・集計実行</button>
+    </div>
+  </div>
+
+  <!-- 条件全体のサマリー -->
+  <div class="stats-summary">
+    <div class="stat-box">
+      <div>総集計レース数</div>
+      <div class="number" id="stat-total-races">0</div>
+    </div>
+    <div class="stat-box">
+      <div>出現コース種類数</div>
+      <div class="number" id="stat-unique-courses">0</div>
+    </div>
+    <div class="stat-box">
+      <div>全体平均順位</div>
+      <div class="number" id="stat-avg-rank">-</div>
+    </div>
+    <div class="stat-box">
+      <div>全体平均得点</div>
+      <div class="number" id="stat-avg-score">-</div>
+    </div>
+  </div>
+
+  <!-- コース別集計結果テーブル -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ピック順位</th>
+          <th>コース名</th>
+          <th>選ばれた回数 (ピック数)</th>
+          <th>選出シェア (ピック率)</th>
+          <th>平均出現頻度</th>
+          <th>平均順位</th>
+          <th>平均得点</th>
+        </tr>
+      </thead>
+      <tbody id="course-stats-tbody">
+        <tr><td colspan="7" style="text-align:center;">条件を指定して検索を実行してください</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// 1. 設定 & 得点テーブル定義
+// ==========================================
+// ==========================================
+// 1. ゲーム別設定 (得点テーブル & コースマスター)
+// ==========================================
+const DB_NAME = 'mogiDB';
+const STORE_NAME = 'records';
+
+// ゲームタイトル別のスコアテーブル定義
+const SCORE_TABLES = {
+  // マリオカート8 デラックス (標準12人レース配分)
+  MK8DX: {
+    1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
+    7: 6,  8: 5,  9: 4, 10: 3, 11: 2, 12: 1
+  },
+  // MKWORLD (ゲーム仕様に合わせた独自の点数配分を設定可能)
+  MKWORLD: {
+    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
+    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
+    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
+    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
+  }
+};
+
+// ゲームタイトル別のコースマスター定義 (コース名一致チェックや将来のサジェスト機能用)
+const COURSE_MASTERS = {
+  MK8DX:"マリオカートスタジアム(WiiU)",
+  "ウォーターパーク(WiiU)",
+  "スイーツキャニオン(WiiU)",
+  "ドッスンいせき(WiiU)",
+  "マリオサーキット(WiiU)",
+  "キノピオハーバー(WiiU)",
+  "ねじれマンション(WiiU)",
+  "ヘイホーこうざん(WiiU)",
+  "サンシャインくうこう(WiiU)",
+  "ドルフィンみさき(WiiU)",
+  "エレクトロドリーム(WiiU)",
+  "ワリオスノーマウンテン(WiiU)",
+  "スカイガーデン(WiiU)",
+  "ホネホネさばく(WiiU)",
+  "クッパキャッスル(WiiU)",
+  "レインボーロード(WiiU)",
+  "ヨッシーサーキット(GC)",
+  "エキサイトバイク(WiiU)",
+  "ドラゴンロード(WiiU)",
+  "ミュートシティ(WiiU)",
+  "ベビィパーク(GC)",
+  "チーズランド(GBA)",
+  "ネイチャーロード(WiiU)",
+  "どうぶつの森(WiiU)",
+  "モーモーカントリー(Wii)",
+  "マリオサーキット(GBA)",
+  "プクプクビーチ(DS)",
+  "キノピオハイウェイ(N64)",
+  "カラカラさばく(GC)",
+  "ドーナツへいや３(SFC)",
+  "ピーチサーキット(N64)",
+  "DKジャングル(3DS)",
+  "ワリオスタジアム(DS)",
+  "シャーベットランド(GC)",
+  "ミュージックパーク(3DS)",
+  "ヨッシーバレー(N64)",
+  "チクタクロック(DS)",
+  "パックンスライダー(3DS)",
+  "グラグラかざん(Wii)",
+  "レインボーロード(N64)",
+  "ワリオこうざん(Wii)",
+  "レインボーロード(SFC)",
+  "ツルツルツイスター(WiiU)",
+  "ハイラルサーキット(WiiU)",
+  "ネオクッパシティ(3DS)",
+  "リボンロード(GBA)",
+  "リンリンメトロ(WiiU)",
+  "ビッグブルー(WiiU)",
+  "パリプロムナード(Tour)",
+  "キノピオサーキット(3DS)",
+  "チョコマウンテン(N64)",
+  "ココナッツモール(Wii)",
+  "トーキョースクランブル(Tour)",
+  "キノコリッジウェイ(DS)",
+  "スカイガーデン(GBA)",
+  "ニンニンドージョー(Switch)",
+  "ニューヨークドリーム(Tour)",
+  "マリオサーキット３(SFC)",
+  "カラカラさばく(N64)",
+  "ワルイージピンボール(DS)",
+  "シドニーサンシャイン(Tour)",
+  "スノーランド(GBA)",
+  "キノコキャニオン(Wii)",
+  "アイスビルディング(Switch)",
+  "ロンドンアベニュー(Tour)",
+  "テレサレイク(GBA)",
+  "ロックロックマウンテン(3DS)",
+  "メイプルツリーハウス(Wii)",
+  "ベルリンシュトラーセ(Tour)",
+  "ピーチガーデン(DS)",
+  "メリーメリーマウンテン(Switch)",
+  "レインボーロード(3DS)",
+  "アムステルダムブルーム(Tour)",
+  "リバーサイドパーク(GBA)",
+  "DKスノーボードクロス(Wii)",
+  "ヨッシーアイランド(Switch)",
+  "バンコクラッシュ(Tour)",
+  "マリオサーキット(DS)",
+  "ワルイージスタジアム(GC)",
+  "シンガポールスプラッシュ(Tour)",
+  "アテネポリス(Tour)",
+  "デイジークルーザー(GC)",
+  "ムーンリッジ＆ハイウェイ(Wii)",
+  "シャボンロード(Tour)",
+  "ロサンゼルスコースト(Tour)",
+  "サンセットこうや(GBA)",
+  "ノコノコみさき(Wii)",
+  "バンクーバーバレー(Tour)",
+  "ローマアバンティ(Tour)",
+  "DKマウンテン(GC)",
+  "デイジーサーキット(Wii)",
+  "パックンしんでん(Switch)",
+  "マドリードグランデ(Tour)",
+  "ロゼッタプラネット(3DS)",
+  "クッパじょう３(SFC)",
+  "レインボーロード(Wii)",
+  ],
+  MKWORLD: ["マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "バニラレイク",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "SFCノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "おばけぬま1",
+  "おばけぬま2",
+  "おばけぬま3",	
+  "ホネホネツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "チョコレーとう1",
+  "チョコレーとう2",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+　"SFCマリオサーキット1",
+  "SFCマリオサーキット2",
+  "SFCマリオサーキット3",
+  "レインボーロード",
+
+  // ここから遷移データ
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "マリオブラザーズサーキット→シュポポコースター",
+  "マリオブラザーズサーキット→サンサンさばく",
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "マリオブラザーズサーキット→キノピオファクトリー",
+
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
+  "トロフィーシティ→ピーチスタジアム",
+
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
+  "ピーチスタジアム→レインボーロード"
+  ]
+};
+
+/**
+ * ゲームタイトルと順位から得点を算出する関数
+ */
+function getScoreFromRank(gameType, rank) {
+  const gameKey = gameType && SCORE_TABLES[gameType] ? gameType : 'MK8DX';
+  const table = SCORE_TABLES[gameKey];
+  return table[rank] !== undefined ? table[rank] : 0;
+}
+
+// IndexedDB から全レコードを取得
+function getAllRecords() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) return resolve([]);
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    };
+  });
+}
+
+// ==========================================
+// 2. AND / OR 条件評価関数
+// ==========================================
+let rawRecordsCache = [];
+
+function evaluateRaceRecord(record, race, filters) {
+  const matchResults = [];
+
+  const recGame = record.game_type || 'MK8DX';
+
+  if (filters.game !== 'ALL') {
+    matchResults.push(recGame === filters.game);
+  }
+  if (filters.mode !== 'ALL') {
+    matchResults.push(record.mode === filters.mode);
+  }
+  if (filters.season !== 'ALL') {
+    matchResults.push(String(record.season) === String(filters.season));
+  }
+
+  const recDate = new Date(record.timestamp || record.timestamp_iso || record.created_at);
+  if (filters.startDate) {
+    matchResults.push(recDate >= new Date(filters.startDate + 'T00:00:00'));
+  }
+  if (filters.endDate) {
+    matchResults.push(recDate <= new Date(filters.endDate + 'T23:59:59'));
+  }
+
+  if (filters.courseQueries.length > 0) {
+    const courseName = (race.course || '').toLowerCase();
+    const isMatch = filters.courseQueries.some(q => courseName.includes(q.toLowerCase()));
+    matchResults.push(isMatch);
+  }
+
+  if (matchResults.length === 0) return true;
+
+  return filters.matchMode === 'AND'
+    ? matchResults.every(res => res === true)
+    : matchResults.some(res => res === true);
+}
+
+// ==========================================
+// 3. 統計・ランキング集計コアロジック
+// ==========================================
+function computeDetailedCourseStats(records, filters) {
+  let totalRaceCount = 0;
+  let totalScoreSum = 0;
+  let totalRankSum = 0;
+
+  const courseMap = {};
+
+  records.forEach(rec => {
+    const recGame = rec.game_type || 'MK8DX';
+    const raceList = Array.isArray(rec.races) && rec.races.length > 0 
+      ? rec.races 
+      : [{ course: rec.course_name || rec.course, rank: rec.rank, score: rec.score }];
+
+    raceList.forEach(race => {
+      const rank = Number(race.rank);
+      if (isNaN(rank) || rank <= 0) return;
+
+      if (!evaluateRaceRecord(rec, race, filters)) return;
+
+      const courseName = race.course || '不明なコース';
+      
+      // レースごとに定義済みの得点があれば優先、なければゲームタイトルに応じた得点テーブルを適用
+      const score = (race.score !== undefined && race.score !== null)
+        ? Number(race.score)
+        : getScoreFromRank(recGame, rank);
+
+      totalRaceCount++;
+      totalRankSum += rank;
+      totalScoreSum += score;
+
+      if (!courseMap[courseName]) {
+        courseMap[courseName] = {
+          count: 0,
+          rankSum: 0,
+          scoreSum: 0,
+          gameType: recGame
+        };
+      }
+
+      courseMap[courseName].count++;
+      courseMap[courseName].rankSum += rank;
+      courseMap[courseName].scoreSum += score;
+    });
+  });
+
+  // 配列化・指標計算
+  const courseList = Object.keys(courseMap).map(name => {
+    const c = courseMap[name];
+    
+    // 何レースに1回走っているか算出（総レース数 ÷ 選ばれた回数）
+    const raceInterval = c.count > 0 ? (totalRaceCount / c.count).toFixed(1) : '-';
+
+    return {
+      name,
+      gameType: c.gameType,
+      count: c.count,
+      pickRate: totalRaceCount > 0 ? ((c.count / totalRaceCount) * 100).toFixed(1) : '0.0',
+      raceInterval: `${raceInterval} レースに1回`,
+      avgRank: (c.rankSum / c.count).toFixed(2),
+      avgScore: (c.scoreSum / c.count).toFixed(1)
+    };
+  });
+
+  // ピック数の多い順にソート（同数の場合は平均順位順）
+  courseList.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.avgRank - b.avgRank;
+  });
+
+  // ピック数ランキングの順位を付与
+  courseList.forEach((item, index) => {
+    item.rankPosition = index + 1;
+  });
+
+  return {
+    totalRaceCount,
+    uniqueCourses: courseList.length,
+    overallAvgRank: totalRaceCount > 0 ? (totalRankSum / totalRaceCount).toFixed(2) : '-',
+    overallAvgScore: totalRaceCount > 0 ? (totalScoreSum / totalRaceCount).toFixed(1) : '-',
+    courseList
+  };
+}
+
+// ==========================================
+// 4. UI 描画
+// ==========================================
+function renderStats() {
+  const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
+  const rawCourseQuery = document.getElementById('filter-course').value.trim();
+  const courseQueries = rawCourseQuery
+    ? rawCourseQuery.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    : [];
+
+  const filters = {
+    matchMode,
+    game: document.getElementById('filter-game').value,
+    mode: document.getElementById('filter-mode').value,
+    season: document.getElementById('filter-season').value,
+    startDate: document.getElementById('filter-start-date').value,
+    endDate: document.getElementById('filter-end-date').value,
+    courseQueries
+  };
+
+  const result = computeDetailedCourseStats(rawRecordsCache, filters);
+
+  // サマリー表示の更新
+  document.getElementById('stat-total-races').textContent = result.totalRaceCount.toLocaleString();
+  document.getElementById('stat-unique-courses').textContent = result.uniqueCourses;
+  document.getElementById('stat-avg-rank').textContent = result.overallAvgRank;
+  document.getElementById('stat-avg-score').textContent = result.overallAvgScore;
+
+  // テーブルの更新
+  const tbody = document.getElementById('course-stats-tbody');
+  tbody.innerHTML = '';
+
+  if (result.courseList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">該当するデータが存在しません</td></tr>';
+    return;
+  }
+
+  result.courseList.forEach(c => {
+    let rankBadge = c.rankPosition;
+    if (c.rankPosition === 1) rankBadge = `<span class="rank-badge rank-1">1</span>`;
+    else if (c.rankPosition === 2) rankBadge = `<span class="rank-badge rank-2">2</span>`;
+    else if (c.rankPosition === 3) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${rankBadge}</td>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.count} 回</td>
+      <td>${c.pickRate} %</td>
+      <td>${c.raceInterval}</td>
+      <td>${c.avgRank} 位</td>
+      <td>${c.avgScore} 点</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// イベント設定
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    rawRecordsCache = await getAllRecords();
+  } catch (err) {
+    console.error('DB読み込み失敗:', err);
+  }
+
+  document.getElementById('btn-apply').addEventListener('click', renderStats);
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    document.querySelector('input[name="match-mode"][value="AND"]').checked = true;
+    document.getElementById('filter-game').value = 'ALL';
+    document.getElementById('filter-mode').value = 'ALL';
+    document.getElementById('filter-season').value = 'ALL';
+    document.getElementById('filter-start-date').value = '';
+    document.getElementById('filter-end-date').value = '';
+    document.getElementById('filter-course').value = '';
+    renderStats();
+  });
+
+  renderStats();
+});
+</script>
+</body>
+</html>
