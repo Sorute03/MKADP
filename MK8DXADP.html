@@ -7548,6 +7548,291 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
         window.location.href = fileUrl;
       });
   });
+const GAME_TYPE = 'MK8DX'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
+const DB_NAME = 'mogiDB';
+const STORE_NAME = 'records';
+const WORKER_URL = 'https://your-worker-name.subdomain.workers.dev/api/sync'; // ★ご自身の Worker URL に置き換えてください
+
+
+
+// ==========================================
+// 2. レコード作成用関数
+// ==========================================
+
+
+// ==========================================
+// 3. IndexedDB (mogiDB) アクセス関数
+// ==========================================
+
+/**
+ * mogiDB / records から全データを取得
+ */
+function getAllRecordsFromMogiDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.close();
+        return resolve([]);
+      }
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const getAllReq = store.getAll();
+
+      getAllReq.onsuccess = () => {
+        db.close();
+        resolve(getAllReq.result || []);
+      };
+      getAllReq.onerror = () => {
+        db.close();
+        reject(getAllReq.error);
+      };
+    };
+  });
+}
+
+/**
+ * 送信成功したデータを mogiDB 内で synced = 1 に更新
+ */
+function markMogiDBRecordsAsSynced(updatedRecords) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+
+      updatedRecords.forEach(record => {
+        record.synced = 1; // 送信済みフラグ
+        store.put(record); // 主キー (timestamp等) に基づき更新
+      });
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve(true);
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    };
+  });
+}
+
+
+// ==========================================
+// 4. 重複チェック & 送信ロジック
+// ==========================================
+
+/**
+ * タイムスタンプ・コース・順位情報から複合ユニークキー（シグネチャ）を生成
+ */
+function createRecordSignature(record) {
+  const ts = record.timestamp || record.timestamp_iso || record.created_at || '';
+  const game = record.game_type || 'MK8DX';
+  const mode = record.mode || 'lounge';
+  const season = record.season || 1;
+
+  let raceDetails = '';
+  if (Array.isArray(record.races) && record.races.length > 0) {
+    raceDetails = record.races
+      .map(r => `r${r.raceNum || ''}_c:${r.course || ''}_rk:${r.rank !== null ? r.rank : ''}`)
+      .join('|');
+  } else {
+    const c = record.course_name || record.course || '';
+    const r = record.rank !== undefined ? record.rank : '';
+    raceDetails = `c:${c}_rk:${r}`;
+  }
+
+  return `${ts}_${game}_${mode}_s${season}_[${raceDetails}]`;
+}
+
+/**
+ * タイムスタンプや順位情報を用いた重複チェック関数
+ */
+function sanitizeAndDeduplicate(unSyncedList, fullList) {
+  const seenSignatures = new Set();
+  const validRecords = [];
+
+  // 1. 既に synced = 1 となっている送信済みデータのシグネチャを取得
+  const alreadySyncedSignatures = new Set(
+    fullList
+      .filter(r => Number(r.synced) === 1)
+      .map(r => createRecordSignature(r))
+  );
+
+  for (const record of unSyncedList) {
+    const signature = createRecordSignature(record);
+
+    // 過去に送信済みのデータと一致する場合はスキップ
+    if (alreadySyncedSignatures.has(signature)) {
+      console.warn(`[Sync] 送信済みデータと内容・タイムスタンプが重複しているためスキップ:`, signature);
+      continue;
+    }
+
+    // 未送信バッチ内での重複判定
+    if (seenSignatures.has(signature)) {
+      console.warn(`[Sync] バッチ内での重複レコードを検知したためスキップ:`, signature);
+      continue;
+    }
+
+    seenSignatures.add(signature);
+    validRecords.push(record);
+  }
+
+  return validRecords;
+}
+
+/**
+ * Cloudflare Workers への HTTP 送信処理
+ */
+async function sendToCloudflareWorker(payload) {
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sent_at: new Date().toISOString(),
+        records: payload
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Worker Http Error: ${response.status}`);
+    }
+
+    const resData = await response.json();
+    return resData.success === true;
+  } catch (err) {
+    console.error('[Sync] Cloudflare Worker 通信エラー:', err);
+    return false;
+  }
+}
+
+/**
+ * 定時同期実行メイン関数
+ */
+async function runScheduledSync() {
+  
+
+  try {
+    // 1. mogiDB から全データ取得
+    const allRecords = await getAllRecordsFromMogiDB();
+
+    // 2. 未送信データ (synced === 0) を抽出
+    const unSyncedRecords = allRecords.filter(record => Number(record.synced) === 0);
+
+    if (unSyncedRecords.length === 0) {
+      updateLastSyncTime();
+      return;
+    }
+
+    console.log(`[Sync] 未送信データ ${unSyncedRecords.length} 件を検出。重複チェックを開始します。`);
+
+    // 3. タイムスタンプ・順位情報で重複チェック
+    const validRecordsToSend = sanitizeAndDeduplicate(unSyncedRecords, allRecords);
+
+    if (validRecordsToSend.length === 0) {
+      console.warn('[Sync] 送信対象となる有効なデータがありませんでした（すべて重複）。');
+      return;
+    }
+
+    // 4. 送信用ペイロード作成 (生データ + 統計用展開データ)
+    const payload = validRecordsToSend.map(record => {
+      return {
+        rawRecord: record,
+        statsRecords: createStatsRecord(record)
+      };
+    });
+
+    // 5. Cloudflare Workers に送信
+    const sendSuccess = await sendToCloudflareWorker(payload);
+
+    if (sendSuccess) {
+      // 6. DB上の synced を 1 に更新
+      await markMogiDBRecordsAsSynced(validRecordsToSend);
+      updateLastSyncTime();
+      console.log(`[Sync] ${validRecordsToSend.length} 件のデータを Worker へ送信し、synced=1 に更新しました。`);
+    } else {
+      console.error('[Sync] Cloudflare Workers への送信に失敗しました。次回定時で再実行します。');
+    }
+
+  } catch (error) {
+    console.error('[Sync] 定時同期処理エラー:', error);
+  }
+}
+
+/**
+ * 最終同期完了時刻のローカルストレージ保持
+ */
+function updateLastSyncTime() {
+  localStorage.setItem('mogiDB_last_sync_time', Date.now().toString());
+}
+
+
+// ==========================================
+// 5. 0:00 / 12:00 定時タイマースケジューラー
+// ==========================================
+
+/**
+ * 次の 0:00 または 12:00 までのミリ秒数を計算
+ */
+function getMsUntilNextSchedule() {
+  const now = new Date();
+  
+  const target12 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+  const target00NextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+
+  if (now < target12) {
+    return target12.getTime() - now.getTime();
+  } else {
+    return target00NextDay.getTime() - now.getTime();
+  }
+}
+
+/**
+ * 定時同期スケジューラーの初期化・起動
+ */
+function initFixedTimeSyncScheduler() {
+  const lastSync = Number(localStorage.getItem('mogiDB_last_sync_time') || 0);
+  const now = Date.now();
+
+  const msUntilNext = getMsUntilNextSchedule();
+  const nextScheduleTime = now + msUntilNext;
+  const lastScheduledTime = nextScheduleTime - (12 * 60 * 60 * 1000); // 1つ前の定時時刻
+
+  // 前回送信完了時刻が「1つ前の定時時刻」より古い場合、前回の定時分が未完了なので即時実行
+  if (lastSync < lastScheduledTime) {
+    console.log('[Sync] 前回の定時（0:00/12:00）同期が未完了のため、即時実行します。');
+    runScheduledSync();
+  }
+
+  const minutesUntilNext = Math.round(msUntilNext / 1000 / 60);
+  console.log(`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
+
+  // 次の 12:00 または 0:00 に実行されるようタイマー設定
+  setTimeout(() => {
+    runScheduledSync();
+
+    // 以降は正確に 12時間ごとに繰り返し実行
+    setInterval(() => {
+      runScheduledSync();
+    }, 12 * 60 * 60 * 1000);
+
+  }, msUntilNext);
+}
+
+// ページ読み込み完了時にスケジューラーを起動
+document.addEventListener('DOMContentLoaded', () => {
+  initFixedTimeSyncScheduler();
+});
 
 
 </script>
