@@ -311,10 +311,16 @@ const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Sorute03/MKADP/main/M
 /**
  * GitHubから指定されたゲームの暗号化 JSON ファイルを取得・復号する
  */
+// Workerの「ENCRYPTION_KEY」と同じ文字列をここに設定します
+const SYSTEM_ENCRYPTION_KEY = 'MKADP_SECRET_KEY';
+
+/**
+ * GitHubから指定されたゲームの暗号化 JSON ファイルを取得・復号する
+ */
 async function loadAndDecryptGameData(targetGameType) {
   targetGameType = targetGameType.toUpperCase();
 
-  // ファイル名（小文字）の組み立て (例: mk8dx_records.json)
+  // ファイル名（小文字）の組み立て (例: mk8dx_records.json / mkworld_records.json)
   const fileName = `${targetGameType.toLowerCase()}_records.json`;
   const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
 
@@ -338,23 +344,18 @@ async function loadAndDecryptGameData(targetGameType) {
       return;
     }
 
-    // 暗号キーの準備
-    let secretKey = 'MKADP_SECRET_KEY'
-   
-    // AES-GCM 復号化の実行
-    activeRecordsCache = await decryptData(payload.data, secretKey);
-    localStorage.setItem('MKADP_SECRET_KEY', secretKey);
+    // ⭕ 画面からの入力なしで、自動的に固定キーを使って AES-GCM 復号化を実行
+    activeRecordsCache = await decryptData(payload.data, SYSTEM_ENCRYPTION_KEY);
 
     console.log(`✅ [${targetGameType}] のデータを正常に復号しました:`, activeRecordsCache);
     renderStats();
 
   } catch (err) {
-    console.error('❌ 復号エラー:', err);
-    localStorage.removeItem('MKADP_SECRET_KEY');
-    alert('暗号キーが間違っているか、データ復号に失敗しました。');
+    console.error('❌ 自動復号エラー:', err);
+    activeRecordsCache = [];
+    renderStats();
   }
 }
-
 /**
  * 初期読み込みエントリポイント
  */
@@ -371,7 +372,7 @@ async function fetchStatsFromGitHub() {
 // ==========================================
 function evaluateRaceRecord(record, race, filters) {
   const matchResults = [];
-  const recGame = record.game_type || 'MK8DX';
+  const recGame = record.game_type || 'MKWORLD';
 
   if (filters.game !== 'ALL') {
     matchResults.push(recGame === filters.game);
