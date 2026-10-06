@@ -339,12 +339,8 @@ async function loadAndDecryptGameData(targetGameType) {
     }
 
     // 暗号キーの準備
-    let secretKey = localStorage.getItem('MKADP_SECRET_KEY');
-    if (!secretKey) {
-      secretKey = prompt('データの解読に必要な暗号キーを入力してください:');
-      if (!secretKey) return;
-    }
-
+    let secretKey = 'MKADP_SECRET_KEY'
+   
     // AES-GCM 復号化の実行
     activeRecordsCache = await decryptData(payload.data, secretKey);
     localStorage.setItem('MKADP_SECRET_KEY', secretKey);
