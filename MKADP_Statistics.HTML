@@ -71,7 +71,7 @@
         <select id="filter-game">
           <option value="ALL">すべて (指定なし)</option>
           <option value="MKWORLD">MKWORLD</option>
-          <option value="MK8DX">MK8DX</option>
+          <option value="MK8DX" selected>MK8DX</option>
         </select>
       </div>
 
@@ -104,9 +104,12 @@
         <input type="date" id="filter-end-date">
       </div>
 
+      <!-- 入力式から選択式(<select>)に変更 -->
       <div class="filter-group">
-        <label for="filter-course">コース検索 (カンマ区切りで複数可)</label>
-        <input type="text" id="filter-course" placeholder="例: マリオ, スタジアム">
+        <label for="filter-course">コース選択</label>
+        <select id="filter-course">
+          <option value="ALL">すべて (指定なし)</option>
+        </select>
       </div>
     </div>
 
@@ -151,7 +154,7 @@
         </tr>
       </thead>
       <tbody id="course-stats-tbody">
-        <tr><td colspan="7" style="text-align:center;">条件を指定して検索を実行してください</td></tr>
+        <tr><td colspan="7" style="text-align:center;">データを取得中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -159,22 +162,15 @@
 
 <script>
 // ==========================================
-// 1. 設定 & 得点テーブル定義
+// 1. 設定 & 得点テーブル・マスター定義
 // ==========================================
-// ==========================================
-// 1. ゲーム別設定 (得点テーブル & コースマスター)
-// ==========================================
-const DB_NAME = 'mogiDB';
-const STORE_NAME = 'records';
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/Sorute03/MKADP/main/MKADP/data/records.json';
 
-// ゲームタイトル別のスコアテーブル定義
 const SCORE_TABLES = {
-  // マリオカート8 デラックス (標準12人レース配分)
   MK8DX: {
     1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
     7: 6,  8: 5,  9: 4, 10: 3, 11: 2, 12: 1
   },
-  // MKWORLD (ゲーム仕様に合わせた独自の点数配分を設定可能)
   MKWORLD: {
     1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
     7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
@@ -183,382 +179,100 @@ const SCORE_TABLES = {
   }
 };
 
-// ゲームタイトル別のコースマスター定義 (コース名一致チェックや将来のサジェスト機能用)
+// ゲームタイトル別のコースマスター定義
 const COURSE_MASTERS = {
-  MK8DX:"マリオカートスタジアム(WiiU)",
-  "ウォーターパーク(WiiU)",
-  "スイーツキャニオン(WiiU)",
-  "ドッスンいせき(WiiU)",
-  "マリオサーキット(WiiU)",
-  "キノピオハーバー(WiiU)",
-  "ねじれマンション(WiiU)",
-  "ヘイホーこうざん(WiiU)",
-  "サンシャインくうこう(WiiU)",
-  "ドルフィンみさき(WiiU)",
-  "エレクトロドリーム(WiiU)",
-  "ワリオスノーマウンテン(WiiU)",
-  "スカイガーデン(WiiU)",
-  "ホネホネさばく(WiiU)",
-  "クッパキャッスル(WiiU)",
-  "レインボーロード(WiiU)",
-  "ヨッシーサーキット(GC)",
-  "エキサイトバイク(WiiU)",
-  "ドラゴンロード(WiiU)",
-  "ミュートシティ(WiiU)",
-  "ベビィパーク(GC)",
-  "チーズランド(GBA)",
-  "ネイチャーロード(WiiU)",
-  "どうぶつの森(WiiU)",
-  "モーモーカントリー(Wii)",
-  "マリオサーキット(GBA)",
-  "プクプクビーチ(DS)",
-  "キノピオハイウェイ(N64)",
-  "カラカラさばく(GC)",
-  "ドーナツへいや３(SFC)",
-  "ピーチサーキット(N64)",
-  "DKジャングル(3DS)",
-  "ワリオスタジアム(DS)",
-  "シャーベットランド(GC)",
-  "ミュージックパーク(3DS)",
-  "ヨッシーバレー(N64)",
-  "チクタクロック(DS)",
-  "パックンスライダー(3DS)",
-  "グラグラかざん(Wii)",
-  "レインボーロード(N64)",
-  "ワリオこうざん(Wii)",
-  "レインボーロード(SFC)",
-  "ツルツルツイスター(WiiU)",
-  "ハイラルサーキット(WiiU)",
-  "ネオクッパシティ(3DS)",
-  "リボンロード(GBA)",
-  "リンリンメトロ(WiiU)",
-  "ビッグブルー(WiiU)",
-  "パリプロムナード(Tour)",
-  "キノピオサーキット(3DS)",
-  "チョコマウンテン(N64)",
-  "ココナッツモール(Wii)",
-  "トーキョースクランブル(Tour)",
-  "キノコリッジウェイ(DS)",
-  "スカイガーデン(GBA)",
-  "ニンニンドージョー(Switch)",
-  "ニューヨークドリーム(Tour)",
-  "マリオサーキット３(SFC)",
-  "カラカラさばく(N64)",
-  "ワルイージピンボール(DS)",
-  "シドニーサンシャイン(Tour)",
-  "スノーランド(GBA)",
-  "キノコキャニオン(Wii)",
-  "アイスビルディング(Switch)",
-  "ロンドンアベニュー(Tour)",
-  "テレサレイク(GBA)",
-  "ロックロックマウンテン(3DS)",
-  "メイプルツリーハウス(Wii)",
-  "ベルリンシュトラーセ(Tour)",
-  "ピーチガーデン(DS)",
-  "メリーメリーマウンテン(Switch)",
-  "レインボーロード(3DS)",
-  "アムステルダムブルーム(Tour)",
-  "リバーサイドパーク(GBA)",
-  "DKスノーボードクロス(Wii)",
-  "ヨッシーアイランド(Switch)",
-  "バンコクラッシュ(Tour)",
-  "マリオサーキット(DS)",
-  "ワルイージスタジアム(GC)",
-  "シンガポールスプラッシュ(Tour)",
-  "アテネポリス(Tour)",
-  "デイジークルーザー(GC)",
-  "ムーンリッジ＆ハイウェイ(Wii)",
-  "シャボンロード(Tour)",
-  "ロサンゼルスコースト(Tour)",
-  "サンセットこうや(GBA)",
-  "ノコノコみさき(Wii)",
-  "バンクーバーバレー(Tour)",
-  "ローマアバンティ(Tour)",
-  "DKマウンテン(GC)",
-  "デイジーサーキット(Wii)",
-  "パックンしんでん(Switch)",
-  "マドリードグランデ(Tour)",
-  "ロゼッタプラネット(3DS)",
-  "クッパじょう３(SFC)",
-  "レインボーロード(Wii)",
+  MK8DX: [
+    "マリオカートスタジアム(WiiU)", "ウォーターパーク(WiiU)", "スイーツキャニオン(WiiU)", "ドッスンいせき(WiiU)",
+    "マリオサーキット(WiiU)", "キノピオハーバー(WiiU)", "ねじれマンション(WiiU)", "ヘイホーこうざん(WiiU)",
+    "サンシャインくうこう(WiiU)", "ドルフィンみさき(WiiU)", "エレクトロドリーム(WiiU)", "ワリオスノーマウンテン(WiiU)",
+    "スカイガーデン(WiiU)", "ホネホネさばく(WiiU)", "クッパキャッスル(WiiU)", "レインボーロード(WiiU)",
+    "ヨッシーサーキット(GC)", "エキサイトバイク(WiiU)", "ドラゴンロード(WiiU)", "ミュートシティ(WiiU)",
+    "ベビィパーク(GC)", "チーズランド(GBA)", "ネイチャーロード(WiiU)", "どうぶつの森(WiiU)",
+    "モーモーカントリー(Wii)", "マリオサーキット(GBA)", "プクプクビーチ(DS)", "キノピオハイウェイ(N64)",
+    "カラカラさばく(GC)", "ドーナツへいや３(SFC)", "ピーチサーキット(N64)", "DKジャングル(3DS)",
+    "ワリオスタジアム(DS)", "シャーベットランド(GC)", "ミュージックパーク(3DS)", "ヨッシーバレー(N64)",
+    "チクタクロック(DS)", "パックンスライダー(3DS)", "グラグラかざん(Wii)", "レインボーロード(N64)",
+    "ワリオこうざん(Wii)", "レインボーロード(SFC)", "ツルツルツイスター(WiiU)", "ハイラルサーキット(WiiU)",
+    "ネオクッパシティ(3DS)", "リボンロード(GBA)", "リンリンメトロ(WiiU)", "ビッグブルー(WiiU)",
+    "パリプロムナード(Tour)", "キノピオサーキット(3DS)", "チョコマウンテン(N64)", "ココナッツモール(Wii)",
+    "トーキョースクランブル(Tour)", "キノコリッジウェイ(DS)", "スカイガーデン(GBA)", "ニンニンドージョー(Switch)",
+    "ニューヨークドリーム(Tour)", "マリオサーキット３(SFC)", "カラカラさばく(N64)", "ワルイージピンボール(DS)",
+    "シドニーサンシャイン(Tour)", "スノーランド(GBA)", "キノコキャニオン(Wii)", "アイスビルディング(Switch)",
+    "ロンドンアベニュー(Tour)", "テレサレイク(GBA)", "ロックロックマウンテン(3DS)", "メイプルツリーハウス(Wii)",
+    "ベルリンシュトラーセ(Tour)", "ピーチガーデン(DS)", "メリーメリーマウンテン(Switch)", "レインボーロード(3DS)",
+    "アムステルダムブルーム(Tour)", "リバーサイドパーク(GBA)", "DKスノーボードクロス(Wii)", "ヨッシーアイランド(Switch)",
+    "バンコクラッシュ(Tour)", "マリオサーキット(DS)", "ワルイージスタジアム(GC)", "シンガポールスプラッシュ(Tour)",
+    "アテネポリス(Tour)", "デイジークルーザー(GC)", "ムーンリッジ＆ハイウェイ(Wii)", "シャボンロード(Tour)",
+    "ロサンゼルスコースト(Tour)", "サンセットこうや(GBA)", "ノコノコみさき(Wii)", "バンクーバーバレー(Tour)",
+    "ローマアバンティ(Tour)", "DKマウンテン(GC)", "デイジーサーキット(Wii)", "パックンしんでん(Switch)",
+    "マドリードグランデ(Tour)", "ロゼッタプラネット(3DS)", "クッパじょう３(SFC)", "レインボーロード(Wii)"
   ],
-  MKWORLD: ["マリオブラザーズサーキット",
-  "トロフィーシティ",
-  "シュポポコースター",
-  "DKうちゅうセンター",
-  "サンサンさばく",
-  "ヘイホーカーニバル",
-  "ワリオスタジアム",
-  "キラーシップ",
-  "DKスノーマウンテン",
-  "ロゼッタてんもんだい",
-  "アイスビルディング",
-  "バニラレイク",
-  "ワリオシップ",
-  "ノコノコビーチ",
-  "SFCノコノコビーチ",
-  "リバーサイドサファリ",
-  "ピーチスタジアム",
-  "ピーチビーチ",
-  "ソルティータウン",
-  "ディノディノジャングル",
-  "ハテナしんでん",
-  "プクプクフォールズ",
-  "ショーニューロード",
-  "おばけシネマ",
-  "おばけぬま1",
-  "おばけぬま2",
-  "おばけぬま3",	
-  "ホネホネツイスター",
-  "モーモーカントリー",
-  "チョコマウンテン",
-  "チョコレーとう1",
-  "チョコレーとう2",
-  "キノピオファクトリー",
-  "クッパキャッスル",
-  "どんぐりツリーハウス",
-  "マリオサーキット",
-　"SFCマリオサーキット1",
-  "SFCマリオサーキット2",
-  "SFCマリオサーキット3",
-  "レインボーロード",
-
-  // ここから遷移データ
-  "マリオブラザーズサーキット→トロフィーシティ",
-  "マリオブラザーズサーキット→シュポポコースター",
-  "マリオブラザーズサーキット→サンサンさばく",
-  "マリオブラザーズサーキット→ヘイホーカーニバル",
-  "マリオブラザーズサーキット→ワリオスタジアム",
-  "マリオブラザーズサーキット→チョコマウンテン",
-  "マリオブラザーズサーキット→キノピオファクトリー",
-
-  "トロフィーシティ→マリオブラザーズサーキット",
-  "トロフィーシティ→シュポポコースター",
-  "トロフィーシティ→DKうちゅうセンター",
-  "トロフィーシティ→サンサンさばく",
-  "トロフィーシティ→ワリオスタジアム",
-  "トロフィーシティ→ノコノコビーチ",
-  "トロフィーシティ→リバーサイドサファリ",
-  "トロフィーシティ→モーモーカントリー",
-  "トロフィーシティ→チョコマウンテン",
-  "トロフィーシティ→ピーチスタジアム",
-
-  "シュポポコースター→マリオブラザーズサーキット",
-  "シュポポコースター→トロフィーシティ",
-  "シュポポコースター→DKうちゅうセンター",
-  "シュポポコースター→サンサンさばく",
-  "シュポポコースター→ノコノコビーチ",
-  "シュポポコースター→チョコマウンテン",
-
-  "DKうちゅうセンター→マリオブラザーズサーキット",
-  "DKうちゅうセンター→トロフィーシティ",
-  "DKうちゅうセンター→シュポポコースター",
-  "DKうちゅうセンター→サンサンさばく",
-  "DKうちゅうセンター→ノコノコビーチ",
-  "DKうちゅうセンター→ピーチスタジアム",
-
-  "サンサンさばく→マリオブラザーズサーキット",
-  "サンサンさばく→トロフィーシティ",
-  "サンサンさばく→シュポポコースター",
-  "サンサンさばく→ヘイホーカーニバル",
-  "サンサンさばく→ノコノコビーチ",
-
-  "ヘイホーカーニバル→マリオブラザーズサーキット",
-  "ヘイホーカーニバル→サンサンさばく",
-  "ヘイホーカーニバル→ワリオスタジアム",
-  "ヘイホーカーニバル→キラーシップ",
-  "ヘイホーカーニバル→チョコマウンテン",
-
-  "ワリオスタジアム→マリオブラザーズサーキット",
-  "ワリオスタジアム→トロフィーシティ",
-  "ワリオスタジアム→ヘイホーカーニバル",
-  "ワリオスタジアム→キラーシップ",
-  "ワリオスタジアム→ホネホネツイスター",
-  "ワリオスタジアム→チョコマウンテン",
-  "ワリオスタジアム→キノピオファクトリー",
-  "ワリオスタジアム→クッパキャッスル",
-
-  "キラーシップ→ヘイホーカーニバル",
-  "キラーシップ→ワリオスタジアム",
-  "キラーシップ→ホネホネツイスター",
-  "キラーシップ→キノピオファクトリー",
-  "キラーシップ→クッパキャッスル",
-
-  "DKスノーマウンテン→ロゼッタてんもんだい",
-  "DKスノーマウンテン→アイスビルディング",
-  "DKスノーマウンテン→ワリオシップ",
-  "DKスノーマウンテン→ソルティータウン",
-  "DKスノーマウンテン→プクプクフォールズ",
-  "DKスノーマウンテン→ショーニューロード",
-  "DKスノーマウンテン→モーモーカントリー",
-
-  "ロゼッタてんもんだい→DKスノーマウンテン",
-  "ロゼッタてんもんだい→アイスビルディング",
-  "ロゼッタてんもんだい→ワリオシップ",
-  "ロゼッタてんもんだい→プクプクフォールズ",
-  "ロゼッタてんもんだい→ショーニューロード",
-  "ロゼッタてんもんだい→おばけシネマ",
-  "ロゼッタてんもんだい→マリオサーキット",
-
-  "アイスビルディング→DKスノーマウンテン",
-  "アイスビルディング→ロゼッタてんもんだい",
-  "アイスビルディング→ワリオシップ",
-  "アイスビルディング→ソルティータウン",
-  "アイスビルディング→プクプクフォールズ",
-  "アイスビルディング→ショーニューロード",
-
-  "ワリオシップ→DKスノーマウンテン",
-  "ワリオシップ→ロゼッタてんもんだい",
-  "ワリオシップ→アイスビルディング",
-  "ワリオシップ→ピーチビーチ",
-  "ワリオシップ→ソルティータウン",
-  "ワリオシップ→プクプクフォールズ",
-
-  "ノコノコビーチ→トロフィーシティ",
-  "ノコノコビーチ→DKうちゅうセンター",
-  "ノコノコビーチ→リバーサイドサファリ",
-  "ノコノコビーチ→ディノディノジャングル",
-  "ノコノコビーチ→ピーチスタジアム",
-
-  "リバーサイドサファリ→トロフィーシティ",
-  "リバーサイドサファリ→ノコノコビーチ",
-  "リバーサイドサファリ→ピーチビーチ",
-  "リバーサイドサファリ→ソルティータウン",
-  "リバーサイドサファリ→ディノディノジャングル",
-  "リバーサイドサファリ→ハテナしんでん",
-  "リバーサイドサファリ→プクプクフォールズ",
-  "リバーサイドサファリ→ピーチスタジアム",
-
-  "ピーチビーチ→ワリオシップ",
-  "ピーチビーチ→リバーサイドサファリ",
-  "ピーチビーチ→ソルティータウン",
-  "ピーチビーチ→ディノディノジャングル",
-  "ピーチビーチ→ハテナしんでん",
-
-  "ソルティータウン→DKスノーマウンテン",
-  "ソルティータウン→ワリオシップ",
-  "ソルティータウン→リバーサイドサファリ",
-  "ソルティータウン→ピーチビーチ",
-  "ソルティータウン→ディノディノジャングル",
-  "ソルティータウン→ハテナしんでん",
-  "ソルティータウン→プクプクフォールズ",
-
-  "ディノディノジャングル→ノコノコビーチ",
-  "ディノディノジャングル→リバーサイドサファリ",
-  "ディノディノジャングル→ピーチビーチ",
-  "ディノディノジャングル→ソルティータウン",
-  "ディノディノジャングル→ハテナしんでん",
-
-  "ハテナしんでん→ノコノコビーチ",
-  "ハテナしんでん→リバーサイドサファリ",
-  "ハテナしんでん→ピーチビーチ",
-  "ハテナしんでん→ソルティータウン",
-  "ハテナしんでん→ディノディノジャングル",
-
-  "プクプクフォールズ→DKスノーマウンテン",
-  "プクプクフォールズ→ロゼッタてんもんだい",
-  "プクプクフォールズ→ワリオシップ",
-  "プクプクフォールズ→リバーサイドサファリ",
-  "プクプクフォールズ→ソルティータウン",
-  "プクプクフォールズ→ショーニューロード",
-  "プクプクフォールズ→モーモーカントリー",
-  "プクプクフォールズ→チョコマウンテン",
-  "プクプクフォールズ→ピーチスタジアム",
-
-  "ショーニューロード→DKスノーマウンテン",
-  "ショーニューロード→ロゼッタてんもんだい",
-  "ショーニューロード→アイスビルディング",
-  "ショーニューロード→プクプクフォールズ",
-  "ショーニューロード→おばけシネマ",
-  "ショーニューロード→モーモーカントリー",
-  "ショーニューロード→キノピオファクトリー",
-  "ショーニューロード→どんぐりツリーハウス",
-  "ショーニューロード→マリオサーキット",
-
-  "おばけシネマ→ロゼッタてんもんだい",
-  "おばけシネマ→ショーニューロード",
-  "おばけシネマ→ホネホネツイスター",
-  "おばけシネマ→どんぐりツリーハウス",
-  "おばけシネマ→マリオサーキット",
-
-  "ホネホネツイスター→ワリオスタジアム",
-  "ホネホネツイスター→キラーシップ",
-  "ホネホネツイスター→おばけシネマ",
-  "ホネホネツイスター→モーモーカントリー",
-  "ホネホネツイスター→キノピオファクトリー",
-  "ホネホネツイスター→クッパキャッスル",
-  "ホネホネツイスター→どんぐりツリーハウス",
-  "ホネホネツイスター→マリオサーキット",
-
-  "モーモーカントリー→トロフィーシティ",
-  "モーモーカントリー→DKスノーマウンテン",
-  "モーモーカントリー→プクプクフォールズ",
-  "モーモーカントリー→ショーニューロード",
-  "モーモーカントリー→ホネホネツイスター",
-  "モーモーカントリー→チョコマウンテン",
-  "モーモーカントリー→キノピオファクトリー",
-  "モーモーカントリー→マリオサーキット",
-  "モーモーカントリー→ピーチスタジアム",
-
-  "チョコマウンテン→マリオブラザーズサーキット",
-  "チョコマウンテン→トロフィーシティ",
-  "チョコマウンテン→シュポポコースター",
-  "チョコマウンテン→ヘイホーカーニバル",
-  "チョコマウンテン→ワリオスタジアム",
-  "チョコマウンテン→プクプクフォールズ",
-  "チョコマウンテン→モーモーカントリー",
-  "チョコマウンテン→キノピオファクトリー",
-  "チョコマウンテン→クッパキャッスル",
-  "チョコマウンテン→ピーチスタジアム",
-
-  "キノピオファクトリー→マリオブラザーズサーキット",
-  "キノピオファクトリー→ワリオスタジアム",
-  "キノピオファクトリー→キラーシップ",
-  "キノピオファクトリー→ショーニューロード",
-  "キノピオファクトリー→ホネホネツイスター",
-  "キノピオファクトリー→モーモーカントリー",
-  "キノピオファクトリー→チョコマウンテン",
-  "キノピオファクトリー→クッパキャッスル",
-  "キノピオファクトリー→どんぐりツリーハウス",
-  "キノピオファクトリー→マリオサーキット",
-  "キノピオファクトリー→ピーチスタジアム",
-
-  "クッパキャッスル→ワリオスタジアム",
-  "クッパキャッスル→キラーシップ",
-  "クッパキャッスル→ホネホネツイスター",
-  "クッパキャッスル→チョコマウンテン",
-  "クッパキャッスル→キノピオファクトリー",
-  "クッパキャッスル→マリオサーキット",
-
-  "どんぐりツリーハウス→ショーニューロード",
-  "どんぐりツリーハウス→おばけシネマ",
-  "どんぐりツリーハウス→ホネホネツイスター",
-  "どんぐりツリーハウス→キノピオファクトリー",
-  "どんぐりツリーハウス→マリオサーキット",
-
-  "マリオサーキット→ロゼッタてんもんだい",
-  "マリオサーキット→ショーニューロード",
-  "マリオサーキット→おばけシネマ",
-  "マリオサーキット→ホネホネツイスター",
-  "マリオサーキット→モーモーカントリー",
-  "マリオサーキット→キノピオファクトリー",
-  "マリオサーキット→クッパキャッスル",
-  "マリオサーキット→どんぐりツリーハウス",
-  "マリオサーキット→ピーチスタジアム",
-
-  "ピーチスタジアム→トロフィーシティ",
-  "ピーチスタジアム→ノコノコビーチ",
-  "ピーチスタジアム→リバーサイドサファリ",
-  "ピーチスタジアム→プクプクフォールズ",
-  "ピーチスタジアム→モーモーカントリー",
-  "ピーチスタジアム→チョコマウンテン",
-  "ピーチスタジアム→キノピオファクトリー",
-  "ピーチスタジアム→レインボーロード"
+  MKWORLD: [
+    "マリオブラザーズサーキット", "トロフィーシティ", "シュポポコースター", "DKうちゅうセンター",
+    "サンサンさばく", "ヘイホーカーニバル", "ワリオスタジアム", "キラーシップ",
+    "DKスノーマウンテン", "ロゼッタてんもんだい", "アイスビルディング", "バニラレイク",
+    "ワリオシップ", "ノコノコビーチ", "SFCノコノコビーチ", "リバーサイドサファリ",
+    "ピーチスタジアム", "ピーチビーチ", "ソルティータウン", "ディノディノジャングル",
+    "ハテナしんでん", "プクプクフォールズ", "ショーニューロード", "おばけシネマ",
+    "おばけぬま1", "おばけぬま2", "おばけぬま3", "ホネホネツイスター",
+    "モーモーカントリー", "チョコマウンテン", "チョコレーとう1", "チョコレーとう2",
+    "キノピオファクトリー", "クッパキャッスル", "どんぐりツリーハウス", "マリオサーキット",
+    "SFCマリオサーキット1", "SFCマリオサーキット2", "SFCマリオサーキット3", "レインボーロード"
   ]
 };
 
+let rawGamesData = {};     // GitHubからの生データ (暗号化)
+let activeRecordsCache = []; // 復号済みの現在ゲームデータ
+
 /**
- * ゲームタイトルと順位から得点を算出する関数
+ * コースドロップダウンの選択肢をゲームタイトルに合わせて動的に生成・更新する
+ */
+function updateCourseDropdown(gameType) {
+  const courseSelect = document.getElementById('filter-course');
+  courseSelect.innerHTML = '<option value="ALL">すべて (指定なし)</option>';
+
+  let courses = [];
+  if (gameType === 'ALL') {
+    // 全ゲームが選択されている場合は両方のコースを結合して表示
+    const allCourses = new Set([...(COURSE_MASTERS.MK8DX || []), ...(COURSE_MASTERS.MKWORLD || [])]);
+    courses = Array.from(allCourses);
+  } else if (COURSE_MASTERS[gameType]) {
+    courses = COURSE_MASTERS[gameType];
+  }
+
+  courses.forEach(course => {
+    const opt = document.createElement('option');
+    opt.value = course;
+    opt.textContent = course;
+    courseSelect.appendChild(opt);
+  });
+}
+
+/**
+ * AES-GCM 復号化関数
+ */
+async function decryptData(encryptedBase64, secretKeyStr) {
+  const dec = new TextDecoder();
+  const enc = new TextEncoder();
+
+  const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(secretKeyStr));
+  const key = await crypto.subtle.importKey('raw', keyMaterial, 'AES-GCM', false, ['decrypt']);
+
+  const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+  const iv = combined.slice(0, 12);
+  const data = combined.slice(12);
+
+  const decryptedBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: iv },
+    key,
+    data
+  );
+
+  return JSON.parse(dec.decode(decryptedBuffer));
+}
+
+/**
+ * 順位から点数を計算
  */
 function getScoreFromRank(gameType, rank) {
   const gameKey = gameType && SCORE_TABLES[gameType] ? gameType : 'MK8DX';
@@ -566,31 +280,67 @@ function getScoreFromRank(gameType, rank) {
   return table[rank] !== undefined ? table[rank] : 0;
 }
 
-// IndexedDB から全レコードを取得
-function getAllRecords() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) return resolve([]);
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    };
-  });
+// ==========================================
+// 2. GitHubからのデータ取得 ＆ 復号化
+// ==========================================
+async function fetchStatsFromGitHub() {
+  try {
+    const res = await fetch(GITHUB_RAW_URL, { cache: 'no-cache' });
+    if (!res.ok) {
+      throw new Error(`GitHubからのデータ取得失敗: Status ${res.status}`);
+    }
+
+    const fileStructure = await res.json();
+    rawGamesData = fileStructure.games || {};
+
+    console.log('✅ GitHubから records.json を直接取得しました。');
+
+    const selectedGame = document.getElementById('filter-game').value;
+    updateCourseDropdown(selectedGame);
+    await loadAndDecryptGameData(selectedGame === 'ALL' ? 'MK8DX' : selectedGame);
+
+  } catch (err) {
+    console.error('❌ データ取得エラー:', err);
+    alert('GitHubからのデータ取得に失敗しました。ファイルが存在するか確認してください。');
+  }
+}
+
+async function loadAndDecryptGameData(targetGameType) {
+  targetGameType = targetGameType.toUpperCase();
+
+  if (!rawGamesData || !rawGamesData[targetGameType]) {
+    console.warn(`ゲーム [${targetGameType}] のデータが存在しません。`);
+    activeRecordsCache = [];
+    renderStats();
+    return;
+  }
+
+  let secretKey = localStorage.getItem('MKADP_SECRET_KEY');
+  if (!secretKey) {
+    secretKey = prompt('データの解読に必要な暗号キーを入力してください:');
+    if (!secretKey) return;
+  }
+
+  try {
+    const encryptedBase64 = rawGamesData[targetGameType].data;
+    activeRecordsCache = await decryptData(encryptedBase64, secretKey);
+    localStorage.setItem('MKADP_SECRET_KEY', secretKey);
+
+    console.log(`✅ [${targetGameType}] のデータを復号しました:`, activeRecordsCache);
+    renderStats();
+
+  } catch (err) {
+    console.error('❌ 復号エラー:', err);
+    localStorage.removeItem('MKADP_SECRET_KEY');
+    alert('暗号キーが間違っています。');
+  }
 }
 
 // ==========================================
-// 2. AND / OR 条件評価関数
+// 3. AND / OR 条件評価関数
 // ==========================================
-let rawRecordsCache = [];
-
 function evaluateRaceRecord(record, race, filters) {
   const matchResults = [];
-
   const recGame = record.game_type || 'MK8DX';
 
   if (filters.game !== 'ALL') {
@@ -611,10 +361,11 @@ function evaluateRaceRecord(record, race, filters) {
     matchResults.push(recDate <= new Date(filters.endDate + 'T23:59:59'));
   }
 
-  if (filters.courseQueries.length > 0) {
-    const courseName = (race.course || '').toLowerCase();
-    const isMatch = filters.courseQueries.some(q => courseName.includes(q.toLowerCase()));
-    matchResults.push(isMatch);
+  // 選択式ドロップダウンでのコース判定
+  if (filters.selectedCourse !== 'ALL') {
+    const courseName = race.course || '';
+    // コース名の一致（部分一致含む）を判定
+    matchResults.push(courseName.toLowerCase().includes(filters.selectedCourse.toLowerCase()));
   }
 
   if (matchResults.length === 0) return true;
@@ -625,7 +376,7 @@ function evaluateRaceRecord(record, race, filters) {
 }
 
 // ==========================================
-// 3. 統計・ランキング集計コアロジック
+// 4. 統計・ランキング集計コアロジック
 // ==========================================
 function computeDetailedCourseStats(records, filters) {
   let totalRaceCount = 0;
@@ -647,8 +398,6 @@ function computeDetailedCourseStats(records, filters) {
       if (!evaluateRaceRecord(rec, race, filters)) return;
 
       const courseName = race.course || '不明なコース';
-      
-      // レースごとに定義済みの得点があれば優先、なければゲームタイトルに応じた得点テーブルを適用
       const score = (race.score !== undefined && race.score !== null)
         ? Number(race.score)
         : getScoreFromRank(recGame, rank);
@@ -672,11 +421,8 @@ function computeDetailedCourseStats(records, filters) {
     });
   });
 
-  // 配列化・指標計算
   const courseList = Object.keys(courseMap).map(name => {
     const c = courseMap[name];
-    
-    // 何レースに1回走っているか算出（総レース数 ÷ 選ばれた回数）
     const raceInterval = c.count > 0 ? (totalRaceCount / c.count).toFixed(1) : '-';
 
     return {
@@ -690,13 +436,11 @@ function computeDetailedCourseStats(records, filters) {
     };
   });
 
-  // ピック数の多い順にソート（同数の場合は平均順位順）
   courseList.sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count;
     return a.avgRank - b.avgRank;
   });
 
-  // ピック数ランキングの順位を付与
   courseList.forEach((item, index) => {
     item.rankPosition = index + 1;
   });
@@ -711,14 +455,11 @@ function computeDetailedCourseStats(records, filters) {
 }
 
 // ==========================================
-// 4. UI 描画
+// 5. UI 描画
 // ==========================================
 function renderStats() {
   const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
-  const rawCourseQuery = document.getElementById('filter-course').value.trim();
-  const courseQueries = rawCourseQuery
-    ? rawCourseQuery.split(',').map(s => s.trim()).filter(s => s.length > 0)
-    : [];
+  const selectedCourse = document.getElementById('filter-course').value;
 
   const filters = {
     matchMode,
@@ -727,10 +468,10 @@ function renderStats() {
     season: document.getElementById('filter-season').value,
     startDate: document.getElementById('filter-start-date').value,
     endDate: document.getElementById('filter-end-date').value,
-    courseQueries
+    selectedCourse
   };
 
-  const result = computeDetailedCourseStats(rawRecordsCache, filters);
+  const result = computeDetailedCourseStats(activeRecordsCache, filters);
 
   // サマリー表示の更新
   document.getElementById('stat-total-races').textContent = result.totalRaceCount.toLocaleString();
@@ -767,28 +508,35 @@ function renderStats() {
   });
 }
 
-// イベント設定
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    rawRecordsCache = await getAllRecords();
-  } catch (err) {
-    console.error('DB読み込み失敗:', err);
-  }
+// ==========================================
+// 6. イベントリスナー & 初期化
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  // 初回データ取得
+  fetchStatsFromGitHub();
 
+  // ゲームタイトル変更時にコース選択肢の更新 ＆ 再復号
+  document.getElementById('filter-game').addEventListener('change', (e) => {
+    const selectedGame = e.target.value;
+    updateCourseDropdown(selectedGame);
+    loadAndDecryptGameData(selectedGame === 'ALL' ? 'MKWORLD' : selectedGame);
+  });
+
+  // 検索実行ボタン
   document.getElementById('btn-apply').addEventListener('click', renderStats);
 
+  // リセットボタン
   document.getElementById('btn-reset').addEventListener('click', () => {
     document.querySelector('input[name="match-mode"][value="AND"]').checked = true;
-    document.getElementById('filter-game').value = 'ALL';
+    document.getElementById('filter-game').value = 'MKWORLD';
     document.getElementById('filter-mode').value = 'ALL';
     document.getElementById('filter-season').value = 'ALL';
     document.getElementById('filter-start-date').value = '';
     document.getElementById('filter-end-date').value = '';
-    document.getElementById('filter-course').value = '';
-    renderStats();
+    
+    updateCourseDropdown('MKWORLD');
+    loadAndDecryptGameData('MKWORLD');
   });
-
-  renderStats();
 });
 </script>
 </body>
