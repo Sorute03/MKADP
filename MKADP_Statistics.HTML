@@ -251,24 +251,44 @@ function updateCourseDropdown(gameType) {
 /**
  * AES-GCM 復号化関数
  */
+/**
+ * AES-GCM 復号化関数（互換性・安定性修正版）
+ */
 async function decryptData(encryptedBase64, secretKeyStr) {
   const dec = new TextDecoder();
   const enc = new TextEncoder();
 
+  // 1. 暗号キーの生成 (パスワード文字列 -> SHA-256 -> AES-GCM Key)
   const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(secretKeyStr));
-  const key = await crypto.subtle.importKey('raw', keyMaterial, 'AES-GCM', false, ['decrypt']);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt']
+  );
 
-  const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-  const iv = combined.slice(0, 12);
-  const data = combined.slice(12);
+  // 2. Base64文字列を安全に Uint8Array バイト配列へ変換
+  const binaryString = atob(encryptedBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
 
+  // 3. 先頭12バイトを IV(初期化ベクトル)、残りを暗号データに分離
+  const iv = bytes.slice(0, 12);
+  const data = bytes.slice(12);
+
+  // 4. AES-GCM 復号化を実行
   const decryptedBuffer = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: iv },
     key,
     data
   );
 
-  return JSON.parse(dec.decode(decryptedBuffer));
+  // 5. デコードして JSON としてパース
+  const jsonText = dec.decode(decryptedBuffer);
+  return JSON.parse(jsonText);
 }
 
 /**
