@@ -502,7 +502,7 @@ async function loadAndDecryptGameData(targetGameType) {
   } else {
     activeRecordsCache = await fetchSingleGameData(targetGameType);
   }
-
+  console.log("🟢 復号されたデータ構造:", records);
   console.log(`✅ [${targetGameType}] データを反映完了 (件数: ${activeRecordsCache.length})`);
   renderStats();
 }
