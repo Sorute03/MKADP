@@ -509,10 +509,14 @@ function updateCourseDropdown(gameType) {
 /**
  * AES-GCM 復号化関数
  */
+/**
+ * AES-GCM 復号化 ＆ Gzip解凍関数
+ */
 async function decryptData(encryptedBase64, secretKeyStr) {
   const dec = new TextDecoder();
   const enc = new TextEncoder();
 
+  // 1. 鍵の生成 (SHA-256)
   const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(secretKeyStr));
   const key = await crypto.subtle.importKey(
     'raw',
@@ -522,22 +526,34 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     ['decrypt']
   );
 
+  // 2. Base64 デコード
   const binaryString = atob(encryptedBase64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
+  if (bytes.length < 12) throw new Error("暗号データサイズが不正です。");
+
+  // 3. IV (12byte) と 暗号データ の分離
   const iv = bytes.slice(0, 12);
   const data = bytes.slice(12);
 
+  // 4. AES-GCM 復号（圧縮バイトデータが得られる）
   const decryptedBuffer = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: iv },
     key,
     data
   );
 
-  return JSON.parse(dec.decode(decryptedBuffer));
+  // 5. Gzip 解凍
+  const decompressedStream = new Blob([decryptedBuffer])
+    .stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+
+  // 6. JSON パース
+  return JSON.parse(dec.decode(decompressedBuffer));
 }
 
 /**
