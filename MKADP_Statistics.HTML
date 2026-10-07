@@ -91,6 +91,7 @@
           <option value="ALL">すべて (指定なし)</option>
           <option value="1">Season 1</option>
           <option value="2">Season 2</option>
+          <option value="S3">Season 3 (S3)</option>
         </select>
       </div>
 
@@ -392,7 +393,6 @@ async function decryptData(encryptedBase64, secretKeyStr) {
   const dec = new TextDecoder();
   const enc = new TextEncoder();
 
-  // 1. 鍵の生成 (SHA-256)
   const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(secretKeyStr));
   const key = await crypto.subtle.importKey(
     'raw',
@@ -402,7 +402,6 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     ['decrypt']
   );
 
-  // 2. Base64 デコード (改行や余計な空白を除去して安全に変換)
   const cleanBase64 = encryptedBase64.replace(/\s/g, '');
   const binaryString = atob(cleanBase64);
   const bytes = new Uint8Array(binaryString.length);
@@ -414,11 +413,9 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     throw new Error("暗号化データサイズが短すぎます");
   }
 
-  // 3. IV (先頭12バイト) と 暗号化データ の分離
   const iv = bytes.subarray(0, 12);
   const data = bytes.subarray(12);
 
-  // 4. AES-GCM 復号実行
   let decryptedBuffer;
   try {
     decryptedBuffer = await crypto.subtle.decrypt(
@@ -431,7 +428,6 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     throw err;
   }
 
-  // 5. Gzip解凍またはテキスト判定
   const decryptedBytes = new Uint8Array(decryptedBuffer);
 
   if (decryptedBytes.length >= 2 && decryptedBytes[0] === 0x1f && decryptedBytes[1] === 0x8b) {
@@ -458,12 +454,6 @@ function getScoreFromRank(gameType, rank) {
 // 2. GitHubからのデータ取得 ＆ 復号化
 // ==========================================
 
-/**
- * 指定した1つのゲームのデータを取得・復号して返す（補助関数）
- */
-/**
- * 指定した1つのゲームのデータを取得・復号して返す（補助関数）
- */
 async function fetchSingleGameData(targetGameType) {
   const fileName = `${targetGameType.toLowerCase()}_records.json`;
   const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
@@ -481,11 +471,9 @@ async function fetchSingleGameData(targetGameType) {
       return [];
     }
 
-    // 復号処理を実行
     const decrypted = await decryptData(payload.data, SYSTEM_ENCRYPTION_KEY);
     const records = decrypted.map(item => ({ ...item, game_type: item.game_type || targetGameType }));
 
-    // 🔽 ここに挿入します 🔽
     console.log("🟢 復号されたデータ構造:", records);
 
     return records;
@@ -494,9 +482,7 @@ async function fetchSingleGameData(targetGameType) {
     return [];
   }
 }
-/**
- * 選択されたゲーム（ALL / MKWORLD / MK8DX）のデータを取得・セットする
- */
+
 async function loadAndDecryptGameData(targetGameType) {
   const tbody = document.getElementById('course-stats-tbody');
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">データを取得・復号中...</td></tr>';
@@ -510,14 +496,11 @@ async function loadAndDecryptGameData(targetGameType) {
   } else {
     activeRecordsCache = await fetchSingleGameData(targetGameType);
   }
-  
+
   console.log(`✅ [${targetGameType}] データを反映完了 (件数: ${activeRecordsCache.length})`);
   renderStats();
 }
 
-/**
- * 初期化 & データ取得のエントリポイント
- */
 async function initializeData() {
   const selectedGame = document.getElementById('filter-game').value;
   updateCourseDropdown(selectedGame);
@@ -527,22 +510,24 @@ async function initializeData() {
 // ==========================================
 // 3. AND / OR 条件評価関数
 // ==========================================
-function evaluateRaceRecord(record, race, filters) {
+function evaluateRaceRecord(item, race, filters) {
   const matchResults = [];
-  const recGame = record.game_type || 'MKWORLD';
+  const recGame = item.game_type || 'MKWORLD';
+  // 二重構造 (rawRecord 内のプロパティ) に対応
+  const raw = item.rawRecord || item;
 
   // --- レコードレベルの条件評価 ---
   if (filters.game !== 'ALL') {
     matchResults.push(recGame === filters.game);
   }
   if (filters.mode !== 'ALL') {
-    matchResults.push(record.mode === filters.mode);
+    matchResults.push(raw.mode === filters.mode);
   }
   if (filters.season !== 'ALL') {
-    matchResults.push(String(record.season) === String(filters.season));
+    matchResults.push(String(raw.season) === String(filters.season));
   }
 
-  const recDate = new Date(record.timestamp || record.timestamp_iso || record.created_at);
+  const recDate = new Date(raw.timestamp || raw.timestamp_iso || raw.created_at);
   if (filters.startDate) {
     matchResults.push(recDate >= new Date(filters.startDate + 'T00:00:00'));
   }
@@ -561,7 +546,7 @@ function evaluateRaceRecord(record, race, filters) {
 
   // --- レースレベルの条件評価（コース指定） ---
   if (filters.selectedCourse && filters.selectedCourse !== 'ALL') {
-    const courseName = (race && race.course) ? race.course : (record.course_name || record.course || '');
+    const courseName = (race && race.course) ? race.course : (raw.course_name || raw.course || '');
     if (!courseName.toLowerCase().includes(filters.selectedCourse.toLowerCase())) {
       return false;
     }
@@ -580,19 +565,28 @@ function computeDetailedCourseStats(records, filters) {
 
   const courseMap = {};
 
-  records.forEach(rec => {
-    const recGame = rec.game_type || 'MKWORLD';
-    const raceList = Array.isArray(rec.races) && rec.races.length > 0 
-      ? rec.races 
-      : [{ course: rec.course_name || rec.course, rank: rec.rank, score: rec.score }];
+  records.forEach(item => {
+    const recGame = item.game_type || 'MKWORLD';
+    const raw = item.rawRecord || item;
+
+    // 1. statsRecords からレース一覧を抽出
+    let raceList = [];
+    if (Array.isArray(item.statsRecords) && item.statsRecords.length > 0) {
+      raceList = item.statsRecords;
+    } else if (Array.isArray(raw.races) && raw.races.length > 0) {
+      raceList = raw.races;
+    } else {
+      // 単一レースデータの場合
+      raceList = [{ course: raw.course_name || raw.course, rank: raw.rank, score: raw.score }];
+    }
 
     raceList.forEach(race => {
-      if (!evaluateRaceRecord(rec, race, filters)) return;
+      if (!evaluateRaceRecord(item, race, filters)) return;
 
       const rank = Number(race.rank);
       if (isNaN(rank) || rank <= 0) return;
 
-      const courseName = race.course || '不明なコース';
+      const courseName = race.course || raw.course_name || raw.course || '不明なコース';
 
       const score = (race.score !== undefined && race.score !== null)
         ? Number(race.score)
@@ -708,20 +702,16 @@ function renderStats() {
 // 6. イベントリスナー & 初期化
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-  // 初回データ取得 (MKWORLDが初期選択)
   initializeData();
 
-  // ゲームタイトル変更時にコース選択肢の更新 ＆ 再復号
   document.getElementById('filter-game').addEventListener('change', (e) => {
     const selectedGame = e.target.value;
     updateCourseDropdown(selectedGame);
     loadAndDecryptGameData(selectedGame);
   });
 
-  // 検索実行ボタン
   document.getElementById('btn-apply').addEventListener('click', renderStats);
 
-  // リセットボタン
   document.getElementById('btn-reset').addEventListener('click', () => {
     document.querySelector('input[name="match-mode"][value="AND"]').checked = true;
     document.getElementById('filter-game').value = 'MKWORLD';
