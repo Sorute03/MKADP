@@ -461,6 +461,9 @@ function getScoreFromRank(gameType, rank) {
 /**
  * 指定した1つのゲームのデータを取得・復号して返す（補助関数）
  */
+/**
+ * 指定した1つのゲームのデータを取得・復号して返す（補助関数）
+ */
 async function fetchSingleGameData(targetGameType) {
   const fileName = `${targetGameType.toLowerCase()}_records.json`;
   const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
@@ -478,14 +481,19 @@ async function fetchSingleGameData(targetGameType) {
       return [];
     }
 
+    // 復号処理を実行
     const decrypted = await decryptData(payload.data, SYSTEM_ENCRYPTION_KEY);
-    return decrypted.map(item => ({ ...item, game_type: item.game_type || targetGameType }));
+    const records = decrypted.map(item => ({ ...item, game_type: item.game_type || targetGameType }));
+
+    // 🔽 ここに挿入します 🔽
+    console.log("🟢 復号されたデータ構造:", records);
+
+    return records;
   } catch (err) {
     console.error(`❌ [${targetGameType}] の復号エラー:`, err);
     return [];
   }
 }
-
 /**
  * 選択されたゲーム（ALL / MKWORLD / MK8DX）のデータを取得・セットする
  */
@@ -502,7 +510,7 @@ async function loadAndDecryptGameData(targetGameType) {
   } else {
     activeRecordsCache = await fetchSingleGameData(targetGameType);
   }
-  console.log("🟢 復号されたデータ構造:", records);
+  
   console.log(`✅ [${targetGameType}] データを反映完了 (件数: ${activeRecordsCache.length})`);
   renderStats();
 }
