@@ -512,6 +512,9 @@ function updateCourseDropdown(gameType) {
 /**
  * AES-GCM 復号化 ＆ Gzip解凍関数
  */
+/**
+ * AES-GCM 復号化 ＆ 自動解凍（Gzip/通常 双方対応版）
+ */
 async function decryptData(encryptedBase64, secretKeyStr) {
   const dec = new TextDecoder();
   const enc = new TextEncoder();
@@ -533,27 +536,45 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  if (bytes.length < 12) throw new Error("暗号データサイズが不正です。");
+  if (bytes.length < 12) {
+    throw new Error("暗号化データが不正（短すぎます）");
+  }
 
   // 3. IV (12byte) と 暗号データ の分離
   const iv = bytes.slice(0, 12);
   const data = bytes.slice(12);
 
-  // 4. AES-GCM 復号（圧縮バイトデータが得られる）
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: iv },
-    key,
-    data
-  );
+  // 4. AES-GCM 復号実行
+  let decryptedBuffer;
+  try {
+    decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      data
+    );
+  } catch (err) {
+    console.error("🔑 復号キー不一致エラー: Workerの ENCRYPTION_KEY と HTMLの SYSTEM_ENCRYPTION_KEY が一致していない可能性があります。");
+    throw err;
+  }
 
-  // 5. Gzip 解凍
-  const decompressedStream = new Blob([decryptedBuffer])
-    .stream()
-    .pipeThrough(new DecompressionStream('gzip'));
-  const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+  // 5. 解凍処理（Gzip圧縮データか通常テキストかを自動判別）
+  const decryptedBytes = new Uint8Array(decryptedBuffer);
+  
+  // Gzipのヘッダーマジックナンバー (0x1F, 0x8B) を判定
+  if (decryptedBytes.length >= 2 && decryptedBytes[0] === 0x1f && decryptedBytes[1] === 0x8b) {
+    try {
+      const decompressedStream = new Blob([decryptedBuffer])
+        .stream()
+        .pipeThrough(new DecompressionStream('gzip'));
+      const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+      return JSON.parse(dec.decode(decompressedBuffer));
+    } catch (e) {
+      console.warn("Gzip解凍失敗。通常のJSONとしてパースを試みます...", e);
+    }
+  }
 
-  // 6. JSON パース
-  return JSON.parse(dec.decode(decompressedBuffer));
+  // 非圧縮テキストの場合
+  return JSON.parse(dec.decode(decryptedBuffer));
 }
 
 /**
