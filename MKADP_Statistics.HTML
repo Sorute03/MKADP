@@ -515,6 +515,9 @@ function updateCourseDropdown(gameType) {
 /**
  * AES-GCM 復号化 ＆ 自動解凍（Gzip/通常 双方対応版）
  */
+/**
+ * 【HTML用】安全な AES-GCM 復号 + 自動解凍 (Gzip / 通常 両対応)
+ */
 async function decryptData(encryptedBase64, secretKeyStr) {
   const dec = new TextDecoder();
   const enc = new TextEncoder();
@@ -529,20 +532,21 @@ async function decryptData(encryptedBase64, secretKeyStr) {
     ['decrypt']
   );
 
-  // 2. Base64 デコード
-  const binaryString = atob(encryptedBase64);
+  // 2. Base64 デコード (改行や余計な空白を除去して安全に変換)
+  const cleanBase64 = encryptedBase64.replace(/\s/g, '');
+  const binaryString = atob(cleanBase64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
   if (bytes.length < 12) {
-    throw new Error("暗号化データが不正（短すぎます）");
+    throw new Error("暗号化データサイズが短すぎます");
   }
 
-  // 3. IV (12byte) と 暗号データ の分離
-  const iv = bytes.slice(0, 12);
-  const data = bytes.slice(12);
+  // 3. IV (先頭12バイト) と 暗号化データ の分離
+  const iv = bytes.subarray(0, 12);
+  const data = bytes.subarray(12);
 
   // 4. AES-GCM 復号実行
   let decryptedBuffer;
@@ -553,30 +557,25 @@ async function decryptData(encryptedBase64, secretKeyStr) {
       data
     );
   } catch (err) {
-    console.error("🔑 復号キー不一致エラー: Workerの ENCRYPTION_KEY と HTMLの SYSTEM_ENCRYPTION_KEY が一致していない可能性があります。");
+    console.error("🔑 復号失敗: 鍵は合っていますが、GitHub上のデータが過去の「壊れたデータ」の可能性があります。");
     throw err;
   }
 
-  // 5. 解凍処理（Gzip圧縮データか通常テキストかを自動判別）
+  // 5. Gzip解凍またはテキスト判定
   const decryptedBytes = new Uint8Array(decryptedBuffer);
-  
-  // Gzipのヘッダーマジックナンバー (0x1F, 0x8B) を判定
+
+  // Gzipの判定マジックナンバー (0x1F, 0x8B)
   if (decryptedBytes.length >= 2 && decryptedBytes[0] === 0x1f && decryptedBytes[1] === 0x8b) {
-    try {
-      const decompressedStream = new Blob([decryptedBuffer])
-        .stream()
-        .pipeThrough(new DecompressionStream('gzip'));
-      const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
-      return JSON.parse(dec.decode(decompressedBuffer));
-    } catch (e) {
-      console.warn("Gzip解凍失敗。通常のJSONとしてパースを試みます...", e);
-    }
+    const decompressedStream = new Blob([decryptedBuffer])
+      .stream()
+      .pipeThrough(new DecompressionStream('gzip'));
+    const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+    return JSON.parse(dec.decode(decompressedBuffer));
   }
 
-  // 非圧縮テキストの場合
+  // 圧縮されていないデータの場合
   return JSON.parse(dec.decode(decryptedBuffer));
 }
-
 /**
  * 順位から点数を計算
  */
