@@ -84,7 +84,7 @@
           <option value="tournament">大会 (Tournament)</option>
         </select>
       </div>
-
+      
       <div class="filter-group">
         <label for="filter-season">シーズン</label>
         <select id="filter-season">
@@ -95,6 +95,7 @@
         </select>
       </div>
 
+     
       <div class="filter-group">
         <label for="filter-start-date">開始日</label>
         <input type="date" id="filter-start-date">
@@ -119,6 +120,15 @@
     </div>
   </div>
 
+
+   <!-- ラウンジ Tier別統計エリア -->
+      <section id="lounge-tier-section" class="lounge-tier-section">
+        <div class="tier-header">
+          <h2>ラウンジ Tier別統計</h2>
+          <!-- データを動的に生成・描画するコンテナ -->
+          <div id="tier-stats-container"></div>
+        </div>
+      </section>
   <!-- 条件全体のサマリー -->
   <div class="stats-summary">
     <div class="stat-box">
@@ -649,6 +659,138 @@ function computeDetailedCourseStats(records, filters) {
 }
 
 // ==========================================
+// ラウンジ Tier別 (全15種 + ALL) 統計集計モジュール
+// ==========================================
+
+// 定義された全Tierのリスト（表示順）
+const LOUNGE_TIERS_ORDER = [
+  "SQ", "X", "S", "A", "B", "BC", "C", "CD", 
+  "D", "DE", "E", "EF", "F", "FG", "G"
+];
+
+/**
+ * 統計データから Tier（SQ〜G + ALL）ごとの集計を生成する関数
+ * @param {Array} rawRecords - mogiDB または Worker から受け取った全データ配列
+ * @returns {Object} Tierごとの統計オブジェクト (SQ〜G, ALL)
+ */
+function aggregateLoungeStatsByTier(rawRecords) {
+  if (!Array.isArray(rawRecords)) return {};
+
+  // 初期構造の生成ヘルパー
+  const createInitialTierObj = (name) => ({
+    tier: name,
+    totalMogiCount: new Set(), // 模擬数の重複排除用
+    totalRaces: 0,
+    totalRankSum: 0,
+    totalScoreSum: 0,
+    wins: 0,
+    podiums: 0,
+    courseStats: {}
+  });
+
+  // 全Tier + ALL の集計用オブジェクトを用意
+  const tierStats = {
+    ALL: createInitialTierObj("ALL")
+  };
+  LOUNGE_TIERS_ORDER.forEach(t => {
+    tierStats[t] = createInitialTierObj(t);
+  });
+
+  rawRecords.forEach(data => {
+    const record = data.rawRecord || data;
+
+    // モードが lounge 以外は除外
+    const mode = (record.mode || '').toLowerCase();
+    if (mode !== 'lounge') return;
+
+    const recordTier = record.tier || record.tier_name || 'Unknown';
+    const races = Array.isArray(record.races) ? record.races : [];
+
+    races.forEach(race => {
+      // 大文字小文字の表記ゆれを考慮して正規化 (例: "sq" -> "SQ")
+      const rawTierName = (race.tier || recordTier).toUpperCase();
+      
+      // 定義リストに含まれているか確認（含まれない場合は Unknown 扱い）
+      const currentTierName = LOUNGE_TIERS_ORDER.includes(rawTierName) ? rawTierName : 'Unknown';
+
+      // 定義外のTierが来た場合に動的追加
+      if (!tierStats[currentTierName]) {
+        tierStats[currentTierName] = createInitialTierObj(currentTierName);
+      }
+
+      const rank = Number(race.rank);
+      const score = Number(race.score || race.pts || 0);
+      const course = race.course || race.course_name || 'Unknown';
+
+      if (isNaN(rank) || rank <= 0) return;
+
+      const mogiId = record.timestamp || record.id || createRecordSignature(record);
+
+      // --- 該当Tier と ALL の両方にデータを加算する共通処理 ---
+      const targets = [tierStats[currentTierName], tierStats.ALL];
+
+      targets.forEach(target => {
+        target.totalMogiCount.add(mogiId);
+        target.totalRaces += 1;
+        target.totalRankSum += rank;
+        target.totalScoreSum += score;
+
+        if (rank === 1) target.wins += 1;
+        if (rank <= 3) target.podiums += 1;
+
+        if (!target.courseStats[course]) {
+          target.courseStats[course] = {
+            courseName: course,
+            count: 0,
+            rankSum: 0,
+            scoreSum: 0
+          };
+        }
+        target.courseStats[course].count += 1;
+        target.courseStats[course].rankSum += rank;
+        target.courseStats[course].scoreSum += score;
+      });
+    });
+  });
+
+  // --- 各指標（平均順位・勝率・平均スコア等）を計算 ---
+  const result = {};
+
+  // 表示順（SQ → G → その他 → ALL）にソートして結果を作る
+  const sortedKeys = [
+    ...LOUNGE_TIERS_ORDER,
+    ...Object.keys(tierStats).filter(k => !LOUNGE_TIERS_ORDER.includes(k) && k !== 'ALL'),
+    'ALL'
+  ];
+
+  sortedKeys.forEach(tierName => {
+    const stats = tierStats[tierName];
+    if (!stats || stats.totalRaces === 0) return; // データが1件もないTierはスキップ
+
+    const totalRaces = stats.totalRaces;
+
+    const formattedCourses = Object.values(stats.courseStats).map(c => ({
+      courseName: c.courseName,
+      count: c.count,
+      avgRank: (c.rankSum / c.count).toFixed(2),
+      avgScore: (c.scoreSum / c.count).toFixed(1)
+    })).sort((a, b) => parseFloat(a.avgRank) - parseFloat(b.avgRank));
+
+    result[tierName] = {
+      tier: tierName,
+      totalMogiCount: stats.totalMogiCount.size,               // 参加模擬数
+      totalRaces: totalRaces,                                   // 総レース数
+      avgRank: (stats.totalRankSum / totalRaces).toFixed(2),   // 平均順位
+      avgScore: (stats.totalScoreSum / totalRaces).toFixed(1), // 平均スコア
+      winRate: ((stats.wins / totalRaces) * 100).toFixed(1) + '%', // 勝率
+      podiumRate: ((stats.podiums / totalRaces) * 100).toFixed(1) + '%', // TOP3率
+      courses: formattedCourses                                 // コース別平均順位
+    };
+  });
+
+  return result;
+}
+// ==========================================
 // 5. UI 描画
 // ==========================================
 function renderStats() {
@@ -701,6 +843,121 @@ function renderStats() {
     tbody.appendChild(tr);
   });
 }
+
+/**
+ * Tier別統計データを画面にレンダリングする関数
+ * @param {Object} tierDataMap - aggregateLoungeStatsByTier() の返り値
+ */
+function renderLoungeTierStatsUI(tierDataMap) {
+  const container = document.getElementById('tier-stats-container');
+  if (!container) return;
+
+  container.innerHTML = ''; // クリア
+
+  const tierKeys = Object.keys(tierDataMap);
+  if (tierKeys.length === 0) {
+    container.innerHTML = '<p class="no-data">ラウンジモードの集計データがありません。</p>';
+    return;
+  }
+
+  // 1. タブ（ボタン一覧）の生成
+  const tabList = document.createElement('div');
+  tabList.className = 'tier-tab-list';
+
+  // デフォルトで表示するTier（ALLがあればALL、なければ最初のキー）
+  let activeTier = tierKeys.includes('ALL') ? 'ALL' : tierKeys[0];
+
+  tierKeys.forEach(tierName => {
+    const btn = document.createElement('button');
+    btn.className = `tier-tab-btn ${tierName === activeTier ? 'active' : ''}`;
+    btn.dataset.tier = tierName;
+    btn.textContent = tierName;
+    
+    btn.addEventListener('click', () => {
+      // タブ切り替え処理
+      document.querySelectorAll('.tier-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tier-content-panel').forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const panel = document.getElementById(`tier-panel-${tierName}`);
+      if (panel) panel.classList.add('active');
+    });
+
+    tabList.appendChild(btn);
+  });
+
+  container.appendChild(tabList);
+
+  // 2. 各Tierのコンテンツパネル生成
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'tier-content-wrapper';
+
+  tierKeys.forEach(tierName => {
+    const data = tierDataMap[tierName];
+    const panel = document.createElement('div');
+    panel.id = `tier-panel-${tierName}`;
+    panel.className = `tier-content-panel ${tierName === activeTier ? 'active' : ''}`;
+
+    panel.innerHTML = `
+      <!-- サマリーカードグループ -->
+      <div class="tier-summary-grid">
+        <div class="stat-card">
+          <span class="stat-label">参加模擬数</span>
+          <span class="stat-value">${data.totalMogiCount} <small>回</small></span>
+          <span class="stat-sub">${data.totalRaces} レース</span>
+        </div>
+        <div class="stat-card highlight">
+          <span class="stat-label">平均順位</span>
+          <span class="stat-value">${data.avgRank} <small>位</small></span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">平均スコア</span>
+          <span class="stat-value">${data.avgScore} <small>pts</small></span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">1位率 / TOP3率</span>
+          <span class="stat-value">${data.winRate}</span>
+          <span class="stat-sub">TOP3: ${data.podiumRate}</span>
+        </div>
+      </div>
+
+      <!-- コース別成績テーブル -->
+      <div class="tier-course-section">
+        <h3>${tierName} コース別パフォーマンス</h3>
+        <div class="table-responsive">
+          <table class="tier-course-table">
+            <thead>
+              <tr>
+                <th>コース名</th>
+                <th>走破数</th>
+                <th>平均順位</th>
+                <th>平均スコア</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.courses.length > 0 ? data.courses.map(c => `
+                <tr>
+                  <td class="course-name">${c.courseName}</td>
+                  <td>${c.count}</td>
+                  <td><strong>${c.avgRank}</strong> 位</td>
+                  <td>${c.avgScore} pts</td>
+                </tr>
+              `).join('') : '<tr><td colspan="4">コースデータがありません</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    contentWrapper.appendChild(panel);
+  });
+
+  container.appendChild(contentWrapper);
+}
+
+// 実行時の呼び出し例
+// const tierStats = aggregateLoungeStatsByTier(allRecords);
+// renderLoungeTierStatsUI(tierStats);
 
 // ==========================================
 // 6. イベントリスナー & 初期化
