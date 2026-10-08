@@ -7733,15 +7733,6 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
 
 
 
-  /**
- * ADP (Mogi Track / Race Management)
- * DB: mogiDB / Store: records
- * 
- * - レコード生成 (createRaceRecord)
- * - 統計用展開データ生成 (createStatsRecord)
- * - 0:00 / 12:00 定時自動同期 & 重複チェック & Cloudflare Workers 送信
- */
-
 /**
  * ADP (Mogi Track / Race Management)
  * DB: mogiDB / Store: records
@@ -7757,7 +7748,7 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
 const GAME_TYPE = 'MKWORLD'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
 const DB_NAME = 'mogiDB';
 const STORE_NAME = 'records';
-const WORKER_URL = 'https://mkadp.lemochan.workers.dev/api/sync';// ★ご自身の Worker URL に置き換えてください
+const WORKER_URL = 'https://mkadp.lemochan.workers.dev/api/sync'; // ★ご自身の Worker URL に置き換えてください
 
 
 // ==========================================
@@ -7881,7 +7872,7 @@ function sanitizeAndDeduplicateBatch(allList) {
 }
 
 /**
- * Cloudflare Workers への HTTP 送信処理
+ * Cloudflare Workers への HTTP 送信処理 (keepalive 対応)
  */
 async function sendToCloudflareWorker(payload) {
   try {
@@ -7894,7 +7885,8 @@ async function sendToCloudflareWorker(payload) {
         game_type: GAME_TYPE, // Worker 側でゲームタイトルを識別できるよう付与
         sent_at: new Date().toISOString(),
         records: payload
-      })
+      }),
+      keepalive: true // ★重要: ページ離脱やバックグラウンド移行時も通信を完結させる
     });
 
     if (!response.ok) {
@@ -7969,8 +7961,10 @@ function updateLastSyncTime() {
 
 
 // ==========================================
-// 5. 0:00 / 12:00 定時タイマースケジューラー
+// 5. 0:00 / 12:00 定時タイマースケジューラー (バックグラウンド対応)
 // ==========================================
+
+let syncTimerId = null;
 
 /**
  * 次の 0:00 または 12:00 までのミリ秒数を計算
@@ -7989,35 +7983,60 @@ function getMsUntilNextSchedule() {
 }
 
 /**
- * 定時同期スケジューラーの初期化・起動
+ * 未完了の同期があるか判定して実行＆次のタイマーを予約
  */
-function initFixedTimeSyncScheduler() {
+function checkAndScheduleSync() {
+  if (syncTimerId) {
+    clearTimeout(syncTimerId);
+    syncTimerId = null;
+  }
+
   const lastSync = Number(localStorage.getItem('mogiDB_last_sync_time') || 0);
   const now = Date.now();
 
   const msUntilNext = getMsUntilNextSchedule();
   const nextScheduleTime = now + msUntilNext;
-  const lastScheduledTime = nextScheduleTime - (12 * 60 * 60 * 1000); // 1つ前の定時時刻
+  const lastScheduledTime = nextScheduleTime - (12 * 60 * 60 * 1000); // 1つ前の定時時刻 (0:00 または 12:00)
 
-  // 前回送信完了時刻が「1つ前の定時時刻」より古い場合、前回の定時分が未完了なので即時実行
+  // 前回送信完了時刻が「1つ前の定時時刻」より古い場合、または12時間以上前なら即時実行
   if (lastSync < lastScheduledTime) {
     console.log('[Sync] 前回の定時（0:00/12:00）同期が未完了のため、即時実行します。');
     runScheduledSync();
+  } else {
+    const minutesUntilNext = Math.round(msUntilNext / 1000 / 60);
+    console.log(`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
   }
 
-  const minutesUntilNext = Math.round(msUntilNext / 1000 / 60);
-  console.log(`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
-
   // 次の 12:00 または 0:00 に実行されるようタイマー設定
-  setTimeout(() => {
+  syncTimerId = setTimeout(() => {
     runScheduledSync();
-
-    // 以降は正確に 12時間ごとに繰り返し実行
-    setInterval(() => {
-      runScheduledSync();
-    }, 12 * 60 * 60 * 1000);
-
+    // 次回のスケジュールを再セットアップ
+    checkAndScheduleSync();
   }, msUntilNext);
+}
+
+/**
+ * 定時同期スケジューラーの初期化・起動（イベント監視追加）
+ */
+function initFixedTimeSyncScheduler() {
+  // 初回起動時のチェック
+  checkAndScheduleSync();
+
+  // ★ タブが表に戻った時 / スマホのスリープ復帰時に未実行分がないか自動再チェック
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      console.log('[Sync] タブがフォアグラウンドに戻りました。定時同期の状況を確認します。');
+      checkAndScheduleSync();
+    }
+  });
+
+  // モバイルブラウザでのキャッシュ復旧対策
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      console.log('[Sync] ページ復旧を検知。定時同期の状況を確認します。');
+      checkAndScheduleSync();
+    }
+  });
 }
 
 // ページ読み込み完了時にスケジューラーを起動
