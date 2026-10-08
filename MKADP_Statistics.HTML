@@ -569,31 +569,38 @@ function computeDetailedCourseStats(records, filters) {
     const recGame = item.game_type || 'MKWORLD';
     const raw = item.rawRecord || item;
 
-    // 1. statsRecords からレース一覧を抽出
+    // ★ 修正ポイント: statsRecords が存在し、かつ要素が 1 件以上ある場合のみそれを使用
+    // 空配列 (length === 0) の場合は rawRecord を直接参照する
     let raceList = [];
     if (Array.isArray(item.statsRecords) && item.statsRecords.length > 0) {
       raceList = item.statsRecords;
+    } else if (Array.isArray(raw.statsRecords) && raw.statsRecords.length > 0) {
+      raceList = raw.statsRecords;
     } else if (Array.isArray(raw.races) && raw.races.length > 0) {
       raceList = raw.races;
     } else {
-      // 単一レースデータの場合
-      raceList = [{ course: raw.course_name || raw.course, rank: raw.rank, score: raw.score }];
+      // statsRecords が空配列または存在しない場合は rawRecord を1つのレースとして採用
+      raceList = [{
+        course: raw.course || raw.course_name,
+        rank: raw.rank,
+        score: raw.score
+      }];
     }
 
     raceList.forEach(race => {
+      // フィルタ評価 (評価関数に item と race を渡す)
       if (!evaluateRaceRecord(item, race, filters)) return;
 
+      const courseName = race.course || race.course_name || raw.course || raw.course_name || '不明なコース';
       const rank = Number(race.rank);
-      if (isNaN(rank) || rank <= 0) return;
-
-      const courseName = race.course || raw.course_name || raw.course || '不明なコース';
-
+      
+      const validRank = (!isNaN(rank) && rank > 0) ? rank : 0;
       const score = (race.score !== undefined && race.score !== null)
         ? Number(race.score)
-        : getScoreFromRank(recGame, rank);
+        : (validRank > 0 ? getScoreFromRank(recGame, validRank) : 0);
 
       totalRaceCount++;
-      totalRankSum += rank;
+      totalRankSum += validRank;
       totalScoreSum += score;
 
       if (!courseMap[courseName]) {
@@ -606,7 +613,7 @@ function computeDetailedCourseStats(records, filters) {
       }
 
       courseMap[courseName].count++;
-      courseMap[courseName].rankSum += rank;
+      courseMap[courseName].rankSum += validRank;
       courseMap[courseName].scoreSum += score;
     });
   });
@@ -621,15 +628,12 @@ function computeDetailedCourseStats(records, filters) {
       count: c.count,
       pickRate: totalRaceCount > 0 ? ((c.count / totalRaceCount) * 100).toFixed(1) : '0.0',
       raceInterval: `${raceInterval} レースに1回`,
-      avgRank: (c.rankSum / c.count).toFixed(2),
-      avgScore: (c.scoreSum / c.count).toFixed(1)
+      avgRank: c.count > 0 ? (c.rankSum / c.count).toFixed(2) : '-',
+      avgScore: c.count > 0 ? (c.scoreSum / c.count).toFixed(1) : '-'
     };
   });
 
-  courseList.sort((a, b) => {
-    if (b.count !== a.count) return b.count - a.count;
-    return a.avgRank - b.avgRank;
-  });
+  courseList.sort((a, b) => b.count - a.count);
 
   courseList.forEach((item, index) => {
     item.rankPosition = index + 1;
