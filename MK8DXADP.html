@@ -351,8 +351,8 @@ const courseList = [
 
 
 
-<h2>MKWorld ラウンジ分析（配布ページ）</h2>
-<!-- MKWorld ラウンジ分析（配布版）ダウンロードボタン -->
+<h2>MK8DX ラウンジ分析（配布ページ）</h2>
+<!-- MK8DX ラウンジ分析（配布版）ダウンロードボタン -->
 <button id="downloadMkadpBtn" class="btn-mkadp-download">
   📁 MK8DXADP(ローカルファイル版)をダウンロード
 </button>
@@ -2183,7 +2183,7 @@ async function downloadBackup() {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "MKWorld_backup.txt";
+  a.download = "MK8DX_backup.txt";
   a.click();
 
   URL.revokeObjectURL(url);
@@ -4538,7 +4538,7 @@ document.getElementById("downloadBackupWithPasswordBtn").onclick = async () => {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "MKWorld_backup.txt";
+  a.download = "MK8DX_backup.txt";
   a.click();
 
   URL.revokeObjectURL(url);
@@ -7561,7 +7561,7 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
 // ==========================================
 // 1. 定数・設定定義
 // ==========================================
-const GAME_TYPE = 'MKWORLD'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
+const GAME_TYPE = 'MK8DX'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
 const DB_NAME = 'mogiDBDX';
 const STORE_NAME = 'records';
 const WORKER_URL = 'https://mkadp.lemochan.workers.dev/api/sync'; // ★ご自身の Worker URL に置き換えてください
