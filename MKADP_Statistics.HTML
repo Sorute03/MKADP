@@ -1067,7 +1067,7 @@ function renderStats() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${rankBadge}</td>
-        <td><strong>${c.name}</strong></td>
+        <td><strong>${translateCourseName(c.name)}</strong></td>
         <td>${c.count} ${i18nDict[currentLang].unit_times}</td>
         <td>${c.pickRate} %</td>
         <td>${c.raceInterval}</td>
@@ -1086,6 +1086,254 @@ function renderStats() {
   } else {
     tierSection.classList.add('hidden');
   }
+}
+// ==========================================
+// コース名 多言語辞書 (日本語 <-> 英語 相互変換)
+// ==========================================
+// ==========================================
+// コース名 多言語辞書 (日本語 <-> 英語 相互変換)
+// ==========================================
+const COURSE_NAME_I18N = {
+  // ----------------------------------------
+  // MK8DX 全96コース (ご提示いただいた名称に対応)
+  // ----------------------------------------
+  "マリオカートスタジアム(WiiU)": "Mario Kart Stadium",
+  "ウォーターパーク(WiiU)": "Water Park",
+  "スイーツキャニオン(WiiU)": "Sweet Sweet Canyon",
+  "ドッスンいせき(WiiU)": "Thwomp Ruins",
+  "マリオサーキット(WiiU)": "Mario Circuit",
+  "キノピオハーバー(WiiU)": "Toad Harbor",
+  "ねじれマンション(WiiU)": "Twisted Mansion",
+  "ヘイホーこうざん(WiiU)": "Shy Guy Falls",
+  "サンシャインくうこう(WiiU)": "Sunshine Airport",
+  "ドルフィンみさき(WiiU)": "Dolphin Shoals",
+  "エレクトロドリーム(WiiU)": "Electrodrome",
+  "ワリオスノーマウンテン(WiiU)": "Mount Wario",
+  "スカイガーデン(WiiU)": "Cloudtop Cruise",
+  "ホネホネさばく(WiiU)": "Bone-Dry Dunes",
+  "クッパキャッスル(WiiU)": "Bowser's Castle",
+  "レインボーロード(WiiU)": "Rainbow Road",
+
+  "モーモーカントリー(Wii)": "Wii Moo Moo Meadows",
+  "マリオサーキット(GBA)": "GBA Mario Circuit",
+  "プクプクビーチ(DS)": "DS Cheep Cheep Beach",
+  "キノピオハイウェイ(N64)": "N64 Toad's Turnpike",
+  "カラカラさばく(GC)": "GCN Dry Dry Desert",
+  "ドーナツへいや３(SFC)": "SNES Donut Plains 3",
+  "ピーチサーキット(N64)": "N64 Royal Raceway",
+  "DKジャングル(3DS)": "3DS DK Jungle",
+  "ワリオスタジアム(DS)": "DS Wario Stadium",
+  "シャーベットランド(GC)": "GCN Sherbet Land",
+  "ミュージックパーク(3DS)": "3DS Music Park",
+  "ヨッシーバレー(N64)": "N64 Yoshi Valley",
+  "チクタクロック(DS)": "DS Tick-Tock Clock",
+  "パックンスライダー(3DS)": "3DS Piranha Plant Slide",
+  "グラグラかざん(Wii)": "Wii Grumble Volcano",
+  "レインボーロード(N64)": "N64 Rainbow Road",
+
+  "ヨッシーサーキット(GC)": "GCN Yoshi Circuit",
+  "エキサイトバイク(WiiU)": "Excitebike Arena",
+  "ドラゴンロード(WiiU)": "Dragon Driftway",
+  "ミュートシティ(WiiU)": "Mute City",
+  "ワリオこうざん(Wii)": "Wii Wario's Gold Mine",
+  "レインボーロード(SFC)": "SNES Rainbow Road",
+  "ツルツルツイスター(WiiU)": "Ice Ice Outpost",
+  "ハイラルサーキット(WiiU)": "Hyrule Circuit",
+
+  "ベビィパーク(GC)": "GCN Baby Park",
+  "チーズランド(GBA)": "GBA Cheese Land",
+  "ネイチャーロード(WiiU)": "Wild Woods",
+  "どうぶつの森(WiiU)": "Animal Crossing",
+  "ネオクッパシティ(3DS)": "3DS Neo Bowser City",
+  "リボンロード(GBA)": "GBA Ribbon Road",
+  "リンリンメトロ(WiiU)": "Super Bell Subway",
+  "ビッグブルー(WiiU)": "Big Blue",
+
+  "パリプロムナード(Tour)": "Paris Promenade",
+  "キノピオサーキット(3DS)": "3DS Toad Circuit",
+  "チョコマウンテン(N64)": "N64 Choco Mountain",
+  "ココナッツモール(Wii)": "Wii Coconut Mall",
+  "トーキョースクランブル(Tour)": "Tokyo Blur",
+  "キノコリッジウェイ(DS)": "DS Shroom Ridge",
+  "スカイガーデン(GBA)": "GBA Sky Garden",
+  "ニンニンドージョー(Switch)": "Ninja Hideaway",
+
+  "ニューヨークドリーム(Tour)": "New York Minute",
+  "マリオサーキット３(SFC)": "SNES Mario Circuit 3",
+  "カラカラさばく(N64)": "N64 Kalimari Desert",
+  "ワルイージピンボール(DS)": "DS Waluigi Pinball",
+  "シドニーサンシャイン(Tour)": "Sydney Sprint",
+  "スノーランド(GBA)": "GBA Snow Land",
+  "キノコキャニオン(Wii)": "Wii Mushroom Gorge",
+  "アイスビルディング(Switch)": "Sky-High Sundae",
+
+  "ロンドンアベニュー(Tour)": "London Loop",
+  "テレサレイク(GBA)": "GBA Boo Lake",
+  "ロックロックマウンテン(3DS)": "3DS Rock Rock Mountain",
+  "メイプルツリーハウス(Wii)": "Wii Maple Treeway",
+  "ベルリンシュトラーセ(Tour)": "Berlin Byways",
+  "ピーチガーデン(DS)": "DS Peach Gardens",
+  "メリーメリーマウンテン(Switch)": "Merry Mountain",
+  "レインボーロード(3DS)": "3DS Rainbow Road",
+
+  "アムステルダムブルーム(Tour)": "Amsterdam Drift",
+  "リバーサイドパーク(GBA)": "GBA Riverside Park",
+  "DKスノーボードクロス(Wii)": "Wii DK Summit",
+  "ヨッシーアイランド(Switch)": "Yoshi's Island",
+  "バンコクラッシュ(Tour)": "Bangkok Rush",
+  "マリオサーキット(DS)": "DS Mario Circuit",
+  "ワルイージスタジアム(GC)": "GCN Waluigi Stadium",
+  "シンガポールスプラッシュ(Tour)": "Singapore Speedway",
+
+  "アテネポリス(Tour)": "Athens Dash",
+  "デイジークルーザー(GC)": "GCN Daisy Cruiser",
+  "ムーンリッジ＆ハイウェイ(Wii)": "Wii Moonview Highway",
+  "シャボンロード(Tour)": "Squeaky Clean Sprint",
+  "ロサンゼルスコースト(Tour)": "Los Angeles Laps",
+  "サンセットこうや(GBA)": "GBA Sunset Wilds",
+  "ノコノコみさき(Wii)": "Wii Koopa Cape",
+  "バンクーバーバレー(Tour)": "Vancouver Velocity",
+
+  "ローマアバンティ(Tour)": "Rome Avanti",
+  "DKマウンテン(GC)": "GCN DK Mountain",
+  "デイジーサーキット(Wii)": "Wii Daisy Circuit",
+  "パックンしんでん(Switch)": "Piranha Plant Cove",
+  "マドリードグランデ(Tour)": "Madrid Drive",
+  "ロゼッタプラネット(3DS)": "3DS Rosalina's Ice World",
+  "クッパじょう３(SFC)": "SNES Bowser's Castle 3",
+  "レインボーロード(Wii)": "Wii Rainbow Road",
+
+  // ----------------------------------------
+  // MKWORLD
+  // ----------------------------------------
+  "マリオブラザーズサーキット": "Mario Bros. Circuit",
+  "トロフィーシティ": "Crown City",
+  "シュポポコースター": "Whistlestop Summit",
+  "DKうちゅうセンター": "DK Spaceport",
+  "サンサンさばく": "Desert Hills",
+  "ヘイホーカーニバル": "Shy Guy Bazaar",
+  "ワリオスタジアム": "Wario Stadium",
+  "キラーシップ": "Airship Fortress",
+  "DKスノーマウンテン": "DK Pass",
+  "ロゼッタてんもんだい": "Starview Peak",
+  "アイスビルディング": "Sky-High Sundae",
+  "バニラレイク": "SNES Vanilla Lake 1",
+  "ワリオシップ": "Wario Shipyard",
+  "ノコノコビーチ": "Koopa Troopa Beach",
+  "SFCノコノコビーチ": "SNES Koopa Beach 1",
+  "リバーサイドサファリ": "Faraway Oasis",
+  "ピーチスタジアム": "Peach Stadium",
+  "ピーチビーチ": "Peach Beach",
+  "ソルティータウン": "Salty Salty Speedway",
+  "ディノディノジャングル": "Dino Dino Jungle",
+  "ハテナしんでん": "Great ? Block Ruins",
+  "プクプクフォールズ": "Cheep Cheep Falls",
+  "ショーニューロード": "Dandelion Depths",
+  "おばけシネマ": "Boo Cinema",
+  "おばけぬま1": "SNES Ghost Valley 1",
+  "おばけぬま2": "SNES Ghost Valley 2",
+  "おばけぬま3": "SNES Ghost Valley 3",
+  "ホネホネツイスター": "Dry Bones Burnout",
+  "モーモーカントリー": "Moo Moo Meadows",
+  "チョコマウンテン": "Choco Mountain",
+  "チョコレーとう1": "SNES Choco Island 1",
+  "チョコレーとう2": "SNES Choco Island 2",
+  "キノピオファクトリー": "Toad's Factory",
+  "クッパキャッスル": "Bowser's Castle",
+  "どんぐりツリーハウス": "Acorn Heights",
+  "マリオサーキット": "Mario Circuit",
+  "SFCマリオサーキット1": "SNES Mario Circuit 1",
+  "SFCマリオサーキット2": "SNES Mario Circuit 2",
+  "SFCマリオサーキット3": "SNES Mario Circuit 3",
+  "レインボーロード": "Rainbow Road"
+};
+
+// 逆引き辞書 (英語名 -> 日本語名) を自動生成
+const COURSE_NAME_REVERSE_I18N = {};
+Object.keys(COURSE_NAME_I18N).forEach(jaName => {
+  const enName = COURSE_NAME_I18N[jaName];
+  COURSE_NAME_REVERSE_I18N[enName] = jaName;
+});
+
+/**
+ * コース名を現在の表示言語に合わせて変換する関数
+ * (遷移コース "A→B" にも完全対応)
+ */
+function translateCourseName(rawName, targetLang = currentLang) {
+  if (!rawName) return '';
+
+  // 遷移コース (A→B や A -> B) の分割処理
+  if (rawName.includes('→') || rawName.includes('->')) {
+    const separator = rawName.includes('→') ? '→' : '->';
+    const parts = rawName.split(separator).map(p => p.trim());
+    const translatedParts = parts.map(p => translateSingleCourseName(p, targetLang));
+    return translatedParts.join(' → ');
+  }
+
+  return translateSingleCourseName(rawName, targetLang);
+}
+
+function translateSingleCourseName(name, targetLang) {
+  if (targetLang === 'en') {
+    // 日本語名から英語名に変換（すでに英語の場合はそのまま）
+    return COURSE_NAME_I18N[name] || name;
+  } else {
+    // 英語名から日本語名に変換（すでに日本語の場合はそのまま）
+    return COURSE_NAME_REVERSE_I18N[name] || name;
+  }
+}
+
+/**
+ * コースドロップダウンの更新関数（言語対応版）
+ */
+function updateCourseDropdown(gameType) {
+  const courseSelect = document.getElementById('filter-course');
+  const currentVal = courseSelect.value || 'ALL';
+  courseSelect.innerHTML = `<option value="ALL">${i18nDict[currentLang].opt_all}</option>`;
+
+  let courses = [];
+  if (gameType === 'ALL') {
+    const allCourses = new Set([...(COURSE_MASTERS.MK8DX || []), ...(COURSE_MASTERS.MKWORLD || [])]);
+    courses = Array.from(allCourses);
+  } else if (COURSE_MASTERS[gameType]) {
+    courses = COURSE_MASTERS[gameType];
+  }
+
+  courses.forEach(course => {
+    const opt = document.createElement('option');
+    opt.value = course; // 値は内部処理用(そのままでもOK)
+    opt.textContent = translateCourseName(course, currentLang); // 表示名を多言語化
+    courseSelect.appendChild(opt);
+  });
+  courseSelect.value = currentVal;
+}
+
+/**
+ * 言語切替時の呼び出し処理（setLanguage関数内に追記）
+ */
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('mkadp_stats_lang', lang);
+  document.documentElement.lang = lang;
+
+  document.getElementById('btn-lang-ja').classList.toggle('active', lang === 'ja');
+  document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+
+  // UIテキスト更新
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      el.textContent = i18nDict[lang][key];
+    }
+  });
+
+  // ドロップダウン表記更新
+  updateFilterDropdownLabels();
+  const selectedGame = document.getElementById('filter-game').value;
+  updateCourseDropdown(selectedGame); // ★コースドロップダウンの表示言語を再生成
+
+  // テーブルデータの再描画（コース名も多言語化）
+  renderStats();
 }
 
 // ==========================================
