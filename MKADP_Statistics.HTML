@@ -57,7 +57,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
       transition: all 0.3s ease;
     }
-    /* モード非選択時の隠し用クラス */
     .lounge-tier-section.hidden {
       display: none !important;
     }
@@ -132,14 +131,34 @@
           <option value="tournament">大会 (Tournament)</option>
         </select>
       </div>
+
+      <div class="filter-group">
+        <label for="filter-tier">ラウンジ Tier</label>
+        <select id="filter-tier">
+          <option value="ALL">すべて (指定なし)</option>       
+          <option value="X">X</option>
+          <option value="S">S</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="BC">BC</option>
+          <option value="C">C</option>
+          <option value="CD">CD</option>
+          <option value="D">D</option>
+          <option value="DE">DE</option>
+          <option value="E">E</option>
+          <option value="EF">EF</option>
+          <option value="F">F</option>
+          <option value="FG">FG</option>
+          <option value="G">G</option>
+          <option value="SQ">SQ</option>
+        </select>
+      </div>
       
+      <!-- シーズン 選択肢 (1〜30 は JS で自動生成) -->
       <div class="filter-group">
         <label for="filter-season">シーズン</label>
         <select id="filter-season">
           <option value="ALL">すべて (指定なし)</option>
-          <option value="S1">Season 1</option>
-          <option value="S2">Season 2</option>
-          <option value="S3">Season 3</option>
         </select>
       </div>
 
@@ -420,6 +439,21 @@ const COURSE_MASTERS = {
 let activeRecordsCache = []; // 復号済みの現在ゲームデータ
 
 /**
+ * シーズンドロップダウン (Season 1 〜 Season 30) を生成する関数
+ */
+function updateSeasonDropdown() {
+  const seasonSelect = document.getElementById('filter-season');
+  seasonSelect.innerHTML = '<option value="ALL">すべて (指定なし)</option>';
+
+  for (let i = 1; i <= 30; i++) {
+    const opt = document.createElement('option');
+    opt.value = `S${i}`;
+    opt.textContent = `Season ${i}`;
+    seasonSelect.appendChild(opt);
+  }
+}
+
+/**
  * コースドロップダウンの選択肢をゲームタイトルに合わせて動的に生成・更新する
  */
 function updateCourseDropdown(gameType) {
@@ -558,6 +592,7 @@ async function loadAndDecryptGameData(targetGameType) {
 }
 
 async function initializeData() {
+  updateSeasonDropdown(); // シーズン 1〜30 ドロップダウン生成
   const selectedGame = document.getElementById('filter-game').value;
   updateCourseDropdown(selectedGame);
   await loadAndDecryptGameData(selectedGame);
@@ -579,7 +614,18 @@ function evaluateRaceRecord(item, race, filters) {
     matchResults.push(raw.mode === filters.mode);
   }
   if (filters.season !== 'ALL') {
-    matchResults.push(String(raw.season) === String(filters.season));
+    // S1 / 1 の両記法表記揺れ対策
+    const rawSeason = String(raw.season || '').toUpperCase();
+    const filterSeason = String(filters.season).toUpperCase();
+    const cleanRawSeason = rawSeason.startsWith('S') ? rawSeason : `S${rawSeason}`;
+    const cleanFilterSeason = filterSeason.startsWith('S') ? filterSeason : `S${filterSeason}`;
+    matchResults.push(cleanRawSeason === cleanFilterSeason);
+  }
+
+  // Tier フィルタ評価
+  if (filters.tier && filters.tier !== 'ALL') {
+    const recordTier = String(race.tier || raw.tier || raw.tier_name || '').toUpperCase();
+    matchResults.push(recordTier === filters.tier.toUpperCase());
   }
 
   const recDate = new Date(raw.timestamp || raw.timestamp_iso || raw.created_at);
@@ -708,7 +754,7 @@ const LOUNGE_TIERS_ORDER = [
   "D", "DE", "E", "EF", "F", "FG", "G"
 ];
 
-function aggregateLoungeStatsByTier(rawRecords) {
+function aggregateLoungeStatsByTier(rawRecords, filterTier = 'ALL') {
   if (!Array.isArray(rawRecords)) return {};
 
   const createInitialTierObj = (name) => ({
@@ -743,6 +789,11 @@ function aggregateLoungeStatsByTier(rawRecords) {
     races.forEach(race => {
       const rawTierName = String(race.tier || recordTier).toUpperCase();
       const currentTierName = LOUNGE_TIERS_ORDER.includes(rawTierName) ? rawTierName : 'Unknown';
+
+      // フィルターで特定Tierが選択されている場合はそれ以外をスキップ
+      if (filterTier !== 'ALL' && currentTierName !== filterTier.toUpperCase()) {
+        return;
+      }
 
       if (!tierStats[currentTierName]) {
         tierStats[currentTierName] = createInitialTierObj(currentTierName);
@@ -829,7 +880,7 @@ function renderLoungeTierStatsUI(tierDataMap) {
 
   const tierKeys = Object.keys(tierDataMap);
   if (tierKeys.length === 0) {
-    container.innerHTML = '<p style="color:#888; font-size:13px;">ラウンジモードの集計データがありません。</p>';
+    container.innerHTML = '<p style="color:#888; font-size:13px;">該当する Tier のラウンジ集計データがありません。</p>';
     return;
   }
 
@@ -926,11 +977,13 @@ function renderStats() {
   const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
   const selectedCourse = document.getElementById('filter-course').value;
   const selectedMode = document.getElementById('filter-mode').value;
+  const selectedTier = document.getElementById('filter-tier').value;
 
   const filters = {
     matchMode,
     game: document.getElementById('filter-game').value,
     mode: selectedMode,
+    tier: selectedTier,
     season: document.getElementById('filter-season').value,
     startDate: document.getElementById('filter-start-date').value,
     endDate: document.getElementById('filter-end-date').value,
@@ -979,7 +1032,7 @@ function renderStats() {
   // モードが 'lounge' または 'ALL' の時に Tier別エリアを表示
   if (selectedMode === 'lounge' || selectedMode === 'ALL') {
     tierSection.classList.remove('hidden');
-    const tierStatsMap = aggregateLoungeStatsByTier(activeRecordsCache);
+    const tierStatsMap = aggregateLoungeStatsByTier(activeRecordsCache, selectedTier);
     renderLoungeTierStatsUI(tierStatsMap);
   } else {
     // 'nora' や 'tournament' の時は折りたたんで非表示化
@@ -1005,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('input[name="match-mode"][value="AND"]').checked = true;
     document.getElementById('filter-game').value = 'MKWORLD';
     document.getElementById('filter-mode').value = 'ALL';
+    document.getElementById('filter-tier').value = 'ALL';
     document.getElementById('filter-season').value = 'ALL';
     document.getElementById('filter-start-date').value = '';
     document.getElementById('filter-end-date').value = '';
