@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Mogi Track - コース詳細分析 & ランキングダッシュボード</title>
   <style>
-    body { font-family: sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; }
+    body { font-family: sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
     .container { max-width: 1200px; margin: 0 auto; }
 
     /* 検索フィルターエリア */
@@ -50,6 +50,54 @@
     .rank-1 { background: #ffd700; color: #333; }
     .rank-2 { background: #c0c0c0; color: #333; }
     .rank-3 { background: #e59866; color: white; }
+
+    /* ラウンジ Tier別統計スタイル */
+    .lounge-tier-section {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+    /* モード非選択時の隠し用クラス */
+    .lounge-tier-section.hidden {
+      display: none !important;
+    }
+
+    .tier-header h2 { margin-top: 0; font-size: 1.2rem; color: #333; }
+    .tier-tab-list {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; border-bottom: 2px solid #eef2f7; padding-bottom: 10px;
+    }
+    .tier-tab-btn {
+      background: #f0f4f9; color: #555; border: 1px solid #dce4ec; padding: 6px 14px;
+      border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-size: 13px;
+    }
+    .tier-tab-btn:hover { background: #e2eaf4; color: #111; }
+    .tier-tab-btn.active {
+      background: #0066ff; color: #fff; border-color: #0055cc;
+      box-shadow: 0 2px 6px rgba(0, 102, 255, 0.3);
+    }
+    .tier-content-panel { display: none; }
+    .tier-content-panel.active { display: block; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+    .tier-summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    }
+    .stat-card.highlight { background: #eff6ff; border-color: #bfdbfe; }
+    .stat-label { font-size: 0.8rem; color: #64748b; margin-bottom: 4px; }
+    .stat-value { font-size: 1.4rem; font-weight: bold; color: #1e293b; }
+    .stat-value small { font-size: 0.85rem; font-weight: normal; color: #64748b; }
+    .stat-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+
+    .tier-course-section h3 { font-size: 1rem; margin-bottom: 10px; color: #334155; }
+    .table-responsive { overflow-x: auto; }
+    .tier-course-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .tier-course-table th, .tier-course-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+    .tier-course-table th { background: #f1f5f9; color: #475569; font-weight: 600; }
+    .tier-course-table td.course-name { font-weight: 600; color: #0f172a; }
   </style>
 </head>
 <body>
@@ -95,7 +143,6 @@
         </select>
       </div>
 
-     
       <div class="filter-group">
         <label for="filter-start-date">開始日</label>
         <input type="date" id="filter-start-date">
@@ -120,15 +167,14 @@
     </div>
   </div>
 
+  <!-- ラウンジ Tier別統計エリア（lounge / ALL 時のみ表示） -->
+  <section id="lounge-tier-section" class="lounge-tier-section">
+    <div class="tier-header">
+      <h2>🏆 ラウンジ Tier別統計 (SQ 〜 G / ALL)</h2>
+      <div id="tier-stats-container"></div>
+    </div>
+  </section>
 
-   <!-- ラウンジ Tier別統計エリア -->
-      <section id="lounge-tier-section" class="lounge-tier-section">
-        <div class="tier-header">
-          <h2>ラウンジ Tier別統計</h2>
-          <!-- データを動的に生成・描画するコンテナ -->
-          <div id="tier-stats-container"></div>
-        </div>
-      </section>
   <!-- 条件全体のサマリー -->
   <div class="stats-summary">
     <div class="stat-box">
@@ -523,7 +569,6 @@ async function initializeData() {
 function evaluateRaceRecord(item, race, filters) {
   const matchResults = [];
   const recGame = item.game_type || 'MKWORLD';
-  // 二重構造 (rawRecord 内のプロパティ) に対応
   const raw = item.rawRecord || item;
 
   // --- レコードレベルの条件評価 ---
@@ -579,8 +624,6 @@ function computeDetailedCourseStats(records, filters) {
     const recGame = item.game_type || 'MKWORLD';
     const raw = item.rawRecord || item;
 
-    // ★ 修正ポイント: statsRecords が存在し、かつ要素が 1 件以上ある場合のみそれを使用
-    // 空配列 (length === 0) の場合は rawRecord を直接参照する
     let raceList = [];
     if (Array.isArray(item.statsRecords) && item.statsRecords.length > 0) {
       raceList = item.statsRecords;
@@ -589,7 +632,6 @@ function computeDetailedCourseStats(records, filters) {
     } else if (Array.isArray(raw.races) && raw.races.length > 0) {
       raceList = raw.races;
     } else {
-      // statsRecords が空配列または存在しない場合は rawRecord を1つのレースとして採用
       raceList = [{
         course: raw.course || raw.course_name,
         rank: raw.rank,
@@ -598,7 +640,6 @@ function computeDetailedCourseStats(records, filters) {
     }
 
     raceList.forEach(race => {
-      // フィルタ評価 (評価関数に item と race を渡す)
       if (!evaluateRaceRecord(item, race, filters)) return;
 
       const courseName = race.course || race.course_name || raw.course || raw.course_name || '不明なコース';
@@ -659,27 +700,20 @@ function computeDetailedCourseStats(records, filters) {
 }
 
 // ==========================================
-// ラウンジ Tier別 (全15種 + ALL) 統計集計モジュール
+// 5. ラウンジ Tier別 (全15種 + ALL) 統計集計モジュール
 // ==========================================
 
-// 定義された全Tierのリスト（表示順）
 const LOUNGE_TIERS_ORDER = [
   "SQ", "X", "S", "A", "B", "BC", "C", "CD", 
   "D", "DE", "E", "EF", "F", "FG", "G"
 ];
 
-/**
- * 統計データから Tier（SQ〜G + ALL）ごとの集計を生成する関数
- * @param {Array} rawRecords - mogiDB または Worker から受け取った全データ配列
- * @returns {Object} Tierごとの統計オブジェクト (SQ〜G, ALL)
- */
 function aggregateLoungeStatsByTier(rawRecords) {
   if (!Array.isArray(rawRecords)) return {};
 
-  // 初期構造の生成ヘルパー
   const createInitialTierObj = (name) => ({
     tier: name,
-    totalMogiCount: new Set(), // 模擬数の重複排除用
+    totalMogiCount: new Set(),
     totalRaces: 0,
     totalRankSum: 0,
     totalScoreSum: 0,
@@ -688,7 +722,6 @@ function aggregateLoungeStatsByTier(rawRecords) {
     courseStats: {}
   });
 
-  // 全Tier + ALL の集計用オブジェクトを用意
   const tierStats = {
     ALL: createInitialTierObj("ALL")
   };
@@ -699,34 +732,30 @@ function aggregateLoungeStatsByTier(rawRecords) {
   rawRecords.forEach(data => {
     const record = data.rawRecord || data;
 
-    // モードが lounge 以外は除外
     const mode = (record.mode || '').toLowerCase();
     if (mode !== 'lounge') return;
 
     const recordTier = record.tier || record.tier_name || 'Unknown';
-    const races = Array.isArray(record.races) ? record.races : [];
+    const races = Array.isArray(record.races) && record.races.length > 0
+      ? record.races
+      : [{ course: record.course || record.course_name, rank: record.rank, score: record.score, tier: recordTier }];
 
     races.forEach(race => {
-      // 大文字小文字の表記ゆれを考慮して正規化 (例: "sq" -> "SQ")
-      const rawTierName = (race.tier || recordTier).toUpperCase();
-      
-      // 定義リストに含まれているか確認（含まれない場合は Unknown 扱い）
+      const rawTierName = String(race.tier || recordTier).toUpperCase();
       const currentTierName = LOUNGE_TIERS_ORDER.includes(rawTierName) ? rawTierName : 'Unknown';
 
-      // 定義外のTierが来た場合に動的追加
       if (!tierStats[currentTierName]) {
         tierStats[currentTierName] = createInitialTierObj(currentTierName);
       }
 
       const rank = Number(race.rank);
       const score = Number(race.score || race.pts || 0);
-      const course = race.course || race.course_name || 'Unknown';
+      const course = race.course || race.course_name || record.course || record.course_name || '不明なコース';
 
       if (isNaN(rank) || rank <= 0) return;
 
-      const mogiId = record.timestamp || record.id || createRecordSignature(record);
+      const mogiId = record.timestamp || record.id || `${record.date || ''}_${record.mode || ''}_${record.season || ''}`;
 
-      // --- 該当Tier と ALL の両方にデータを加算する共通処理 ---
       const targets = [tierStats[currentTierName], tierStats.ALL];
 
       targets.forEach(target => {
@@ -753,10 +782,7 @@ function aggregateLoungeStatsByTier(rawRecords) {
     });
   });
 
-  // --- 各指標（平均順位・勝率・平均スコア等）を計算 ---
   const result = {};
-
-  // 表示順（SQ → G → その他 → ALL）にソートして結果を作る
   const sortedKeys = [
     ...LOUNGE_TIERS_ORDER,
     ...Object.keys(tierStats).filter(k => !LOUNGE_TIERS_ORDER.includes(k) && k !== 'ALL'),
@@ -765,7 +791,7 @@ function aggregateLoungeStatsByTier(rawRecords) {
 
   sortedKeys.forEach(tierName => {
     const stats = tierStats[tierName];
-    if (!stats || stats.totalRaces === 0) return; // データが1件もないTierはスキップ
+    if (!stats || stats.totalRaces === 0) return;
 
     const totalRaces = stats.totalRaces;
 
@@ -778,93 +804,38 @@ function aggregateLoungeStatsByTier(rawRecords) {
 
     result[tierName] = {
       tier: tierName,
-      totalMogiCount: stats.totalMogiCount.size,               // 参加模擬数
-      totalRaces: totalRaces,                                   // 総レース数
-      avgRank: (stats.totalRankSum / totalRaces).toFixed(2),   // 平均順位
-      avgScore: (stats.totalScoreSum / totalRaces).toFixed(1), // 平均スコア
-      winRate: ((stats.wins / totalRaces) * 100).toFixed(1) + '%', // 勝率
-      podiumRate: ((stats.podiums / totalRaces) * 100).toFixed(1) + '%', // TOP3率
-      courses: formattedCourses                                 // コース別平均順位
+      totalMogiCount: stats.totalMogiCount.size,
+      totalRaces: totalRaces,
+      avgRank: (stats.totalRankSum / totalRaces).toFixed(2),
+      avgScore: (stats.totalScoreSum / totalRaces).toFixed(1),
+      winRate: ((stats.wins / totalRaces) * 100).toFixed(1) + '%',
+      podiumRate: ((stats.podiums / totalRaces) * 100).toFixed(1) + '%',
+      courses: formattedCourses
     };
   });
 
   return result;
 }
+
 // ==========================================
-// 5. UI 描画
+// 6. UI 描画
 // ==========================================
-function renderStats() {
-  const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
-  const selectedCourse = document.getElementById('filter-course').value;
 
-  const filters = {
-    matchMode,
-    game: document.getElementById('filter-game').value,
-    mode: document.getElementById('filter-mode').value,
-    season: document.getElementById('filter-season').value,
-    startDate: document.getElementById('filter-start-date').value,
-    endDate: document.getElementById('filter-end-date').value,
-    selectedCourse
-  };
-
-  const result = computeDetailedCourseStats(activeRecordsCache, filters);
-
-  // サマリー表示の更新
-  document.getElementById('stat-total-races').textContent = result.totalRaceCount.toLocaleString();
-  document.getElementById('stat-unique-courses').textContent = result.uniqueCourses;
-  document.getElementById('stat-avg-rank').textContent = result.overallAvgRank;
-  document.getElementById('stat-avg-score').textContent = result.overallAvgScore;
-
-  // テーブルの更新
-  const tbody = document.getElementById('course-stats-tbody');
-  tbody.innerHTML = '';
-
-  if (result.courseList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">該当するデータが存在しません</td></tr>';
-    return;
-  }
-
-  result.courseList.forEach(c => {
-    let rankBadge = c.rankPosition;
-    if (c.rankPosition === 1) rankBadge = `<span class="rank-badge rank-1">1</span>`;
-    else if (c.rankPosition === 2) rankBadge = `<span class="rank-badge rank-2">2</span>`;
-    else if (c.rankPosition === 3) rankBadge = `<span class="rank-badge rank-3">3</span>`;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${rankBadge}</td>
-      <td><strong>${c.name}</strong></td>
-      <td>${c.count} 回</td>
-      <td>${c.pickRate} %</td>
-      <td>${c.raceInterval}</td>
-      <td>${c.avgRank} 位</td>
-      <td>${c.avgScore} 点</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/**
- * Tier別統計データを画面にレンダリングする関数
- * @param {Object} tierDataMap - aggregateLoungeStatsByTier() の返り値
- */
 function renderLoungeTierStatsUI(tierDataMap) {
   const container = document.getElementById('tier-stats-container');
   if (!container) return;
 
-  container.innerHTML = ''; // クリア
+  container.innerHTML = '';
 
   const tierKeys = Object.keys(tierDataMap);
   if (tierKeys.length === 0) {
-    container.innerHTML = '<p class="no-data">ラウンジモードの集計データがありません。</p>';
+    container.innerHTML = '<p style="color:#888; font-size:13px;">ラウンジモードの集計データがありません。</p>';
     return;
   }
 
-  // 1. タブ（ボタン一覧）の生成
   const tabList = document.createElement('div');
   tabList.className = 'tier-tab-list';
 
-  // デフォルトで表示するTier（ALLがあればALL、なければ最初のキー）
   let activeTier = tierKeys.includes('ALL') ? 'ALL' : tierKeys[0];
 
   tierKeys.forEach(tierName => {
@@ -874,7 +845,6 @@ function renderLoungeTierStatsUI(tierDataMap) {
     btn.textContent = tierName;
     
     btn.addEventListener('click', () => {
-      // タブ切り替え処理
       document.querySelectorAll('.tier-tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tier-content-panel').forEach(p => p.classList.remove('active'));
 
@@ -888,7 +858,6 @@ function renderLoungeTierStatsUI(tierDataMap) {
 
   container.appendChild(tabList);
 
-  // 2. 各Tierのコンテンツパネル生成
   const contentWrapper = document.createElement('div');
   contentWrapper.className = 'tier-content-wrapper';
 
@@ -899,7 +868,6 @@ function renderLoungeTierStatsUI(tierDataMap) {
     panel.className = `tier-content-panel ${tierName === activeTier ? 'active' : ''}`;
 
     panel.innerHTML = `
-      <!-- サマリーカードグループ -->
       <div class="tier-summary-grid">
         <div class="stat-card">
           <span class="stat-label">参加模擬数</span>
@@ -921,7 +889,6 @@ function renderLoungeTierStatsUI(tierDataMap) {
         </div>
       </div>
 
-      <!-- コース別成績テーブル -->
       <div class="tier-course-section">
         <h3>${tierName} コース別パフォーマンス</h3>
         <div class="table-responsive">
@@ -955,12 +922,73 @@ function renderLoungeTierStatsUI(tierDataMap) {
   container.appendChild(contentWrapper);
 }
 
-// 実行時の呼び出し例
-// const tierStats = aggregateLoungeStatsByTier(allRecords);
-// renderLoungeTierStatsUI(tierStats);
+function renderStats() {
+  const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
+  const selectedCourse = document.getElementById('filter-course').value;
+  const selectedMode = document.getElementById('filter-mode').value;
+
+  const filters = {
+    matchMode,
+    game: document.getElementById('filter-game').value,
+    mode: selectedMode,
+    season: document.getElementById('filter-season').value,
+    startDate: document.getElementById('filter-start-date').value,
+    endDate: document.getElementById('filter-end-date').value,
+    selectedCourse
+  };
+
+  // 1. コース詳細＆ランキング計算
+  const result = computeDetailedCourseStats(activeRecordsCache, filters);
+
+  // サマリー表示の更新
+  document.getElementById('stat-total-races').textContent = result.totalRaceCount.toLocaleString();
+  document.getElementById('stat-unique-courses').textContent = result.uniqueCourses;
+  document.getElementById('stat-avg-rank').textContent = result.overallAvgRank;
+  document.getElementById('stat-avg-score').textContent = result.overallAvgScore;
+
+  // メインコーステーブルの更新
+  const tbody = document.getElementById('course-stats-tbody');
+  tbody.innerHTML = '';
+
+  if (result.courseList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">該当するデータが存在しません</td></tr>';
+  } else {
+    result.courseList.forEach(c => {
+      let rankBadge = c.rankPosition;
+      if (c.rankPosition === 1) rankBadge = `<span class="rank-badge rank-1">1</span>`;
+      else if (c.rankPosition === 2) rankBadge = `<span class="rank-badge rank-2">2</span>`;
+      else if (c.rankPosition === 3) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${rankBadge}</td>
+        <td><strong>${c.name}</strong></td>
+        <td>${c.count} 回</td>
+        <td>${c.pickRate} %</td>
+        <td>${c.raceInterval}</td>
+        <td>${c.avgRank} 位</td>
+        <td>${c.avgScore} 点</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 2. ラウンジ Tier別 UI の表示制御 ＆ 描画
+  const tierSection = document.getElementById('lounge-tier-section');
+
+  // モードが 'lounge' または 'ALL' の時に Tier別エリアを表示
+  if (selectedMode === 'lounge' || selectedMode === 'ALL') {
+    tierSection.classList.remove('hidden');
+    const tierStatsMap = aggregateLoungeStatsByTier(activeRecordsCache);
+    renderLoungeTierStatsUI(tierStatsMap);
+  } else {
+    // 'nora' や 'tournament' の時は折りたたんで非表示化
+    tierSection.classList.add('hidden');
+  }
+}
 
 // ==========================================
-// 6. イベントリスナー & 初期化
+// 7. イベントリスナー & 初期化
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   initializeData();
