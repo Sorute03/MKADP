@@ -11,7 +11,7 @@
   <meta name="google-site-verification" content="ieBz5NZIDa5VACPaNlLBlGx4ye0W1oMvQ-Uy0lCtf5U" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="msvalidate.01" content="438630E93A9B80137E002A9BCF5610CD" />
-  <title>MK All Database Program（MKADP）| 概要サイト</title>
+  <title>MK All Database Program（MKADP）| Overview</title>
   <style>
     :root {
       --primary-color: #2563eb;
@@ -41,6 +41,39 @@
     .container {
       max-width: 900px;
       margin: 0 auto;
+    }
+
+    /* 言語切替スイッチ */
+    .lang-switcher-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+
+    .lang-switcher {
+      display: inline-flex;
+      background-color: #e2e8f0;
+      padding: 4px;
+      border-radius: 9999px;
+      gap: 4px;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background-color: var(--primary-color);
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .card {
@@ -178,6 +211,7 @@
       border: 1px solid #bfdbfe;
       border-radius: 8px;
       padding: 20px;
+      margin-bottom: 16px;
     }
 
     .feature-card h4 {
@@ -217,40 +251,51 @@
 <body>
 
   <div class="container">
+
+    <!-- 言語切替ボタン -->
+    <div class="lang-switcher-container">
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">日本語</button>
+        <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">English</button>
+      </div>
+    </div>
     
     <!-- メインカード -->
     <div class="card">
       <div class="header">
-        <span class="tag">配布・分析ツール</span>
+        <span class="tag" data-i18n="tag">配布・分析ツール</span>
         <h1>MK All Database Program</h1>
-        <p class="description">
+        <p class="description" data-i18n="description">
           MKWorld及びMK8DXラウンジや大会、世界野良での対戦データやスコアを簡単に可視化・分析するためのWebブラウザ対応ツールです。
         </p>
       </div>
 
       <div class="btn-group">
-        <a href="https://sorute03.github.io/MKADP/MKWORLDADP.html" target="_blank" class="btn btn-primary">
+        <a href="https://sorute03.github.io/MKADP/MKWORLDADP.html" target="_blank" class="btn btn-primary" data-i18n="btn_web_mkworld">
           🌐 ツールを直接開く(MKWORLD版)
         </a>
-        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/MKWORLDADP.html" download="MKADP.html" class="btn btn-secondary">
+        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/MKWORLDADP.html" download="MKADP.html" class="btn btn-secondary" data-i18n="btn_dl_mkworld">
           📥 ローカルファイル版をダウンロード (.html)
         </a>
       </div>
+
       <div class="btn-group">
-        <a href="https://sorute03.github.io/MKADP/MK8DXADP.html" target="_blank" class="btn btn-primary">
+        <a href="https://sorute03.github.io/MKADP/MK8DXADP.html" target="_blank" class="btn btn-primary" data-i18n="btn_web_mk8dx">
           🌐 ツールを直接開く(MK8DX版)
         </a>
-        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/MK8DX.html" download="MKADP.html" class="btn btn-secondary">
+        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/MK8DX.html" download="MKADP.html" class="btn btn-secondary" data-i18n="btn_dl_mk8dx">
           📥 ローカルファイル版をダウンロード (.html)
         </a>
       </div>
-       <div class="btn-group">
-        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/overlay.html" download="MKADP.html" class="btn btn-secondary">
+
+      <div class="btn-group">
+        <a href="https://raw.githubusercontent.com/Sorute03/MKADP/main/overlay.html" download="overlay.html" class="btn btn-secondary" data-i18n="btn_dl_overlay">
           📥 配信者用オーバーレイファイルをダウンロード (.html)
         </a>
       </div>
+
       <div class="btn-group">
-        <a href="https://sorute03.github.io/MKADP/MKADP_Statistics.HTML" target="_blank" class="btn btn-primary">
+        <a href="https://sorute03.github.io/MKADP/MKADP_Statistics.HTML" target="_blank" class="btn btn-primary" data-i18n="btn_web_stats">
           🌐 統計表示ページを開く
         </a>
       </div>
@@ -258,69 +303,180 @@
 
     <!-- 各機能の詳しい使い方 -->
     <div class="card">
-      <h2 class="section-title">📊 各機能の解説と使い方</h2>
+      <h2 class="section-title" data-i18n="title_features">📊 各機能の解説と使い方</h2>
       
-        <div class="feature-card">
-          <h4>1. レースグラフ＆傾向分析</h4>
-          <ul>
-            <li>コースごとの得意・不得意の分析データ出力</li>
-            <li>安定度や平均順位などのスタッツ分析</li>
-            <li>様々な表やランキングで客観的なスタッツ分析が可能！</li>
-          </ul>
-        </div>
+      <div class="feature-card">
+        <h4 data-i18n="feature1_title">1. レースグラフ＆傾向分析</h4>
+        <ul>
+          <li data-i18n="feature1_item1">コースごとの得意・不得意の分析データ出力</li>
+          <li data-i18n="feature1_item2">安定度や平均順位などのスタッツ分析</li>
+          <li data-i18n="feature1_item3">様々な表やランキングで客観的なスタッツ分析が可能！</li>
+        </ul>
+      </div>
 
-        <div class="feature-card">
-          <h4>2. 分析結果の出力・共有</h4>
-          <ul>
-            <li>ローカル環境でのファイル保存に対応!</li>
-            <li>webhookURLを使いコースごとの分析データをDiscordに送信共有可能!</li>
-            <li>さらにwebhookURLがあればラウンジstatsも表示&送信可能!</li>
-          </ul>
-          
-        </div>
-        <div class="feature-card">
-          <h4>3. 配信者用オーバーレイ搭載!</h4>
-          <ul>
-            <li>obsのWebSoket機能を使い配信画面に分析データを表示可能!(ローカルファイル版のみ可能)</li>
-          </ul>
-        </div>
+      <div class="feature-card">
+        <h4 data-i18n="feature2_title">2. 分析結果の出力・共有</h4>
+        <ul>
+          <li data-i18n="feature2_item1">ローカル環境でのファイル保存に対応!</li>
+          <li data-i18n="feature2_item2">webhookURLを使いコースごとの分析データをDiscordに送信共有可能!</li>
+          <li data-i18n="feature2_item3">さらにwebhookURLがあればラウンジstatsも表示&送信可能!</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h4 data-i18n="feature3_title">3. 配信者用オーバーレイ搭載!</h4>
+        <ul>
+          <li data-i18n="feature3_item1">obsのWebSoket機能を使い配信画面に分析データを表示可能!(ローカルファイル版のみ可能)</li>
+        </ul>
       </div>
     </div>
 
     <!-- 基本的な利用手順 -->
     <div class="card">
-      <h2 class="section-title">🚀 ツールのご利用手順</h2>
+      <h2 class="section-title" data-i18n="title_guide">🚀 ツールのご利用手順</h2>
 
       <div class="guide-step">
-        <h3><span class="step-number">1</span> ツールを起動する</h3>
-        <p>「ツールを直接開く」ボタンをクリックするか、ダウンロードした <code>MKADP.html</code> ファイルをブラウザ（Chrome, Edge, Safari等）で開きます。</p>
+        <h3><span class="step-number">1</span> <span data-i18n="step1_title">ツールを起動する</span></h3>
+        <p data-i18n="step1_desc">「ツールを直接開く」ボタンをクリックするか、ダウンロードした <code>MKADP.html</code> ファイルをブラウザ（Chrome, Edge, Safari等）で開きます。</p>
       </div>
 
       <div class="guide-step">
-        <h3><span class="step-number">2</span> 順位データを入力する</h3>
-        <p>レース登録フォームにラウンジや大会や野良の各レース順位等情報を入力し、「保存」ボタンを押します。</p>
+        <h3><span class="step-number">2</span> <span data-i18n="step2_title">順位データを入力する</span></h3>
+        <p data-i18n="step2_desc">レース登録フォームにラウンジや大会や野良の各レース順位等情報を入力し、「保存」ボタンを押します。</p>
       </div>
 
       <div class="guide-step">
-        <h3><span class="step-number">3</span> グラフと分析結果を確認する</h3>
-        <p>自動生成された分析データ、推移グラフを確認して戦況を振り返ります。</p>
+        <h3><span class="step-number">3</span> <span data-i18n="step3_title">グラフと分析結果を確認する</span></h3>
+        <p data-i18n="step3_desc">自動生成された分析データ、推移グラフを確認して戦況を振り返ります。</p>
       </div>
 
       <div class="guide-step">
-        <h3><span class="step-number">4</span> 結果をコピー・保存する</h3>
-        <p>Discord等に共有するか、分析データを保存します。</p>
+        <h3><span class="step-number">4</span> <span data-i18n="step4_title">結果をコピー・保存する</span></h3>
+        <p data-i18n="step4_desc">Discord等に共有するか、分析データを保存します。</p>
       </div>
     </div>
+
     <div class="btn-group">
-        <a href="https://x.com/harucchi03" target="_blank" class="btn btn-primary">
-          🌐 問い合わせはこちら(製作者のXアカウント)
-        </a>
+      <a href="https://x.com/harucchi03" target="_blank" class="btn btn-primary" data-i18n="btn_contact">
+        🌐 問い合わせはこちら(製作者のXアカウント)
+      </a>
     </div>
+
     <div class="footer">
       <p>Developer: レモちゃん♪ | MKADP (MKWorld All Database Program)</p>
     </div>
 
   </div>
 
+  <script>
+    // ==========================================
+    // 多言語辞書 (Japanese / English)
+    // ==========================================
+    const i18nData = {
+      ja: {
+        tag: "配布・分析ツール",
+        description: "MKWorld及びMK8DXラウンジや大会、世界野良での対戦データやスコアを簡単に可視化・分析するためのWebブラウザ対応ツールです。",
+        btn_web_mkworld: "🌐 ツールを直接開く(MKWORLD版)",
+        btn_dl_mkworld: "📥 ローカルファイル版をダウンロード (.html)",
+        btn_web_mk8dx: "🌐 ツールを直接開く(MK8DX版)",
+        btn_dl_mk8dx: "📥 ローカルファイル版をダウンロード (.html)",
+        btn_dl_overlay: "📥 配信者用オーバーレイファイルをダウンロード (.html)",
+        btn_web_stats: "🌐 統計表示ページを開く",
+        
+        title_features: "📊 各機能の解説と使い方",
+        feature1_title: "1. レースグラフ＆傾向分析",
+        feature1_item1: "コースごとの得意・不得意の分析データ出力",
+        feature1_item2: "安定度や平均順位などのスタッツ分析",
+        feature1_item3: "様々な表やランキングで客観的なスタッツ分析が可能！",
+        
+        feature2_title: "2. 分析結果の出力・共有",
+        feature2_item1: "ローカル環境でのファイル保存に対応!",
+        feature2_item2: "webhookURLを使いコースごとの分析データをDiscordに送信共有可能!",
+        feature2_item3: "さらにwebhookURLがあればラウンジstatsも表示&送信可能!",
+        
+        feature3_title: "3. 配信者用オーバーレイ搭載!",
+        feature3_item1: "obsのWebSoket機能を使い配信画面に分析データを表示可能!(ローカルファイル版のみ可能)",
+        
+        title_guide: "🚀 ツールのご利用手順",
+        step1_title: "ツールを起動する",
+        step1_desc: "「ツールを直接開く」ボタンをクリックするか、ダウンロードした MKADP.html ファイルをブラウザ（Chrome, Edge, Safari等）で開きます。",
+        step2_title: "順位データを入力する",
+        step2_desc: "レース登録フォームにラウンジや大会や野良の各レース順位等情報を入力し、「保存」ボタンを押します。",
+        step3_title: "グラフと分析結果を確認する",
+        step3_desc: "自動生成された分析データ、推移グラフを確認して戦況を振り返ります。",
+        step4_title: "結果をコピー・保存する",
+        step4_desc: "Discord等に共有するか、分析データを保存します。",
+        
+        btn_contact: "🌐 問い合わせはこちら(製作者のXアカウント)"
+      },
+      en: {
+        tag: "Distribution & Analytics Tool",
+        description: "A web browser tool for visualizing and analyzing match data and scores across MKWorld and MK8DX Lounge, Tournaments, and Worldwide Online matches.",
+        btn_web_mkworld: "🌐 Open Tool (MKWORLD Version)",
+        btn_dl_mkworld: "📥 Download Local File (.html)",
+        btn_web_mk8dx: "🌐 Open Tool (MK8DX Version)",
+        btn_dl_mk8dx: "📥 Download Local File (.html)",
+        btn_dl_overlay: "📥 Download Streamer Overlay File (.html)",
+        btn_web_stats: "🌐 Open Global Statistics Page",
+        
+        title_features: "📊 Features & Usage",
+        feature1_title: "1. Race Graphs & Trend Analysis",
+        feature1_item1: "Outputs strengths and weaknesses for each course",
+        feature1_item2: "Analyzes consistency, average placement, and key stats",
+        feature1_item3: "Provides objective statistical insights via various tables and rankings",
+        
+        feature2_title: "2. Export & Share Results",
+        feature2_item1: "Supports local file saving and offline storage",
+        feature2_item2: "Send course performance analytics to Discord via Webhook URL",
+        feature2_item3: "Display and send Lounge stats automatically using Webhook URLs",
+        
+        feature3_title: "3. Streamer Overlay Included!",
+        feature3_item1: "Display live analytics directly on OBS streams using WebSocket (Local File version only)",
+        
+        title_guide: "🚀 Getting Started Guide",
+        step1_title: "Launch the Tool",
+        step1_desc: "Click 'Open Tool' or open the downloaded MKADP.html file directly in any browser (Chrome, Edge, Safari, etc.).",
+        step2_title: "Input Race Placements",
+        step2_desc: "Enter race results and placements from Lounge, Tournaments, or Worldwide matches into the form and click 'Save'.",
+        step3_title: "Check Graphs & Insights",
+        step3_desc: "Review automatically generated performance charts and course analytics to evaluate your gameplay.",
+        step4_title: "Share or Save Results",
+        step4_desc: "Export your performance data or send summary reports directly to Discord.",
+        
+        btn_contact: "🌐 Contact Developer (X / Twitter)"
+      }
+    };
+
+    /**
+     * 言語を切替えて表示を更新する関数
+     */
+    function setLanguage(lang) {
+      // ローカルストレージに保存
+      localStorage.setItem('mkadp_lang', lang);
+
+      // HTML lang 属性の更新
+      document.documentElement.lang = lang;
+
+      // ボタンの active スタイル切り替え
+      document.getElementById('btn-lang-ja').classList.toggle('active', lang === 'ja');
+      document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+
+      // data-i18n 属性が付与された全要素を辞書データに基づいて更新
+      const elements = document.querySelectorAll('[data-i18n]');
+      elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18nData[lang] && i18nData[lang][key]) {
+          el.textContent = i18nData[lang][key];
+        }
+      });
+    }
+
+    // 初期化（保存済み言語設定の読み込み、またはブラウザの標準言語を判定）
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('mkadp_lang');
+      const userLang = navigator.language.startsWith('ja') ? 'ja' : 'en';
+      setLanguage(savedLang || userLang);
+    });
+  </script>
 </body>
 </html>
