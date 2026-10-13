@@ -8230,9 +8230,12 @@ async function sendBackupDataViaForm() {
 /**
  * 定時同期実行メイン関数（毎回全データを送信）
  */
+/**
+ * 定時同期実行メイン関数（環境に応じて fetch とフォーム送信を自動切り替え）
+ */
 async function runScheduledSync() {
   console.log('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
-
+  
   try {
     // 1. mogiDB から全データ取得
     const allRecords = await getAllRecordsFromMogiDB();
@@ -8261,23 +8264,36 @@ async function runScheduledSync() {
       };
     });
 
-    // 4. Cloudflare Workers に全データを送信
-    const sendSuccess = await sendToCloudflareWorker(payload);
+    // 4. 環境判定（ローカルファイル版ならフォーム送信、Web版なら通常のfetch送信）
+    const isLocalFile = window.location.protocol === 'file:';
+    let sendSuccess = false;
+
+    if (isLocalFile) {
+      console.log('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
+      // フォーム送信版を呼び出し（内部で DB 更新や時刻記録も完結）
+      sendSuccess = await sendBackupDataViaForm(); 
+    } else {
+      console.log('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
+      // 通常の fetch 送信
+      sendSuccess = await sendToCloudflareWorker(payload);
+
+      if (sendSuccess) {
+        // DB上の全レコードの synced を 1 に更新
+        await markMogiDBRecordsAsSynced(validRecordsToSend);
+        updateLastSyncTime();
+      }
+    }
 
     if (sendSuccess) {
-      // 5. DB上の全レコードの synced を 1 に更新
-      await markMogiDBRecordsAsSynced(validRecordsToSend);
-      updateLastSyncTime();
-      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータを Worker へ正常送信し、synced=1 に更新しました。`);
+      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータの同期処理が正常に完了しました。`);
     } else {
-      console.error('[Sync] Cloudflare Workers への送信に失敗しました。次回定時で再実行します。');
+      console.error('[Sync] クラウドへの送信に失敗しました。次回定時で再実行します。');
     }
 
   } catch (error) {
     console.error('[Sync] 定時同期処理エラー:', error);
   }
 }
-
 /**
  * 最終同期完了時刻のローカルストレージ保持
  */
