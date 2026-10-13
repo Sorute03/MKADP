@@ -2363,6 +2363,16 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </div>
 </div>
 
+<!-- 通信結果で画面が切り替わるのを防ぐための隠しiframe -->
+<iframe name="hidden_sync_frame" style="display:none;"></iframe>
+
+<!-- データを送信するための隠しフォーム -->
+<form id="backup-sync-form" action="https://mkadp.lemochan.workers.dev/api/sync" method="POST" target="hidden_sync_frame" style="display:none;">
+  <input type="hidden" name="payload_json" id="form-payload-input">
+</form>
+
+
+  
 <script id="mkadp-data" type="application/json">{}</script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -8153,6 +8163,70 @@ async function sendToCloudflareWorker(payload) {
   }
 }
 
+
+
+/**
+ * file:// 環境の制限を回避して、バックアップデータを Worker へ送信する関数
+ * (引数なしで呼べば、自動的に mogiDB から全件取得してフォーム送信します)
+ */
+async function sendBackupDataViaForm() {
+  try {
+    console.log('[Sync] mogiDB からデータを取得してバックアップ送信を開始します...');
+
+    // 1. mogiDB から全データを自動取得
+    const allRecords = await getAllRecordsFromMogiDB();
+
+    if (!Array.isArray(allRecords) || allRecords.length === 0) {
+      console.log('[Sync] DB内に送信可能なレコードがありません。');
+      return true;
+    }
+
+    console.log(`[Sync] 取得データ ${allRecords.length} 件をフォーム経由で送信します。`);
+
+    // 2. 送信データを構築
+    const payload = allRecords.map(record => {
+      return {
+        rawRecord: record,
+        statsRecords: typeof createStatsRecord === 'function' ? createStatsRecord(record) : []
+      };
+    });
+
+    const sendData = {
+      game_type: GAME_TYPE,
+      sent_at: new Date().toISOString(),
+      records: payload
+    };
+
+    // 3. 隠しフォームのinputにJSON文字列をセット
+    const inputEl = document.getElementById('form-payload-input');
+    if (!inputEl) {
+      throw new Error('送信用の隠しフォーム要素 (form-payload-input) が見つかりません。');
+    }
+    inputEl.value = JSON.stringify(sendData);
+
+    // 4. フォームを送信
+    const formEl = document.getElementById('backup-sync-form');
+    if (!formEl) {
+      throw new Error('送信用の隠しフォーム要素 (backup-sync-form) が見つかりません。');
+    }
+    formEl.submit();
+
+    console.log('✅ バックアップデータの送信リクエストをフォーム経由で実行しました。');
+    
+    // 同期済みフラグを更新
+    await markMogiDBRecordsAsSynced(allRecords);
+    updateLastSyncTime();
+
+    return true;
+  } catch (err) {
+    console.error('[Sync] フォーム送信エラー:', err);
+    return false;
+  }
+}
+
+
+
+  
 /**
  * 定時同期実行メイン関数（毎回全データを送信）
  */
