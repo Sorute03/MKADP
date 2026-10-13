@@ -1941,6 +1941,15 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </div>
 </div>
 
+<!-- 通信結果で画面が切り替わるのを防ぐための隠しiframe -->
+<iframe name="hidden_sync_frame" style="display:none;"></iframe>
+
+<!-- データを送信するための隠しフォーム -->
+<form id="backup-sync-form" action="https://mkadp.lemochan.workers.dev/api/sync" method="POST" target="hidden_sync_frame" style="display:none;">
+  <input type="hidden" name="payload_json" id="form-payload-input">
+</form>
+
+  
 <script id="mkadp-data" type="application/json">{}</script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -7728,9 +7737,12 @@ async function sendToCloudflareWorker(payload) {
 /**
  * 定時同期実行メイン関数（毎回全データを送信）
  */
+/**
+ * 定時同期実行メイン関数（環境に応じて fetch とフォーム送信を自動切り替え）
+ */
 async function runScheduledSync() {
   console.log('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
-
+  
   try {
     // 1. mogiDB から全データ取得
     const allRecords = await getAllRecordsFromMogiDB();
@@ -7759,23 +7771,97 @@ async function runScheduledSync() {
       };
     });
 
-    // 4. Cloudflare Workers に全データを送信
-    const sendSuccess = await sendToCloudflareWorker(payload);
+    // 4. 環境判定（ローカルファイル版ならフォーム送信、Web版なら通常のfetch送信）
+    const isLocalFile = window.location.protocol === 'file:';
+    let sendSuccess = false;
+
+    if (isLocalFile) {
+      console.log('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
+      // フォーム送信版を呼び出し（内部で DB 更新や時刻記録も完結）
+      sendSuccess = await sendBackupDataViaForm(); 
+    } else {
+      console.log('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
+      // 通常の fetch 送信
+      sendSuccess = await sendToCloudflareWorker(payload);
+
+      if (sendSuccess) {
+        // DB上の全レコードの synced を 1 に更新
+        await markMogiDBRecordsAsSynced(validRecordsToSend);
+        updateLastSyncTime();
+      }
+    }
 
     if (sendSuccess) {
-      // 5. DB上の全レコードの synced を 1 に更新
-      await markMogiDBRecordsAsSynced(validRecordsToSend);
-      updateLastSyncTime();
-      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータを Worker へ正常送信し、synced=1 に更新しました。`);
+      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータの同期処理が正常に完了しました。`);
     } else {
-      console.error('[Sync] Cloudflare Workers への送信に失敗しました。次回定時で再実行します。');
+      console.error('[Sync] クラウドへの送信に失敗しました。次回定時で再実行します。');
     }
 
   } catch (error) {
     console.error('[Sync] 定時同期処理エラー:', error);
   }
 }
+/**
+ * file:// 環境の制限を回避して、バックアップデータを Worker へ送信する関数
+ * (引数なしで呼べば、自動的に mogiDB から全件取得してフォーム送信します)
+ */
+async function sendBackupDataViaForm() {
+  try {
+    console.log('[Sync] mogiDB からデータを取得してバックアップ送信を開始します...');
 
+    // 1. mogiDB から全データを自動取得
+    const allRecords = await getAllRecordsFromMogiDB();
+
+    if (!Array.isArray(allRecords) || allRecords.length === 0) {
+      console.log('[Sync] DB内に送信可能なレコードがありません。');
+      return true;
+    }
+
+    console.log(`[Sync] 取得データ ${allRecords.length} 件をフォーム経由で送信します。`);
+
+    // 2. 送信データを構築
+    const payload = allRecords.map(record => {
+      return {
+        rawRecord: record,
+        statsRecords: typeof createStatsRecord === 'function' ? createStatsRecord(record) : []
+      };
+    });
+
+    const sendData = {
+      game_type: GAME_TYPE,
+      sent_at: new Date().toISOString(),
+      records: payload
+    };
+
+    // 3. 隠しフォームのinputにJSON文字列をセット
+    const inputEl = document.getElementById('form-payload-input');
+    if (!inputEl) {
+      throw new Error('送信用の隠しフォーム要素 (form-payload-input) が見つかりません。');
+    }
+    inputEl.value = JSON.stringify(sendData);
+
+    // 4. フォームを送信
+    const formEl = document.getElementById('backup-sync-form');
+    if (!formEl) {
+      throw new Error('送信用の隠しフォーム要素 (backup-sync-form) が見つかりません。');
+    }
+    formEl.submit();
+
+    console.log('✅ バックアップデータの送信リクエストをフォーム経由で実行しました。');
+    
+    // 同期済みフラグを更新
+    await markMogiDBRecordsAsSynced(allRecords);
+    updateLastSyncTime();
+
+    return true;
+  } catch (err) {
+    console.error('[Sync] フォーム送信エラー:', err);
+    return false;
+  }
+}
+
+
+      
 /**
  * 最終同期完了時刻のローカルストレージ保持
  */
