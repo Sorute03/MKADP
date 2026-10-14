@@ -684,19 +684,29 @@ async function fetchSingleGameData(targetGameType) {
 
 async function loadAndDecryptGameData(targetGameType) {
   const tbody = document.getElementById('course-stats-tbody');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">${i18nDict[currentLang].msg_loading}</td></tr>`;
-
-  if (targetGameType === 'ALL') {
-    const [mkworldData, mk8dxData] = await Promise.all([
-      fetchSingleGameData('MKWORLD'),
-      fetchSingleGameData('MK8DX')
-    ]);
-    activeRecordsCache = [...mkworldData, ...mk8dxData];
-  } else {
-    activeRecordsCache = await fetchSingleGameData(targetGameType);
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">${i18nDict[currentLang].msg_loading}</td></tr>`;
   }
 
-  renderStats();
+  try {
+    if (targetGameType === 'ALL') {
+      const [mkworldData, mk8dxData] = await Promise.all([
+        fetchSingleGameData('MKWORLD').catch(() => []), // エラー時は空配列を返す
+        fetchSingleGameData('MK8DX').catch(() => [])
+      ]);
+      // 安全に配列結合（null/undefined対策）
+      activeRecordsCache = [...(Array.isArray(mkworldData) ? mkworldData : []), ...(Array.isArray(mk8dxData) ? mk8dxData : [])];
+    } else {
+      const singleData = await fetchSingleGameData(targetGameType).catch(() => []);
+      activeRecordsCache = Array.isArray(singleData) ? singleData : [];
+    }
+
+    renderStats();
+  } catch (err) {
+    console.error('[Stats] データロード処理エラー:', err);
+    activeRecordsCache = [];
+    renderStats();
+  }
 }
 
 async function initializeData() {
