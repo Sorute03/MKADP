@@ -1039,62 +1039,84 @@ function renderLoungeTierStatsUI(tierDataMap) {
 }
 
 function renderStats() {
-  const matchMode = document.querySelector('input[name="match-mode"]:checked').value;
-  const selectedCourse = document.getElementById('filter-course').value;
-  const selectedMode = document.getElementById('filter-mode').value;
-  const selectedTier = document.getElementById('filter-tier').value;
+  // 1. 各フィルター要素の安全な値取得（要素がない場合はデフォルト値を返す）
+  const matchModeEl = document.querySelector('input[name="match-mode"]:checked');
+  const matchMode = matchModeEl ? matchModeEl.value : 'all';
+
+  const getVal = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : 'ALL';
+  };
+
+  const selectedCourse = getVal('filter-course');
+  const selectedMode = getVal('filter-mode');
+  const selectedTier = getVal('filter-tier');
 
   const filters = {
     matchMode,
-    game: document.getElementById('filter-game').value,
+    game: getVal('filter-game'),
     mode: selectedMode,
     tier: selectedTier,
-    season: document.getElementById('filter-season').value,
-    startDate: document.getElementById('filter-start-date').value,
-    endDate: document.getElementById('filter-end-date').value,
+    season: getVal('filter-season'),
+    startDate: getVal('filter-start-date'),
+    endDate: getVal('filter-end-date'),
     selectedCourse
   };
 
   const result = computeDetailedCourseStats(activeRecordsCache, filters);
 
-  document.getElementById('stat-total-races').textContent = result.totalRaceCount.toLocaleString();
-  document.getElementById('stat-unique-courses').textContent = result.uniqueCourses;
-  document.getElementById('stat-avg-rank').textContent = result.overallAvgRank;
-  document.getElementById('stat-avg-score').textContent = result.overallAvgScore;
+  // 2. 統計サマリー数値の安全なセット
+  const setStatText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
 
+  setStatText('stat-total-races', result.totalRaceCount.toLocaleString());
+  setStatText('stat-unique-courses', result.uniqueCourses);
+  setStatText('stat-avg-rank', result.overallAvgRank);
+  setStatText('stat-avg-score', result.overallAvgScore);
+
+  // 3. テーブル描画
   const tbody = document.getElementById('course-stats-tbody');
-  tbody.innerHTML = '';
+  if (tbody) {
+    tbody.innerHTML = '';
 
-  if (result.courseList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">${i18nDict[currentLang].msg_no_data}</td></tr>`;
-  } else {
-    result.courseList.forEach(c => {
-      let rankBadge = c.rankPosition;
-      if (c.rankPosition === 1) rankBadge = `<span class="rank-badge rank-1">1</span>`;
-      else if (c.rankPosition === 2) rankBadge = `<span class="rank-badge rank-2">2</span>`;
-      else if (c.rankPosition === 3) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+    if (result.courseList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">${i18nDict[currentLang].msg_no_data}</td></tr>`;
+    } else {
+      result.courseList.forEach(c => {
+        let rankBadge = c.rankPosition;
+        if (c.rankPosition === 1) rankBadge = `<span class="rank-badge rank-1">1</span>`;
+        else if (c.rankPosition === 2) rankBadge = `<span class="rank-badge rank-2">2</span>`;
+        else if (c.rankPosition === 3) rankBadge = `<span class="rank-badge rank-3">3</span>`;
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${rankBadge}</td>
-        <td><strong>${translateCourseName(c.name)}</strong></td>
-        <td>${c.count} ${i18nDict[currentLang].unit_times}</td>
-        <td>${c.pickRate} %</td>
-        <td>${c.raceInterval}</td>
-        <td>${c.avgRank} ${i18nDict[currentLang].unit_rank}</td>
-        <td>${c.avgScore} ${i18nDict[currentLang].unit_pts}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${rankBadge}</td>
+          <td><strong>${translateCourseName(c.name)}</strong></td>
+          <td>${c.count} ${i18nDict[currentLang].unit_times}</td>
+          <td>${c.pickRate} %</td>
+          <td>${c.raceInterval}</td>
+          <td>${c.avgRank} ${i18nDict[currentLang].unit_rank}</td>
+          <td>${c.avgScore} ${i18nDict[currentLang].unit_pts}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   }
 
+  // 4. ラウンジTierセクションの制御（要素が存在する場合のみ安全に処理）
   const tierSection = document.getElementById('lounge-tier-section');
-  if (selectedMode === 'lounge' || selectedMode === 'ALL') {
-    tierSection.classList.remove('hidden');
-    const tierStatsMap = aggregateLoungeStatsByTier(activeRecordsCache, selectedTier);
-    renderLoungeTierStatsUI(tierStatsMap);
-  } else {
-    tierSection.classList.add('hidden');
+  if (tierSection) {
+    if (selectedMode === 'lounge' || selectedMode === 'ALL') {
+      tierSection.classList.remove('hidden');
+      if (typeof aggregateLoungeStatsByTier === 'function' && typeof renderLoungeTierStatsUI === 'function') {
+        const tierStatsMap = aggregateLoungeStatsByTier(activeRecordsCache, selectedTier);
+        renderLoungeTierStatsUI(tierStatsMap);
+      }
+    } else {
+      tierSection.classList.add('hidden');
+    }
   }
 }
 // ==========================================
