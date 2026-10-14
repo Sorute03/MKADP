@@ -1336,8 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- ここにグラフや分析UIが続く -->
 </div>
   
-<!-- ▼ レース登録ボタン（右下固定） -->
-<button id="openModalBtn" style="
+<button id="openModalBtn" data-i18n="btn_race_register" style="
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -1370,12 +1369,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <h3 data-i18n="modal_race_register">レース登録</h3>
 
-    <label data-i18n="lbl_mode">モード</label><br>
-    <select id="modalMode" style="width:100%; margin-bottom:12px;">
-      <option value="lounge">ラウンジ</option>
-      <option value="tournament">大会</option>
-      <option value="nora">野良</option>
-    </select>
+   <label data-i18n="lbl_mode">モード</label><br>
+   <select id="modalMode" style="width:100%; margin-bottom:12px;">
+     <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+     <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+     <option value="nora" data-i18n="opt_mode_nora">野良</option>
+   </select>
+  
+      
 
     <div id="modalTierBlock">
       <label data-i18n="lbl_tier">Tier</label><br>
