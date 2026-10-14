@@ -933,7 +933,7 @@ function setLanguage(lang) {
   if (btnJa) btnJa.classList.toggle('active', lang === 'ja');
   if (btnEn) btnEn.classList.toggle('active', lang === 'en');
 
-  // 1. 固定文言のテキスト置換（既存のままでOK）
+  // 固定文言のテキスト置換
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (i18nDict[lang] && i18nDict[lang][key]) {
@@ -941,29 +941,29 @@ function setLanguage(lang) {
     }
   });
 
-  // --- ▼ 【追加】プレースホルダー（placeholder）も言語連動させる場合 ---
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (i18nDict[lang] && i18nDict[lang][key]) {
-      el.placeholder = i18nDict[lang][key];
-    }
-  });
-
-  // 2. ドロップダウン内のコース名表示を切り替え（既存のまま）
+  // ドロップダウン内のコース名表示を切り替え
   updateCourseDropdownsLanguage();
 
-  // --- ▼ 【追加】もし「レース一覧」や「分析画面」が開いているなら、言語切替時に再描画する ---
-  // これにより、表示中のレース履歴やグラフの言語もボタン一つでパッと切り替わります！
-  const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
-  if (activeTab === "historyTab" && typeof getFilteredRecords === 'function' && typeof renderRaceHistory === 'function') {
-    renderRaceHistory(getFilteredRecords());
-  } else if (typeof refreshModeView === 'function') {
-    refreshModeView();
+  // --- ▼ 【ここを追加】モーダルが開いている（表示されている）場合、入力欄のコース名も再生成して言語を反映する ---
+ // モダルが開いている場合、モーダル内のコースセレクトの表示名だけを更新する
+  const modal = document.getElementById("raceModal");
+  if (modal && modal.classList.contains("show")) {
+    const activeCount = document.querySelectorAll("[id^='raceCourse_']").length;
+    for (let i = 1; i <= activeCount; i++) {
+      const select = document.getElementById(`raceCourse_${i}`);
+      if (select) {
+        const currentVal = select.value;
+        Array.from(select.options).forEach(opt => {
+          opt.textContent = translateMKWorldCourse(opt.value, lang);
+        });
+        select.value = currentVal;
+      }
+    }
   }
+  // ---------------------------------------------------------------------------------------------------
 
   logMessage(i18nDict[lang].msg_ready);
 }
-
 /**
  * 12レース分すべてのコース選択ドロップダウンの表示文言を更新
  */
