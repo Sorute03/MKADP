@@ -2440,18 +2440,36 @@ async function deleteRecord(id) {
 }
 
 async function getAllRecords() {
-  const db = await openDB();
+  try {
+    const db = await openDB();
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("records", "readonly");
-    const store = tx.objectStore("records");
-    const req = store.getAll();
+    // ★ ストアが存在するかどうかの安全チェックを追加
+    const storeName = "records";
+    if (!db.objectStoreNames || !db.objectStoreNames.contains(storeName)) {
+      console.warn(`[IndexedDB] ストア '${storeName}' が見つかりません。空配列を返します。`);
+      if (typeof db.close === 'function') db.close();
+      return [];
+    }
 
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => resolve([]);
-  });
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        // 必要に応じて db.close() やコネクション管理があればここに記述
+        resolve(req.result || []);
+      };
+      req.onerror = () => {
+        console.warn('[IndexedDB] records ストアからのデータ取得に失敗しました。');
+        resolve([]);
+      };
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] openDB またはトランザクションの作成に失敗しました:', err);
+    return []; // エラーでもクラッシュさせず空配列を返す
+  }
 }
-
 
 function buildRecordKey(r) {
   return [
