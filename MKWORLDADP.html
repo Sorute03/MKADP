@@ -1321,29 +1321,53 @@ document.addEventListener('DOMContentLoaded', () => {
   </select>
 </div>
 
-<!-- ▼ 分析タブ -->
-<div id="analysisTab" class="tabContent" style="display:block;">
-  <div class="section-block">
-    <label data-i18n="label_recent_compare">直近 N レースで比較：</label>
-    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-    <button onclick="refreshModeView(allRecords)" data-i18n="btn_refresh">再描画</button>
-  </div>
-</div>
 
+
+  
+<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
+<div id="analysisTab" class="tabContent" style="display:block;">
+
+  <div class="section-block">
+    <label>直近 N レースで比較：</label>
+    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
+    <button onclick="refreshModeView(allRecords)">再描画</button>
+  </div>
+
+  <!-- ここにグラフや分析UIが続く -->
+</div>
+  
 <!-- ▼ レース登録ボタン（右下固定） -->
-<button id="openModalBtn" data-i18n="btn_race_register" style="
-  position: fixed; bottom: 24px; right: 24px; padding: 14px 20px;
-  background: #007bff; color: #fff; border: none; border-radius: 50px;
-  font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999;
+<button id="openModalBtn" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
 ">＋ レース登録</button>
 
 <!-- ▼ レース登録モーダル -->
 <div id="raceModal">
   <div class="modal-inner" style="
-    background:#fff; padding:24px; width:95%; max-width:520px; border-radius:12px;
-    box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height:90%; overflow-y:auto;
-    overscroll-behavior:contain; position:relative; padding-bottom:90px;
+    background:#fff;
+    padding:24px;
+    width: 95%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    max-height: 90%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    position: relative;
+    padding-bottom: 90px;
   ">
+
     <h3 data-i18n="modal_race_register">レース登録</h3>
 
     <label data-i18n="lbl_mode">モード</label><br>
@@ -1366,10 +1390,18 @@ document.addEventListener('DOMContentLoaded', () => {
     <div id="modalRaceCountBlock">
       <label data-i18n="modal_race_count">レース数</label><br>
       <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
-        <option value="1">1レース</option><option value="2">2レース</option><option value="3">3レース</option>
-        <option value="4">4レース</option><option value="5">5レース</option><option value="6">6レース</option>
-        <option value="7">7レース</option><option value="8">8レース（大会）</option><option value="9">9レース</option>
-        <option value="10">10レース</option><option value="11">11レース</option><option value="12">12レース（大会）</option>
+        <option value="1">1レース</option>
+        <option value="2">2レース</option>
+        <option value="3">3レース</option>
+        <option value="4">4レース</option>
+        <option value="5">5レース</option>
+        <option value="6">6レース</option>
+        <option value="7">7レース</option>
+        <option value="8">8レース（大会）</option>
+        <option value="9">9レース</option>
+        <option value="10">10レース</option>
+        <option value="11">11レース</option>
+        <option value="12">12レース（大会）</option>
       </select>
     </div>
 
@@ -1379,9 +1411,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div id="modalRaceInputs"></div>
 
-    <div style="text-align:right; margin-top:20px;">
-      <button id="closeModalBtn" data-i18n="btn_cancel" style="padding:8px 16px; margin-right:8px; background:#ccc; border-radius:6px;">キャンセル</button>
-      <button id="saveRaceBtn" data-i18n="btn_save" style="padding:8px 16px; background:#007bff; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">保存</button>
+   <div style="text-align:right; margin-top:20px;">
+      <button id="closeModalBtn" data-i18n="btn_cancel" style="
+        padding:8px 16px;
+        margin-right:8px;
+        background:#ccc;
+        border-radius:6px;
+      ">キャンセル</button>
+    
+      <button id="saveRaceBtn" data-i18n="btn_save" style="
+        padding:8px 16px;
+        background:#007bff;
+        color:#fff;
+        border:none;
+        border-radius:6px;
+        font-weight:bold;
+        cursor:pointer;
+      ">保存</button>
     </div>
   </div>
 </div>
@@ -1747,22 +1793,28 @@ function updateModalMode() {
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
 
+  // 言語に応じたラベル文言（i18nDictに合わせたキー、または三項演算子）
+  const tRace = (currentLang === 'en') ? 'Race' : 'レース目';
+  const tCourse = (currentLang === 'en') ? 'Track' : 'コース';
+  const tRank = (currentLang === 'en') ? 'Placement' : '順位';
+  const tScore = (currentLang === 'en') ? 'Score (Auto)' : 'スコア（自動）';
+
   for (let i = 1; i <= count; i++) {
     modalRaceInputs.innerHTML += `
       <div style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px;">
-        <strong>${i} レース目</strong><br>
+        <strong>${i} ${tRace}</strong><br>
 
-        <label>コース</label><br>
+        <label>${tCourse}</label><br>
         <select id="raceCourse_${i}" style="width:100%; margin-bottom:8px;">
-          ${courseList.map(c => `<option>${c}</option>`).join("")}
+          ${courseList.map(c => `<option value="${c}">${typeof translateMKWorldCourse === 'function' ? translateMKWorldCourse(c, currentLang) : c}</option>`).join("")}
         </select>
 
-        <label>順位</label><br>
+        <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
           ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
-        <label>スコア（自動）</label><br>
+        <label>${tScore}</label><br>
         <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
       </div>
     `;
@@ -1773,22 +1825,25 @@ function generateRaceInputs(count) {
     const scoreInput = document.getElementById(`raceScore_${i}`);
     const courseSelect = document.getElementById(`raceCourse_${i}`);
 
-    rankInput.onchange = () => {
-      scoreInput.value = calcScore(Number(rankInput.value));
-      saveNextCourse();
-    };
+    if (rankInput && scoreInput) {
+      rankInput.onchange = () => {
+        scoreInput.value = calcScore(Number(rankInput.value));
+        saveNextCourse();
+      };
+    }
 
-    courseSelect.onchange = () => {
-      saveNextCourse();
-      if (courseStatsSource) {
-        sendLoungeOverlay(courseStatsSource);
-      }
-    };
+    if (courseSelect) {
+      courseSelect.onchange = () => {
+        saveNextCourse();
+        if (typeof courseStatsSource !== 'undefined' && courseStatsSource) {
+          sendLoungeOverlay(courseStatsSource);
+        }
+      };
+    }
   }
 
   saveNextCourse();
 }
-
 </script>
 
 
@@ -1979,7 +2034,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 };
 
 </script>
-
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
 
