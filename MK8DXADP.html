@@ -348,12 +348,562 @@ const courseList = [
   "レインボーロード(Wii)",
 ];
 
+let currentLang = 'ja';
+
+const i18nDict = {
+  ja: {
+    app_title: "🏎️ MK8DX ADP - 戦績データ記録・分析・共有ツール",
+    
+    // 基本設定
+    title_basic_settings: "📌 基本設定 & 模擬情報",
+    lbl_mode: "モード",
+    opt_mode_lounge: "ラウンジ (Lounge)",
+    opt_mode_nora: "野良 (Worldwide / Regional)",
+    opt_mode_tournament: "大会 (Tournament)",
+    lbl_tier: "ラウンジ Tier",
+    lbl_season: "シーズン",
+    lbl_date: "日付",
+    lbl_mogi_format: "模擬形式",
+    
+    // Webhook & OBS連携
+    title_integrations: "🔗 Discord Webhook & 配信連携設定",
+    lbl_webhook_url: "Discord Webhook URL",
+    lbl_webhook_placeholder: "https://discord.com/api/webhooks/...",
+    lbl_obs_websocket: "OBS WebSocket 連動",
+    btn_test_webhook: "Webhookテスト送信",
+
+    // レース入力テーブル
+    title_race_entry: "🏁 レース結果の入力 (12レース)",
+    th_race_num: "Race",
+    th_course_name: "コース名 (選出コース)",
+    th_rank: "順位",
+    th_score: "スコア",
+    opt_select_course: "- コースを選択してください -",
+    
+    // サマリーカード
+    card_total_score: "合計スコア",
+    card_avg_rank: "平均順位",
+    card_wins: "1位獲得数",
+    card_top3: "TOP3率",
+
+    // アクションボタン
+    btn_reset: "フォームをリセット",
+    btn_save_local: "ローカルDBに保存",
+    btn_send_discord: "Discordに戦績を送信",
+    btn_export_csv: "CSVエクスポート",
+
+    // システムログ & 通知メッセージ
+    title_system_log: "💻 システムログ & ステータス",
+    msg_ready: "> 準備完了。試合データを入力してください。",
+    msg_reset_done: "> フォームをリセットしました。",
+    msg_save_success: "✅ データを IndexedDB に正常に保存しました！",
+    msg_save_error: "❌ データの保存中にエラーが発生しました。",
+    msg_webhook_success: "🚀 Discord へ戦績データを送信しました！",
+    msg_webhook_missing: "⚠️ Webhook URL が設定されていません。",
+
+    // --- ▼ 追加：配布・バックアップ・データ管理 ---
+    btn_download_mkadp: "📁 MKWorldADP(ローカルファイル版)をダウンロード",
+    btn_download_overlay: "📁 obs専用配信表示オーバーレイをダウンロード",
+    btn_migrate_db: "過去バージョンデータをDBへ移行",
+    backup_title: "バックアップ（パスワード付き）",
+    backup_label: "デバイス間データ移行バックアップファイル用パスワード：",
+    placeholder_password: "パスワードを入力",
+    btn_save_backup: "バックアップを保存",
+    restore_label: "デバイス間データ移行復元パスワード：",
+    btn_restore_backup: "復元する",
+    tsv_title: "TSV読み込み（スプシコピー対応）",
+    tsv_placeholder: "ここにスプシからコピーしたデータを貼り付け",
+    btn_import_tsv: "TSVを読み込む",
+    csv_title: "CSV / TSV 読み込み（セーブデータとして保存）",
+    btn_import_file: "読み込んで保存",
+    old_import_title: "旧データ取り込み（localStorage → IndexedDB）",
+    old_json_label: "① 旧JSONファイル（oldData.json）を読み込む",
+    btn_import_json: "旧JSONを取り込む",
+    old_html_label: "② 旧HTMLファイル（旧 index.html）を読み込む",
+    btn_import_html: "旧HTMLを取り込む",
+    old_import_note: "※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。",
+    btn_restore_backup_alt: "バックアップ復元",
+    btn_restore_file: "ファイルから復元",
+    dup_title: "重複データの整理",
+    btn_remove_dup: "重複データを自動削除する",
+    dup_note: "※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。",
+
+    // --- ▼ 追加：タブ・マルチユーザー・ラウンジ・分析セクション ---
+    tab_analysis: "分析",
+    tab_history: "レース一覧",
+    tab_lounge: "ラウンジ統計",
+    tab_coursestats: "コース別stats",
+    overlay_user_title: "Overlay ユーザー登録",
+    placeholder_username: "ユーザー名を入力",
+    btn_register: "登録",
+    overlay_target_label: "送信先ユーザー：",
+    history_title: "登録済みレース一覧",
+    btn_back_analysis: "← 分析タブに戻る",
+    webhook_name_label: "Webhook 名前",
+    placeholder_webhook_name: "例：大会用",
+    btn_add: "追加",
+    lounge_stats_title: "Lounge Stats Viewer",
+    player_manage_title: "プレイヤーID管理",
+    label_name: "名前",
+    label_player_id: "プレイヤーID",
+    btn_add_player: "追加",
+    btn_delete_player: "削除",
+    registered_players: "登録プレイヤー",
+    btn_fetch_data: "データ取得",
+    filter_title: "フィルター",
+    label_recent: "直近 N 試合",
+    lounge_bg_title: "背景画像設定（ラウンジ画像用）",
+    label_bg_image: "背景画像",
+    label_brightness: "明るさ",
+    label_contrast: "コントラスト",
+    label_opacity: "透過度",
+    label_blur: "ぼかし(px)",
+    course_compare_title: "コースを最大5つ選択:",
+    course_stats_filter: "コース統計フィルター",
+    label_filter_mode: "フィルター方式",
+    adp_bg_title: "背景画像設定（コース比較画像用）",
+    text_color_title: "テキスト色設定",
+    label_text_color: "テキスト色",
+    label_stroke_color: "縁取り色",
+    label_stroke_width: "縁取り太さ(px)",
+    label_shadow_blur: "影の濃さ(px)",
+    label_shadow_color: "影の色",
+    btn_show: "表示",
+    btn_send_text_discord: "Discordにテキスト送信",
+    btn_send_image_discord: "画像をDiscordに送信",
+    overlay_settings_title: "オーバーレイ設定",
+    obs_websocket_title: "OBS WebSocket接続",
+    label_host: "ホスト",
+    label_port: "ポート",
+    label_password: "パスワード",
+    btn_connect: "接続",
+    btn_disconnect: "切断",
+    status_disconnected: "未接続",
+    label_recent_compare: "直近 N レースで比較：",
+    btn_refresh: "再描画",
+    btn_race_register: "＋ レース登録",
+    modal_race_register: "レース登録",
+    modal_race_count: "レース数",
+    modal_lounge_note: "※ ラウンジは最大12レース（途中中断OK）",
+    btn_cancel: "キャンセル",
+    btn_save: "保存",
+    basic_stats_title: "基本統計 / 勝率・平均順位・平均スコア",
+    label_range: "直近 N：",
+    label_custom: "カスタム：",
+    placeholder_custom: "任意の数",
+    ranking_title: "コースランキング（得意・苦手）",
+    label_metric: "基準：",
+    label_min_runs: "最低走行回数：",
+    label_limit: "表示件数：",
+    strong_top10: "得意コース TOP10",
+    weak_top10: "苦手コース TOP10",
+    precise_eval_title: "精密コース評価",
+    growth_score_title: "成長スコア（Tier × Season × Course）",
+    radar_title: "コース別レーダー評価",
+    heatmap_title: "コース別ヒートマップ",
+    bubble_title: "3D バブルチャート",
+    scatter_title: "散布図（強さ × 成長）",
+    btn_toggle_lounge_set: "12レースセット一覧を表示",
+    lounge_set_title: "ラウンジ 12レースセット一覧",
+    unit_times: "回",
+    unit_rank: "位",
+    unit_pts: "pt",
+    msg_no_data: "該当するデータがありません"
+  },
+  en: {
+    app_title: "🏎️ MK8DX ADP - Match Tracker & Analytics Tool",
+    
+    // Basic Settings
+    title_basic_settings: "📌 Basic Settings & Match Info",
+    lbl_mode: "Mode",
+    opt_mode_lounge: "Lounge",
+    opt_mode_nora: "Worldwide / Regional",
+    opt_mode_tournament: "Tournament",
+    lbl_tier: "Lounge Tier",
+    lbl_season: "Season",
+    lbl_date: "Date",
+    lbl_mogi_format: "Format",
+    
+    // Webhook & OBS Integrations
+    title_integrations: "🔗 Discord Webhook & Streaming Integrations",
+    lbl_webhook_url: "Discord Webhook URL",
+    lbl_webhook_placeholder: "https://discord.com/api/webhooks/...",
+    lbl_obs_websocket: "OBS WebSocket Integration",
+    btn_test_webhook: "Test Webhook",
+
+    // Race Entry Table
+    title_race_entry: "🏁 Race Placements Entry (12 Races)",
+    th_race_num: "Race",
+    th_course_name: "Track Name",
+    th_rank: "Rank",
+    th_score: "Score",
+    opt_select_course: "- Select Track -",
+
+    // Summary Cards
+    card_total_score: "Total Score",
+    card_avg_rank: "Avg Placement",
+    card_wins: "Wins (1st)",
+    card_top3: "Top 3 Rate",
+
+    // Action Buttons
+    btn_reset: "Reset Form",
+    btn_save_local: "Save to Local DB",
+    btn_send_discord: "Send to Discord",
+    btn_export_csv: "Export CSV",
+
+    // System Logs & Notifications
+    title_system_log: "💻 System Log & Status",
+    msg_ready: "> Ready. Please enter race placements.",
+    msg_reset_done: "> Form has been reset.",
+    msg_save_success: "✅ Match record successfully saved to local DB!",
+    msg_save_error: "❌ Failed to save match record.",
+    msg_webhook_success: "🚀 Match statistics sent to Discord!",
+    msg_webhook_missing: "⚠️ Discord Webhook URL is not configured.",
+
+    // --- ▼ Additional: Distribution, Backup & Data Management ---
+    btn_download_mkadp: "📁 Download MKWorldADP (Local File Edition)",
+    btn_download_overlay: "📁 Download OBS Streaming Overlay",
+    btn_migrate_db: "Migrate Legacy Data to IndexedDB",
+    backup_title: "Backup (Password Protected)",
+    backup_label: "Backup Password for Device Migration:",
+    placeholder_password: "Enter password",
+    btn_save_backup: "Save Backup",
+    restore_label: "Restore Password:",
+    btn_restore_backup: "Restore Data",
+    tsv_title: "TSV Import (Spreadsheet Copy Compatible)",
+    tsv_placeholder: "Paste copied spreadsheet data here...",
+    btn_import_tsv: "Import TSV",
+    csv_title: "CSV / TSV Import (Save to DB)",
+    btn_import_file: "Import & Save",
+    old_import_title: "Legacy Data Import (localStorage → IndexedDB)",
+    old_json_label: "① Import Legacy JSON File (oldData.json)",
+    btn_import_json: "Import Legacy JSON",
+    old_html_label: "② Import Legacy HTML File (old index.html)",
+    btn_import_html: "Import Legacy HTML",
+    old_import_note: "* Parses allRecords stored in legacy localStorage and imports them automatically.<br>* All records are migrated safely into IndexedDB.",
+    btn_restore_backup_alt: "Restore Backup",
+    btn_restore_file: "Restore from File",
+    dup_title: "Clean Up Duplicate Data",
+    btn_remove_dup: "Auto-Remove Duplicates",
+    dup_note: "* Races matching Course, Rank, Score, Season, Tier, Mode, and Timestamp will be treated as duplicates.",
+
+    // --- ▼ Additional: Tabs, Multi-User, Lounge & Analytics Sections ---
+    tab_analysis: "Analytics",
+    tab_history: "Race History",
+    tab_lounge: "Lounge Stats",
+    tab_coursestats: "Course Stats",
+    overlay_user_title: "Overlay User Registration",
+    placeholder_username: "Enter username",
+    btn_register: "Register",
+    overlay_target_label: "Target User:",
+    history_title: "Registered Race History",
+    btn_back_analysis: "← Back to Analytics",
+    webhook_name_label: "Webhook Name",
+    placeholder_webhook_name: "e.g., Tournament",
+    btn_add: "Add",
+    lounge_stats_title: "Lounge Stats Viewer",
+    player_manage_title: "Player ID Management",
+    label_name: "Name",
+    label_player_id: "Player ID",
+    btn_add_player: "Add Player",
+    btn_delete_player: "Delete",
+    registered_players: "Registered Players",
+    btn_fetch_data: "Fetch Data",
+    filter_title: "Filters",
+    label_recent: "Recent N Matches",
+    lounge_bg_title: "Background Image Settings (Lounge Image)",
+    label_bg_image: "Background Image",
+    label_brightness: "Brightness",
+    label_contrast: "Contrast",
+    label_opacity: "Opacity",
+    label_blur: "Blur (px)",
+    course_compare_title: "Select Up to 5 Tracks:",
+    course_stats_filter: "Course Stats Filters",
+    label_filter_mode: "Filter Mode",
+    adp_bg_title: "Background Image Settings (Track Compare Image)",
+    text_color_title: "Text Color Settings",
+    label_text_color: "Text Color",
+    label_stroke_color: "Stroke Color",
+    label_stroke_width: "Stroke Width (px)",
+    label_shadow_blur: "Shadow Blur (px)",
+    label_shadow_color: "Shadow Color",
+    btn_show: "Display",
+    btn_send_text_discord: "Send Text to Discord",
+    btn_send_image_discord: "Send Image to Discord",
+    overlay_settings_title: "Overlay Settings",
+    obs_websocket_title: "OBS WebSocket Connection",
+    label_host: "Host",
+    label_port: "Port",
+    label_password: "Password",
+    btn_connect: "Connect",
+    btn_disconnect: "Disconnect",
+    status_disconnected: "Disconnected",
+    label_recent_compare: "Compare Recent N Races:",
+    btn_refresh: "Redraw",
+    btn_race_register: "＋ Register Race",
+    modal_race_register: "Register Race",
+    modal_race_count: "Number of Races",
+    modal_lounge_note: "* Lounge matches support up to 12 races (pauses supported)",
+    btn_cancel: "Cancel",
+    btn_save: "Save",
+    basic_stats_title: "Basic Stats / Win Rate, Avg Placement, Avg Score",
+    label_range: "Recent N:",
+    label_custom: "Custom:",
+    placeholder_custom: "Any number",
+    ranking_title: "Track Rankings (Best / Worst)",
+    label_metric: "Metric:",
+    label_min_runs: "Min Races Played:",
+    label_limit: "Display Limit:",
+    strong_top10: "Best Tracks TOP 10",
+    weak_top10: "Worst Tracks TOP 10",
+    precise_eval_title: "Detailed Track Evaluation",
+    growth_score_title: "Growth Score (Tier × Season × Track)",
+    radar_title: "Track Radar Evaluation",
+    heatmap_title: "Track Heatmap",
+    bubble_title: "3D Bubble Chart",
+    scatter_title: "Scatter Plot (Performance × Growth)",
+    btn_toggle_lounge_set: "Display 12-Race Set List",
+    lounge_set_title: "Lounge 12-Race Set List",
+    unit_times: "races",
+    unit_rank: "",
+    unit_pts: "pts",
+    msg_no_data: "No matching records found."
+  }
+};
+
+const MK8DX_COURSE_I18N = {
+  "マリオカートスタジアム(WiiU)": "Mario Kart Stadium",
+  "ウォーターパーク(WiiU)": "Water Park",
+  "スイーツキャニオン(WiiU)": "Sweet Sweet Canyon",
+  "ドッスンいせき(WiiU)": "Thwomp Ruins",
+  "マリオサーキット(WiiU)": "Mario Circuit",
+  "キノピオハーバー(WiiU)": "Toad Harbor",
+  "ねじれマンション(WiiU)": "Twisted Mansion",
+  "ヘイホーこうざん(WiiU)": "Shy Guy Falls",
+  "サンシャインくうこう(WiiU)": "Sunshine Airport",
+  "ドルフィンみさき(WiiU)": "Dolphin Shoals",
+  "エレクトロドリーム(WiiU)": "Electrodrome",
+  "ワリオスノーマウンテン(WiiU)": "Mount Wario",
+  "スカイガーデン(WiiU)": "Cloudtop Cruise",
+  "ホネホネさばく(WiiU)": "Bone-Dry Dunes",
+  "クッパキャッスル(WiiU)": "Bowser's Castle",
+  "レインボーロード(WiiU)": "Rainbow Road",
+
+  "モーモーカントリー(Wii)": "Wii Moo Moo Meadows",
+  "マリオサーキット(GBA)": "GBA Mario Circuit",
+  "プクプクビーチ(DS)": "DS Cheep Cheep Beach",
+  "キノピオハイウェイ(N64)": "N64 Toad's Turnpike",
+  "カラカラさばく(GC)": "GCN Dry Dry Desert",
+  "ドーナツへいや３(SFC)": "SNES Donut Plains 3",
+  "ピーチサーキット(N64)": "N64 Royal Raceway",
+  "DKジャングル(3DS)": "3DS DK Jungle",
+  "ワリオスタジアム(DS)": "DS Wario Stadium",
+  "シャーベットランド(GC)": "GCN Sherbet Land",
+  "ミュージックパーク(3DS)": "3DS Music Park",
+  "ヨッシーバレー(N64)": "N64 Yoshi Valley",
+  "チクタクロック(DS)": "DS Tick-Tock Clock",
+  "パックンスライダー(3DS)": "3DS Piranha Plant Slide",
+  "グラグラかざん(Wii)": "Wii Grumble Volcano",
+  "レインボーロード(N64)": "N64 Rainbow Road",
+
+  "ヨッシーサーキット(GC)": "GCN Yoshi Circuit",
+  "エキサイトバイク(WiiU)": "Excitebike Arena",
+  "ドラゴンロード(WiiU)": "Dragon Driftway",
+  "ミュートシティ(WiiU)": "Mute City",
+  "ワリオこうざん(Wii)": "Wii Wario's Gold Mine",
+  "レインボーロード(SFC)": "SNES Rainbow Road",
+  "ツルツルツイスター(WiiU)": "Ice Ice Outpost",
+  "ハイラルサーキット(WiiU)": "Hyrule Circuit",
+
+  "ベビィパーク(GC)": "GCN Baby Park",
+  "チーズランド(GBA)": "GBA Cheese Land",
+  "ネイチャーロード(WiiU)": "Wild Woods",
+  "どうぶつの森(WiiU)": "Animal Crossing",
+  "ネオクッパシティ(3DS)": "3DS Neo Bowser City",
+  "リボンロード(GBA)": "GBA Ribbon Road",
+  "リンリンメトロ(WiiU)": "Super Bell Subway",
+  "ビッグブルー(WiiU)": "Big Blue",
+
+  "パリプロムナード(Tour)": "Paris Promenade",
+  "キノピオサーキット(3DS)": "3DS Toad Circuit",
+  "チョコマウンテン(N64)": "N64 Choco Mountain",
+  "ココナッツモール(Wii)": "Wii Coconut Mall",
+  "トーキョースクランブル(Tour)": "Tokyo Blur",
+  "キノコリッジウェイ(DS)": "DS Shroom Ridge",
+  "スカイガーデン(GBA)": "GBA Sky Garden",
+  "ニンニンドージョー(Switch)": "Ninja Hideaway",
+
+  "ニューヨークドリーム(Tour)": "New York Minute",
+  "マリオサーキット３(SFC)": "SNES Mario Circuit 3",
+  "カラカラさばく(N64)": "N64 Kalimari Desert",
+  "ワルイージピンボール(DS)": "DS Waluigi Pinball",
+  "シドニーサンシャイン(Tour)": "Sydney Sprint",
+  "スノーランド(GBA)": "GBA Snow Land",
+  "キノコキャニオン(Wii)": "Wii Mushroom Gorge",
+  "アイスビルディング(Switch)": "Sky-High Sundae",
+
+  "ロンドンアベニュー(Tour)": "London Loop",
+  "テレサレイク(GBA)": "GBA Boo Lake",
+  "ロックロックマウンテン(3DS)": "3DS Rock Rock Mountain",
+  "メイプルツリーハウス(Wii)": "Wii Maple Treeway",
+  "ベルリンシュトラーセ(Tour)": "Berlin Byways",
+  "ピーチガーデン(DS)": "DS Peach Gardens",
+  "メリーメリーマウンテン(Switch)": "Merry Mountain",
+  "レインボーロード(3DS)": "3DS Rainbow Road",
+
+  "アムステルダムブルーム(Tour)": "Amsterdam Drift",
+  "リバーサイドパーク(GBA)": "GBA Riverside Park",
+  "DKスノーボードクロス(Wii)": "Wii DK Summit",
+  "ヨッシーアイランド(Switch)": "Yoshi's Island",
+  "バンコクラッシュ(Tour)": "Bangkok Rush",
+  "マリオサーキット(DS)": "DS Mario Circuit",
+  "ワルイージスタジアム(GC)": "GCN Waluigi Stadium",
+  "シンガポールスプラッシュ(Tour)": "Singapore Speedway",
+
+  "アテネポリス(Tour)": "Athens Dash",
+  "デイジークルーザー(GC)": "GCN Daisy Cruiser",
+  "ムーンリッジ＆ハイウェイ(Wii)": "Wii Moonview Highway",
+  "シャボンロード(Tour)": "Squeaky Clean Sprint",
+  "ロサンゼルスコースト(Tour)": "Los Angeles Laps",
+  "サンセットこうや(GBA)": "GBA Sunset Wilds",
+  "ノコノコみさき(Wii)": "Wii Koopa Cape",
+  "バンクーバーバレー(Tour)": "Vancouver Velocity",
+
+  "ローマアバンティ(Tour)": "Rome Avanti",
+  "DKマウンテン(GC)": "GCN DK Mountain",
+  "デイジーサーキット(Wii)": "Wii Daisy Circuit",
+  "パックンしんでん(Switch)": "Piranha Plant Cove",
+  "マドリードグランデ(Tour)": "Madrid Drive",
+  "ロゼッタプラネット(3DS)": "3DS Rosalina's Ice World",
+  "クッパじょう３(SFC)": "SNES Bowser's Castle 3",
+  "レインボーロード(Wii)": "Wii Rainbow Road",
+};
+
+// 逆引き辞書（英語名 -> 日本語名）
+const MK8DX_COURSE_REVERSE = {};
+Object.keys(MK8DX_COURSE_I18N).forEach(ja => {
+  MKWORLD_COURSE_REVERSE[MK8DX_COURSE_I18N[ja]] = ja;
+});
+
+/**
+ * コース名の言語変換（単体コース / 遷移コース対応）
+ */
+function translateMK8DXCourse(courseName, targetLang = currentLang) {
+  if (!courseName) return '';
+  
+  if (courseName.includes('→') || courseName.includes('->')) {
+    const sep = courseName.includes('→') ? '→' : '->';
+    return courseName.split(sep).map(p => translateSingleTrack(p.trim(), targetLang)).join(' → ');
+  }
+  return translateSingleTrack(courseName, targetLang);
+}
+
+function translateSingleTrack(name, targetLang) {
+  if (targetLang === 'en') {
+    return MK8DX_COURSE_I18N[name] || name;
+  } else {
+    return MK8DX_COURSE_REVERSE[name] || name;
+  }
+}
+
+// ==========================================
+// 3. 言語切り替えロジック
+// ==========================================
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('mkworld_adp_lang', lang);
+  document.documentElement.lang = lang;
+
+  // ボタンアクティブ表示
+  const btnJa = document.getElementById('btn-lang-ja');
+  const btnEn = document.getElementById('btn-lang-en');
+  if (btnJa) btnJa.classList.toggle('active', lang === 'ja');
+  if (btnEn) btnEn.classList.toggle('active', lang === 'en');
+
+  // 固定文言のテキスト置換
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      el.textContent = i18nDict[lang][key];
+    }
+  });
+
+  // ドロップダウン内のコース名表示を切り替え
+  updateCourseDropdownsLanguage();
+
+  // --- ▼ 【ここを追加】モーダルが開いている（表示されている）場合、入力欄のコース名も再生成して言語を反映する ---
+ // モダルが開いている場合、モーダル内のコースセレクトの表示名だけを更新する
+  const modal = document.getElementById("raceModal");
+  if (modal && modal.classList.contains("show")) {
+    const activeCount = document.querySelectorAll("[id^='raceCourse_']").length;
+    for (let i = 1; i <= activeCount; i++) {
+      const select = document.getElementById(`raceCourse_${i}`);
+      if (select) {
+        const currentVal = select.value;
+        Array.from(select.options).forEach(opt => {
+          opt.textContent = translateMKWorldCourse(opt.value, lang);
+        });
+        select.value = currentVal;
+      }
+    }
+  }
+  // ---------------------------------------------------------------------------------------------------
+
+  logMessage(i18nDict[lang].msg_ready);
+}
+/**
+ * 12レース分すべてのコース選択ドロップダウンの表示文言を更新
+ */
+function updateCourseDropdownsLanguage() {
+  for (let i = 1; i <= 12; i++) {
+    const select = document.getElementById(`race-course-${i}`);
+    if (!select) continue;
+
+    const currentVal = select.value;
+    Array.from(select.options).forEach(opt => {
+      if (opt.value === '') {
+        opt.textContent = i18nDict[currentLang].opt_select_course;
+      } else {
+        opt.textContent = translateMKWorldCourse(opt.value, currentLang);
+      }
+    });
+    select.value = currentVal;
+  }
+}
+
+/**
+ * ログメッセージ出力
+ */
+function logMessage(text) {
+  const logEl = document.getElementById('system-log');
+  if (logEl) {
+    logEl.innerHTML += `<br>${text}`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
+
+
+// --- ▼ プレースホルダーの言語置換を追加する場合 ---
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      el.placeholder = i18nDict[lang][key];
+    }
+  });
+// ==========================================
+// 4. 初期化処理
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  const savedLang = localStorage.getItem('mkworld_adp_lang');
+  const userLang = navigator.language.startsWith('ja') ? 'ja' : 'en';
+  setLanguage(savedLang || userLang);
+});
 </script>
 
 
 
 <h2>MK8DX ラウンジ分析（配布ページ）</h2>
-<!-- ヘッダー＆言語切替バー -->
 <div class="header-bar">
   <div class="header-title" data-i18n="app_title">🏎️ MKWORLD ADP - 戦績データ記録・分析・共有ツール</div>
   <div class="lang-switcher">
@@ -361,227 +911,170 @@ const courseList = [
     <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">English</button>
   </div>
 </div>
-<!-- MK8DX ラウンジ分析（配布版）ダウンロードボタン -->
-<button id="downloadMkadpBtn" class="btn-mkadp-download">
+
+<button id="downloadMkadpBtn" class="btn-mkadp-download" data-i18n="btn_download_mkadp">
   📁 MK8DXADP(ローカルファイル版)をダウンロード
 </button>
-<button id="downloadoverlayBtn" class="btn-mkadp-download">
-  📁   obs専用配信表示オーバーレイをダウンロード
+<button id="downloadoverlayBtn" class="btn-mkadp-download" data-i18n="btn_download_overlay">
+  📁 obs専用配信表示オーバーレイをダウンロード
 </button>
 <br>
-<button id="migrateLocalStorageBtn">過去データをDBへ移行</button>
+<button id="migrateLocalStorageBtn" data-i18n="btn_migrate_db">過去バージョンデータをDBへ移行</button>
 
-  <!-- ▼ パスワード付きバックアップ UI ▼ -->
 <div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>バックアップ（パスワード付き）</h3>
-
-  <!-- セーブ（出力） -->
+  <h3 data-i18n="backup_title">バックアップ（パスワード付き）</h3>
   <div style="margin-bottom:15px;">
-    <label>デバイス間データ移行バックアップファイル用パスワード：</label>
+    <label data-i18n="backup_label">デバイス間データ移行バックアップファイル用パスワード：</label>
     <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <button id="downloadBackupWithPasswordBtn">バックアップを保存</button>
+    <button id="downloadBackupWithPasswordBtn" data-i18n="btn_save_backup">バックアップを保存</button>
   </div>
-
   <hr>
-
-  <!-- 復元（インポート） -->
   <div>
-    <label>デバイス間データ移行復元パスワード：</label>
+    <label data-i18n="restore_label">デバイス間データ移行復元パスワード：</label>
     <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
     <input id="restoreFileInput" type="file" accept=".txt">
-    <button id="restoreBackupWithPasswordBtn">復元する</button>
+    <button id="restoreBackupWithPasswordBtn" data-i18n="btn_restore_backup">復元する</button>
   </div>
 </div>
-<!-- ▲ パスワード付きバックアップ UI ▲ -->
   
 
+<h3 data-i18n="tsv_title">TSV読み込み（スプシコピー対応）</h3>
+<textarea id="tsvInput" data-i18n-placeholder="tsv_placeholder" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
+<button id="importTSVBtn" data-i18n="btn_import_tsv">TSVを読み込む</button>
 
-<h3>TSV読み込み（スプシコピー対応）</h3>
-<textarea id="tsvInput" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
-<button id="importTSVBtn">TSVを読み込む</button>
-
-<h3>CSV / TSV 読み込み（セーブデータとして保存）</h3>
+<h3 data-i18n="csv_title">CSV / TSV 読み込み（セーブデータとして保存）</h3>
 <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
-<button id="importFileBtn">読み込んで保存</button>
+<button id="importFileBtn" data-i18n="btn_import_file">読み込んで保存</button>
 
-</script>   <!-- ★★★ ここが絶対に必要 ★★★ -->
-
-<!-- ▼ 旧データ取り込みセクション -->
 <div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>旧データ取り込み（localStorage → IndexedDB）</h3>
-
-  <!-- 方法2：旧JSONを読み込む -->
+  <h3 data-i18n="old_import_title">旧データ取り込み（localStorage → IndexedDB）</h3>
   <div style="margin-bottom:15px;">
-    <label><b>① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+    <label><b data-i18n="old_json_label">① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
     <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
-    <button id="importOldJsonBtn" style="margin-left:10px;">旧JSONを取り込む</button>
+    <button id="importOldJsonBtn" style="margin-left:10px;" data-i18n="btn_import_json">旧JSONを取り込む</button>
   </div>
-
   <hr>
-
-  <!-- 方法3：旧HTMLを読み込む -->
   <div style="margin-top:15px;">
-    <label><b>② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+    <label><b data-i18n="old_html_label">② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
     <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
-    <button id="importOldHtmlBtn" style="margin-left:10px;">旧HTMLを取り込む</button>
+    <button id="importOldHtmlBtn" style="margin-left:10px;" data-i18n="btn_import_html">旧HTMLを取り込む</button>
   </div>
-
-  <p style="margin-top:15px; font-size:13px; color:#666;">
+  <p style="margin-top:15px; font-size:13px; color:#666;" data-i18n="old_import_note">
     ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
     ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
   </p>
 </div>
   
-<button id="importBackupBtn">バックアップ復元</button>
-<button id="importSaveFileBtn">ファイルから復元</button>
-
+<button id="importBackupBtn" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
+<button id="importSaveFileBtn" data-i18n="btn_restore_file">ファイルから復元</button>
 
 <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3>重複データの整理</h3>
-  <button id="removeDupBtn">重複データを自動削除する</button>
-  <p style="font-size:13px; color:#666; margin-top:10px;">
+  <h3 data-i18n="dup_title">重複データの整理</h3>
+  <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
+  <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
     ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
   </p>
 </div>
 
-<!-- ▼ タブボタン -->
 <div id="tabs" style="margin-bottom:20px;">
-  <button class="tabBtn active" data-tab="analysisTab">分析</button>
-  <button class="tabBtn" data-tab="historyTab">レース一覧</button>
-  <button class="tabBtn" data-tab="loungeTab">ラウンジ統計</button>
-  <button class="tabBtn" data-tab="coursestatsTab">コース別stats</button>
+  <button class="tabBtn active" data-tab="analysisTab" data-i18n="tab_analysis">分析</button>
+  <button class="tabBtn" data-tab="historyTab" data-i18n="tab_history">レース一覧</button>
+  <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
+  <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
 </div>
 
 
 <!-- ▼ Overlay multi-user 設定 -->
+<!-- ▼ Overlay multi-user 設定 -->
 <div style="margin-top:20px; padding:10px; border:1px solid #666;">
-  <h3>Overlay ユーザー登録</h3>
+  <h3 data-i18n="overlay_user_title">Overlay ユーザー登録</h3>
 
   <div style="margin-bottom:10px;">
-    <input id="overlayUserInput" placeholder="ユーザー名を入力" style="width:200px;">
-    <button onclick="registerOverlayUser()">登録</button>
+    <input id="overlayUserInput" data-i18n-placeholder="placeholder_username" placeholder="ユーザー名を入力" style="width:200px;">
+    <button onclick="registerOverlayUser()" data-i18n="btn_register">登録</button>
   </div>
 
   <div style="margin-bottom:10px;">
-    <label>送信先ユーザー：</label>
+    <label data-i18n="overlay_target_label">送信先ユーザー：</label>
     <select id="overlayUserSelect"></select>
   </div>
 
-  <!-- ▼ JSON 埋め込み領域（ユーザーごとに script を自動生成） -->
+  <!-- ▼ JSON 埋め込み領域 -->
   <div id="overlayJsonContainer"></div>
 </div>
 
-
-
-
-  
-<!-- ▼ レース一覧タブ -->
+<!-- ▼ レース一覧タブ（重複を1つに統合） -->
 <div id="historyTab" class="tabContent" style="display:none;">
-  <h3>登録済みレース一覧</h3>
+  <h3 data-i18n="history_title">登録済みレース一覧</h3>
 
   <!-- ▼ 分析タブに戻るボタン -->
-  <button id="backToAnalysisBtn" style="margin-bottom:12px;">
+  <button id="backToAnalysisBtn" data-i18n="btn_back_analysis" style="margin-bottom:12px;">
     ← 分析タブに戻る
   </button>
 
   <div id="raceHistoryList"></div>
 </div>
 
+<div style="margin-top:15px;">
+  <label data-i18n="webhook_name_label">Webhook 名前</label><br>
+  <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用"><br><br>
 
+  <label data-i18n="webhook_url_label">Webhook URL</label><br>
+  <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..."><br><br>
 
-<!-- ▼ レース一覧タブ -->
-<div id="historyTab" class="tabContent" style="display:none;">
-  <h3>登録済みレース一覧</h3>
-  <div id="raceHistoryList"></div>
+  <button onclick="addWebhook()" data-i18n="btn_add">追加</button>
+  <div id="webhookListArea" style="margin-top:10px;"></div>
 </div>
-
-<label>Webhook 名前</label><br>
-<input id="webhookNameInput" type="text" placeholder="例：大会用"><br><br>
-
-<label>Webhook URL</label><br>
-<input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..."><br><br>
-
-<button onclick="addWebhook()">追加</button>
-
-<div id="webhookListArea" style="margin-top:10px;"></div>
-
-
-
-
 
 <!-- ▼ ラウンジ統計タブ -->
 <div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
+  <h2 data-i18n="lounge_stats_title">Lounge Stats Viewer</h2>
 
-  <h2>Lounge Stats Viewer</h2>
-
- <h3>プレイヤーID管理</h3>
-
-  <label>名前</label><br>
+  <h3 data-i18n="player_manage_title">プレイヤーID管理</h3>
+  <label data-i18n="label_name">名前</label><br>
   <input id="playerNameInput" placeholder="" style="width:200px; padding:6px;"><br><br>
   
-  <label>プレイヤーID</label><br>
+  <label data-i18n="label_player_id">プレイヤーID</label><br>
   <input id="playerIdInput" placeholder="" style="width:200px; padding:6px;"><br><br>
   
-  <button id="addPlayerIdBtn">追加</button>
-  <button id="deletePlayerIdBtn">削除</button>
+  <button id="addPlayerIdBtn" data-i18n="btn_add_player">追加</button>
+  <button id="deletePlayerIdBtn" data-i18n="btn_delete_player">削除</button>
   
-  <h4>登録プレイヤー</h4>
+  <h4 data-i18n="registered_players">登録プレイヤー</h4>
   <div id="playerIdListBox" style="border:1px solid #666; padding:10px; width:300px; min-height:100px;"></div>
   
   <br>
-  <button id="loadLoungeBtn">データ取得</button>
-  <button id="sendLoungeDiscordBtn">Discordへ送信</button>
+  <button id="loadLoungeBtn" data-i18n="btn_fetch_data">データ取得</button>
+  <button id="sendLoungeDiscordBtn" data-i18n="btn_send_discord">Discordへ送信</button>
 
-  <h3>フィルター</h3>
-
-  <label>Season</label><br>
+  <h3 data-i18n="filter_title">フィルター</h3>
+  <label data-i18n="lbl_season">Season</label><br>
   <select id="loungeSeasonSelect" style="width:200px;">
     <option value="ALL">ALL</option>
-    <option value="1">S1</option>
-    <option value="2">S2</option>
-    <option value="3">S3</option>
-    <option value="4">S4</option>
-    <option value="5">S5</option>
-    <option value="6">S6</option>
-    <option value="7">S7</option>
-    <option value="8">S8</option>
-    <option value="9">S9</option>
-    <option value="10">S10</option>
+    <option value="1">S1</option><option value="2">S2</option><option value="3">S3</option>
+    <option value="4">S4</option><option value="5">S5</option><option value="6">S6</option>
+    <option value="7">S7</option><option value="8">S8</option><option value="9">S9</option><option value="10">S10</option>
   </select>
   <br><br>
 
-  <label>Tier</label><br>
+  <label data-i18n="lbl_tier">Tier</label><br>
   <select id="loungeTierSelect" style="width:200px;">
     <option value="ALL">ALL</option>
-    <option value="X">X</option>
-    <option value="S">S</option>
-    <option value="A">A</option>
-    <option value="B">B</option>
-    <option value="BC">BC</option>
-    <option value="C">C</option>
-    <option value="CD">CD</option>
-    <option value="D">D</option>
-    <option value="DE">DE</option>
-    <option value="E">E</option>
-    <option value="EF">EF</option>
-    <option value="F">F</option>
-    <option value="FG">FG</option>
-    <option value="G">G</option>
-    <option value="SQ">SQ</option>
+    <option value="X">X</option><option value="S">S</option><option value="A">A</option><option value="B">B</option>
+    <option value="BC">BC</option><option value="C">C</option><option value="CD">CD</option><option value="D">D</option>
+    <option value="DE">DE</option><option value="E">E</option><option value="EF">EF</option><option value="F">F</option>
+    <option value="FG">FG</option><option value="G">G</option><option value="SQ">SQ</option>
   </select>
   <br><br>
 
-  <label>直近 N 試合</label><br>
+  <label data-i18n="label_recent">直近 N 試合</label><br>
   <select id="loungeRecentSelect" style="width:200px;">
     <option value="ALL">ALL</option>
-    <option value="10">10</option>
-    <option value="20">20</option>
-    <option value="50">50</option>
-    <option value="100">100</option>
+    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
   </select>
   <br><br>
 
-  <label>モード</label><br>
+  <label data-i18n="lbl_mode">モード</label><br>
   <select id="loungeModeSelect" style="width:200px;">
     <option value="ALL">ALL</option>
     <option value="12">12P</option>
@@ -590,39 +1083,22 @@ const courseList = [
   <br><br>
 
   <div id="loungeStats" style="margin-top:20px;"></div>
-
-  <!-- ▼ グラフ Canvas（MMR変異グラフ） -->
   <canvas id="loungeMMRChart" width="1000" height="500" style="margin-top:20px;"></canvas>
-
-  <!-- ▼ 画像生成 Canvas -->
   <canvas id="loungeImageCanvas" width="1600" height="600" style="margin-top:20px; border:1px solid #ccc;"></canvas>
 
-  <h3>背景画像設定（ラウンジ画像用）</h3>
-
-  <label>背景画像</label><br>
-  <input type="file" id="loungeBgInput" accept="image/*">
-  
-  <label>明るさ</label><br>
-  <input type="range" id="loungeBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-  
-  <label>コントラスト</label><br>
-  <input type="range" id="loungeBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-  
-  <label>透過度</label><br>
-  <input type="range" id="loungeBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-  
-  <label>ぼかし(px)</label><br>
-  <input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
-
+  <h3 data-i18n="lounge_bg_title">背景画像設定（ラウンジ画像用）</h3>
+  <label data-i18n="label_bg_image">背景画像</label><br>
+  <input type="file" id="loungeBgInput" accept="image/*"><br><br>
+  <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="loungeBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
+  <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="loungeBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
+  <label data-i18n="label_opacity">透過度</label><br><input type="range" id="loungeBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
+  <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
 </div>
 
-  
-<!-- ADP コース比較セクション（5つのプルダウン方式） -->
-<div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;"> 
-
+<!-- ▼ コース統計・比較タブ -->
+<div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
   <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-    <p>コースを最大5つ選択:</p>
-  
+    <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <select id="adpCourseSelect1" style="width:200px;"></select>
       <select id="adpCourseSelect2" style="width:200px;"></select>
@@ -630,146 +1106,87 @@ const courseList = [
       <select id="adpCourseSelect4" style="width:200px;"></select>
       <select id="adpCourseSelect5" style="width:200px;"></select>
     </div>
-     <!-- ▼ ADP コースフィルター -->
+
     <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
-      <h3>コース統計フィルター</h3>
+      <h3 data-i18n="course_stats_filter">コース統計フィルター</h3>
       
-      <!-- Mode -->
-      <label>モード</label><br>
+      <label data-i18n="lbl_mode">モード</label><br>
       <select id="adpModeSelect" style="width:200px;">
         <option value="ALL">ALL</option>
         <option value="lounge">ラウンジ</option>
         <option value="nora">野良</option>
         <option value="tournament">大会</option>
-      </select>
-      <br><br>
-  
-      <!-- Season（ラウンジ時のみ有効） -->
-      <label>Season</label><br>
+      </select><br><br>
+
+      <label data-i18n="lbl_season">Season</label><br>
       <select id="adpSeasonSelect" style="width:200px;">
         <option value="ALL">ALL</option>
-        <option value="S1">S1</option>
-        <option value="S2">S2</option>
-        <option value="S3">S3</option>
-        <option value="S4">S4</option>
-        <option value="S5">S5</option>
-      </select>
-      <br><br>
-  
-      <!-- Tier（ラウンジ時のみ有効） -->
-      <label>Tier</label><br>
-      <select id="adpTierSelect" style="width:200px;"></select>
-      <br><br>
-  
-      <!-- Recent -->
-      <label>直近 N レース</label><br>
+        <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
+      </select><br><br>
+
+      <label data-i18n="lbl_tier">Tier</label><br>
+      <select id="adpTierSelect" style="width:200px;"></select><br><br>
+
+      <label data-i18n="label_recent">直近 N レース</label><br>
       <select id="adpRecentSelect" style="width:200px;">
         <option value="ALL">ALL</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-      </select>
-      <br><br>
-  
-  
-      <!-- AND / OR -->
-      <label>フィルター方式</label><br>
+        <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+      </select><br><br>
+
+      <label data-i18n="label_filter_mode">フィルター方式</label><br>
       <select id="adpFilterModeSelect" style="width:200px;">
         <option value="AND">AND</option>
         <option value="OR">OR</option>
       </select>
     </div>
-  
-    <!-- 背景画像設定 -->
+
     <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
-      <h3>背景画像設定（コース比較画像用）</h3>
-  
-      <label>背景画像</label><br>
-      <input type="file" id="adpCourseBgInput" accept="image/*"
-         onchange="setBgImage(this.files[0])">
-      <label>明るさ</label><br>
-      <input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-  
-      <label>コントラスト</label><br>
-      <input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-  
-      <label>透過度</label><br>
-      <input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-  
-      <label>ぼかし(px)</label><br>
-      <input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
+      <h3 data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
+      <label data-i18n="label_bg_image">背景画像</label><br>
+      <input type="file" id="adpCourseBgInput" accept="image/*" onchange="setBgImage(this.files[0])"><br>
+      <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
+      <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
+      <label data-i18n="label_opacity">透過度</label><br><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
+      <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
     </div>
-  
-    <!-- テキスト色設定 -->
+
     <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
-      <h3>テキスト色設定</h3>
-  
-      <label>テキスト色</label><br>
-      <input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
-  
-      <label>縁取り色</label><br>
-      <input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
-  
-      <label>縁取り太さ(px)</label><br>
-      <input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
-  
-      <label>影の濃さ(px)</label><br>
-      <input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
-  
-      <label>影の色</label><br>
-      <input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+      <h3 data-i18n="text_color_title">テキスト色設定</h3>
+      <label data-i18n="label_text_color">テキスト色</label><br><input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
+      <label data-i18n="label_stroke_color">縁取り色</label><br><input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
+      <label data-i18n="label_stroke_width">縁取り太さ(px)</label><br><input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
+      <label data-i18n="label_shadow_blur">影の濃さ(px)</label><br><input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
+      <label data-i18n="label_shadow_color">影の色</label><br><input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
     </div>
-  
-    <!-- テキスト結果表示 -->
+
     <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
-  
-    <!-- グラフ表示 -->
-    <canvas id="adpCourseStatsChart" width="600" height="300"
-      style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
-  
-    <!-- 画像生成 Canvas -->
-    <canvas id="adpCourseImage" width="1600" height="1100"
-      style="border:1px solid #ccc; display:block;"></canvas>
-  
+    <canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
+    <canvas id="adpCourseImage" width="1600" height="1100" style="border:1px solid #ccc; display:block;"></canvas>
+
     <div style="margin-top: 8px;">
-      <button id="showAdpCourseStatsBtn">表示</button>
-      <button id="sendAdpCourseStatsBtn">Discordにテキスト送信</button>
-      <button id="sendAdpCourseImageBtn">画像をDiscordに送信</button>
+      <button id="showAdpCourseStatsBtn" data-i18n="btn_show">表示</button>
+      <button id="sendAdpCourseStatsBtn" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
     </div>
   </div>
 </div>
 
-
-<h3>オーバーレイ設定</h3>
+<!-- ▼ オーバーレイ設定 -->
+<h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
 <div id="overlayFilterBox" style="margin:10px 0;">
-  <h3>OBS WebSocket接続</h3>
-  
-  <div>
-    <label>ホスト</label>
-    <input id="obsHost" value="localhost">
-  </div>
-  
-  <div>
-    <label>ポート</label>
-    <input id="obsPort" value="4455">
-  </div>
-  
-  <div>
-    <label>パスワード</label>
-    <input id="obsPassword" type="password">
-  </div>
+  <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
+  <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
+  <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
+  <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
   
   <div style="margin-top:10px;">
-    <button onclick="connectOBS()">接続</button>
-    <button onclick="disconnectOBS()">切断</button>
+    <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
+    <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
   </div>
   
-  <div id="obsStatus">
-    未接続
+  <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
 
-  <!-- モード選択 -->
-  <label>モード</label><br>
+  <label data-i18n="lbl_mode">モード</label><br>
   <select id="overlayModeSelect" style="width:200px;">
     <option value="ALL">ALL</option>
     <option value="lounge">ラウンジ</option>
@@ -777,36 +1194,18 @@ const courseList = [
     <option value="tournament">大会</option>
   </select>
 
-  <!-- ラウンジ専用フィルター（Season / Tier） -->
   <div id="loungeFilters" style="margin-top:10px; display:none;">
-
-    <!-- Season -->
-    <label>シーズン</label><br>
-    <select id="loungeSeasonSelect2" style="width:200px;">
-      <!-- JS で 1〜30 を生成 -->
-    </select>
-
-    <br><br>
-
-    <!-- Tier -->
-    <label>Tier</label><br>
-    <select id="loungeTierSelect2" style="width:200px;">
-      <!-- JS で loungeTiers を生成 -->
-    </select>
-
+    <label data-i18n="lbl_season">シーズン</label><br>
+    <select id="loungeSeasonSelect2" style="width:200px;"></select><br><br>
+    <label data-i18n="lbl_tier">Tier</label><br>
+    <select id="loungeTierSelect2" style="width:200px;"></select>
   </div>
-
-  <!-- 共通フィルター -->
   <br><br>
-  <label>Recent</label><br>
-  <select id="loungeRecentSelect" style="width:200px;">
+  <label data-i18n="label_recent">Recent</label><br>
+  <select id="loungeRecentSelect2" style="width:200px;">
     <option value="ALL">ALL</option>
-    <option value="10">10</option>
-    <option value="20">20</option>
-    <option value="50">50</option>
-    <option value="100">100</option>
+    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
   </select>
-
 </div>
 
 
@@ -824,8 +1223,7 @@ const courseList = [
   <!-- ここにグラフや分析UIが続く -->
 </div>
   
-<!-- ▼ レース登録ボタン（右下固定） -->
-<button id="openModalBtn" style="
+<button id="openModalBtn" data-i18n="btn_race_register" style="
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -856,27 +1254,29 @@ const courseList = [
     padding-bottom: 90px;
   ">
 
-    <h3>レース登録</h3>
+    <h3 data-i18n="modal_race_register">レース登録</h3>
 
-    <label>モード</label><br>
-    <select id="modalMode" style="width:100%; margin-bottom:12px;">
-      <option value="lounge">ラウンジ</option>
-      <option value="tournament">大会</option>
-      <option value="nora">野良</option>
-    </select>
+   <label data-i18n="lbl_mode">モード</label><br>
+   <select id="modalMode" style="width:100%; margin-bottom:12px;">
+     <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+     <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+     <option value="nora" data-i18n="opt_mode_nora">野良</option>
+   </select>
+  
+      
 
     <div id="modalTierBlock">
-      <label>Tier</label><br>
+      <label data-i18n="lbl_tier">Tier</label><br>
       <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
     <div id="modalSeasonBlock">
-      <label>Season</label><br>
+      <label data-i18n="lbl_season">Season</label><br>
       <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
     </div>
 
     <div id="modalRaceCountBlock">
-      <label>レース数</label><br>
+      <label data-i18n="modal_race_count">レース数</label><br>
       <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
         <option value="1">1レース</option>
         <option value="2">2レース</option>
@@ -893,21 +1293,21 @@ const courseList = [
       </select>
     </div>
 
-    <div id="modalLoungeInfo" style="margin-bottom:12px; color:#555;">
+    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555;">
       ※ ラウンジは最大12レース（途中中断OK）
     </div>
 
     <div id="modalRaceInputs"></div>
 
    <div style="text-align:right; margin-top:20px;">
-      <button id="closeModalBtn" style="
+      <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
         margin-right:8px;
         background:#ccc;
         border-radius:6px;
       ">キャンセル</button>
     
-      <button id="saveRaceBtn" style="
+      <button id="saveRaceBtn" data-i18n="btn_save" style="
         padding:8px 16px;
         background:#007bff;
         color:#fff;
@@ -916,9 +1316,10 @@ const courseList = [
         font-weight:bold;
         cursor:pointer;
       ">保存</button>
-    </div>   <!-- ★★★ この閉じタグが必要！ ★★★ -->
+    </div>
   </div>
 </div>
+
 
 
 <!-- ★★★ ここから全部の JS ★★★ -->
@@ -1515,24 +1916,19 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
 
- 
-
-
-
-
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
-  <h3>基本統計 / 勝率・平均順位・平均スコア</h3>
+  <h3 data-i18n="basic_stats_title">基本統計 / 勝率・平均順位・平均スコア</h3>
 
-  <label for="statsMode">モード：</label>
+  <label for="statsMode" data-i18n="lbl_mode">モード：</label>
   <select id="statsMode" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label for="statsRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="statsRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="statsRangeSelect" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1541,22 +1937,23 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="statsRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="statsRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="statsRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateStatsView()"
   >
 
-  <label for="statsSeason" style="margin-left:16px;">Season：</label>
+  <label for="statsSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="statsSeason" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="statsTier" style="margin-left:16px;">Tier：</label>
+  <label for="statsTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="statsTier" onchange="updateStatsView()">
     <option value="ALL">ALL</option>
   </select>
@@ -1564,17 +1961,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <!-- ▼ ランキング -->
 <div class="section-block">
-  <h3>コースランキング（得意・苦手）</h3>
+  <h3 data-i18n="ranking_title">コースランキング（得意・苦手）</h3>
 
-  <label for="rankMode">モード：</label>
+  <label for="rankMode" data-i18n="lbl_mode">モード：</label>
   <select id="rankMode" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label style="margin-left:16px;">基準：</label>
+  <label style="margin-left:16px;" data-i18n="label_metric">基準：</label>
   <select id="rankMetric" onchange="updateRankingView()">
     <option value="strong">得意スコア</option>
     <option value="weak">苦手スコア</option>
@@ -1589,17 +1986,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="efficiency">スコア効率</option>
   </select>
 
-  <label for="rankSeason" style="margin-left:16px;">Season：</label>
+  <label for="rankSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="rankSeason" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="rankTier" style="margin-left:16px;">Tier：</label>
+  <label for="rankTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="rankTier" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="rankRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="rankRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="rankRangeSelect" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1607,17 +2004,18 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="rankRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="rankRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="rankRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateRankingView()"
   >
 
-  <label for="minRuns" style="margin-left:16px;">最低走行回数：</label>
+  <label for="minRuns" style="margin-left:16px;" data-i18n="label_min_runs">最低走行回数：</label>
   <input
     id="minRuns"
     type="number"
@@ -1628,7 +2026,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     onchange="updateRankingView()"
   >
 
-  <label style="margin-left:16px;">表示件数：</label>
+  <label style="margin-left:16px;" data-i18n="label_limit">表示件数：</label>
   <select id="rankLimit" onchange="updateRankingView()">
     <option value="5">5</option>
     <option value="10" selected>10</option>
@@ -1637,18 +2035,18 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="50">50</option>
   </select>
 
-  <h4>得意コース TOP10</h4>
+  <h4 data-i18n="strong_top10">得意コース TOP10</h4>
   <table id="tableStrong" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 
-  <h4 style="margin-top:20px;">苦手コース TOP10</h4>
+  <h4 style="margin-top:20px;" data-i18n="weak_top10">苦手コース TOP10</h4>
   <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 </div>
 
 <!-- ▼ 精密評価 -->
 <div class="section-block">
-  <h3>精密コース評価</h3>
+  <h3 data-i18n="precise_eval_title">精密コース評価</h3>
   
-  <label for="aiMode">Mode：</label>
+  <label for="aiMode" data-i18n="lbl_mode">Mode：</label>
   <select id="aiMode" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
     <option value="lounge">lounge</option>
@@ -1661,17 +2059,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="aiSeason" style="margin-left:16px;">Season：</label>
+  <label for="aiSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="aiSeason" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="aiTier" style="margin-left:16px;">Tier：</label>
+  <label for="aiTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="aiTier" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="aiRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="aiRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="aiRangeSelect" onchange="updateAICourseView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1679,11 +2077,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="aiRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="aiRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="aiRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateAICourseView()"
@@ -1694,22 +2093,22 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <!-- ▼ 成長スコア -->
 <div class="section-block">
-  <h3>成長スコア（Tier × Season × Course）</h3>
+  <h3 data-i18n="growth_score_title">成長スコア（Tier × Season × Course）</h3>
 
-  <label for="growthMode">モード：</label>
+  <label for="growthMode" data-i18n="lbl_mode">モード：</label>
   <select id="growthMode" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label for="growthTier" style="margin-left:16px;">Tier：</label>
+  <label for="growthTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="growthTier" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="growthSeason" style="margin-left:16px;">Season：</label>
+  <label for="growthSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="growthSeason" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
   </select>
@@ -1719,7 +2118,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="growthRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="growthRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="growthRangeSelect" onchange="updateGrowthView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1727,11 +2126,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="growthRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="growthRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="growthRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateGrowthView()"
@@ -1740,15 +2140,16 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <canvas id="chartGrowth" height="160" style="margin-top:20px;"></canvas>
 </div>
 
+<!-- ▼ コース別レーダー評価 -->
 <div class="section-block">
-  <h3>コース別レーダー評価</h3>
+  <h3 data-i18n="radar_title">コース別レーダー評価</h3>
 
-  <label for="radarMode">モード：</label>
+  <label for="radarMode" data-i18n="lbl_mode">モード：</label>
   <select id="radarMode" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
   <label for="radarCourse" style="margin-left:16px;">Course：</label>
@@ -1756,17 +2157,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="radarSeason" style="margin-left:16px;">Season：</label>
+  <label for="radarSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="radarSeason" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="radarTier" style="margin-left:16px;">Tier：</label>
+  <label for="radarTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="radarTier" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="radarRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="radarRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="radarRangeSelect" onchange="updateRadarView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1774,11 +2175,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="radarRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="radarRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="radarRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateRadarView()"
@@ -1789,22 +2191,22 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <!-- ▼ ヒートマップ -->
 <div class="section-block">
-  <h3>コース別ヒートマップ</h3>
+  <h3 data-i18n="heatmap_title">コース別ヒートマップ</h3>
 
-  <label for="heatmapMode">モード：</label>
+  <label for="heatmapMode" data-i18n="lbl_mode">モード：</label>
   <select id="heatmapMode" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label for="heatmapSeason" style="margin-left:16px;">Season：</label>
+  <label for="heatmapSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="heatmapSeason" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="heatmapTier" style="margin-left:16px;">Tier：</label>
+  <label for="heatmapTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="heatmapTier" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
   </select>
@@ -1814,7 +2216,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="heatmapRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="heatmapRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="heatmapRangeSelect" onchange="updateHeatmapView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1822,11 +2224,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="heatmapRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="heatmapRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="heatmapRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateHeatmapView()"
@@ -1837,27 +2240,27 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <!-- ▼ 3Dバブル -->
 <div class="section-block">
-  <h3>3D バブルチャート</h3>
+  <h3 data-i18n="bubble_title">3D バブルチャート</h3>
 
-  <label for="bubbleMode">モード：</label>
+  <label for="bubbleMode" data-i18n="lbl_mode">モード：</label>
   <select id="bubbleMode" onchange="update3DView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label for="bubbleSeason" style="margin-left:16px;">Season：</label>
+  <label for="bubbleSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="bubbleSeason" onchange="update3DView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="bubbleTier" style="margin-left:16px;">Tier：</label>
+  <label for="bubbleTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="bubbleTier" onchange="update3DView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="bubbleRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="bubbleRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="bubbleRangeSelect" onchange="update3DView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1865,11 +2268,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="bubbleRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="bubbleRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="bubbleRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="update3DView()"
@@ -1880,27 +2284,27 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <!-- ▼ 散布図 -->
 <div class="section-block">
-  <h3>散布図（強さ × 成長）</h3>
+  <h3 data-i18n="scatter_title">散布図（強さ × 成長）</h3>
 
-  <label for="scatterMode">モード：</label>
+  <label for="scatterMode" data-i18n="lbl_mode">モード：</label>
   <select id="scatterMode" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="tournament">大会</option>
-    <option value="nora">野良</option>
+    <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+    <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+    <option value="nora" data-i18n="opt_mode_nora">野良</option>
   </select>
 
-  <label for="scatterSeason" style="margin-left:16px;">Season：</label>
+  <label for="scatterSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
   <select id="scatterSeason" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="scatterTier" style="margin-left:16px;">Tier：</label>
+  <label for="scatterTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
   <select id="scatterTier" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="scatterRangeSelect" style="margin-left:16px;">直近 N：</label>
+  <label for="scatterRangeSelect" style="margin-left:16px;" data-i18n="label_stats_range">直近 N：</label>
   <select id="scatterRangeSelect" onchange="updateScatterView()">
     <option value="ALL">ALL</option>
     <option value="50">50</option>
@@ -1908,11 +2312,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="CUSTOM">カスタム</option>
   </select>
 
-  <label for="scatterRangeInput" style="margin-left:16px;">カスタム：</label>
+  <label for="scatterRangeInput" style="margin-left:16px;" data-i18n="label_custom">カスタム：</label>
   <input
     id="scatterRangeInput"
     type="number"
     min="1"
+    data-i18n-placeholder="placeholder_custom"
     placeholder="任意の数"
     style="width:80px; margin-left:8px;"
     oninput="updateScatterView()"
@@ -1922,18 +2327,18 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 <!-- ▼ ラウンジ12Rセット -->
-<button id="toggleLoungeSetBtn">12レースセット一覧を表示</button>
+<button id="toggleLoungeSetBtn" data-i18n="btn_toggle_lounge_set">12レースセット一覧を表示</button>
 
 <div id="loungeSetSection" style="display:none;">
   <div class="section-block">
-    <h3>ラウンジ 12レースセット一覧</h3>
+    <h3 data-i18n="lounge_set_title">ラウンジ 12レースセット一覧</h3>
 
-    <label>Season：</label>
+    <label data-i18n="lbl_season">Season：</label>
     <select id="loungeSetSeason" onchange="updateLoungeSetView()">
       <option value="ALL">ALL</option>
     </select>
 
-    <label style="margin-left:16px;">Tier：</label>
+    <label style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
     <select id="loungeSetTier" onchange="updateLoungeSetView()">
       <option value="ALL">ALL</option>
     </select>
@@ -1941,7 +2346,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <div id="loungeSetView" style="margin-top:20px;"></div>
   </div>
 </div>
-
+  
 <!-- 通信結果で画面が切り替わるのを防ぐための隠しiframe -->
 <iframe name="hidden_sync_frame" style="display:none;"></iframe>
 
@@ -7991,318 +8396,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// ==========================================
-// 1. 多言語辞書 (i18n Dictionary)
-// ==========================================
-let currentLang = 'ja';
 
-const i18nDict = {
-  ja: {
-    app_title: "🏎️ MKWORLD ADP - 戦績データ記録・分析・共有ツール",
-    
-    // 基本設定
-    title_basic_settings: "📌 基本設定 & 模擬情報",
-    lbl_mode: "モード",
-    opt_mode_lounge: "ラウンジ (Lounge)",
-    opt_mode_nora: "野良 (Worldwide / Regional)",
-    opt_mode_tournament: "大会 (Tournament)",
-    lbl_tier: "ラウンジ Tier",
-    lbl_season: "シーズン",
-    lbl_date: "日付",
-    lbl_mogi_format: "模擬形式",
-    
-    // Webhook & OBS連携
-    title_integrations: "🔗 Discord Webhook & 配信連携設定",
-    lbl_webhook_url: "Discord Webhook URL",
-    lbl_webhook_placeholder: "https://discord.com/api/webhooks/...",
-    lbl_obs_websocket: "OBS WebSocket 連動",
-    btn_test_webhook: "Webhookテスト送信",
-
-    // レース入力テーブル
-    title_race_entry: "🏁 レース結果の入力 (12レース)",
-    th_race_num: "Race",
-    th_course_name: "コース名 (選出コース)",
-    th_rank: "順位",
-    th_score: "スコア",
-    opt_select_course: "- コースを選択してください -",
-    
-    // サマリーカード
-    card_total_score: "合計スコア",
-    card_avg_rank: "平均順位",
-    card_wins: "1位獲得数",
-    card_top3: "TOP3率",
-
-    // アクションボタン
-    btn_reset: "フォームをリセット",
-    btn_save_local: "ローカルDBに保存",
-    btn_send_discord: "Discordに戦績を送信",
-    btn_export_csv: "CSVエクスポート",
-
-    // システムログ & 通知メッセージ
-    title_system_log: "💻 システムログ & ステータス",
-    msg_ready: "> 準備完了。試合データを入力してください。",
-    msg_reset_done: "> フォームをリセットしました。",
-    msg_save_success: "✅ データを IndexedDB に正常に保存しました！",
-    msg_save_error: "❌ データの保存中にエラーが発生しました。",
-    msg_webhook_success: "🚀 Discord へ戦績データを送信しました！",
-    msg_webhook_missing: "⚠️ Webhook URL が設定されていません。"
-  },
-  en: {
-    app_title: "🏎️ MK8DX ADP - Match Tracker & Analytics Tool",
-    
-    // Basic Settings
-    title_basic_settings: "📌 Basic Settings & Match Info",
-    lbl_mode: "Mode",
-    opt_mode_lounge: "Lounge",
-    opt_mode_nora: "Worldwide / Regional",
-    opt_mode_tournament: "Tournament",
-    lbl_tier: "Lounge Tier",
-    lbl_season: "Season",
-    lbl_date: "Date",
-    lbl_mogi_format: "Format",
-    
-    // Webhook & OBS Integrations
-    title_integrations: "🔗 Discord Webhook & Streaming Integrations",
-    lbl_webhook_url: "Discord Webhook URL",
-    lbl_webhook_placeholder: "https://discord.com/api/webhooks/...",
-    lbl_obs_websocket: "OBS WebSocket Integration",
-    btn_test_webhook: "Test Webhook",
-
-    // Race Entry Table
-    title_race_entry: "🏁 Race Placements Entry (12 Races)",
-    th_race_num: "Race",
-    th_course_name: "Track Name",
-    th_rank: "Rank",
-    th_score: "Score",
-    opt_select_course: "- Select Track -",
-
-    // Summary Cards
-    card_total_score: "Total Score",
-    card_avg_rank: "Avg Placement",
-    card_wins: "Wins (1st)",
-    card_top3: "Top 3 Rate",
-
-    // Action Buttons
-    btn_reset: "Reset Form",
-    btn_save_local: "Save to Local DB",
-    btn_send_discord: "Send to Discord",
-    btn_export_csv: "Export CSV",
-
-    // System Logs & Notifications
-    title_system_log: "💻 System Log & Status",
-    msg_ready: "> Ready. Please enter race placements.",
-    msg_reset_done: "> Form has been reset.",
-    msg_save_success: "✅ Match record successfully saved to local DB!",
-    msg_save_error: "❌ Failed to save match record.",
-    msg_webhook_success: "🚀 Match statistics sent to Discord!",
-    msg_webhook_missing: "⚠️ Discord Webhook URL is not configured."
-  }
-};
-
-// ==========================================
-// 2. MKWORLD コース名 多言語辞書
-// ==========================================
-const MKWORLD_COURSE_I18N = {
-   "マリオカートスタジアム(WiiU)": "Mario Kart Stadium",
-  "ウォーターパーク(WiiU)": "Water Park",
-  "スイーツキャニオン(WiiU)": "Sweet Sweet Canyon",
-  "ドッスンいせき(WiiU)": "Thwomp Ruins",
-  "マリオサーキット(WiiU)": "Mario Circuit",
-  "キノピオハーバー(WiiU)": "Toad Harbor",
-  "ねじれマンション(WiiU)": "Twisted Mansion",
-  "ヘイホーこうざん(WiiU)": "Shy Guy Falls",
-  "サンシャインくうこう(WiiU)": "Sunshine Airport",
-  "ドルフィンみさき(WiiU)": "Dolphin Shoals",
-  "エレクトロドリーム(WiiU)": "Electrodrome",
-  "ワリオスノーマウンテン(WiiU)": "Mount Wario",
-  "スカイガーデン(WiiU)": "Cloudtop Cruise",
-  "ホネホネさばく(WiiU)": "Bone-Dry Dunes",
-  "クッパキャッスル(WiiU)": "Bowser's Castle",
-  "レインボーロード(WiiU)": "Rainbow Road",
-
-  "モーモーカントリー(Wii)": "Wii Moo Moo Meadows",
-  "マリオサーキット(GBA)": "GBA Mario Circuit",
-  "プクプクビーチ(DS)": "DS Cheep Cheep Beach",
-  "キノピオハイウェイ(N64)": "N64 Toad's Turnpike",
-  "カラカラさばく(GC)": "GCN Dry Dry Desert",
-  "ドーナツへいや３(SFC)": "SNES Donut Plains 3",
-  "ピーチサーキット(N64)": "N64 Royal Raceway",
-  "DKジャングル(3DS)": "3DS DK Jungle",
-  "ワリオスタジアム(DS)": "DS Wario Stadium",
-  "シャーベットランド(GC)": "GCN Sherbet Land",
-  "ミュージックパーク(3DS)": "3DS Music Park",
-  "ヨッシーバレー(N64)": "N64 Yoshi Valley",
-  "チクタクロック(DS)": "DS Tick-Tock Clock",
-  "パックンスライダー(3DS)": "3DS Piranha Plant Slide",
-  "グラグラかざん(Wii)": "Wii Grumble Volcano",
-  "レインボーロード(N64)": "N64 Rainbow Road",
-
-  "ヨッシーサーキット(GC)": "GCN Yoshi Circuit",
-  "エキサイトバイク(WiiU)": "Excitebike Arena",
-  "ドラゴンロード(WiiU)": "Dragon Driftway",
-  "ミュートシティ(WiiU)": "Mute City",
-  "ワリオこうざん(Wii)": "Wii Wario's Gold Mine",
-  "レインボーロード(SFC)": "SNES Rainbow Road",
-  "ツルツルツイスター(WiiU)": "Ice Ice Outpost",
-  "ハイラルサーキット(WiiU)": "Hyrule Circuit",
-
-  "ベビィパーク(GC)": "GCN Baby Park",
-  "チーズランド(GBA)": "GBA Cheese Land",
-  "ネイチャーロード(WiiU)": "Wild Woods",
-  "どうぶつの森(WiiU)": "Animal Crossing",
-  "ネオクッパシティ(3DS)": "3DS Neo Bowser City",
-  "リボンロード(GBA)": "GBA Ribbon Road",
-  "リンリンメトロ(WiiU)": "Super Bell Subway",
-  "ビッグブルー(WiiU)": "Big Blue",
-
-  "パリプロムナード(Tour)": "Paris Promenade",
-  "キノピオサーキット(3DS)": "3DS Toad Circuit",
-  "チョコマウンテン(N64)": "N64 Choco Mountain",
-  "ココナッツモール(Wii)": "Wii Coconut Mall",
-  "トーキョースクランブル(Tour)": "Tokyo Blur",
-  "キノコリッジウェイ(DS)": "DS Shroom Ridge",
-  "スカイガーデン(GBA)": "GBA Sky Garden",
-  "ニンニンドージョー(Switch)": "Ninja Hideaway",
-
-  "ニューヨークドリーム(Tour)": "New York Minute",
-  "マリオサーキット３(SFC)": "SNES Mario Circuit 3",
-  "カラカラさばく(N64)": "N64 Kalimari Desert",
-  "ワルイージピンボール(DS)": "DS Waluigi Pinball",
-  "シドニーサンシャイン(Tour)": "Sydney Sprint",
-  "スノーランド(GBA)": "GBA Snow Land",
-  "キノコキャニオン(Wii)": "Wii Mushroom Gorge",
-  "アイスビルディング(Switch)": "Sky-High Sundae",
-
-  "ロンドンアベニュー(Tour)": "London Loop",
-  "テレサレイク(GBA)": "GBA Boo Lake",
-  "ロックロックマウンテン(3DS)": "3DS Rock Rock Mountain",
-  "メイプルツリーハウス(Wii)": "Wii Maple Treeway",
-  "ベルリンシュトラーセ(Tour)": "Berlin Byways",
-  "ピーチガーデン(DS)": "DS Peach Gardens",
-  "メリーメリーマウンテン(Switch)": "Merry Mountain",
-  "レインボーロード(3DS)": "3DS Rainbow Road",
-
-  "アムステルダムブルーム(Tour)": "Amsterdam Drift",
-  "リバーサイドパーク(GBA)": "GBA Riverside Park",
-  "DKスノーボードクロス(Wii)": "Wii DK Summit",
-  "ヨッシーアイランド(Switch)": "Yoshi's Island",
-  "バンコクラッシュ(Tour)": "Bangkok Rush",
-  "マリオサーキット(DS)": "DS Mario Circuit",
-  "ワルイージスタジアム(GC)": "GCN Waluigi Stadium",
-  "シンガポールスプラッシュ(Tour)": "Singapore Speedway",
-
-  "アテネポリス(Tour)": "Athens Dash",
-  "デイジークルーザー(GC)": "GCN Daisy Cruiser",
-  "ムーンリッジ＆ハイウェイ(Wii)": "Wii Moonview Highway",
-  "シャボンロード(Tour)": "Squeaky Clean Sprint",
-  "ロサンゼルスコースト(Tour)": "Los Angeles Laps",
-  "サンセットこうや(GBA)": "GBA Sunset Wilds",
-  "ノコノコみさき(Wii)": "Wii Koopa Cape",
-  "バンクーバーバレー(Tour)": "Vancouver Velocity",
-
-  "ローマアバンティ(Tour)": "Rome Avanti",
-  "DKマウンテン(GC)": "GCN DK Mountain",
-  "デイジーサーキット(Wii)": "Wii Daisy Circuit",
-  "パックンしんでん(Switch)": "Piranha Plant Cove",
-  "マドリードグランデ(Tour)": "Madrid Drive",
-  "ロゼッタプラネット(3DS)": "3DS Rosalina's Ice World",
-  "クッパじょう３(SFC)": "SNES Bowser's Castle 3",
-  "レインボーロード(Wii)": "Wii Rainbow Road",
-
-// 逆引き辞書（英語名 -> 日本語名）
-const MKWORLD_COURSE_REVERSE = {};
-Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
-  MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
-});
-
-/**
- * コース名の言語変換（単体コース / 遷移コース対応）
- */
-function translateMKWorldCourse(courseName, targetLang = currentLang) {
-  if (!courseName) return '';
-  
-  if (courseName.includes('→') || courseName.includes('->')) {
-    const sep = courseName.includes('→') ? '→' : '->';
-    return courseName.split(sep).map(p => translateSingleTrack(p.trim(), targetLang)).join(' → ');
-  }
-  return translateSingleTrack(courseName, targetLang);
-}
-
-function translateSingleTrack(name, targetLang) {
-  if (targetLang === 'en') {
-    return MKWORLD_COURSE_I18N[name] || name;
-  } else {
-    return MKWORLD_COURSE_REVERSE[name] || name;
-  }
-}
-
-// ==========================================
-// 3. 言語切り替えロジック
-// ==========================================
-function setLanguage(lang) {
-  currentLang = lang;
-  localStorage.setItem('mkworld_adp_lang', lang);
-  document.documentElement.lang = lang;
-
-  // ボタンアクティブ表示
-  const btnJa = document.getElementById('btn-lang-ja');
-  const btnEn = document.getElementById('btn-lang-en');
-  if (btnJa) btnJa.classList.toggle('active', lang === 'ja');
-  if (btnEn) btnEn.classList.toggle('active', lang === 'en');
-
-  // 固定文言のテキスト置換
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (i18nDict[lang] && i18nDict[lang][key]) {
-      el.textContent = i18nDict[lang][key];
-    }
-  });
-
-  // ドロップダウン内のコース名表示を切り替え
-  updateCourseDropdownsLanguage();
-
-  logMessage(i18nDict[lang].msg_ready);
-}
-
-/**
- * 12レース分すべてのコース選択ドロップダウンの表示文言を更新
- */
-function updateCourseDropdownsLanguage() {
-  for (let i = 1; i <= 12; i++) {
-    const select = document.getElementById(`race-course-${i}`);
-    if (!select) continue;
-
-    const currentVal = select.value;
-    Array.from(select.options).forEach(opt => {
-      if (opt.value === '') {
-        opt.textContent = i18nDict[currentLang].opt_select_course;
-      } else {
-        opt.textContent = translateMKWorldCourse(opt.value, currentLang);
-      }
-    });
-    select.value = currentVal;
-  }
-}
-
-/**
- * ログメッセージ出力
- */
-function logMessage(text) {
-  const logEl = document.getElementById('system-log');
-  if (logEl) {
-    logEl.innerHTML += `<br>${text}`;
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-}
-
-// ==========================================
-// 4. 初期化処理
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-  const savedLang = localStorage.getItem('mkworld_adp_lang');
-  const userLang = navigator.language.startsWith('ja') ? 'ja' : 'en';
-  setLanguage(savedLang || userLang);
-});
 </script>
 
 
