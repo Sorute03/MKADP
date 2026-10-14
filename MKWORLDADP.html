@@ -602,6 +602,17 @@ const i18nDict = {
     dup_title: "重複データの整理",
     btn_remove_dup: "重複データを自動削除する",
     dup_note: "※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。",
+    metric_strong: "得意スコア",
+    metric_weak: "苦手スコア",
+    metric_growth: "成長スコア",
+    metric_winRate: "勝率",
+    metric_avgRank: "平均順位",
+    metric_avgScore: "平均スコア",
+    metric_stdRank: "安定度（順位のブレ）",
+    metric_firstRate: "爆発力（1位率）",
+    metric_avoidBottom: "下位回避率",
+    metric_rankScore: "順位逆数スコア",
+    metric_efficiency: "スコア効率",
 
     // --- ▼ 追加：タブ・マルチユーザー・ラウンジ・分析セクション ---
     tab_analysis: "分析",
@@ -842,9 +853,20 @@ const i18nDict = {
     unit_times: "races",
     unit_rank: "",
     unit_pts: "pts",
-    msg_no_data: "No matching records found."
-  }
-};
+    msg_no_data: "No matching records found.",
+    metric_strong: "Best Score",
+    metric_weak: "Worst Score",
+    metric_growth: "Growth Score",
+    metric_winRate: "Win Rate",
+    metric_avgRank: "Avg Rank",
+    metric_avgScore: "Avg Score",
+    metric_stdRank: "Consistency",
+    metric_firstRate: "1st Rate (Explosiveness)",
+    metric_avoidBottom: "Bottom Avoid Rate",
+    metric_rankScore: "Reciprocal Rank Score",
+    metric_efficiency: "Score Efficiency"
+    }
+  };
 
 // ==========================================
 // 2. MKWORLD コース名 多言語辞書
@@ -941,6 +963,13 @@ function setLanguage(lang) {
     }
   });
 
+
+  document.querySelectorAll('option[data-i18n]').forEach(opt => {
+    const key = opt.getAttribute('data-i18n');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      opt.textContent = i18nDict[lang][key];
+    }
+  });
   // ドロップダウン内のコース名表示を切り替え
   updateCourseDropdownsLanguage();
 
@@ -2095,17 +2124,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
   <label style="margin-left:16px;" data-i18n="label_metric">基準：</label>
   <select id="rankMetric" onchange="updateRankingView()">
-    <option value="strong">得意スコア</option>
-    <option value="weak">苦手スコア</option>
-    <option value="growth">成長スコア</option>
-    <option value="winRate">勝率</option>
-    <option value="avgRank">平均順位</option>
-    <option value="avgScore">平均スコア</option>
-    <option value="stdRank">安定度（順位のブレ）</option>
-    <option value="firstRate">爆発力（1位率）</option>
-    <option value="avoidBottom">下位回避率</option>
-    <option value="rankScore">順位逆数スコア</option>
-    <option value="efficiency">スコア効率</option>
+    <option value="strong" data-i18n="metric_strong">得意スコア</option>
+    <option value="weak" data-i18n="metric_weak">苦手スコア</option>
+    <option value="growth" data-i18n="metric_growth">成長スコア</option>
+    <option value="winRate" data-i18n="metric_winRate">勝率</option>
+    <option value="avgRank" data-i18n="metric_avgRank">平均順位</option>
+    <option value="avgScore" data-i18n="metric_avgScore">平均スコア</option>
+    <option value="stdRank" data-i18n="metric_stdRank">安定度（順位のブレ）</option>
+    <option value="firstRate" data-i18n="metric_firstRate">爆発力（1位率）</option>
+    <option value="avoidBottom" data-i18n="metric_avoidBottom">下位回避率</option>
+    <option value="rankScore" data-i18n="metric_rankScore">順位逆数スコア</option>
+    <option value="efficiency" data-i18n="metric_efficiency">スコア効率</option>
   </select>
 
   <label for="rankSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
