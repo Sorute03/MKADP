@@ -6413,22 +6413,38 @@ function getRankInfo(mmr, season) {
 }
 
 async function loadADPIndexedDBRecords() {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open("mogiDB", 1);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-  });
+  try {
+    const db = await new Promise((resolve, reject) => {
+      const req = indexedDB.open("mogiDB"); // バージョン指定は既存の定義に合わせてください
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve(req.result);
+    });
 
-  const tx = db.transaction("records", "readonly");  // ★ここが重要
-  const store = tx.objectStore("records");
+    const storeName = "records";
 
-  const all = await new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-  });
+    // ★ ストアが存在するかどうかの安全チェックを追加
+    if (!db.objectStoreNames || !db.objectStoreNames.contains(storeName)) {
+      console.warn(`[IndexedDB] ストア '${storeName}' がまだ存在しません（初回起動等）。空配列を返します。`);
+      if (typeof db.close === 'function') db.close();
+      return [];
+    }
 
-  return all;
+    const tx = db.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+
+    const all = await new Promise((resolve, reject) => {
+      const req = store.getAll();
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve(req.result);
+    });
+
+    if (typeof db.close === 'function') db.close();
+    return all || [];
+
+  } catch (err) {
+    console.warn("[IndexedDB] loadADPIndexedDBRecords 処理中のエラー（初期状態の可能性）:", err);
+    return []; // エラー時もクラッシュさせず空配列を返す
+  }
 }
 
 async function loadADPCourseDataFromIndexedDB() {
