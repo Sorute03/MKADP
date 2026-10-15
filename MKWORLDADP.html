@@ -2931,24 +2931,28 @@ document.getElementById("importTSVBtn").onclick = async () => {
     return;
   }
 
+  const delimiter = "\t";
   const body = lines.slice(1);
-  const now = Date.now();
+
   const raw = [];
+  const now = Date.now();
 
   for (const line of body) {
-    const cols = line.split("\t").map(c => c.trim());
+    const cols = line.split(delimiter).map(c => c.trim());
     if (cols.length < 3) continue;
 
     const course = cols[0];
     const rank = Number(cols[1]);
     const score = Number(cols[2]);
 
+    // ▼ season 正規化
     let season = "seasonN";
     if (cols[4]) {
       const num = cols[4].replace(/[^0-9]/g, "");
       if (num) season = "S" + num;
     }
 
+    // ▼ tier 正規化
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
@@ -2971,8 +2975,11 @@ document.getElementById("importTSVBtn").onclick = async () => {
   }
 
   // ▼ 12レースごとに totalScore12 を付与
+  const dbRecords = await getAllRecords();
+  let maxSetId = dbRecords.reduce((max, r) => Math.max(max, r.setId || 0), 0);
+  let setId = maxSetId + 1;
+
   const final = [];
-  let setId = 1;
 
   for (let i = 0; i < raw.length; i += 12) {
     const set = raw.slice(i, i + 12);
@@ -2991,20 +2998,33 @@ document.getElementById("importTSVBtn").onclick = async () => {
     setId++;
   }
 
-  // ▼ IndexedDB(B方式) に保存
-  await clearRecords(); // 全削除
+  if (!final.length) {
+    alert("12レース分のセットデータが満たされていないため、追加できませんでした。");
+    return;
+  }
+
+  // ▼ ★★★ 既存データを残したまま重複を除外してマージ ★★★
+  const seen = new Set(dbRecords.map(r => buildRecordKey(r)));
+  let addedCount = 0;
+
   for (const r of final) {
+    const key = buildRecordKey(r);
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    dbRecords.push(r);
+    addedCount++;
     await addRecord(r);
   }
 
-  alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
+  // ▼ メモリ側も更新
+  allRecords = dbRecords;
 
-  // ▼ 再読み込み
-  allRecords = await getAllRecords();
   refreshAllAnalysisViews();
   renderRaceHistory();
-};
 
+  alert(`TSVから ${addedCount} 件の新しいレースを追加しました！（計 ${dbRecords.length} 件）`);
+};
 
   
 document.getElementById("importFileBtn").onclick = () => {
@@ -3027,12 +3047,14 @@ document.getElementById("importFileBtn").onclick = () => {
     const delimiter = lines[0].includes("\t") ? "\t" : ",";
     const body = lines.slice(1);
 
-    const races = [];
+    const raw = [];
+    const now = Date.now();
 
-    for (const line of body) {
+    for (let i = 0; i < body.length; i++) {
+      const line = body[i];
       if (!line.trim()) continue;
 
-      const cols = line.split(delimiter);
+      const cols = line.split(delimiter).map(c => c.trim());
 
       const course = cols[0] || "";
       const rank = Number(cols[1] || 0);
@@ -3042,33 +3064,45 @@ document.getElementById("importFileBtn").onclick = () => {
 
       if (!course || !rank) continue;
 
-      races.push({
+      raw.push({
         course,
         rank,
         score,
         season,
         tier,
         mode: "lounge",
-        timestamp: null
+        // timestamp がない場合は連番で少しずつずらす
+        timestamp: now - (body.length - i) * 1000
       });
     }
 
-    if (!races.length) {
+    if (!raw.length) {
       alert("有効なデータがありません");
       return;
     }
 
-    // ▼ IndexedDB に保存
-    await clearRecords();
-    for (const r of races) {
-      await addRecord(r);
+    // ▼ 既存データを取得して重複チェック・setIdの継続を行う
+    const dbRecords = await getAllRecords();
+    const seen = new Set(dbRecords.map(r => buildRecordKey ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
+
+    let addedCount = 0;
+
+    for (const r of raw) {
+      const key = buildRecordKey ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
+      if (seen.has(key)) continue; // 既存データと重複していればスキップ
+
+      seen.add(key);
+      dbRecords.push(r);
+      addedCount++;
+      await addRecord(r); // DBに追加
     }
 
-    alert(`読み込んだデータ ${races.length} 件を保存しました！`);
-
-    allRecords = await getAllRecords();
+    // ▼ メモリ側も更新
+    allRecords = await getAllRecords(); // 最新の全データを再取得して反映
     refreshAllAnalysisViews();
     renderRaceHistory();
+
+    alert(`ファイルから ${addedCount} 件の新しいレースを追加しました！（計 ${allRecords.length} 件）`);
 
     // ▼ バックアップ暗号化
     queueMicrotask(async () => {
@@ -3080,6 +3114,9 @@ document.getElementById("importFileBtn").onclick = () => {
   reader.readAsText(file);
 };
 
+// ==========================================
+// 1. 旧JSONデータ取り込み (`importOldJsonBtn`) の修正
+// ==========================================
 document.getElementById("importOldJsonBtn").onclick = () => {
   const file = document.getElementById("oldJsonInput").files[0];
   if (!file) {
@@ -3089,25 +3126,51 @@ document.getElementById("importOldJsonBtn").onclick = () => {
 
   const reader = new FileReader();
   reader.onload = async () => {
-    const json = reader.result;
-    const arr = JSON.parse(json);
+    try {
+      const json = reader.result;
+      const incomingArr = JSON.parse(json);
 
-    await clearRecords();
-    for (const r of arr) {
-      await addRecord(r);
+      if (!Array.isArray(incomingArr) || incomingArr.length === 0) {
+        alert("有効なデータが見つかりませんでした。");
+        return;
+      }
+
+      // ▼ 既存データを取得して重複回避＆マージ
+      const dbRecords = await getAllRecords();
+      const seen = new Set(dbRecords.map(r => typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
+      
+      let addedCount = 0;
+
+      for (const r of incomingArr) {
+        const key = typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
+        if (seen.has(key)) continue; // すでに存在する場合はスキップ
+
+        seen.add(key);
+        dbRecords.push(r);
+        addedCount++;
+        await addRecord(r); // DBに追加
+      }
+
+      // ▼ 全体を綺麗にソートしてメモリとUIに反映
+      allRecords = sortRecords(dbRecords);
+
+      refreshAllAnalysisViews();
+      renderRaceHistory();
+
+      alert(`旧JSONから ${addedCount} 件の新しいレースを取り込みました！（計 ${allRecords.length} 件）`);
+    } catch (e) {
+      console.error(e);
+      alert("JSONファイルの解析に失敗しました。");
     }
-
-    allRecords = await getAllRecords();
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    alert("旧JSONデータを取り込みました！");
   };
 
   reader.readAsText(file);
 };
 
 
+// ==========================================
+// 2. 旧HTMLデータ取り込み (`importOldHtmlBtn`) の修正
+// ==========================================
 document.getElementById("importOldHtmlBtn").onclick = () => {
   const file = document.getElementById("oldHtmlInput").files[0];
   if (!file) {
@@ -3118,29 +3181,52 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
   const reader = new FileReader();
 
   reader.onload = async () => {
-    const html = reader.result;
+    try {
+      const html = reader.result;
 
-    // ▼ localStorage.setItem("allRecords", "....") を抽出
-    const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
+      // ▼ localStorage.setItem("allRecords", "....") を抽出
+      const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
 
-    if (!match) {
-      alert("HTML内に allRecords が見つかりませんでした");
-      return;
+      if (!match) {
+        alert("HTML内に allRecords が見つかりませんでした");
+        return;
+      }
+
+      const json = match[1];
+      const incomingArr = JSON.parse(json);
+
+      if (!Array.isArray(incomingArr) || incomingArr.length === 0) {
+        alert("有効なデータが見つかりませんでした。");
+        return;
+      }
+
+      // ▼ 既存データを取得して重複回避＆マージ
+      const dbRecords = await getAllRecords();
+      const seen = new Set(dbRecords.map(r => typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
+
+      let addedCount = 0;
+
+      for (const r of incomingArr) {
+        const key = typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
+        if (seen.has(key)) continue;
+
+        seen.add(key);
+        dbRecords.push(r);
+        addedCount++;
+        await addRecord(r);
+      }
+
+      // ▼ 全体を綺麗にソートしてメモリとUIに反映
+      allRecords = sortRecords(dbRecords);
+
+      refreshAllAnalysisViews();
+      renderRaceHistory();
+
+      alert(`旧HTMLから ${addedCount} 件の新しいレースを取り込みました！（計 ${allRecords.length} 件）`);
+    } catch (e) {
+      console.error(e);
+      alert("HTMLからのデータ抽出・解析に失敗しました。");
     }
-
-    const json = match[1];
-    const arr = JSON.parse(json);
-
-    await clearRecords();
-    for (const r of arr) {
-      await addRecord(r);
-    }
-
-    allRecords = await getAllRecords();
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    alert("旧HTMLからデータを取り込みました！");
   };
 
   reader.readAsText(file);
@@ -5049,10 +5135,30 @@ async function verifyPassword(encryptedPassword, inputPassword) {
   }
 }
 
-async function exportSaveDataWithPassword(password) {
-  const json = JSON.stringify(allRecords);
+/**
+ * レコード配列を時系列およびセット順に完璧にソート・整列する関数
+ */
+function sortRecords(records) {
+  if (!Array.isArray(records)) return [];
+  return [...records].sort((a, b) => {
+    // 1. setId がある場合は setId 順
+    const setA = a.setId || 0;
+    const setB = b.setId || 0;
+    if (setA !== setB) return setA - setB;
 
-  // データ本体（あなたの既存 encrypt）
+    // 2. タイムスタンプ順（古い順）
+    const timeA = a.timestamp || a.setTimestamp || 0;
+    const timeB = b.timestamp || b.setTimestamp || 0;
+    return timeA - timeB;
+  });
+}
+
+async function exportSaveDataWithPassword(password) {
+  // ▼ エクスポート前に必ず正しい順序に並び替える
+  const sortedRecords = sortRecords(allRecords);
+  const json = JSON.stringify(sortedRecords);
+
+  // データ本体（既存の encrypt）
   const encryptedData = await encrypt(json);
 
   // aesKey をパスワードで暗号化
@@ -5085,37 +5191,37 @@ async function importSaveDataWithPassword(saveText, password) {
 
   // データ本体を復元
   const json = await decrypt(obj.d);
-  let arr = JSON.parse(json);
+  let incomingArr = JSON.parse(json);
 
-  // ▼ 壊れたレコードを除去
-  //arr = arr.filter(r =>
-    //r.mode &&
-    //r.season &&
-    //r.tier &&
-    //r.timestamp != null
-  //);
+  // ▼ ① 現在DBにある既存データを取得
+  const existingRecords = await getAllRecords();
 
-  // ▼ DB を初期化して保存
+  // ▼ ② 既存データを消さず、重複を除外してマージ＆ソート
+  const finalArr = mergeRecords(existingRecords, incomingArr);
+
+  // ▼ ③ DB を一度クリアして、マージされた完全なリストを再登録する
+  // （※ 重複チェック済みの綺麗な全データを保持するため、クリア＆全追加が安全です）
   await clearRecords();
-  for (const r of arr) {
+  for (const r of finalArr) {
+    delete r.id; // 自動インクリメントの衝突を防ぐためidはいったん外す
     await addRecord(r);
   }
 
-  // ▼ メモリ側にも反映
-  allRecords = arr;
+  // ▼ ④ メモリ側にも反映
+  allRecords = finalArr;
 
-  // ▼ backup だけは localStorage に保存してOK
+  // ▼ ⑤ backup は最新の全データを保持するよう更新
+  // （もし必要であれば、incomingArr 単体ではなく finalArr を暗号化して保存することも可能です）
   localStorage.setItem("backup", obj.d);
 
-  // ▼ UI 初期化
-  initAISelector();
+  // ▼ ⑥ UI 初期化
+  if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
   renderRaceHistory();
 
-  alert("復元が完了しました！");
+  alert(`復元が完了しました！既存データと合わせて計 ${finalArr.length} 件になりました。`);
 }
-
-
+  
 // ▼ パスワード付きバックアップ保存
 document.getElementById("downloadBackupWithPasswordBtn").onclick = async () => {
   const password = document.getElementById("backupPassword").value.trim();
@@ -5396,6 +5502,48 @@ document.getElementById("importTSVBtn").onclick = async () => {
   alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
 };
 
+
+/**
+ * 既存のレコードリストに、新しいレコード群を重複を防ぎながら安全にマージする関数
+ * @param {Array} existingRecords 現在DBにある既存データ
+ * @param {Array} incomingRecords 新しく追加・復元するデータ
+ * @returns {Array} マージ＆ソート済みの配列
+ */
+function mergeRecords(existingRecords, incomingRecords) {
+  // 重複判定用のキー（シグネチャ）を生成する関数
+  const getSignature = (r) => {
+    // タイムスタンプやsetId、コース名、順位などを組み合わせて一意のキーにする
+    const ts = r.timestamp || r.setTimestamp || 0;
+    const course = r.course || '';
+    const rank = r.rank !== undefined ? r.rank : '';
+    const setId = r.setId || 0;
+    return `${ts}_${setId}_${course}_${rank}`;
+  };
+
+  const seen = new Set();
+  const merged = [];
+
+  // 1. まず既存データを登録
+  for (const r of existingRecords) {
+    const sig = getSignature(r);
+    if (!seen.has(sig)) {
+      seen.add(sig);
+      merged.push(r);
+    }
+  }
+
+  // 2. 次に新規データを、重複していないものだけ追加
+  for (const r of incomingRecords) {
+    const sig = getSignature(r);
+    if (!seen.has(sig)) {
+      seen.add(sig);
+      merged.push(r);
+    }
+  }
+
+  // 3. 全体を綺麗に時系列・セット順にソート
+  return sortRecords(merged);
+}
 
 
   
