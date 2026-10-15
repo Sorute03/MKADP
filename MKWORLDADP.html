@@ -8670,8 +8670,8 @@ async function sendToCloudflareWorker(payload) {
         game_type: GAME_TYPE, // Worker 側でゲームタイトルを識別できるよう付与
         sent_at: new Date().toISOString(),
         records: payload
-      }),
-      keepalive: true // ★重要: ページ離脱やバックグラウンド移行時も通信を完結させる
+      })
+      // ★ keepalive: true を削除しました
     });
 
     if (!response.ok) {
@@ -8685,7 +8685,6 @@ async function sendToCloudflareWorker(payload) {
     return false;
   }
 }
-
 
 
 /**
