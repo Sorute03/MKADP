@@ -3117,59 +3117,14 @@ document.getElementById("importFileBtn").onclick = () => {
 // ==========================================
 // 1. 旧JSONデータ取り込み (`importOldJsonBtn`) の修正
 // ==========================================
-document.getElementById("importOldJsonBtn").onclick = () => {
-  const file = document.getElementById("oldJsonInput").files[0];
-  if (!file) {
-    alert("ファイルを選択してください");
-    return;
-  }
 
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const json = reader.result;
-      const incomingArr = JSON.parse(json);
-
-      if (!Array.isArray(incomingArr) || incomingArr.length === 0) {
-        alert("有効なデータが見つかりませんでした。");
-        return;
-      }
-
-      // ▼ 既存データを取得して重複回避＆マージ
-      const dbRecords = await getAllRecords();
-      const seen = new Set(dbRecords.map(r => typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
-      
-      let addedCount = 0;
-
-      for (const r of incomingArr) {
-        const key = typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
-        if (seen.has(key)) continue; // すでに存在する場合はスキップ
-
-        seen.add(key);
-        dbRecords.push(r);
-        addedCount++;
-        await addRecord(r); // DBに追加
-      }
-
-      // ▼ 全体を綺麗にソートしてメモリとUIに反映
-      allRecords = sortRecords(dbRecords);
-
-      refreshAllAnalysisViews();
-      renderRaceHistory();
-
-      alert(`旧JSONから ${addedCount} 件の新しいレースを取り込みました！（計 ${allRecords.length} 件）`);
-    } catch (e) {
-      console.error(e);
-      alert("JSONファイルの解析に失敗しました。");
-    }
-  };
-
-  reader.readAsText(file);
-};
 
 
 // ==========================================
 // 2. 旧HTMLデータ取り込み (`importOldHtmlBtn`) の修正
+// ==========================================
+// ==========================================
+// 旧HTMLデータ取り込み (`importOldHtmlBtn`) の修正
 // ==========================================
 document.getElementById("importOldHtmlBtn").onclick = () => {
   const file = document.getElementById("oldHtmlInput").files[0];
@@ -3184,11 +3139,11 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
     try {
       const html = reader.result;
 
-      // ▼ localStorage.setItem("allRecords", "....") を抽出
-      const match = html.match(/localStorage\.setItem\("allRecords",\s*"([^"]*)"\)/);
+      // ▼ "...." のような省略文字ではなく、実際のJSON配列（[ から始まる文字列）を抽出するよう厳密化
+      const match = html.match(/localStorage\.setItem\("allRecords",\s*"(\[.*?\])"\)/);
 
       if (!match) {
-        alert("HTML内に allRecords が見つかりませんでした");
+        alert("HTML内に有効な allRecords のデータが見つかりませんでした（省略記号 '....' が含まれている可能性があります）。");
         return;
       }
 
@@ -3225,14 +3180,12 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
       alert(`旧HTMLから ${addedCount} 件の新しいレースを取り込みました！（計 ${allRecords.length} 件）`);
     } catch (e) {
       console.error(e);
-      alert("HTMLからのデータ抽出・解析に失敗しました。");
+      alert("HTMLからのデータ抽出・解析に失敗しました（データ形式が不正です）。");
     }
   };
 
   reader.readAsText(file);
 };
-
-
 
 
 
