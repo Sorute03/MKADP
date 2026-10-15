@@ -8793,7 +8793,7 @@ async function runScheduledSync() {
 
     if (isLocalFile) {
       console.log('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
-      // フォーム送信版を呼び出し（内部で DB 更新や時刻記録も完結）
+      // フォーム送信版を呼び出し
       sendSuccess = await sendBackupDataViaForm(); 
     } else {
       console.log('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
