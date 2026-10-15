@@ -5088,12 +5088,12 @@ async function importSaveDataWithPassword(saveText, password) {
   let arr = JSON.parse(json);
 
   // ▼ 壊れたレコードを除去
-  arr = arr.filter(r =>
-    r.mode &&
-    r.season &&
-    r.tier &&
-    r.timestamp != null
-  );
+  //arr = arr.filter(r =>
+    //r.mode &&
+    //r.season &&
+    //r.tier &&
+    //r.timestamp != null
+  //);
 
   // ▼ DB を初期化して保存
   await clearRecords();
