@@ -2744,28 +2744,57 @@ async function exportSaveData() {
 
 /* ▼ セーブデータ復元 */
 async function importSaveData(code) {
+  // 1. 暗号化コードを復号してJSONをパース
   const json = await decrypt(code);
-  const records = JSON.parse(json);
+  let incomingArr = JSON.parse(json);
 
-  // DB を初期化（全削除）
+  if (!Array.isArray(incomingArr)) {
+    alert("インポートデータの形式が正しくありません。");
+    return;
+  }
+
+  // ▼ ① インポートされたデータの壊れた season / tier を自動修復・補完する
+  incomingArr = repairBrokenSeasonsAndTiers(incomingArr);
+
+  // ▼ ② 既存データをDBから取得
+  const existingRecords = await getAllRecords();
+
+  // ▼ ③ 既存データを消さず、重複を除外してマージ＆ソート
+  const finalArr = mergeRecords(existingRecords, incomingArr);
+
+  // ▼ ④ DB を初期化して、マージ済みの全データを安全に再登録
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   const store = tx.objectStore("records");
 
   // 全削除
   const clearReq = store.clear();
-  await new Promise(res => clearReq.onsuccess = res);
+  await new Promise((res, rej) => {
+    clearReq.onsuccess = res;
+    clearReq.onerror = () => rej(clearReq.error);
+  });
 
-  // 全件追加
-  for (const r of records) {
+  // マージされた全件を追加
+  for (const r of finalArr) {
+    delete r.id; // 自動インクリメントの衝突を防ぐためidを外す
     store.add(r);
   }
   await tx.done;
 
+  // ▼ ⑤ メモリ側も更新
+  allRecords = finalArr;
+
+  // ▼ ⑥ バックアップ（localStorage）も最新の全データで更新
+  const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
+  localStorage.setItem("backup", latestEncryptedBackup);
+
+  // ▼ ⑦ UI 初期化
+  if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
   renderRaceHistory();
-}
 
+  alert(`データを正常にインポートしました！既存と合わせて計 ${finalArr.length} 件になりました。（欠損データは自動補完済み）`);
+}
 
 
 /* ▼ 自動ダウンロードバックアップ */
@@ -2974,12 +3003,13 @@ document.getElementById("importTSVBtn").onclick = async () => {
     return;
   }
 
-  // ▼ 12レースごとに totalScore12 を付与
+  // ▼ 既存データを取得して、最大の setId を割り出す
   const dbRecords = await getAllRecords();
   let maxSetId = dbRecords.reduce((max, r) => Math.max(max, r.setId || 0), 0);
   let setId = maxSetId + 1;
+  const startSetId = setId;
 
-  const final = [];
+  const incomingArr = [];
 
   for (let i = 0; i < raw.length; i += 12) {
     const set = raw.slice(i, i + 12);
@@ -2992,40 +3022,47 @@ document.getElementById("importTSVBtn").onclick = async () => {
       r.totalScore12 = totalScore12;
       r.setId = setId;
       r.setTimestamp = setTimestamp;
-      final.push(r);
+      incomingArr.push(r);
     });
 
     setId++;
   }
 
-  if (!final.length) {
+  if (!incomingArr.length) {
     alert("12レース分のセットデータが満たされていないため、追加できませんでした。");
     return;
   }
 
-  // ▼ ★★★ 既存データを残したまま重複を除外してマージ ★★★
-  const seen = new Set(dbRecords.map(r => buildRecordKey(r)));
-  let addedCount = 0;
+  // ▼ ① 読み込んだデータの壊れた season / tier を自動修復・補完する
+  const repairedIncoming = repairBrokenSeasonsAndTiers(incomingArr);
 
-  for (const r of final) {
-    const key = buildRecordKey(r);
-    if (seen.has(key)) continue;
+  // ▼ ② 既存データを残したまま重複を除外してマージ＆ソート
+  const finalArr = mergeRecords(dbRecords, repairedIncoming);
 
-    seen.add(key);
-    dbRecords.push(r);
-    addedCount++;
+  // ▼ ③ DB を一度クリアして、マージされた完全なリストを再登録する
+  await clearRecords();
+  for (const r of finalArr) {
+    delete r.id; // 自動インクリメントの衝突を防ぐためidを外す
     await addRecord(r);
   }
 
-  // ▼ メモリ側も更新
-  allRecords = dbRecords;
+  // ▼ ④ メモリ側も更新
+  allRecords = finalArr;
 
+  // ▼ ⑤ バックアップ（localStorage）も最新の全データで暗号化更新
+  const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
+  localStorage.setItem("backup", latestEncryptedBackup);
+
+  // ▼ ⑥ UI 初期化・更新
+  if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
   renderRaceHistory();
 
-  alert(`TSVから ${addedCount} 件の新しいレースを追加しました！（計 ${dbRecords.length} 件）`);
+  const addedCount = finalArr.length - dbRecords.length;
+  alert(`TSVから新しく ${addedCount} 件（${setId - startSetId} セット）を追加しました！（既存と合わせて計 ${finalArr.length} 件）\n※欠損データは自動補完されました`);
 };
 
+  
   
 document.getElementById("importFileBtn").onclick = () => {
   const file = document.getElementById("fileInput").files[0];
@@ -3037,92 +3074,120 @@ document.getElementById("importFileBtn").onclick = () => {
   const reader = new FileReader();
 
   reader.onload = async () => {
-    const text = reader.result.trim();
-    const lines = text.split(/\r?\n/);
-    if (lines.length <= 1) {
-      alert("データがありません");
-      return;
-    }
+    try {
+      const text = reader.result.trim();
+      const lines = text.split(/\r?\n/);
+      if (lines.length <= 1) {
+        alert("データがありません");
+        return;
+      }
 
-    const delimiter = lines[0].includes("\t") ? "\t" : ",";
-    const body = lines.slice(1);
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
+      const body = lines.slice(1);
 
-    const raw = [];
-    const now = Date.now();
+      const raw = [];
+      const now = Date.now();
 
-    for (let i = 0; i < body.length; i++) {
-      const line = body[i];
-      if (!line.trim()) continue;
+      for (let i = 0; i < body.length; i++) {
+        const line = body[i];
+        if (!line.trim()) continue;
 
-      const cols = line.split(delimiter).map(c => c.trim());
+        const cols = line.split(delimiter).map(c => c.trim());
 
-      const course = cols[0] || "";
-      const rank = Number(cols[1] || 0);
-      const score = Number(cols[2] || 0);
-      const season = normalizeSeason(cols[4] || "");
-      const tier = cols[5] || "";
+        const course = cols[0] || "";
+        const rank = Number(cols[1] || 0);
+        const score = Number(cols[2] || 0);
+        const season = typeof normalizeSeason === 'function' ? normalizeSeason(cols[4] || "") : (cols[4] ? "S" + cols[4].replace(/[^0-9]/g, "") : "seasonN");
+        const tier = cols[5] ? cols[5].toUpperCase() : "tierN";
 
-      if (!course || !rank) continue;
+        if (!course || !rank) continue;
 
-      raw.push({
-        course,
-        rank,
-        score,
-        season,
-        tier,
-        mode: "lounge",
-        // timestamp がない場合は連番で少しずつずらす
-        timestamp: now - (body.length - i) * 1000
+        raw.push({
+          course,
+          rank,
+          score,
+          season,
+          tier,
+          mode: "lounge",
+          timestamp: now - (body.length - i) * 1000
+        });
+      }
+
+      if (!raw.length) {
+        alert("有効なデータがありません");
+        return;
+      }
+
+      // ▼ ① 既存データを取得して最大の setId を割り出す
+      const existingRecords = await getAllRecords();
+      let maxSetId = existingRecords.reduce((max, r) => Math.max(max, r.setId || 0), 0);
+      let setId = maxSetId + 1;
+      const startSetId = setId;
+
+      // ▼ ② 12レースごとに totalScore12 と setId を付与
+      const incomingArr = [];
+
+      for (let i = 0; i < raw.length; i += 12) {
+        const set = raw.slice(i, i + 12);
+        if (set.length < 12) break; // 12レース未満の端数はスキップまたは処理
+
+        const totalScore12 = set.reduce((s, r) => s + r.score, 0);
+        const setTimestamp = set[0].timestamp;
+
+        set.forEach(r => {
+          r.totalScore12 = totalScore12;
+          r.setId = setId;
+          r.setTimestamp = setTimestamp;
+          incomingArr.push(r);
+        });
+
+        setId++;
+      }
+
+      // もし12レース単位のセットが作れなかった場合のフォールバック（1件ずつ個別追加などにするか、あるいはそのままrawを使う場合）
+      const targetArr = incomingArr.length > 0 ? incomingArr : raw;
+
+      // ▼ ③ 読み込んだデータの壊れた season / tier を自動修復・補完する
+      const repairedIncoming = typeof repairBrokenSeasonsAndTiers === 'function' 
+        ? repairBrokenSeasonsAndTiers(targetArr) 
+        : targetArr;
+
+      // ▼ ④ 既存データと重複を除外しながらマージ＆ソート
+      const finalArr = typeof mergeRecords === 'function' 
+        ? mergeRecords(existingRecords, repairedIncoming) 
+        : [...existingRecords, ...repairedIncoming];
+
+      // ▼ ⑤ DB を一度クリアして、マージされた完全なリストを再登録する
+      await clearRecords();
+      for (const r of finalArr) {
+        delete r.id; // 自動インクリメントの衝突を防ぐためidを外す
+        await addRecord(r);
+      }
+
+      // ▼ ⑥ メモリ側も更新
+      allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
+
+      refreshAllAnalysisViews();
+      renderRaceHistory();
+
+      const addedCount = finalArr.length - existingRecords.length;
+      alert(`ファイルから新しく ${addedCount} 件を追加しました！（既存と合わせて計 ${allRecords.length} 件）\n※欠損データは自動補完されました`);
+
+      // ▼ ⑦ バックアップ暗号化・保存
+      queueMicrotask(async () => {
+        const encrypted = await encrypt(JSON.stringify(allRecords));
+        localStorage.setItem("backup", encrypted);
       });
+
+    } catch (e) {
+      console.error(e);
+      alert("ファイルの読み込み・解析中にエラーが発生しました。");
     }
-
-    if (!raw.length) {
-      alert("有効なデータがありません");
-      return;
-    }
-
-    // ▼ 既存データを取得して重複チェック・setIdの継続を行う
-    const dbRecords = await getAllRecords();
-    const seen = new Set(dbRecords.map(r => buildRecordKey ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
-
-    let addedCount = 0;
-
-    for (const r of raw) {
-      const key = buildRecordKey ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
-      if (seen.has(key)) continue; // 既存データと重複していればスキップ
-
-      seen.add(key);
-      dbRecords.push(r);
-      addedCount++;
-      await addRecord(r); // DBに追加
-    }
-
-    // ▼ メモリ側も更新
-    allRecords = await getAllRecords(); // 最新の全データを再取得して反映
-    refreshAllAnalysisViews();
-    renderRaceHistory();
-
-    alert(`ファイルから ${addedCount} 件の新しいレースを追加しました！（計 ${allRecords.length} 件）`);
-
-    // ▼ バックアップ暗号化
-    queueMicrotask(async () => {
-      const encrypted = await encrypt(JSON.stringify(allRecords));
-      localStorage.setItem("backup", encrypted);
-    });
   };
 
   reader.readAsText(file);
 };
 
-// ==========================================
-// 1. 旧JSONデータ取り込み (`importOldJsonBtn`) の修正
-// ==========================================
-
-
-
-// ==========================================
-// 2. 旧HTMLデータ取り込み (`importOldHtmlBtn`) の修正
-// ==========================================
 // ==========================================
 // 旧HTMLデータ取り込み (`importOldHtmlBtn`) の修正
 // ==========================================
@@ -3139,7 +3204,7 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
     try {
       const html = reader.result;
 
-      // ▼ "...." のような省略文字ではなく、実際のJSON配列（[ から始まる文字列）を抽出するよう厳密化
+      // ▼ 実際のJSON配列（[ から始まる文字列）を抽出
       const match = html.match(/localStorage\.setItem\("allRecords",\s*"(\[.*?\])"\)/);
 
       if (!match) {
@@ -3148,36 +3213,43 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
       }
 
       const json = match[1];
-      const incomingArr = JSON.parse(json);
+      let incomingArr = JSON.parse(json);
 
       if (!Array.isArray(incomingArr) || incomingArr.length === 0) {
         alert("有効なデータが見つかりませんでした。");
         return;
       }
 
-      // ▼ 既存データを取得して重複回避＆マージ
-      const dbRecords = await getAllRecords();
-      const seen = new Set(dbRecords.map(r => typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`));
+      // ▼ ① 読み込んだデータの壊れた season / tier を自動修復・補完する
+      incomingArr = typeof repairBrokenSeasonsAndTiers === 'function' 
+        ? repairBrokenSeasonsAndTiers(incomingArr) 
+        : incomingArr;
 
-      let addedCount = 0;
+      // ▼ ② 既存データを取得して重複回避＆マージ
+      const existingRecords = await getAllRecords();
+      const finalArr = typeof mergeRecords === 'function' 
+        ? mergeRecords(existingRecords, incomingArr) 
+        : [...existingRecords, ...incomingArr];
 
-      for (const r of incomingArr) {
-        const key = typeof buildRecordKey === 'function' ? buildRecordKey(r) : `${r.timestamp}_${r.course}_${r.rank}`;
-        if (seen.has(key)) continue;
-
-        seen.add(key);
-        dbRecords.push(r);
-        addedCount++;
+      // ▼ ③ DB を一度クリアして、マージされた完全なリストを再登録する
+      await clearRecords();
+      for (const r of finalArr) {
+        delete r.id; // 自動インクリメントの衝突を防ぐためidを外す
         await addRecord(r);
       }
 
-      // ▼ 全体を綺麗にソートしてメモリとUIに反映
-      allRecords = sortRecords(dbRecords);
+      // ▼ ④ 全体を綺麗にソートしてメモリに反映
+      allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
+
+      // ▼ ⑤ バックアップ（localStorage）も最新の全データで暗号化更新
+      const latestEncryptedBackup = await encrypt(JSON.stringify(allRecords));
+      localStorage.setItem("backup", latestEncryptedBackup);
 
       refreshAllAnalysisViews();
       renderRaceHistory();
 
-      alert(`旧HTMLから ${addedCount} 件の新しいレースを取り込みました！（計 ${allRecords.length} 件）`);
+      const addedCount = allRecords.length - existingRecords.length;
+      alert(`旧HTMLから新しく ${addedCount} 件を取り込みました！（既存と合わせて計 ${allRecords.length} 件）\n※欠損データは自動補完されました`);
     } catch (e) {
       console.error(e);
       alert("HTMLからのデータ抽出・解析に失敗しました（データ形式が不正です）。");
@@ -3188,6 +3260,142 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
 };
 
 
+  
+
+/**
+ * 壊れた season/tier を、
+ * ① 同一 setId / 同一 totalScore12
+ * ② 付近の setId（±数以内の近いID）
+ * ③ 時系列が近いインデックス（前後）
+ * から多段階で捜索・流用して補完する関数
+ */
+function repairBrokenSeasonsAndTiers(records) {
+  if (!Array.isArray(records) || records.length === 0) return records;
+
+  // 1. 正常な情報を持つマップの作成
+  const validSetInfo = new Map();     // key: setId, value: { season, tier }
+  const validScoreInfo = new Map();   // key: totalScore12, value: { season, tier }
+
+  for (const r of records) {
+    const hasValidSeason = r.season && r.season !== "seasonN";
+    const hasValidTier = r.tier && r.tier !== "tierN";
+
+    // setId ごとのマップ
+    if (r.setId && (hasValidSeason || hasValidTier)) {
+      if (!validSetInfo.has(r.setId)) {
+        validSetInfo.set(r.setId, { season: null, tier: null });
+      }
+      const info = validSetInfo.get(r.setId);
+      if (hasValidSeason && !info.season) info.season = r.season;
+      if (hasValidTier && !info.tier) info.tier = r.tier;
+    }
+
+    // totalScore12 ごとのマップ
+    if (r.totalScore12 && (hasValidSeason || hasValidTier)) {
+      if (!validScoreInfo.has(r.totalScore12)) {
+        validScoreInfo.set(r.totalScore12, { season: null, tier: null });
+      }
+      const info = validScoreInfo.get(r.totalScore12);
+      if (hasValidSeason && !info.season) info.season = r.season;
+      if (hasValidTier && !info.tier) info.tier = r.tier;
+    }
+  }
+
+  // 2. 「付近の setId」から正常な値を探索するヘルパー関数
+  const findSeasonFromNearbySetId = (targetSetId) => {
+    if (!targetSetId) return null;
+    // 近いID（±1, ±2, ±3 ... 最大 ±5 くらいまで）を順に探索
+    for (let offset = 1; offset <= 5; offset++) {
+      const candidates = [targetSetId - offset, targetSetId + offset];
+      for (const id of candidates) {
+        if (validSetInfo.has(id)) {
+          const info = validSetInfo.get(id);
+          if (info && info.season) return info.season;
+        }
+      }
+    }
+    return null;
+  };
+
+  const findTierFromNearbySetId = (targetSetId) => {
+    if (!targetSetId) return null;
+    for (let offset = 1; offset <= 5; offset++) {
+      const candidates = [targetSetId - offset, targetSetId + offset];
+      for (const id of candidates) {
+        if (validSetInfo.has(id)) {
+          const info = validSetInfo.get(id);
+          if (info && info.tier) return info.tier;
+        }
+      }
+    }
+    return null;
+  };
+
+  // 3. 各レコードの修復実行
+  return records.map((r, index, arr) => {
+    const item = { ...r };
+
+    // --- ① season の修復 ---
+    if (!item.season || item.season === "seasonN") {
+      // 1. 同一 setId から
+      if (item.setId && validSetInfo.has(item.setId) && validSetInfo.get(item.setId).season) {
+        item.season = validSetInfo.get(item.setId).season;
+      }
+      // 2. 同一 totalScore12 から
+      else if (item.totalScore12 && validScoreInfo.has(item.totalScore12) && validScoreInfo.get(item.totalScore12).season) {
+        item.season = validScoreInfo.get(item.totalScore12).season;
+      }
+      // 3. ★「付近の setId（±5以内）」から探索
+      else if (item.setId) {
+        const nearbySeason = findSeasonFromNearbySetId(item.setId);
+        if (nearbySeason) item.season = nearbySeason;
+      }
+
+      // 4. それでもダメなら時系列の前後近傍データから
+      if (!item.season || item.season === "seasonN") {
+        let foundSeason = null;
+        for (let d = 1; d <= 12; d++) {
+          const prev = arr[index - d];
+          const next = arr[index + d];
+          if (prev && prev.season && prev.season !== "seasonN") { foundSeason = prev.season; break; }
+          if (next && next.season && next.season !== "seasonN") { foundSeason = next.season; break; }
+        }
+        if (foundSeason) item.season = foundSeason;
+      }
+    }
+
+    // --- ② tier の修復 ---
+    if (!item.tier || item.tier === "tierN") {
+      // 1. 同一 setId から
+      if (item.setId && validSetInfo.has(item.setId) && validSetInfo.get(item.setId).tier) {
+        item.tier = validSetInfo.get(item.setId).tier;
+      }
+      // 2. 同一 totalScore12 から
+      else if (item.totalScore12 && validScoreInfo.has(item.totalScore12) && validScoreInfo.get(item.totalScore12).tier) {
+        item.tier = validScoreInfo.get(item.totalScore12).tier;
+      }
+      // 3. ★「付近の setId（±5以内）」から探索
+      else if (item.setId) {
+        const nearbyTier = findTierFromNearbySetId(item.setId);
+        if (nearbyTier) item.tier = nearbyTier;
+      }
+
+      // 4. それでもダメなら時系列の前後近傍データから
+      if (!item.tier || item.tier === "tierN") {
+        let foundTier = null;
+        for (let d = 1; d <= 12; d++) {
+          const prev = arr[index - d];
+          const next = arr[index + d];
+          if (prev && prev.tier && prev.tier !== "tierN") { foundTier = prev.tier; break; }
+          if (next && next.tier && next.tier !== "tierN") { foundTier = next.tier; break; }
+        }
+        if (foundTier) item.tier = foundTier;
+      }
+    }
+
+    return item;
+  });
+}
 
 
 
@@ -3275,7 +3483,7 @@ window.addEventListener("load", async () => {
 
   // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
   await loadAllRecords();
-
+  openDB();
   // ▼ Season/Tier を UI に流し込む
   populateSeasonAndTierOptions();
   initADPRecords();
@@ -5146,33 +5354,35 @@ async function importSaveDataWithPassword(saveText, password) {
   const json = await decrypt(obj.d);
   let incomingArr = JSON.parse(json);
 
-  // ▼ ① 現在DBにある既存データを取得
+  // ▼ ★★★ ① インポートデータの壊れた season / tier を近傍ID・同一スコア等から自動修復 ★★★
+  incomingArr = repairBrokenSeasonsAndTiers(incomingArr);
+
+  // ▼ ② 現在DBにある既存データを取得
   const existingRecords = await getAllRecords();
 
-  // ▼ ② 既存データを消さず、重複を除外してマージ＆ソート
+  // ▼ ③ 既存データを消さず、重複を除外してマージ＆ソート
   const finalArr = mergeRecords(existingRecords, incomingArr);
 
-  // ▼ ③ DB を一度クリアして、マージされた完全なリストを再登録する
-  // （※ 重複チェック済みの綺麗な全データを保持するため、クリア＆全追加が安全です）
+  // ▼ ④ DB を一度クリアして、マージされた完全なリストを再登録する
   await clearRecords();
   for (const r of finalArr) {
     delete r.id; // 自動インクリメントの衝突を防ぐためidはいったん外す
     await addRecord(r);
   }
 
-  // ▼ ④ メモリ側にも反映
+  // ▼ ⑤ メモリ側にも反映
   allRecords = finalArr;
 
-  // ▼ ⑤ backup は最新の全データを保持するよう更新
-  // （もし必要であれば、incomingArr 単体ではなく finalArr を暗号化して保存することも可能です）
-  localStorage.setItem("backup", obj.d);
+  // ▼ ⑥ backup はマージ後の最新の全データを暗号化して保存する
+  const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
+  localStorage.setItem("backup", latestEncryptedBackup);
 
-  // ▼ ⑥ UI 初期化
+  // ▼ ⑦ UI 初期化
   if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
   renderRaceHistory();
 
-  alert(`復元が完了しました！既存データと合わせて計 ${finalArr.length} 件になりました。`);
+  alert(`復元が完了しました！既存データと合わせて計 ${finalArr.length} 件になりました（欠損データは自動補完されました）。`);
 }
   
 // ▼ パスワード付きバックアップ保存
@@ -5276,9 +5486,14 @@ document.getElementById("importFileBtn").onclick = async () => {
     return;
   }
 
-  // ▼ 12レースごとに totalScore12 を付与
-  const final = [];
-  let setId = 1;
+  // ▼ ① 既存データを取得して、最大の setId を割り出す（ID衝突を防ぐため）
+  const existingRecords = await getAllRecords();
+  const maxSetId = existingRecords.reduce((max, r) => Math.max(max, r.setId || 0), 0);
+  let setId = maxSetId + 1;
+  const startSetId = setId;
+
+  // ▼ 12レースごとに totalScore12 と setId を付与
+  const incomingArr = [];
 
   for (let i = 0; i < raw.length; i += 12) {
     const set = raw.slice(i, i + 12);
@@ -5291,25 +5506,42 @@ document.getElementById("importFileBtn").onclick = async () => {
       r.totalScore12 = totalScore12;
       r.setId = setId;
       r.setTimestamp = setTimestamp;
-      final.push(r);
+      incomingArr.push(r);
     });
 
     setId++;
   }
 
-  // ▼ ★★★ DB に保存（完全移行）★★★
-  await clearRecords();          // DB 初期化
-  for (const r of final) {
-    await addRecord(r);          // 全件追加
+  if (!incomingArr.length) {
+    alert("12レース分のセットデータ（12の倍数）が満たされていないため、追加できませんでした。");
+    return;
   }
 
-  // ▼ メモリ側も更新
-  allRecords = final;
+  // ▼ ② 読み込んだデータの壊れた season / tier を自動修復・補完する
+  const repairedIncoming = repairBrokenSeasonsAndTiers(incomingArr);
+
+  // ▼ ③ 既存データと重複を除外しながらマージ＆ソート
+  const finalArr = mergeRecords(existingRecords, repairedIncoming);
+
+  // ▼ ④ DB を一度クリアして、マージされた完全なリストを再登録する
+  await clearRecords();
+  for (const r of finalArr) {
+    delete r.id; // 自動インクリメントの衝突を防ぐためidはいったん外す
+    await addRecord(r);
+  }
+
+  // ▼ ⑤ メモリ側も更新
+  allRecords = finalArr;
+
+  // ▼ ⑥ バックアップ（localStorage）も最新の全データで更新
+  const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
+  localStorage.setItem("backup", latestEncryptedBackup);
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 
-  alert(`読み込んだデータ ${final.length} 件（${setId - 1} セット）を保存しました！`);
+  const addedCount = finalArr.length - existingRecords.length;
+  alert(`ファイルから新しく ${addedCount} 件（${setId - startSetId} セット）を追加しました！（既存と合わせて計 ${finalArr.length} 件）`);
 };
 
 
@@ -5419,9 +5651,14 @@ document.getElementById("importTSVBtn").onclick = async () => {
     return;
   }
 
-  // ▼ 12レースごとに totalScore12 を付与
-  const final = [];
-  let setId = 1;
+  // ▼ ① 既存データを取得して、最大の setId を割り出す（ID衝突を防ぐため）
+  const existingRecords = await getAllRecords();
+  const maxSetId = existingRecords.reduce((max, r) => Math.max(max, r.setId || 0), 0);
+  let setId = maxSetId + 1;
+  const startSetId = setId;
+
+  // ▼ 12レースごとに totalScore12 と setId を付与
+  const incomingArr = [];
 
   for (let i = 0; i < raw.length; i += 12) {
     const set = raw.slice(i, i + 12);
@@ -5434,27 +5671,43 @@ document.getElementById("importTSVBtn").onclick = async () => {
       r.totalScore12 = totalScore12;
       r.setId = setId;
       r.setTimestamp = setTimestamp;
-      final.push(r);
+      incomingArr.push(r);
     });
 
     setId++;
   }
 
-  // ▼ ★★★ DB に保存（完全移行）★★★
+  if (!incomingArr.length) {
+    alert("12レース分のセットデータ（12の倍数）が満たされていないため、追加できませんでした。");
+    return;
+  }
+
+  // ▼ ② 読み込んだデータの壊れた season / tier を自動修復・補完する
+  const repairedIncoming = repairBrokenSeasonsAndTiers(incomingArr);
+
+  // ▼ ③ 既存データと重複を除外しながらマージ＆ソート
+  const finalArr = mergeRecords(existingRecords, repairedIncoming);
+
+  // ▼ ④ DB を一度クリアして、マージされた完全なリストを再登録する
   await clearRecords();
-  for (const r of final) {
+  for (const r of finalArr) {
+    delete r.id; // 自動インクリメントの衝突を防ぐためidはいったん外す
     await addRecord(r);
   }
 
-  // ▼ メモリ側も更新
-  allRecords = final;
+  // ▼ ⑤ メモリ側も更新
+  allRecords = finalArr;
+
+  // ▼ ⑥ バックアップ（localStorage）も最新の全データで暗号化更新
+  const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
+  localStorage.setItem("backup", latestEncryptedBackup);
 
   refreshAllAnalysisViews();
   renderRaceHistory();
 
-  alert(`TSVから ${final.length} 件（${setId - 1} セット）を読み込みました！`);
+  const addedCount = finalArr.length - existingRecords.length;
+  alert(`TSVから新しく ${addedCount} 件（${setId - startSetId} セット）を追加しました！（既存と合わせて計 ${finalArr.length} 件）`);
 };
-
 
 /**
  * 既存のレコードリストに、新しいレコード群を重複を防ぎながら安全にマージする関数
