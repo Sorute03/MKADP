@@ -3364,15 +3364,25 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
 function repairBrokenSeasonsAndTiers(records) {
   if (!Array.isArray(records) || records.length === 0) return records;
 
+  // ▼ ① S1（または 1）のデータは強制的に tier を "tierQ" に書き換えた配列をベースにする
+  const processed = records.map(r => {
+    const item = { ...r };
+    const s = String(item.season || "").trim().toLowerCase();
+    if (s === "1" || s === "s1") {
+      item.tier = "tierQ";
+    }
+    return item;
+  });
+
   // 1. 正常な情報を持つマップの作成（※ lounge モードのデータのみを対象にする）
   const validSetInfo = new Map();     // key: setId, value: { season, tier }
   const validScoreInfo = new Map();   // key: totalScore12, value: { season, tier }
 
-  for (const r of records) {
-    // 💡 nora や tournament はラウンジのseason/tier修復の基準から除外する
+  for (const r of processed) {
     if (r.mode && r.mode !== "lounge") continue;
 
     const hasValidSeason = r.season && r.season !== "seasonN";
+    // tierQ も有効なティアとしてマップに学習させる
     const hasValidTier = r.tier && r.tier !== "tierN";
 
     // setId ごとのマップ
@@ -3426,31 +3436,27 @@ function repairBrokenSeasonsAndTiers(records) {
   };
 
   // 3. 各レコードの修復実行
-  return records.map((r, index, arr) => {
+  return processed.map((r, index, arr) => {
     const item = { ...r };
 
-    // 💡 nora や tournament モードのデータはラウンジ用のシーズン・ティア修復ロジックをスキップする
+    // nora や tournament モードのデータはラウンジ用のシーズン・ティア修復ロジックをスキップする
     if (item.mode && item.mode !== "lounge") {
       return item;
     }
 
     // --- ① season の修復 ---
     if (!item.season || item.season === "seasonN") {
-      // 1. 同一 setId から
       if (item.setId && validSetInfo.has(item.setId) && validSetInfo.get(item.setId).season) {
         item.season = validSetInfo.get(item.setId).season;
       }
-      // 2. 同一 totalScore12 から
       else if (item.totalScore12 && validScoreInfo.has(item.totalScore12) && validScoreInfo.get(item.totalScore12).season) {
         item.season = validScoreInfo.get(item.totalScore12).season;
       }
-      // 3. 「付近の setId（±5以内）」から探索
       else if (item.setId) {
         const nearbySeason = findSeasonFromNearbySetId(item.setId);
         if (nearbySeason) item.season = nearbySeason;
       }
 
-      // 4. それでもダメなら時系列の前後近傍データから（※同じく lounge モードのデータ同士のみを対象に探す）
       if (!item.season || item.season === "seasonN") {
         let foundSeason = null;
         for (let d = 1; d <= 12; d++) {
@@ -3465,21 +3471,17 @@ function repairBrokenSeasonsAndTiers(records) {
 
     // --- ② tier の修復 ---
     if (!item.tier || item.tier === "tierN") {
-      // 1. 同一 setId から
       if (item.setId && validSetInfo.has(item.setId) && validSetInfo.get(item.setId).tier) {
         item.tier = validSetInfo.get(item.setId).tier;
       }
-      // 2. 同一 totalScore12 から
       else if (item.totalScore12 && validScoreInfo.has(item.totalScore12) && validScoreInfo.get(item.totalScore12).tier) {
         item.tier = validScoreInfo.get(item.totalScore12).tier;
       }
-      // 3. 「付近の setId（±5以内）」から探索
       else if (item.setId) {
         const nearbyTier = findTierFromNearbySetId(item.setId);
         if (nearbyTier) item.tier = nearbyTier;
       }
 
-      // 4. それでもダメなら時系列の前後近傍データから（※同じく lounge モードのデータ同士のみ）
       if (!item.tier || item.tier === "tierN") {
         let foundTier = null;
         for (let d = 1; d <= 12; d++) {
@@ -3492,10 +3494,18 @@ function repairBrokenSeasonsAndTiers(records) {
       }
     }
 
+    // ▼ 最終チェック：もし season が S1 (または 1) なら、修復の有無に関わらず強制的に tier を "tierQ" にする
+    const finalSeason = String(item.season || "").trim().toLowerCase();
+    if (finalSeason === "1" || finalSeason === "s1") {
+      item.tier = "tierQ";
+    }
+
     return item;
   });
 }
 
+
+  
 /**
  * レコードオブジェクトのキーの並び順を指定された美しい順序に統一する
  */
@@ -5844,7 +5854,7 @@ document.getElementById("importFileBtn").onclick = async () => {
   alert(`ファイルから新しく ${addedCount} 件を追加しました！（既存と合わせて計 ${finalArr.length} 件）\n※セットIDおよび欠損データは自動補完済み`);
 };
 
-  
+
 
 document.getElementById("migrateLocalStorageBtn").onclick = async () => {
   // ▼ localStorage に過去データがあるか確認
@@ -6023,7 +6033,19 @@ document.getElementById("importTSVBtn").onclick = async () => {
   alert(`TSVから新しく ${addedCount} 件を追加しました！（既存と合わせて計 ${finalArr.length} 件）\n※セットIDおよび欠損データは自動補完済み`);
 };
 
-
+// season が 1（"1", "S1" など）の場合に tier を "tierN" に強制するヘルパー
+function enforceTierNForSeason1(records) {
+  if (!Array.isArray(records)) return records;
+  return records.map(r => {
+    const item = { ...r };
+    // season が "1" または "S1" の判定
+    const s = String(item.season || "").trim().toLowerCase();
+    if (s === "1" || s === "s1") {
+      item.tier = "tierN";
+    }
+    return item;
+  });
+}
 
   
 /**
