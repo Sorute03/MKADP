@@ -6045,12 +6045,16 @@ function enforceTierNForSeason1(records) {
 function mergeRecords(existingRecords, incomingRecords) {
   // 重複判定用のキー（シグネチャ）を生成する関数
   const getSignature = (r) => {
-    // タイムスタンプやsetId、コース名、順位などを組み合わせて一意のキーにする
-    const ts = r.timestamp || r.setTimestamp || 0;
-    const course = r.course || '';
-    const rank = r.rank !== undefined ? r.rank : '';
+    // 💡 変動しやすいミリ秒の timestamp は外し、
+    // 「セットID（またはセット日時）、コース名、順位、スコア、モード」の不変の組み合わせで一意にする
+    const mode = r.mode || "lounge";
     const setId = r.setId || 0;
-    return `${ts}_${setId}_${course}_${rank}`;
+    const setTs = r.setTimestamp ? Math.floor(r.setTimestamp / 100000) * 100000 : 0; // 日付レベルの大まかな括り（必要に応じて）
+    const course = String(r.course || "").trim();
+    const rank = Number(r.rank) || 0;
+    const score = Number(r.score) || 0;
+    
+    return `${mode}_${setId}_${course}_${rank}_${score}`;
   };
 
   const seen = new Set();
@@ -6066,18 +6070,21 @@ function mergeRecords(existingRecords, incomingRecords) {
   }
 
   // 2. 次に新規データを、重複していないものだけ追加
+  let addedCount = 0;
   for (const r of incomingRecords) {
     const sig = getSignature(r);
     if (!seen.has(sig)) {
       seen.add(sig);
       merged.push(r);
+      addedCount++;
     }
   }
+
+  console.log(`[重複チェック] 既存: ${existingRecords.length}件 / 新規候補: ${incomingRecords.length}件 / 実際に追加された差分: ${addedCount}件`);
 
   // 3. 全体を綺麗に時系列・セット順にソート
   return sortRecords(merged);
 }
-
 
 /**
  * 外部データのうち、modeが "lounge" のデータのみを対象に
