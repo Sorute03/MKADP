@@ -3480,41 +3480,75 @@ function buildSeasonOptions() {
    初期ロード（IndexedDB版）
 ========== */
 window.addEventListener("load", async () => {
+  try {
+    // ▼ 1. まず確実に DB を初期化・オープンする
+    await openDB();
 
-  // ▼ IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
-  await loadAllRecords();
-  openDB();
-  // ▼ Season/Tier を UI に流し込む
-  populateSeasonAndTierOptions();
-  initADPRecords();
-  initRadarSelector();
-  initAISelector();
-  initOBSSeasonSelector();
-  initAdpCourseSelects(); // ← これが undefined だった
-  initGrowthSelectors() 
-  populateSeasonOptions();
+    // ▼ 2. IndexedDB から全レコード読み込み（旧localStorage → DB移行もここで実行）
+    if (typeof loadAllRecords === 'function') {
+      await loadAllRecords();
+    }
 
-  // ▼ AI セレクタの onchange を登録
-  aiCourse.onchange = updateAICourseView;
-  aiSeason.onchange = updateAICourseView;
-  aiTier.onchange   = updateAICourseView;
-  aiMode.onchange   = updateAICourseView;
-  aiRangeSelect.onchange = updateAICourseView;
-  aiRangeInput.oninput   = updateAICourseView;
+    // ▼ 3. 各種 UI セレクタやオプションの初期化
+    if (typeof populateSeasonAndTierOptions === 'function') populateSeasonAndTierOptions();
+    if (typeof initADPRecords === 'function') initADPRecords();
+    if (typeof initRadarSelector === 'function') initRadarSelector();
+    if (typeof initAISelector === 'function') initAISelector();
+    if (typeof initOBSSeasonSelector === 'function') initOBSSeasonSelector();
+    
+    // ※ もし initAdpCourseSelects が不要、または別の関数名であればここでガードする
+    if (typeof initAdpCourseSelects === 'function') {
+      initAdpCourseSelects();
+    } else {
+      console.warn("initAdpCourseSelects 関数が定義されていません（スキップします）。");
+    }
 
-  // ▼ 初回描画（DBから読み込んだ allRecords を使う）
-  updateStatsView();
-  updateGrowthView();
-  updateRadarView();
-  updateHeatmapView();
-  updateRankingView();
-  updateAICourseView();
-  update3DView();
-  updateScatterView();
-  updateLoungeSetView();
-  loadWebhookSettings();
-  loadOBSSettings();
-  renderRaceHistory();
+    if (typeof initGrowthSelectors === 'function') initGrowthSelectors();
+    if (typeof populateSeasonOptions === 'function') populateSeasonOptions();
+
+    // ▼ 4. AI セレクタの onchange イベント登録（要素が存在するか確認してから安全に登録）
+    const registerChangeListener = (id, handler) => {
+      const el = document.getElementById(id) || window[id];
+      if (el) el.onchange = handler;
+    };
+
+    if (typeof updateAICourseView === 'function') {
+      registerChangeListener("aiCourse", updateAICourseView);
+      registerChangeListener("aiSeason", updateAICourseView);
+      registerChangeListener("aiTier", updateAICourseView);
+      registerChangeListener("aiMode", updateAICourseView);
+      registerChangeListener("aiRangeSelect", updateAICourseView);
+      
+      const rangeInput = document.getElementById("aiRangeInput") || window["aiRangeInput"];
+      if (rangeInput) rangeInput.oninput = updateAICourseView;
+    }
+
+    // ▼ 5. 初回描画（DBから読み込んだ allRecords を使って一斉に描画）
+    const safeUpdate = (fnName, fn) => {
+      if (typeof fn === 'function') {
+        try { fn(); } catch (err) { console.error(`${fnName} の実行中にエラー:`, err); }
+      }
+    };
+
+    safeUpdate("updateStatsView", updateStatsView);
+    safeUpdate("updateGrowthView", updateGrowthView);
+    safeUpdate("updateRadarView", updateRadarView);
+    safeUpdate("updateHeatmapView", updateHeatmapView);
+    safeUpdate("updateRankingView", updateRankingView);
+    safeUpdate("updateAICourseView", updateAICourseView);
+    safeUpdate("update3DView", update3DView);
+    safeUpdate("updateScatterView", updateScatterView);
+    safeUpdate("updateLoungeSetView", updateLoungeSetView);
+
+    if (typeof loadWebhookSettings === 'function') loadWebhookSettings();
+    if (typeof loadOBSSettings === 'function') loadOBSSettings();
+    if (typeof renderRaceHistory === 'function') renderRaceHistory();
+
+    console.log("すべての初期化・描画処理が正常に完了しました。");
+
+  } catch (e) {
+    console.error("アプリケーションの初期化中に致命的なエラーが発生しました:", e);
+  }
 });
 
 document.getElementById("toggleLoungeSetBtn").onclick = () => {
