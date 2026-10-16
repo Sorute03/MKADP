@@ -2895,7 +2895,7 @@ async function importSaveData(code) {
   allRecords = finalArr;
 
   // ▼ ⑧ localStorage 側も最新データで同期
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+ 
   localStorage.setItem("backup", code);
 
   // ▼ ⑨ UI 初期化・描画更新
@@ -3118,7 +3118,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
   // ▼ ⑧ バックアップ（localStorage）も最新データで暗号化更新
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
   localStorage.setItem("backup", latestEncryptedBackup);
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  
 
   // ▼ ⑨ UI 初期化・描画更新
   if (typeof initAISelector === 'function') initAISelector();
@@ -3231,8 +3231,7 @@ document.getElementById("importFileBtn").onclick = () => {
       allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
 
       // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
-      localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
+      
       refreshAllAnalysisViews();
       renderRaceHistory();
 
@@ -3332,7 +3331,7 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
       allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
 
       // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
-      localStorage.setItem("allRecords", JSON.stringify(allRecords));
+      
 
       // ▼ ⑨ バックアップ（localStorage）の暗号化保存
       const latestEncryptedBackup = await encrypt(JSON.stringify(allRecords));
@@ -5349,7 +5348,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
 
     // ▼ ⑥ メモリ側および localStorage の同期を更新
     allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
+   
 
     // ▼ ⑦ バックアップ自体も最新のマージ後データで再暗号化して更新
     const latestEncryptedBackup = await encrypt(JSON.stringify(allRecords));
@@ -5435,8 +5434,7 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
 
     // ▼ ⑥ メモリ側および localStorage の同期を更新
     allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
-    localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
+   
     // ▼ ⑦ backup も最新のマージ済みコードで更新
     localStorage.setItem("backup", code);
 
@@ -5665,8 +5663,7 @@ async function importSaveDataWithPassword(saveText, password) {
   // ▼ ⑦ メモリ側にも反映
   allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
 
-  // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+  
 
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
   localStorage.setItem("backup", latestEncryptedBackup);
@@ -5840,7 +5837,7 @@ document.getElementById("importFileBtn").onclick = async () => {
   allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
 
   // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
+ 
 
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
   localStorage.setItem("backup", latestEncryptedBackup);
@@ -6019,8 +6016,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
   allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
 
   // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
-  localStorage.setItem("allRecords", JSON.stringify(allRecords));
-
+ 
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
   localStorage.setItem("backup", latestEncryptedBackup);
 
