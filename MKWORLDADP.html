@@ -2789,7 +2789,7 @@ async function importSaveData(code) {
 
   // ▼ ⑦ バックアップ（localStorage）も最新の全データで更新
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
-  localStorage.setItem("backup", latestEncryptedBackup);
+
 
   // ▼ ⑧ UI 初期化
   if (typeof initAISelector === 'function') initAISelector();
@@ -2896,8 +2896,7 @@ async function importSaveData(code) {
 
   // ▼ ⑧ localStorage 側も最新データで同期
  
-  localStorage.setItem("backup", code);
-
+ 
   // ▼ ⑨ UI 初期化・描画更新
   if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
@@ -3117,8 +3116,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
 
   // ▼ ⑧ バックアップ（localStorage）も最新データで暗号化更新
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
-  localStorage.setItem("backup", latestEncryptedBackup);
-  
+ 
 
   // ▼ ⑨ UI 初期化・描画更新
   if (typeof initAISelector === 'function') initAISelector();
@@ -3241,7 +3239,6 @@ document.getElementById("importFileBtn").onclick = () => {
       // ▼ ⑨ バックアップ暗号化・保存
       queueMicrotask(async () => {
         const encrypted = await encrypt(JSON.stringify(allRecords));
-        localStorage.setItem("backup", encrypted);
       });
 
     } catch (e) {
@@ -3335,8 +3332,7 @@ document.getElementById("importOldHtmlBtn").onclick = () => {
 
       // ▼ ⑨ バックアップ（localStorage）の暗号化保存
       const latestEncryptedBackup = await encrypt(JSON.stringify(allRecords));
-      localStorage.setItem("backup", latestEncryptedBackup);
-
+      
       refreshAllAnalysisViews();
       renderRaceHistory();
 
@@ -5352,8 +5348,7 @@ document.getElementById("importBackupBtn").onclick = async () => {
 
     // ▼ ⑦ バックアップ自体も最新のマージ後データで再暗号化して更新
     const latestEncryptedBackup = await encrypt(JSON.stringify(allRecords));
-    localStorage.setItem("backup", latestEncryptedBackup);
-
+   
     // ▼ ⑧ UI 初期化・描画更新
     if (typeof initAISelector === 'function') initAISelector();
     refreshAllAnalysisViews();
@@ -5436,7 +5431,7 @@ document.getElementById("importSaveFileBtn").onclick = async () => {
     allRecords = typeof sortRecords === 'function' ? sortRecords(finalArr) : finalArr;
    
     // ▼ ⑦ backup も最新のマージ済みコードで更新
-    localStorage.setItem("backup", code);
+    
 
     // ▼ ⑧ UI 初期化・描画更新
     if (typeof initAISelector === 'function') initAISelector();
@@ -5666,8 +5661,7 @@ async function importSaveDataWithPassword(saveText, password) {
   
 
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
-  localStorage.setItem("backup", latestEncryptedBackup);
-
+ 
   // ▼ ⑨ UI 初期化
   if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
@@ -5840,8 +5834,7 @@ document.getElementById("importFileBtn").onclick = async () => {
  
 
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
-  localStorage.setItem("backup", latestEncryptedBackup);
-
+ 
   // ▼ ⑨ UI 初期化・描画更新
   if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
@@ -6018,8 +6011,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
   // ▼ ⑧ localStorage 側の全データ・バックアップも最新に同期
  
   const latestEncryptedBackup = await encrypt(JSON.stringify(finalArr));
-  localStorage.setItem("backup", latestEncryptedBackup);
-
+ 
   // ▼ ⑨ UI 初期化・描画更新
   if (typeof initAISelector === 'function') initAISelector();
   refreshAllAnalysisViews();
