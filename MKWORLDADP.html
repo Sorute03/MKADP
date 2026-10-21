@@ -7116,7 +7116,7 @@ function drawLoungeMMRChart(stats) {
 
   const labels = history.map((_, i) => i + 1);
   const selectedSeasonVal = loungeSeasonSelect ? loungeSeasonSelect.value : "ALL";
-  const isEn = (currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   // グラフの凡例ラベルの多言語対応
   let labelText = "";
@@ -7149,17 +7149,24 @@ function drawLoungeMMRChart(stats) {
         data: mmrValues,
         borderWidth: 3,
         tension: 0.1,
-        // ★ 各データポイント（ドット）の色をその時のレート（ランク）に合わせる
+        
+        // ★ 青い枠線・輪郭を消す設定
+        pointBorderColor: "transparent",          // 通常時の点の枠線を透明化
+        pointHoverBorderColor: "transparent",     // ホバー時の青い枠線を透明化
+        pointBorderWidth: 0,                      // 枠線幅を0に設定
+        
+        // ★ 点の中身の色もその時のレート色に
         pointBackgroundColor: ctx => {
           const idx = ctx.dataIndex;
+          if (idx === undefined) return "#fff";
           const mmr = mmrValues[idx];
           const seasonNum = seasons[idx];
           return getRankInfo(mmr, seasonNum).color;
         },
-        // ★ 線の途中でその時のレートに応じて色がリアルタイムに変わるセグメント機能
+
+        // ★ 線自体の色をその区間のレートに応じたランク色に設定
         segment: {
           borderColor: ctx => {
-            // 区間の平均値ではなく、その瞬間のレート（p0 または p1、あるいは両方の中間）を元に当時のランク色を返す
             const idx = ctx.p0DataIndex;
             const avgMmr = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
             const seasonNum = seasons[idx] ?? 1;
@@ -7194,6 +7201,7 @@ function drawLoungeMMRChart(stats) {
   });
 }
 
+  
 
 /******************************************************
  * ランク情報（多言語対応版）
