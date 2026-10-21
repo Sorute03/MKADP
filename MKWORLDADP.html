@@ -7785,29 +7785,52 @@ function drawMMRGraph(ctx, history) {
 
   if (!history.length) return;
 
-  const ratings = history.map(h => h.mmr);
-  const minR = Math.min(...ratings);
-  const maxR = Math.max(...ratings);
+  const ratings = history.map(item => item.mmr);
+  let minR = Math.min(...ratings);
+  let maxR = Math.max(...ratings);
+  
+  // 最大値と最小値が同じ場合のゼロ除算エラー防止
+  if (minR === maxR) {
+    minR -= 100;
+    maxR += 100;
+  }
 
-  ctx.strokeStyle = getTierColor(stats.tier);
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-
-  history.forEach((h, i) => {
-    const px = x + 40 + (i / (history.length - 1)) * (w - 80);
-    const py = y + h - 40 - ((h.mmr - minR) / (maxR - minR)) * (h - 80);
-
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  });
-
-  ctx.stroke();
+  // 多言語対応のタイトル切り替え
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const titleText = isEn ? "MMR Progression" : "MMR推移";
 
   ctx.fillStyle = "#fff";
   ctx.font = "20px sans-serif";
-  ctx.fillText("MMR Progression", x + 20, y + 30);
-}
+  ctx.fillText(titleText, x + 20, y + 30);
 
+  if (history.length === 1) return;
+
+  // 各ポイントの座標を計算
+  const points = history.map((item, i) => {
+    const px = x + 40 + (i / (history.length - 1)) * (w - 80);
+    const py = y + h - 40 - ((item.mmr - minR) / (maxR - minR)) * (h - 80);
+    return { px, py, mmr: item.mmr, season: item.season };
+  });
+
+  ctx.lineWidth = 3;
+
+  // ★ セグメント（区間）ごとに当時のレート・ランク色に切り替えて線を描画（丸は描かない）
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+
+    // 区間の平均MMRとシーズンからランク色を取得
+    const avgMmr = (p0.mmr + p1.mmr) / 2;
+    const seasonNum = p0.season ?? (typeof stats !== 'undefined' && stats.season ? stats.season : 1);
+    const rankInfo = getRankInfo(avgMmr, seasonNum);
+
+    ctx.strokeStyle = rankInfo.color;
+    ctx.beginPath();
+    ctx.moveTo(p0.px, p0.py);
+    ctx.lineTo(p1.px, p1.py);
+    ctx.stroke();
+  }
+}
 /* ============================================================
    ▼ 国旗描画
    ============================================================ */
