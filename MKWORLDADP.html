@@ -6430,7 +6430,9 @@ function extractSeasonFromUrl(url) {
 }
 
 
-
+/* ============================================================
+   ▼ データ取得関数群（プロキシ統一版）
+   ============================================================ */
 async function fetchWorldData(playerId, season = "ALL") {
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
 
@@ -6486,129 +6488,105 @@ async function fetchWorldLeaderboard(targetUrl) {
   catch { return null; }
 }
 
+async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
+  const proxy = "https://script.google.com/macros/s/AKfycby0TwUGaPL4NPbYkkPrrTYClwgWR5W2G09PM8NS3_YKtFuTnt1G0EDlv9uhnJamlwNe/exec";
+
+  const safeJson = async (url) => {
+    const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch { return null; }
+  };
+
+  const details = await safeJson(`https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`);
+  const history = await safeJson(`https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`);
+
+  let seasonData = null;
+  if (season !== "ALL") {
+    seasonData = await safeJson(`https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}`);
+  }
+
+  return { details, history, seasonData };
+}
+
+/* ============================================================
+   ▼ HTMLパーサー群（Season 1 / Season 2 / ALL）
+   ============================================================ */
 function parseWorldHTML_Season1(html) {
   const result = {
     name: "Unknown",
     country: "",
     currentMMR: 0,
     peakMMR: 0,
-    rank: "",          // 順位
-    tier: "",          // ★ Iron / Bronze / Silver / Gold / Platinum / Diamond / Master
+    rank: "",
+    tier: "",
     wins: 0,
     losses: 0,
-    ave: 0,            // ★ Average Score
-    aveNoSQ: 0,        // ★ Average Score (No SQ)
-    aveLast10: 0,      // ★ Average Score (Last 10)
-    partnerAve: 0,     // ★ Partner Average Score
-    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
+    ave: 0,
+    aveNoSQ: 0,
+    aveLast10: 0,
+    partnerAve: 0,
+    partnerAveNoSQ: 0,
     history: [],
     mmrHistory: [],
-    eventsPlayed: 0    // ★ 追加：試合数
+    eventsPlayed: 0
   };
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前 + 段位（Iron / Bronze / Silver / Gold / Platinum / Diamond / Master）
   const nameEl = doc.querySelector("h1, h2");
   if (nameEl) {
-    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const txt = nameEl.textContent.trim();
     const parts = txt.split("-");
     result.name = parts[0].trim();
     result.tier = parts[1]?.trim() || "";
   }
 
-  // ② Country
-  const countryDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Country");
-  if (countryDt) {
-    const dd = countryDt.nextElementSibling;
-    if (dd) result.country = dd.textContent.trim();
+  const countryDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Country");
+  if (countryDt && countryDt.nextElementSibling) {
+    result.country = countryDt.nextElementSibling.textContent.trim();
   }
 
-  // ③ Rank（順位）
-  const rankDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Rank");
-  if (rankDt) {
-    const dd = rankDt.nextElementSibling;
-    if (dd) result.rank = dd.textContent.trim();
+  const rankDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt && rankDt.nextElementSibling) {
+    result.rank = rankDt.nextElementSibling.textContent.trim();
   }
 
-  // ④ Current MMR
-  const mmrDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "MMR");
-  if (mmrDt) {
-    const dd = mmrDt.nextElementSibling;
-    if (dd) {
-      result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
+  const mmrDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt && mmrDt.nextElementSibling) {
+    result.currentMMR = Number(mmrDt.nextElementSibling.textContent.replace(/\D+/g, ""));
+  }
+
+  const peakDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt && peakDt.nextElementSibling) {
+    result.peakMMR = Number(peakDt.nextElementSibling.textContent.replace(/\D+/g, ""));
+  }
+
+  const wlDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlDt && wlDt.nextElementSibling) {
+    const match = wlDt.nextElementSibling.textContent.match(/(\d+)\s*-\s*(\d+)/);
+    if (match) {
+      result.wins = Number(match[1]);
+      result.losses = Number(match[2]);
     }
   }
 
-  // ⑤ Peak MMR（Season1 は存在しない場合がある）
-  const peakDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Peak MMR");
-  if (peakDt) {
-    const dd = peakDt.nextElementSibling;
-    if (dd) {
-      result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
-    }
-  }
+  const aveDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt && aveDt.nextElementSibling) result.ave = Number(aveDt.nextElementSibling.textContent);
 
-  // ⑥ Win-Loss（Season1 は表記が違う）
-  const wlDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.includes("Win - Loss"));
-  if (wlDt) {
-    const dd = wlDt.nextElementSibling;
-    if (dd) {
-      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
-      if (match) {
-        result.wins = Number(match[1]);
-        result.losses = Number(match[2]);
-      }
-    }
-  }
+  const aveNoSQDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt && aveNoSQDt.nextElementSibling) result.aveNoSQ = Number(aveNoSQDt.nextElementSibling.textContent);
 
-  // ⑦ Average Score
-  const aveDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score");
-  if (aveDt) {
-    const dd = aveDt.nextElementSibling;
-    if (dd) result.ave = Number(dd.textContent);
-  }
+  const aveLast10Dt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt && aveLast10Dt.nextElementSibling) result.aveLast10 = Number(aveLast10Dt.nextElementSibling.textContent);
 
-  // ⑧ Average Score (No SQ)
-  const aveNoSQDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
-  if (aveNoSQDt) {
-    const dd = aveNoSQDt.nextElementSibling;
-    if (dd) result.aveNoSQ = Number(dd.textContent);
-  }
+  const partnerAveDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt && partnerAveDt.nextElementSibling) result.partnerAve = Number(partnerAveDt.nextElementSibling.textContent);
 
-  // ⑨ Average Score (Last 10)
-  const aveLast10Dt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
-  if (aveLast10Dt) {
-    const dd = aveLast10Dt.nextElementSibling;
-    if (dd) result.aveLast10 = Number(dd.textContent);
-  }
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt && partnerAveNoSQDt.nextElementSibling) result.partnerAveNoSQ = Number(partnerAveNoSQDt.nextElementSibling.textContent);
 
-  // ⑩ Partner Average Score
-  const partnerAveDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Partner Average Score");
-  if (partnerAveDt) {
-    const dd = partnerAveDt.nextElementSibling;
-    if (dd) result.partnerAve = Number(dd.textContent);
-  }
-
-  // ⑪ Partner Average Score (No SQ)
-  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
-  if (partnerAveNoSQDt) {
-    const dd = partnerAveNoSQDt.nextElementSibling;
-    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
-  }
-
-  // ⑫ 試合履歴（Season1 は table）
   const rows = doc.querySelectorAll("table tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -6623,9 +6601,7 @@ function parseWorldHTML_Season1(html) {
     result.mmrHistory.push(mmr);
   });
 
-  // ★★★ 追加：イベント数（試合数）
   result.eventsPlayed = result.history.length;
-
   return result;
 }
 
@@ -6635,119 +6611,75 @@ function parseWorldHTML_Season2(html) {
     country: "",
     currentMMR: 0,
     peakMMR: 0,
-    rank: "",          // 順位
-    tier: "",          // ★ Silver / Gold / Platinum など
+    rank: "",
+    tier: "",
     wins: 0,
     losses: 0,
-    ave: 0,            // ★ Average Score
-    aveNoSQ: 0,        // ★ Average Score (No SQ)
-    aveLast10: 0,      // ★ Average Score (Last 10)
-    partnerAve: 0,     // ★ Partner Average Score
-    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
+    ave: 0,
+    aveNoSQ: 0,
+    aveLast10: 0,
+    partnerAve: 0,
+    partnerAveNoSQ: 0,
     history: [],
     mmrHistory: [],
-    eventsPlayed: 0    // ★ 追加：試合数
+    eventsPlayed: 0
   };
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前 + 段位（Silver / Gold / Platinum）
   const nameEl = doc.querySelector("h1");
   if (nameEl) {
-    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const txt = nameEl.textContent.trim();
     const parts = txt.split("-");
     result.name = parts[0].trim();
     result.tier = parts[1]?.trim() || "";
   }
 
-  // ② Country
-  const countryDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Country");
-  if (countryDt) {
-    const dd = countryDt.nextElementSibling;
-    if (dd) result.country = dd.textContent.trim();
+  const countryDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Country");
+  if (countryDt && countryDt.nextElementSibling) {
+    result.country = countryDt.nextElementSibling.textContent.trim();
   }
 
-  // ③ Rank（順位）
-  const rankDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Rank");
-  if (rankDt) {
-    const dd = rankDt.nextElementSibling;
-    if (dd) result.rank = dd.textContent.trim();
+  const rankDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt && rankDt.nextElementSibling) {
+    result.rank = rankDt.nextElementSibling.textContent.trim();
   }
 
-  // ④ Current MMR
-  const mmrDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "MMR");
-  if (mmrDt) {
-    const dd = mmrDt.nextElementSibling;
-    if (dd) result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
+  const mmrDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt && mmrDt.nextElementSibling) {
+    result.currentMMR = Number(mmrDt.nextElementSibling.textContent.replace(/\D+/g, ""));
   }
 
-  // ⑤ Peak MMR
-  const peakDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Peak MMR");
-  if (peakDt) {
-    const dd = peakDt.nextElementSibling;
-    if (dd) result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
+  const peakDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt && peakDt.nextElementSibling) {
+    result.peakMMR = Number(peakDt.nextElementSibling.textContent.replace(/\D+/g, ""));
   }
 
-  // ⑥ Win-Loss (Last 10)
-  const wlDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.includes("Win - Loss"));
-  if (wlDt) {
-    const dd = wlDt.nextElementSibling;
-    if (dd) {
-      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
-      if (match) {
-        result.wins = Number(match[1]);
-        result.losses = Number(match[2]);
-      }
+  const wlDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlDt && wlDt.nextElementSibling) {
+    const match = wlDt.nextElementSibling.textContent.match(/(\d+)\s*-\s*(\d+)/);
+    if (match) {
+      result.wins = Number(match[1]);
+      result.losses = Number(match[2]);
     }
   }
 
-  // ⑦ Average Score
-  const aveDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score");
-  if (aveDt) {
-    const dd = aveDt.nextElementSibling;
-    if (dd) result.ave = Number(dd.textContent);
-  }
+  const aveDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt && aveDt.nextElementSibling) result.ave = Number(aveDt.nextElementSibling.textContent);
 
-  // ⑧ Average Score (No SQ)
-  const aveNoSQDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
-  if (aveNoSQDt) {
-    const dd = aveNoSQDt.nextElementSibling;
-    if (dd) result.aveNoSQ = Number(dd.textContent);
-  }
+  const aveNoSQDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt && aveNoSQDt.nextElementSibling) result.aveNoSQ = Number(aveNoSQDt.nextElementSibling.textContent);
 
-  // ⑨ Average Score (Last 10)
-  const aveLast10Dt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
-  if (aveLast10Dt) {
-    const dd = aveLast10Dt.nextElementSibling;
-    if (dd) result.aveLast10 = Number(dd.textContent);
-  }
+  const aveLast10Dt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt && aveLast10Dt.nextElementSibling) result.aveLast10 = Number(aveLast10Dt.nextElementSibling.textContent);
 
-  // ⑩ Partner Average Score
-  const partnerAveDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Partner Average Score");
-  if (partnerAveDt) {
-    const dd = partnerAveDt.nextElementSibling;
-    if (dd) result.partnerAve = Number(dd.textContent);
-  }
+  const partnerAveDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt && partnerAveDt.nextElementSibling) result.partnerAve = Number(partnerAveDt.nextElementSibling.textContent);
 
-  // ⑪ Partner Average Score (No SQ)
-  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
-    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
-  if (partnerAveNoSQDt) {
-    const dd = partnerAveNoSQDt.nextElementSibling;
-    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
-  }
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")].find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt && partnerAveNoSQDt.nextElementSibling) result.partnerAveNoSQ = Number(partnerAveNoSQDt.nextElementSibling.textContent);
 
-  // ⑫ 試合履歴（table）
   const rows = doc.querySelectorAll("table.table-dark tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -6762,12 +6694,208 @@ function parseWorldHTML_Season2(html) {
     result.mmrHistory.push(mmr);
   });
 
-  // ★★★ 追加：イベント数（試合数）
   result.eventsPlayed = result.history.length;
-
   return result;
 }
 
+function parseWorldHTML(html, season) {
+  if (season == 1) return parseWorldHTML_Season1(html);
+  return parseWorldHTML_Season2(html);
+}
+
+function parseWorldHTML_ALL(htmlList) {
+  const merged = {
+    name: "Unknown",
+    tier: "",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",
+    wins: 0,
+    losses: 0,
+    ave: 0,
+    aveNoSQ: 0,
+    aveLast10: 0,
+    partnerAve: 0,
+    partnerAveNoSQ: 0,
+    history: [],
+    mmrHistory: []
+  };
+
+  htmlList.forEach(({ html, season }) => {
+    const parsed = season == 1 ? parseWorldHTML_Season1(html) : parseWorldHTML_Season2(html);
+
+    parsed.mmrHistory = parsed.mmrHistory || [];
+    parsed.history = parsed.history || [];
+
+    merged.name = parsed.name;
+    merged.tier = parsed.tier || merged.tier;
+    merged.country = parsed.country;
+    merged.currentMMR = parsed.currentMMR;
+
+    merged.peakMMR = Math.max(merged.peakMMR, parsed.peakMMR);
+    merged.rank = parsed.rank;
+
+    merged.wins += parsed.wins;
+    merged.losses += parsed.losses;
+
+    if (parsed.ave > 0) merged.ave += parsed.ave;
+    if (parsed.aveNoSQ > 0) merged.aveNoSQ += parsed.aveNoSQ;
+    if (parsed.aveLast10 > 0) merged.aveLast10 += parsed.aveLast10;
+    if (parsed.partnerAve > 0) merged.partnerAve += parsed.partnerAve;
+    if (parsed.partnerAveNoSQ > 0) merged.partnerAveNoSQ += parsed.partnerAveNoSQ;
+
+    merged.mmrHistory.push(...parsed.mmrHistory);
+    merged.history.push(...parsed.history);
+  });
+
+  const seasonCount = htmlList.length;
+  if (merged.ave > 0) merged.ave /= seasonCount;
+  if (merged.aveNoSQ > 0) merged.aveNoSQ /= seasonCount;
+  if (merged.aveLast10 > 0) merged.aveLast10 /= seasonCount;
+  if (merged.partnerAve > 0) merged.partnerAve /= seasonCount;
+  if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ /= seasonCount;
+
+  merged.eventsPlayed = merged.history.length;
+  return merged;
+}
+
+/* ============================================================
+   ▼ ユーティリティ・ステート・UI設定
+   ============================================================ */
+function extractPlayerIdFromUrl(url) {
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
+}
+
+function extractSeasonFromUrl(url) {
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
+}
+
+if (typeof state === 'undefined') {
+  var state = {};
+}
+state.loungeBackgroundImage = null;
+state.loungeBgBrightness = 1;
+state.loungeBgContrast = 1;
+state.loungeBgOpacity = 1;
+state.loungeBgBlur = 0;
+
+const loungeBgInput = document.getElementById("loungeBgInput");
+if (loungeBgInput) {
+  loungeBgInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => state.loungeBackgroundImage = reader.result;
+    reader.readAsDataURL(file);
+  };
+}
+
+const bindInput = (id, key) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.oninput = e => state[key] = Number(e.target.value);
+  }
+};
+bindInput("loungeBgBrightness", "loungeBgBrightness");
+bindInput("loungeBgContrast", "loungeBgContrast");
+bindInput("loungeBgOpacity", "loungeBgOpacity");
+bindInput("loungeBgBlur", "loungeBgBlur");
+
+function filterLoungeHistory(history) {
+  const season = typeof loungeSeasonSelect !== 'undefined' ? loungeSeasonSelect.value : "ALL";
+  const tier = typeof loungeTierSelect !== 'undefined' ? loungeTierSelect.value : "ALL";
+  const recent = typeof loungeRecentSelect !== 'undefined' ? loungeRecentSelect.value : "ALL";
+  const mode = typeof loungeModeSelect !== 'undefined' ? loungeModeSelect.value : "ALL";
+
+  let result = history;
+
+  if (season !== "ALL") {
+    result = result.filter(h => String(h.season) === season);
+  }
+  if (tier !== "ALL") {
+    result = result.filter(h => h.tier === tier);
+  }
+  if (mode !== "ALL") {
+    result = result.filter(h => String(h.mode) === mode);
+  }
+  if (recent !== "ALL") {
+    result = result.slice(-Number(recent));
+  }
+
+  return result;
+}
+/* ============================================================
+   ▼ ユーティリティ・ステート・UI設定
+   ============================================================ */
+function extractPlayerIdFromUrl(url) {
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
+}
+
+function extractSeasonFromUrl(url) {
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
+}
+
+if (typeof state === 'undefined') {
+  var state = {};
+}
+state.loungeBackgroundImage = null;
+state.loungeBgBrightness = 1;
+state.loungeBgContrast = 1;
+state.loungeBgOpacity = 1;
+state.loungeBgBlur = 0;
+
+const loungeBgInput = document.getElementById("loungeBgInput");
+if (loungeBgInput) {
+  loungeBgInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => state.loungeBackgroundImage = reader.result;
+    reader.readAsDataURL(file);
+  };
+}
+
+const bindInput = (id, key) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.oninput = e => state[key] = Number(e.target.value);
+  }
+};
+bindInput("loungeBgBrightness", "loungeBgBrightness");
+bindInput("loungeBgContrast", "loungeBgContrast");
+bindInput("loungeBgOpacity", "loungeBgOpacity");
+bindInput("loungeBgBlur", "loungeBgBlur");
+
+function filterLoungeHistory(history) {
+  const season = typeof loungeSeasonSelect !== 'undefined' ? loungeSeasonSelect.value : "ALL";
+  const tier = typeof loungeTierSelect !== 'undefined' ? loungeTierSelect.value : "ALL";
+  const recent = typeof loungeRecentSelect !== 'undefined' ? loungeRecentSelect.value : "ALL";
+  const mode = typeof loungeModeSelect !== 'undefined' ? loungeModeSelect.value : "ALL";
+
+  let result = history;
+
+  if (season !== "ALL") {
+    result = result.filter(h => String(h.season) === season);
+  }
+  if (tier !== "ALL") {
+    result = result.filter(h => h.tier === tier);
+  }
+  if (mode !== "ALL") {
+    result = result.filter(h => String(h.mode) === mode);
+  }
+  if (recent !== "ALL") {
+    result = result.slice(-Number(recent));
+  }
+
+  return result;
+}
 function parseWorldHTML(html, season) {
   if (season == 1) return parseWorldHTML_Season1(html);
   return parseWorldHTML_Season2(html);
@@ -6868,82 +6996,9 @@ async function fetchWorldHTML(playerId, season = 1) {
   return await res.text();
 }
 
-// 2. API経由でJSONデータを取得する関数
-async function fetchWorldData(playerId, season = "ALL") {
-  const detailsUrl = `https://mkcentral.com/api/world/player/${playerId}`;
-  const historyUrl = `https://mkcentral.com/api/world/player/${playerId}/history`;
-  const seasonUrl = season !== "ALL" 
-    ? `https://mkcentral.com/api/world/player/${playerId}/season/${season}` 
-    : null;
 
-  const [detailsRes, historyRes] = await Promise.all([
-    fetchViaProxy(detailsUrl),
-    fetchViaProxy(historyUrl)
-  ]);
 
-  const details = detailsRes ? await detailsRes.json().catch(() => null) : null;
-  const history = historyRes ? await historyRes.json().catch(() => null) : null;
 
-  let seasonData = null;
-  if (seasonUrl) {
-    const seasonRes = await fetchViaProxy(seasonUrl);
-    seasonData = seasonRes ? await seasonRes.json().catch(() => null) : null;
-  }
-
-  return { details, history, seasonData };
-}
-
-// 3. Lounge API経由のデータ取得関数
-async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
-  const detailsUrl = `https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`;
-  const historyUrl = `https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`;
-  const seasonUrl = season !== "ALL" 
-    ? `https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}` 
-    : null;
-
-  const [detailsRes, historyRes] = await Promise.all([
-    fetchViaProxy(detailsUrl),
-    fetchViaProxy(historyUrl)
-  ]);
-
-  const details = detailsRes ? await detailsRes.json().catch(() => null) : null;
-  const history = historyRes ? await historyRes.json().catch(() => null) : null;
-
-  let seasonData = null;
-  if (seasonUrl) {
-    const seasonRes = await fetchViaProxy(seasonUrl);
-    seasonData = seasonRes ? await seasonRes.json().catch(() => null) : null;
-  }
-
-  return { details, history, seasonData };
-}
-async function fetchWorldData(playerId, season = "ALL") {
-
-  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-
-  const detailsUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}`;
-  const historyUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/history`;
-
-  const seasonUrl = season !== "ALL"
-    ? `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/season/${season}`
-    : null;
-
-  const [detailsRes, historyRes] = await Promise.all([
-    fetch(detailsUrl),
-    fetch(historyUrl)
-  ]);
-
-  const details = await detailsRes.json();
-  const history = await historyRes.json();
-
-  let seasonData = null;
-  if (seasonUrl) {
-    const seasonRes = await fetch(seasonUrl);
-    seasonData = await seasonRes.json();
-  }
-
-  return { details, history, seasonData };
-}
 
 function buildPlayerDetailsUrl(playerId, season, mode) {
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
