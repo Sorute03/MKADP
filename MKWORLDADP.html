@@ -7095,12 +7095,15 @@ function convertStatsForImage(stats) {
 let loungeMMRChartInstance = null;
 
 function drawLoungeMMRChart(stats) {
+  const canvas = document.getElementById("loungeMMRChart");
+  if (!canvas) return;
 
-  const ctx = document.getElementById("loungeMMRChart").getContext("2d");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   // ★ 既存チャートを破棄
-  if (loungeMMRChartInstance && typeof loungeMMRChartInstance.destroy === "function") {
-    loungeMMRChartInstance.destroy();
+  if (window.loungeMMRChartInstance && typeof window.loungeMMRChartInstance.destroy === "function") {
+    window.loungeMMRChartInstance.destroy();
   }
 
   // ★ Season1 / Season2 / ALL すべて mmrHistory を使う
@@ -7112,30 +7115,84 @@ function drawLoungeMMRChart(stats) {
   }
 
   const labels = history.map((_, i) => i + 1);
+  const selectedSeasonVal = loungeSeasonSelect ? loungeSeasonSelect.value : "ALL";
+  const isEn = (currentLang === 'en');
 
-  const season = Number(loungeSeasonSelect.value);
-  const rankInfo = season === 1
-    ? getRankInfoV1(stats.currentMMR)
-    : getRankInfoV2(stats.currentMMR);
+  // グラフの凡例ラベルの多言語対応
+  let labelText = "";
+  if (selectedSeasonVal === "1") {
+    labelText = isEn ? "MMR Progression (Season 1)" : "MMR推移（Season 1）";
+  } else if (selectedSeasonVal === "ALL") {
+    labelText = isEn ? "MMR Progression (ALL)" : "MMR推移（ALL）";
+  } else {
+    labelText = isEn ? `MMR Progression (Season ${selectedSeasonVal})` : `MMR推移（Season ${selectedSeasonVal})`;
+  }
 
-  const lineColor = rankInfo.color;
+  // 各履歴データに対応するシーズン判定（ALLの場合は個別のシーズン情報があればそれを利用、なければ選択値を使用）
+  // ※もし history がオブジェクトの配列 [{mmr: 1500, season: 2}, ...] の場合は r.mmr, r.season を参照してください
+  const seasons = history.map(item => {
+    if (typeof item === 'object' && item !== null) {
+      return item.season ?? (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal));
+    }
+    return selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal);
+  });
 
-  loungeMMRChartInstance = new Chart(ctx, {
+  const mmrValues = history.map(item => {
+    return (typeof item === 'object' && item !== null) ? (item.mmr ?? item.score ?? 0) : item;
+  });
+
+  // フォールバック用のデフォルト色（最後の値または最初の値から取得）
+  const lastMmr = mmrValues[mmrValues.length - 1] || 0;
+  const defaultSeason = seasons[seasons.length - 1] || 1;
+  const defaultRankInfo = getRankInfo(lastMmr, defaultSeason);
+  const fallbackColor = defaultRankInfo.color;
+
+  window.loungeMMRChartInstance = new Chart(ctx, {
     type: "line",
     data: {
       labels,
       datasets: [{
-        label: season === 1
-          ? "MMR推移（Season 1）"
-          : season === "ALL"
-            ? "MMR推移（ALL）"
-            : `MMR推移（Season ${season})`,
-        data: history,
-        borderColor: lineColor,
-        backgroundColor: lineColor + "33"
+        label: labelText,
+        data: mmrValues,
+        borderColor: fallbackColor,
+        borderWidth: 3,
+        backgroundColor: fallbackColor + "33",
+        pointBackgroundColor: ctx => {
+          const idx = ctx.dataIndex;
+          const mmr = mmrValues[idx];
+          const seasonNum = seasons[idx];
+          return getRankInfo(mmr, seasonNum).color;
+        },
+        tension: 0.1,
+        // ★ 線の途中で当時のランク色に変わるセグメント機能
+        segment: {
+          borderColor: ctx => {
+            const idx = ctx.p0DataIndex;
+            const avgMmr = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
+            const seasonNum = seasons[idx] ?? 1;
+            return getRankInfo(avgMmr, seasonNum).color;
+          }
+        }
       }]
     },
     options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const idx = ctx.dataIndex;
+              const mmr = ctx.raw;
+              const seasonNum = seasons[idx];
+              const rankInfo = getRankInfo(mmr, seasonNum);
+              const rankText = isEn ? `Rank: ${rankInfo.rank}` : `ランク: ${rankInfo.rank}`;
+              const mmrText = isEn ? `MMR: ${mmr}` : `MMR: ${mmr}`;
+              return `${mmrText} (${rankText})`;
+            }
+          }
+        }
+      },
       scales: {
         x: { ticks: { color: "white" } },
         y: { ticks: { color: "white" } }
@@ -7146,6 +7203,42 @@ function drawLoungeMMRChart(stats) {
 
 
 
+/******************************************************
+ * ランク情報（多言語対応版）
+ ******************************************************/
+function getRankInfoV1(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfoV2(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+function getRankInfo(mmr, season) {
+  return Number(season) >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+}
 
 
 function buildMKCUrl(playerId, season) {
