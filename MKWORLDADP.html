@@ -7150,12 +7150,14 @@ function drawLoungeMMRChart(stats) {
         borderWidth: 3,
         tension: 0.1,
         
-        // ★ 青い枠線・輪郭を消す設定
-        pointBorderColor: "transparent",          // 通常時の点の枠線を透明化
-        pointHoverBorderColor: "transparent",     // ホバー時の青い枠線を透明化
-        pointBorderWidth: 0,                      // 枠線幅を0に設定
+        // ★ 丸（ポイント）を出さずに線のみにする設定
+        pointRadius: 0,                           // 通常時の丸を完全に非表示
+        pointHoverRadius: 5,                      // ホバー時のみ見やすいように丸を表示
+        pointBorderColor: "transparent",          // 枠線を透明化
+        pointHoverBorderColor: "transparent",     // ホバー時の枠線も透明化
+        pointBorderWidth: 0,                      // 枠線幅0
         
-        // ★ 点の中身の色もその時のレート色に
+        // ホバー時に表示される丸の色をその時のレート色に合わせる
         pointBackgroundColor: ctx => {
           const idx = ctx.dataIndex;
           if (idx === undefined) return "#fff";
