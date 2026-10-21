@@ -4153,6 +4153,16 @@ async function updateStatsView() {
   const records = await getStatsFilteredRecords();
   if (!records) return;
 
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じたラベル
+  const tRaceCount  = isEn ? 'Total Races: ' : '対象レース数：';
+  const tWinRate    = isEn ? 'Win Rate: ' : '勝率：';
+  const tAvgRank    = isEn ? ' / Avg Rank: ' : ' / 平均順位：';
+  const tAvgScore   = isEn ? ' / Avg Score: ' : ' / 平均スコア：';
+  const tAvg12Score = isEn ? 'Avg 12-Race Total Score: ' : '12レース平均合計スコア：';
+  const tPoints     = isEn ? ' pts' : '点';
+
   const count = records.length;
   const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
   const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
@@ -4161,8 +4171,8 @@ async function updateStatsView() {
   const basicStatsEl = document.getElementById("basicStats");
   if (basicStatsEl) {
     basicStatsEl.innerHTML = `
-      <p>対象レース数：${count}</p>
-      <p>勝率：${(winRate*100).toFixed(1)}% / 平均順位：${avgRank.toFixed(2)} / 平均スコア：${avgScore.toFixed(2)}</p>
+      <p>${tRaceCount}${count}</p>
+      <p>${tWinRate}${(winRate*100).toFixed(1)}%${tAvgRank}${avgRank.toFixed(2)}${tAvgScore}${avgScore.toFixed(2)}</p>
     `;
   }
 
@@ -4171,7 +4181,7 @@ async function updateStatsView() {
     const lounge12 = records.filter(r => r.totalScore12);
     if (lounge12.length) {
       const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-      avg12El.innerText = `12レース平均合計スコア：${avg12.toFixed(1)}点`;
+      avg12El.innerText = `${tAvg12Score}${avg12.toFixed(1)}${tPoints}`;
     } else {
       avg12El.innerText = "";
     }
@@ -4196,10 +4206,18 @@ function updateGrowthView() {
     grouped[r.course].push(r.score);
   });
 
-  const labels = Object.keys(grouped);
-  const values = labels.map(c => {
+  const rawLabels = Object.keys(grouped);
+  
+  // コース名を言語に応じて翻訳（translateMKWorldCourse が利用可能な場合）
+  const labels = rawLabels.map(c => 
+    (typeof translateMKWorldCourse === 'function') 
+      ? translateMKWorldCourse(c, currentLang) 
+      : c
+  );
+
+  const values = rawLabels.map(c => {
     const arr = grouped[c];
-    return arr.reduce((a,b)=>a+b,0) / arr.length;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
   });
 
   drawGrowthChart(labels, values);
@@ -4209,6 +4227,14 @@ function updateGrowthView() {
 
 function updateLoungeSetView() {
   const records = getLoungeSetFilteredRecords();
+  const div = document.getElementById("loungeSetView");
+  if (!div) return;
+
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じたラベル
+  const tPoints = isEn ? ' pts' : '点';
+  const tNoData = isEn ? 'No data available' : 'データなし';
 
   const sets = {};
   records.forEach(r => {
@@ -4217,16 +4243,17 @@ function updateLoungeSetView() {
   });
 
   const html = Object.entries(sets)
-    .sort((a,b)=>b[0]-a[0])
+    .sort((a, b) => b[0] - a[0])
     .map(([ts, score]) => {
-      const date = new Date(Number(ts)).toLocaleString();
-      return `<p>${date}：${score}点</p>`;
+      // 英語環境なら 'en-US'、日本語環境なら 'ja-JP' の日時表記に自動切替
+      const date = new Date(Number(ts)).toLocaleString(isEn ? 'en-US' : 'ja-JP');
+      return `<p>${date}：${score}${tPoints}</p>`;
     })
     .join("");
 
-  document.getElementById("loungeSetView").innerHTML = html || "<p>データなし</p>";
+  div.innerHTML = html || `<p>${tNoData}</p>`;
 }
-
+  
 function drawWinRateChart(records) {
   const canvas = document.getElementById("chartWinRate");
   if (!canvas) return;  // ★ DOM が無ければ描画しない
@@ -4237,6 +4264,9 @@ function drawWinRateChart(records) {
   if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
     window.chartWinRate.destroy();
   }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Win Rate (%)' : '勝率(%)';
 
   if (!records.length) {
     window.chartWinRate = new Chart(ctx, {
@@ -4255,7 +4285,7 @@ function drawWinRateChart(records) {
     data: {
       labels,
       datasets: [{
-        label: "勝率(%)",
+        label: tLabel,
         data: winRates,
         backgroundColor: "rgba(54,162,235,0.6)"
       }]
@@ -4268,18 +4298,25 @@ function drawWinRateChart(records) {
 }
 
 function drawGrowthChart(labels, values) {
-  const ctx = document.getElementById("chartGrowth").getContext("2d");
+  const canvas = document.getElementById("chartGrowth");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartGrowth && typeof window.chartGrowth.destroy === "function") {
     window.chartGrowth.destroy();
   }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Average Score' : '平均スコア';
 
   window.chartGrowth = new Chart(ctx, {
     type: "bar",
     data: {
       labels,
       datasets: [{
-        label: "平均スコア",
+        label: tLabel,
         data: values,
         backgroundColor: "rgba(153,102,255,0.6)"
       }]
@@ -4293,18 +4330,25 @@ function drawGrowthChart(labels, values) {
 
 
 function drawRadarChart(labels, values) {
-  const ctx = document.getElementById("chartRadar").getContext("2d");
+  const canvas = document.getElementById("chartRadar");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartRadar && typeof window.chartRadar.destroy === "function") {
     window.chartRadar.destroy();
   }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Evaluation' : '評価';
 
   window.chartRadar = new Chart(ctx, {
     type: "radar",
     data: {
       labels,
       datasets: [{
-        label: "評価",
+        label: tLabel,
         data: values,
         backgroundColor: "rgba(153,102,255,0.2)",
         borderColor: "rgba(153,102,255,1)"
@@ -4318,13 +4362,19 @@ function drawRadarChart(labels, values) {
 }
 
 
-
 function drawHeatmap(map) {
-  const ctx = document.getElementById("chartHeatmap").getContext("2d");
+  const canvas = document.getElementById("chartHeatmap");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartHeatmap && typeof window.chartHeatmap.destroy === "function") {
     window.chartHeatmap.destroy();
   }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Average Rank (Lower is better)' : '平均順位（低いほど良い）';
 
   const courses = Object.keys(map);
   const values = courses.map(c => {
@@ -4339,7 +4389,7 @@ function drawHeatmap(map) {
     data: {
       labels: courses,
       datasets: [{
-        label: "平均順位（低いほど良い）",
+        label: tLabel,
         data: values,
         backgroundColor: values.map(v => {
           const t = (12 - v) / 12;
@@ -4371,6 +4421,9 @@ function drawAvgRankChart(records) {
     window.chartAvgRank.destroy();
   }
 
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Average Rank' : '平均順位';
+
   if (!records.length) {
     window.chartAvgRank = new Chart(ctx, {
       type: "bar",
@@ -4388,7 +4441,7 @@ function drawAvgRankChart(records) {
     data: {
       labels,
       datasets: [{
-        label: "平均順位",
+        label: tLabel,
         data: avgRanks,
         backgroundColor: "rgba(255,159,64,0.6)"
       }]
@@ -4411,6 +4464,9 @@ function drawAvgScoreChart(records) {
     window.chartAvgScore.destroy();
   }
 
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Average Score' : '平均スコア';
+
   if (!records.length) {
     window.chartAvgScore = new Chart(ctx, {
       type: "bar",
@@ -4428,7 +4484,7 @@ function drawAvgScoreChart(records) {
     data: {
       labels,
       datasets: [{
-        label: "平均スコア",
+        label: tLabel,
         data: avgScores,
         backgroundColor: "rgba(75,192,192,0.6)"
       }]
@@ -4442,19 +4498,27 @@ function drawAvgScoreChart(records) {
   });
 }
 
-
 function drawScatterChart(points) {
-  const ctx = document.getElementById("chartScatter").getContext("2d");
+  const canvas = document.getElementById("chartScatter");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chartScatter && typeof window.chartScatter.destroy === "function") {
     window.chartScatter.destroy();
   }
 
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Courses' : 'コース';
+  const tXTitle = isEn ? 'Strength Score' : '強さスコア';
+  const tYTitle = isEn ? 'Growth Score' : '成長スコア';
+
   window.chartScatter = new Chart(ctx, {
     type: "scatter",
     data: {
       datasets: [{
-        label: "コース",
+        label: tLabel,
         data: points,
         backgroundColor: "rgba(255,99,132,0.6)"
       }]
@@ -4466,34 +4530,43 @@ function drawScatterChart(points) {
           callbacks: {
             label: ctx => {
               const d = ctx.raw;
-              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
+              return isEn 
+                ? `${d.label} (Strength: ${d.x.toFixed(1)}, Growth: ${d.y.toFixed(1)})`
+                : `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
             }
           }
         }
       },
       scales: {
-        x: { title: { display: true, text: "強さスコア" } },
-        y: { title: { display: true, text: "成長スコア" } }
+        x: { title: { display: true, text: tXTitle } },
+        y: { title: { display: true, text: tYTitle } }
       }
     }
   });
 }
 
 
-
-
 function draw3DChart(points) {
-  const ctx = document.getElementById("chart3D").getContext("2d");
+  const canvas = document.getElementById("chart3D");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   if (window.chart3D && typeof window.chart3D.destroy === "function") {
     window.chart3D.destroy();
   }
 
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Courses' : 'コース';
+  const tXTitle = isEn ? 'Strength Score' : '強さスコア';
+  const tYTitle = isEn ? 'Growth Score' : '成長スコア';
+
   window.chart3D = new Chart(ctx, {
     type: "bubble",
     data: {
       datasets: [{
-        label: "コース",
+        label: tLabel,
         data: points,
         backgroundColor: "rgba(54,162,235,0.5)"
       }]
@@ -4505,22 +4578,34 @@ function draw3DChart(points) {
           callbacks: {
             label: ctx => {
               const d = ctx.raw;
-              return `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)})`;
+              return isEn 
+                ? `${d.label} (Strength: ${d.x.toFixed(1)}, Growth: ${d.y.toFixed(1)}, Uses: ${d.r - 5})`
+                : `${d.label} (強さ:${d.x.toFixed(1)}, 成長:${d.y.toFixed(1)}, 使用数:${d.r - 5})`;
             }
           }
         }
       },
       scales: {
-        x: { title: { display: true, text: "強さスコア" } },
-        y: { title: { display: true, text: "成長スコア" } }
+        x: { title: { display: true, text: tXTitle } },
+        y: { title: { display: true, text: tYTitle } }
       }
     }
   });
 }
 
 
-
 function updateBasicStats(records) {
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じたラベル定義
+  const tAvgTotalScore12 = isEn ? 'Avg 12-Race Total Score: ' : '平均合計スコア(12R)：';
+  const tTotalRaces      = isEn ? 'Total Races: ' : '対象レース数：';
+  const tWinRate         = isEn ? 'Win Rate (Top 3): ' : '勝率（3位以内）：';
+  const tAvgRank         = isEn ? ' / Avg Rank: ' : ' / 平均順位：';
+  const tAvgScore        = isEn ? ' / Avg Score: ' : ' / 平均スコア：';
+  const tLoungeLabel     = isEn ? 'Lounge: ' : 'ラウンジ：';
+  const tTournamentLabel = isEn ? ' / Tournament: ' : ' / 大会：';
+  const tNoraLabel       = isEn ? ' / Nora: ' : ' / 野良：';
 
   // ▼ 全体
   const statsAll = calcStats(records);
@@ -4540,29 +4625,42 @@ function updateBasicStats(records) {
   }
 
   // ▼ 表示
-  document.getElementById("avgTotalScore12Text").textContent =
-    loungeSets.length > 0
-      ? `平均合計スコア(12R)：${avgTotalScore12.toFixed(1)}`
-      : "";
+  const avgTextEl = document.getElementById("avgTotalScore12Text");
+  if (avgTextEl) {
+    avgTextEl.textContent =
+      loungeSets.length > 0
+        ? `${tAvgTotalScore12}${avgTotalScore12.toFixed(1)}`
+        : "";
+  }
 
   const basicDiv = document.getElementById("basicStats");
-  basicDiv.innerHTML = `
-    <p>対象レース数：${statsAll.count}</p>
-    <p>
-      勝率（3位以内）：${(statsAll.winRate * 100).toFixed(1)}%
-      / 平均順位：${statsAll.avgRank.toFixed(2)}
-      / 平均スコア：${statsAll.avgScore.toFixed(2)}
-      ${loungeSets.length > 0 ? `/ 平均合計スコア(12R)：${avgTotalScore12.toFixed(1)}` : ""}
-    </p>
-    <p>
-      ラウンジ：${statsLounge.count}
-      / 大会：${statsTournament.count}
-      / 野良：${statsNora.count}
-    </p>
-  `;
+  if (basicDiv) {
+    basicDiv.innerHTML = `
+      <p>${tTotalRaces}${statsAll.count}</p>
+      <p>
+        ${tWinRate}${(statsAll.winRate * 100).toFixed(1)}%
+        ${tAvgRank}${statsAll.avgRank.toFixed(2)}
+        ${tAvgScore}${statsAll.avgScore.toFixed(2)}
+        ${loungeSets.length > 0 ? ` / ${tAvgTotalScore12}${avgTotalScore12.toFixed(1)}` : ""}
+      </p>
+      <p>
+        ${tLoungeLabel}${statsLounge.count}
+        ${tTournamentLabel}${statsTournament.count}
+        ${tNoraLabel}${statsNora.count}
+      </p>
+    `;
+  }
 }
 
+  
 function updateModeGraphs(records) {
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じた凡例ラベル
+  const tWinRateLabel  = isEn ? 'Win Rate (%)' : '勝率(%)';
+  const tAvgRankLabel  = isEn ? 'Average Rank' : '平均順位';
+  const tAvgScoreLabel = isEn ? 'Average Score' : '平均スコア';
+
   if (!records.length) {
     if (chartWinRate) chartWinRate.destroy();
     if (chartAvgRank) chartAvgRank.destroy();
@@ -4588,71 +4686,80 @@ function updateModeGraphs(records) {
   /* ==========
      勝率グラフ
   ========== */
-  const ctxW = document.getElementById("chartWinRate").getContext("2d");
-  if (chartWinRate) chartWinRate.destroy();
-  chartWinRate = new Chart(ctxW, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "勝率(%)",
-        data: winRates,
-        backgroundColor: "rgba(54,162,235,0.6)"
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, max: 100 } }
-    }
-  });
+  const canvasW = document.getElementById("chartWinRate");
+  if (canvasW) {
+    const ctxW = canvasW.getContext("2d");
+    if (chartWinRate) chartWinRate.destroy();
+    chartWinRate = new Chart(ctxW, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: tWinRateLabel,
+          data: winRates,
+          backgroundColor: "rgba(54,162,235,0.6)"
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    });
+  }
 
   /* ==========
      平均順位グラフ（最大24固定）
   ========== */
-  const ctxR = document.getElementById("chartAvgRank").getContext("2d");
-  if (chartAvgRank) chartAvgRank.destroy();
-  chartAvgRank = new Chart(ctxR, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "平均順位",
-        data: avgRanks,
-        backgroundColor: "rgba(255,159,64,0.6)"
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, max: 24 } }
-    }
-  });
+  const canvasR = document.getElementById("chartAvgRank");
+  if (canvasR) {
+    const ctxR = canvasR.getContext("2d");
+    if (chartAvgRank) chartAvgRank.destroy();
+    chartAvgRank = new Chart(ctxR, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: tAvgRankLabel,
+          data: avgRanks,
+          backgroundColor: "rgba(255,159,64,0.6)"
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 24 } }
+      }
+    });
+  }
 
   /* ==========
      平均スコアグラフ（最大15固定）
   ========== */
-  const ctxS = document.getElementById("chartAvgScore").getContext("2d");
-  if (chartAvgScore) chartAvgScore.destroy();
-  chartAvgScore = new Chart(ctxS, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "平均スコア",
-        data: avgScores,
-        backgroundColor: "rgba(75,192,192,0.6)"
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 15,
-          ticks: { stepSize: 1 }
+  const canvasS = document.getElementById("chartAvgScore");
+  if (canvasS) {
+    const ctxS = canvasS.getContext("2d");
+    if (chartAvgScore) chartAvgScore.destroy();
+    chartAvgScore = new Chart(ctxS, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: tAvgScoreLabel,
+          data: avgScores,
+          backgroundColor: "rgba(75,192,192,0.6)"
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 15,
+            ticks: { stepSize: 1 }
+          }
         }
       }
-    }
-  });
+    });
+  }
 }
 
 
@@ -4660,13 +4767,23 @@ function renderLoungeSets(records) {
   const div = document.getElementById("loungeSetView");
   if (!div) return;
 
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じたラベル
+  const tNoData      = isEn ? 'No 12-race set data available.' : '12レースセットのデータがありません。';
+  const tSetNum      = isEn ? 'Set #' : 'セット #';
+  const tTotalScore  = isEn ? 'Total Score: ' : '合計スコア：';
+  const tSeason      = isEn ? 'Season: ' : 'Season：';
+  const tTier        = isEn ? 'Tier: ' : 'Tier：';
+  const tDateTime    = isEn ? 'Date: ' : '日時：';
+
   // ▼ ラウンジの12レースセットのみ
   const sets = records.filter(
     r => r.mode === "lounge" && r.totalScore12 != null
   );
 
   if (!sets.length) {
-    div.innerHTML = "<p>12レースセットのデータがありません。</p>";
+    div.innerHTML = `<p>${tNoData}</p>`;
     return;
   }
 
@@ -4676,21 +4793,21 @@ function renderLoungeSets(records) {
   // ▼ HTML生成
   div.innerHTML = sorted
     .map((s, i) => {
-      const date = new Date(s.timestamp).toLocaleString();
+      // 英語環境の場合はロケールを英語（'en-US'）、日本なら 'ja-JP' に切り替えるとより自然です
+      const date = new Date(s.timestamp).toLocaleString(isEn ? 'en-US' : 'ja-JP');
 
       return `
-        <div class="lounge-set-card">
-          <p><strong>セット #${i + 1}</strong></p>
-          <p>合計スコア：${s.totalScore12}</p>
-          <p>Season：${s.season || "-"}</p>
-          <p>Tier：${s.tier || "-"}</p>
-          <p>日時：${date}</p>
+        <div class="lounge-set-card" style="border:1px solid #ddd; padding:12px; margin-bottom:10px; border-radius:6px; background:#fff;">
+          <p><strong>${tSetNum}${i + 1}</strong></p>
+          <p>${tTotalScore}${s.totalScore12}</p>
+          <p>${tSeason}${s.season || "-"}</p>
+          <p>${tTier}${s.tier || "-"}</p>
+          <p>${tDateTime}${date}</p>
         </div>
       `;
     })
     .join("");
 }
-
   
 /* ==========
    成長スコア（Tier × Season × Course）
@@ -4730,6 +4847,9 @@ function initRadarSelector() {
 }
 
 
+/* ============================================================
+   ▼ コース別レーダー評価（多言語対応版）
+============================================================ */
 function updateRadarView() {
   const records = getRadarFilteredRecords();
 
@@ -4742,7 +4862,11 @@ function updateRadarView() {
   const avgScore = records.reduce((a,b)=>a+b.score,0) / records.length;
   const winRate  = records.filter(r => r.rank <= 3).length / records.length;
 
-  const labels = ["勝率", "平均順位", "平均スコア"];
+  // 言語に応じたレーダー軸ラベルの切り替え
+  const labels = (currentLang === 'en')
+    ? ["Win Rate", "Avg Rank", "Avg Score"]
+    : ["勝率", "平均順位", "平均スコア"];
+
   const values = [
     winRate * 100,
     13 - avgRank,
@@ -4754,23 +4878,35 @@ function updateRadarView() {
 
 
 
-/* ==========
-   ヒートマップ（コース × 指標）
-========== */
+/* ============================================================
+   ▼ ヒートマップ（コース × 指標）
+   ※コース名を辞書や translateMKWorldCourse で多言語化している場合に対応
+============================================================ */
 function updateHeatmapView() {
   const records = getHeatmapFilteredRecords();
 
   const map = {};
   records.forEach(r => {
+    // 内部的なキーは元のコース名のままで集計
     if (!map[r.course]) map[r.course] = Array(24).fill(0);
     map[r.course][r.rank - 1]++;
   });
 
-  drawHeatmap(map);
+  // もしヒートマップ側でコース名を日本語/英語に変換して描画したい場合は、
+  // 描画関数 (drawHeatmap) の方で translateMKWorldCourse を通すか、
+  // ここでキーを変換した新しいオブジェクトを渡すと完璧です。
+  const translatedMap = {};
+  for (const [course, counts] of Object.entries(map)) {
+    const tCourse = (typeof translateMKWorldCourse === 'function') 
+      ? translateMKWorldCourse(course, currentLang) 
+      : course;
+    translatedMap[tCourse] = counts;
+  }
+
+  drawHeatmap(translatedMap);
 }
 
-
-
+  
 /* ==========
    コースランキング（得意 / 苦手）
 ========== */
@@ -4981,31 +5117,66 @@ function updateRankingView() {
    AIコース評価
 ========== */
 
+/* ============================================================
+   ▼ AIセレクタ初期化（多言語対応版）
+============================================================ */
 function initAISelector() {
-  // ▼ コース
   const selCourse = document.getElementById("aiCourse");
-  selCourse.innerHTML =
-    `<option value="ALL">ALL</option>` +
-    courseList.map(c => `<option value="${c}">${c}</option>`).join("");
+  if (selCourse) {
+    const allText = (currentLang === 'en') ? 'ALL' : 'ALL';
+    selCourse.innerHTML =
+      `<option value="ALL">${allText}</option>` +
+      courseList.map(c => `<option value="${c}">${typeof translateMKWorldCourse === 'function' ? translateMKWorldCourse(c, currentLang) : c}</option>`).join("");
+  }
 
-  // ▼ モード（★追加）
   const selMode = document.getElementById("aiMode");
-  selMode.innerHTML = `
-    <option value="ALL">ALL</option>
-    <option value="lounge">lounge</option>
-    <option value="nora">nora</option>
-    <option value="tournament">tournament</option>
-  `;
+  if (selMode) {
+    selMode.innerHTML = `
+      <option value="ALL">ALL</option>
+      <option value="lounge">lounge</option>
+      <option value="nora">nora</option>
+      <option value="tournament">tournament</option>
+    `;
+  }
 }
 
 
 
+/* ============================================================
+   ▼ 精密コース評価ビュー更新（多言語対応版）
+============================================================ */
 function updateAICourseView() {
   const records = getAIFilteredRecords();
   const div = document.getElementById("aiCourseResult");
+  if (!div) return;
+
+  const isEn = (currentLang === 'en');
+
+  // ラベル定義
+  const tNoData           = isEn ? 'No data available.' : 'データがありません。';
+  const tAllCourses       = isEn ? 'All Courses Overall Evaluation' : '全コース総合評価';
+  const tCoursePrefix     = isEn ? 'Course: ' : 'コース：';
+  const tTrials           = isEn ? 'Trials: ' : '試行回数：';
+  const tAiScore          = isEn ? 'AI Metric Score: ' : 'AI 基準スコア：';
+  const tWinRate          = isEn ? 'Win Rate (Top 3): ' : '勝率（3位以内）：';
+  const tAvgRank          = isEn ? 'Average Rank: ' : '平均順位：';
+  const tAvgScore         = isEn ? 'Average Score: ' : '平均スコア：';
+  const tAvg12Score       = isEn ? 'Avg 12-Race Score: ' : '12レース平均スコア：';
+  const tTopRate          = isEn ? 'Top Rate (1st-5th): ' : '上位率（1〜5位）：';
+  const tMidRate          = isEn ? 'Mid Rate (6th-15th): ' : '中位率（6〜15位）：';
+  const tBottomRate       = isEn ? 'Bottom Rate (16th-24th): ' : '下位率（16〜24位）：';
+  const tAvoidBottom      = isEn ? 'Bottom Avoid Rate: ' : '下位回避率：';
+  const tStdRank          = isEn ? 'Consistency (Rank Dev): ' : '安定度（順位のブレ）：';
+  const tFirstRate        = isEn ? 'Explosiveness (1st Rate): ' : '爆発力（1位率）：';
+  const tRankScore        = isEn ? 'Reciprocal Rank Score: ' : '順位逆数スコア：';
+  const tEfficiency       = isEn ? 'Score Efficiency: ' : 'スコア効率：';
+  const tStrongScore      = isEn ? 'Best Score: ' : '得意スコア：';
+  const tWeakScore        = isEn ? 'Worst Score: ' : '苦手スコア：';
+  const tGrowthScore      = isEn ? 'Growth Score: ' : '成長スコア：';
+  const tItemEvalTitle    = isEn ? 'Item-by-Item Evaluation' : '項目別評価';
 
   if (!records.length) {
-    div.innerHTML = "<p>データがありません。</p>";
+    div.innerHTML = `<p>${tNoData}</p>`;
     return;
   }
 
@@ -5015,123 +5186,138 @@ function updateAICourseView() {
   const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
   const growth      = strongScore - weakScore;
 
-  // ▼ ★ AI 基準セレクタ
   const metric = document.getElementById("aiMetric")?.value || "strong";
-
-  // ▼ ★ 基準に応じて mainScore を切り替え
   let mainScore = 0;
 
   switch (metric) {
     case "strong": mainScore = strongScore; break;
-    case "weak": mainScore = -weakScore; break; // 苦手は低いほど悪いので反転
+    case "weak": mainScore = -weakScore; break;
     case "growth": mainScore = growth; break;
-
     case "winRate": mainScore = s.winRate * 100; break;
-    case "avgRank": mainScore = -s.avgRank; break; // 低いほど良い
+    case "avgRank": mainScore = -s.avgRank; break;
     case "avgScore": mainScore = s.avgScore; break;
     case "avgTotalScore12": mainScore = s.avgTotalScore12; break;
-
-    case "stdRank": mainScore = -s.stdRank; break; // 低いほど良い
+    case "stdRank": mainScore = -s.stdRank; break;
     case "firstRate": mainScore = s.firstRate * 100; break;
     case "avoidBottom": mainScore = s.avoidBottomRate * 100; break;
     case "rankScore": mainScore = s.rankScore; break;
     case "efficiency": mainScore = s.efficiency; break;
-
     case "topRate": mainScore = s.topRate * 100; break;
     case "midRate": mainScore = s.midRate * 100; break;
-    case "bottomRate": mainScore = -(s.bottomRate * 100); break; // 低いほど良い
-
+    case "bottomRate": mainScore = -(s.bottomRate * 100); break;
     default: mainScore = strongScore; break;
   }
 
-  const course = document.getElementById("aiCourse").value;
-  const title = (course === "ALL") ? "全コース総合評価" : `コース：${course}`;
+  const rawCourse = document.getElementById("aiCourse")?.value || "ALL";
+  const displayedCourse = (rawCourse !== "ALL" && typeof translateMKWorldCourse === 'function')
+    ? translateMKWorldCourse(rawCourse, currentLang)
+    : rawCourse;
 
+  const title = (rawCourse === "ALL") ? tAllCourses : `${tCoursePrefix}${displayedCourse}`;
+
+  // 総合評価コメント
   let verdict = "";
-  if (strongScore > 140) verdict = "かなり得意なコースです。";
-  else if (strongScore > 100) verdict = "得意寄りのコースです。";
-  else if (weakScore > 120) verdict = "かなり苦手なコースです。";
-  else if (weakScore > 90)  verdict = "やや苦手なコースです。";
-  else verdict = "評価が分かれるコースです。";
-  // ▼ サブ評価コメントをまとめる
-    let subComments = [];
-    
-    // 安定度
-    if (s.stdRank < 4) subComments.push("順位のブレが小さく非常に安定しています。");
-    else if (s.stdRank < 7) subComments.push("順位の安定度は平均的です。");
-    else subComments.push("順位のブレが大きめです。");
-    
-    // 上位率
-    if (s.topRate > 0.40) subComments.push("上位に入りやすい傾向があります。");
-    else if (s.topRate > 0.25) subComments.push("上位率は平均的です。");
-    else subComments.push("上位に入りにくい傾向があります。");
-    
-    // 中位率
-    if (s.midRate > 0.60) subComments.push("中位に安定しやすいコースです。");
-    
-    // 下位率
-    if (s.bottomRate > 0.35) subComments.push("下位を取りやすい危険なコースです。");
-    else if (s.bottomRate < 0.20) subComments.push("下位を取りにくい安定したコースです。");
-    
-    // 下位回避率
-    if (s.avoidBottomRate > 0.90) subComments.push("下位をほとんど取らない安定型です。");
-    
-    // 爆発力
-    if (s.firstRate > 0.15) subComments.push("1位を多く取れる爆発力があります。");
-    
-    // スコア効率
-    if (s.efficiency > 1.0) subComments.push("順位に対してスコア効率が非常に良いです。");
-    
-    // 順位逆数スコア
-    if (s.rankScore > 7) subComments.push("順位スコアが高く安定しています。");
-    
-    // 12レース平均スコア
-    if (s.avgTotalScore12 > 90) subComments.push("ラウンジセットの成績が非常に良いです。");
-    
-    // ▼ HTML に追加
-    const subCommentHTML = subComments.map(c => `<p>・${c}</p>`).join("");
-    
+  if (strongScore > 140) {
+    verdict = isEn ? "This is one of your best courses." : "かなり得意なコースです。";
+  } else if (strongScore > 100) {
+    verdict = isEn ? "You tend to perform well on this course." : "得意寄りのコースです。";
+  } else if (weakScore > 120) {
+    verdict = isEn ? "This is one of your weakest courses." : "かなり苦手なコースです。";
+  } else if (weakScore > 90) {
+    verdict = isEn ? "You struggle a bit on this course." : "やや苦手なコースです。";
+  } else {
+    verdict = isEn ? "Performance is mixed on this course." : "評価が分かれるコースです。";
+  }
+
+  // サブ評価コメント
+  let subComments = [];
+  
+  if (s.stdRank < 4) {
+    subComments.push(isEn ? "Rank variance is very low; highly consistent." : "順位のブレが小さく非常に安定しています。");
+  } else if (s.stdRank < 7) {
+    subComments.push(isEn ? "Rank consistency is average." : "順位の安定度は平均的です。");
+  } else {
+    subComments.push(isEn ? "Rank variance is somewhat high." : "順位のブレが大きめです。");
+  }
+  
+  if (s.topRate > 0.40) {
+    subComments.push(isEn ? "Tends to finish in top positions frequently." : "上位に入りやすい傾向があります。");
+  } else if (s.topRate > 0.25) {
+    subComments.push(isEn ? "Top finish rate is average." : "上位率は平均的です。");
+  } else {
+    subComments.push(isEn ? "Tends to struggle reaching top positions." : "上位に入りにくい傾向があります。");
+  }
+  
+  if (s.midRate > 0.60) {
+    subComments.push(isEn ? "Tends to stabilize well in the middle pack." : "中位に安定しやすいコースです。");
+  }
+  
+  if (s.bottomRate > 0.35) {
+    subComments.push(isEn ? "High risk of finishing in lower positions." : "下位を取りやすい危険なコースです。");
+  } else if (s.bottomRate < 0.20) {
+    subComments.push(isEn ? "Stable course with low risk of bottom finishes." : "下位を取りにくい安定したコースです。");
+  }
+  
+  if (s.avoidBottomRate > 0.90) {
+    subComments.push(isEn ? "Reliable style that rarely takes bottom finishes." : "下位をほとんど取らない安定型です。");
+  }
+  
+  if (s.firstRate > 0.15) {
+    subComments.push(isEn ? "Shows strong explosiveness with frequent 1st place finishes." : "1位を多く取れる爆発力があります。");
+  }
+  
+  if (s.efficiency > 1.0) {
+    subComments.push(isEn ? "Score efficiency relative to rank is exceptional." : "順位に対してスコア効率が非常に良いです。");
+  }
+  
+  if (s.rankScore > 7) {
+    subComments.push(isEn ? "Reciprocal rank score is high and steady." : "順位スコアが高く安定しています。");
+  }
+  
+  if (s.avgTotalScore12 > 90) {
+    subComments.push(isEn ? "Lounge set performance is outstanding." : "ラウンジセットの成績が非常に良いです。");
+  }
+  
+  const subCommentHTML = subComments.map(c => `<p>・${c}</p>`).join("");
 
   div.innerHTML = `
     <p><strong>${title}</strong></p>
-    <p><strong>試行回数：</strong>${records.length}</p>
+    <p><strong>${tTrials}</strong>${records.length}</p>
   
-    <p><strong>AI 基準スコア：</strong>${mainScore.toFixed(2)}</p>
+    <p><strong>${tAiScore}</strong>${mainScore.toFixed(2)}</p>
   
-    <p><strong>勝率（3位以内）：</strong>${(s.winRate * 100).toFixed(1)}%</p>
-    <p><strong>平均順位：</strong>${s.avgRank.toFixed(2)}</p>
-    <p><strong>平均スコア：</strong>${s.avgScore.toFixed(2)}</p>
-    <p><strong>12レース平均スコア：</strong>${s.avgTotalScore12.toFixed(1)}</p>
+    <p><strong>${tWinRate}</strong>${(s.winRate * 100).toFixed(1)}%</p>
+    <p><strong>${tAvgRank}</strong>${s.avgRank.toFixed(2)}</p>
+    <p><strong>${tAvgScore}</strong>${s.avgScore.toFixed(2)}</p>
+    <p><strong>${tAvg12Score}</strong>${s.avgTotalScore12.toFixed(1)}</p>
   
-    <p><strong>上位率（1〜5位）：</strong>${(s.topRate * 100).toFixed(1)}%</p>
-    <p><strong>中位率（6〜15位）：</strong>${(s.midRate * 100).toFixed(1)}%</p>
-    <p><strong>下位率（16〜24位）：</strong>${(s.bottomRate * 100).toFixed(1)}%</p>
-    <p><strong>下位回避率：</strong>${(s.avoidBottomRate * 100).toFixed(1)}%</p>
+    <p><strong>${tTopRate}</strong>${(s.topRate * 100).toFixed(1)}%</p>
+    <p><strong>${tMidRate}</strong>${(s.midRate * 100).toFixed(1)}%</p>
+    <p><strong>${tBottomRate}</strong>${(s.bottomRate * 100).toFixed(1)}%</p>
+    <p><strong>${tAvoidBottom}</strong>${(s.avoidBottomRate * 100).toFixed(1)}%</p>
   
-    <p><strong>安定度（順位のブレ）：</strong>${s.stdRank.toFixed(2)}</p>
-    <p><strong>爆発力（1位率）：</strong>${(s.firstRate * 100).toFixed(1)}%</p>
+    <p><strong>${tStdRank}</strong>${s.stdRank.toFixed(2)}</p>
+    <p><strong>${tFirstRate}</strong>${(s.firstRate * 100).toFixed(1)}%</p>
   
-    <p><strong>順位逆数スコア：</strong>${s.rankScore.toFixed(2)}</p>
-    <p><strong>スコア効率：</strong>${s.efficiency.toFixed(3)}</p>
+    <p><strong>${tRankScore}</strong>${s.rankScore.toFixed(2)}</p>
+    <p><strong>${tEfficiency}</strong>${s.efficiency.toFixed(3)}</p>
   
-    <p><strong>得意スコア：</strong>${strongScore.toFixed(1)}</p>
-    <p><strong>苦手スコア：</strong>${weakScore.toFixed(1)}</p>
-    <p><strong>成長スコア：</strong>${growth.toFixed(1)}</p>
+    <p><strong>${tStrongScore}</strong>${strongScore.toFixed(1)}</p>
+    <p><strong>${tWeakScore}</strong>${weakScore.toFixed(1)}</p>
+    <p><strong>${tGrowthScore}</strong>${growth.toFixed(1)}</p>
   
     <hr>
     <p>${verdict}</p>
   
-    <h4>項目別評価</h4>
+    <h4>${tItemEvalTitle}</h4>
     ${subCommentHTML}
   `;
 }
 
 
-
-/* ==========
-   3D バブル（強さ × 成長 × 使用数）
-========== */
-
+/* ============================================================
+   ▼ 3D バブル（強さ × 成長 × 使用数）（多言語対応版）
+============================================================ */
 function update3DView() {
   const records = get3DFilteredRecords(); // ★独立フィルター
 
@@ -5147,20 +5333,25 @@ function update3DView() {
     const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
     const growth      = strongScore - weakScore;
 
+    // コース名を言語に応じて翻訳
+    const displayedLabel = (typeof translateMKWorldCourse === 'function')
+      ? translateMKWorldCourse(course, currentLang)
+      : course;
+
     return {
       x: strongScore,
       y: growth,
       r: Math.min(20, 5 + arr.length),
-      label: course
+      label: displayedLabel
     };
   });
 
   draw3DChart(points);
 }
 
-/* ==========
-   散布図（強さ × 成長）
-========== */
+/* ============================================================
+   ▼ 散布図（強さ × 成長）（多言語対応版）
+============================================================ */
 function updateScatterView() {
   const records = getScatterFilteredRecords(); // ★独立フィルター
 
@@ -5176,10 +5367,15 @@ function updateScatterView() {
     const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
     const growth      = strongScore - weakScore;
 
+    // コース名を言語に応じて翻訳
+    const displayedLabel = (typeof translateMKWorldCourse === 'function')
+      ? translateMKWorldCourse(course, currentLang)
+      : course;
+
     return {
       x: strongScore,
       y: growth,
-      label: course
+      label: displayedLabel
     };
   });
 
@@ -5192,8 +5388,6 @@ function getWinRate(filtered) {
   const wins = filtered.filter(r => r.rank <= 3).length;
   return wins / filtered.length;
 }
-
-
 
 
 
