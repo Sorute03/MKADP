@@ -6468,27 +6468,6 @@ function buildLeaderboardUrl(playerId, season) {
 }
 
 
-async function fetchWorldHTML(targetUrl) {
-  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
-
-  const encoded = encodeURIComponent(targetUrl);
-  const res = await fetch(`${proxy}?url=${encoded}`);
-
-  return await res.text();
-}
-
-
-async function fetchWorldLeaderboard(targetUrl) {
-  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
-
-  const encoded = encodeURIComponent(targetUrl);
-  const res = await fetch(`${proxy}?url=${encoded}`);
-
-  const txt = await res.text();
-  try { return JSON.parse(txt); }
-  catch { return null; }
-}
-
 
 function parseWorldHTML_Season1(html) {
   const result = {
@@ -7775,7 +7754,10 @@ async function drawPlayerInfo(ctx, details, stats) {
 /* ============================================================
    ▼ MMR グラフ
    ============================================================ */
-function drawMMRGraph(ctx, history) {
+/* ============================================================
+   ▼ MMR グラフ
+   ============================================================ */
+function drawMMRGraph(ctx, history, stats) {
   const x = 500;
   const y = 40;
   const w = 700;
@@ -7783,7 +7765,7 @@ function drawMMRGraph(ctx, history) {
 
   drawPanel(ctx, x, y, w, h);
 
-  if (!history.length) return;
+  if (!history || !history.length) return;
 
   const ratings = history.map(item => item.mmr);
   let minR = Math.min(...ratings);
@@ -7809,7 +7791,9 @@ function drawMMRGraph(ctx, history) {
   const points = history.map((item, i) => {
     const px = x + 40 + (i / (history.length - 1)) * (w - 80);
     const py = y + h - 40 - ((item.mmr - minR) / (maxR - minR)) * (h - 80);
-    return { px, py, mmr: item.mmr, season: item.season };
+    // 履歴アイテム自体に season があればそれを優先、なければ stats や選択中のセレクトボックスから取得
+    const currentSeason = item.season ?? (stats && stats.season ? stats.season : (typeof loungeSeasonSelect !== 'undefined' ? loungeSeasonSelect.value : 1));
+    return { px, py, mmr: item.mmr, season: currentSeason };
   });
 
   ctx.lineWidth = 3;
@@ -7821,7 +7805,7 @@ function drawMMRGraph(ctx, history) {
 
     // 区間の平均MMRとシーズンからランク色を取得
     const avgMmr = (p0.mmr + p1.mmr) / 2;
-    const seasonNum = p0.season ?? (typeof stats !== 'undefined' && stats.season ? stats.season : 1);
+    const seasonNum = Number(p0.season) || 1;
     const rankInfo = getRankInfo(avgMmr, seasonNum);
 
     ctx.strokeStyle = rankInfo.color;
@@ -7831,6 +7815,8 @@ function drawMMRGraph(ctx, history) {
     ctx.stroke();
   }
 }
+
+
 /* ============================================================
    ▼ 国旗描画
    ============================================================ */
@@ -7901,15 +7887,21 @@ async function drawBackground(ctx, w, h) {
 /* ============================================================
    ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
    ============================================================ */
+/* ============================================================
+   ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
+   ============================================================ */
 async function generateLoungeImage(details, history, stats) {
   const canvas = document.getElementById("loungeCanvas");
+  if (!canvas) return canvas;
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
 
   await drawBackground(ctx, w, h);
   await drawPlayerInfo(ctx, details, stats);
-  drawMMRGraph(ctx, history);
+  
+  // ★ stats も渡すように修正
+  drawMMRGraph(ctx, history, stats);
 
   return canvas;
 }
