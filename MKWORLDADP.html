@@ -7128,8 +7128,7 @@ function drawLoungeMMRChart(stats) {
     labelText = isEn ? `MMR Progression (Season ${selectedSeasonVal})` : `MMR推移（Season ${selectedSeasonVal})`;
   }
 
-  // 各履歴データに対応するシーズン判定（ALLの場合は個別のシーズン情報があればそれを利用、なければ選択値を使用）
-  // ※もし history がオブジェクトの配列 [{mmr: 1500, season: 2}, ...] の場合は r.mmr, r.season を参照してください
+  // 各履歴データのシーズンとMMR値を抽出
   const seasons = history.map(item => {
     if (typeof item === 'object' && item !== null) {
       return item.season ?? (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal));
@@ -7141,12 +7140,6 @@ function drawLoungeMMRChart(stats) {
     return (typeof item === 'object' && item !== null) ? (item.mmr ?? item.score ?? 0) : item;
   });
 
-  // フォールバック用のデフォルト色（最後の値または最初の値から取得）
-  const lastMmr = mmrValues[mmrValues.length - 1] || 0;
-  const defaultSeason = seasons[seasons.length - 1] || 1;
-  const defaultRankInfo = getRankInfo(lastMmr, defaultSeason);
-  const fallbackColor = defaultRankInfo.color;
-
   window.loungeMMRChartInstance = new Chart(ctx, {
     type: "line",
     data: {
@@ -7154,19 +7147,19 @@ function drawLoungeMMRChart(stats) {
       datasets: [{
         label: labelText,
         data: mmrValues,
-        borderColor: fallbackColor,
         borderWidth: 3,
-        backgroundColor: fallbackColor + "33",
+        tension: 0.1,
+        // ★ 各データポイント（ドット）の色をその時のレート（ランク）に合わせる
         pointBackgroundColor: ctx => {
           const idx = ctx.dataIndex;
           const mmr = mmrValues[idx];
           const seasonNum = seasons[idx];
           return getRankInfo(mmr, seasonNum).color;
         },
-        tension: 0.1,
-        // ★ 線の途中で当時のランク色に変わるセグメント機能
+        // ★ 線の途中でその時のレートに応じて色がリアルタイムに変わるセグメント機能
         segment: {
           borderColor: ctx => {
+            // 区間の平均値ではなく、その瞬間のレート（p0 または p1、あるいは両方の中間）を元に当時のランク色を返す
             const idx = ctx.p0DataIndex;
             const avgMmr = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
             const seasonNum = seasons[idx] ?? 1;
@@ -7200,7 +7193,6 @@ function drawLoungeMMRChart(stats) {
     }
   });
 }
-
 
 
 /******************************************************
