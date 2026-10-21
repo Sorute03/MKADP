@@ -4781,20 +4781,35 @@ function updateRankingView() {
   const strongTable = document.getElementById("tableStrong");
   const weakTable   = document.getElementById("tableWeak");
 
+  // 言語に応じたラベル・メッセージの切り替え
+  const isEn = (currentLang === 'en');
+  const tCourse     = isEn ? 'Track' : 'コース';
+  const tCount      = isEn ? 'Races' : '回数';
+  const tWinRate    = isEn ? 'Win Rate%' : '勝率%';
+  const tAvgRank    = isEn ? 'Avg Rank' : '平均順位';
+  const tAvgScore   = isEn ? 'Avg Score' : '平均スコア';
+  const tTopRate    = isEn ? 'Top Rate%' : '上位率%';
+  const tMidRate    = isEn ? 'Mid Rate%' : '中位率%';
+  const tBottomRate = isEn ? 'Bottom Rate%' : '下位率%';
+  const tStrong     = isEn ? 'Best Score' : '得意スコア';
+  const tWeak       = isEn ? 'Worst Score' : '苦手スコア';
+  const tNoData     = isEn ? 'No data available' : 'データがありません';
+  const tNoMatch    = isEn ? 'No courses match criteria' : '条件に合うコースがありません';
+
   if (!records || !records.length) {
     strongTable.innerHTML = `
-      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>得意スコア</th></tr>
-      <tr><td colspan="6">データがありません</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tStrong}</th></tr>
+      <tr><td colspan="6">${tNoData}</td></tr>
     `;
     weakTable.innerHTML = `
-      <tr><th>コース</th><th>回数</th><th>勝率%</th><th>平均順位</th><th>平均スコア</th><th>苦手スコア</th></tr>
-      <tr><td colspan="6">データがありません</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tWeak}</th></tr>
+      <tr><td colspan="6">${tNoData}</td></tr>
     `;
     return;
   }
 
   const minRuns = Number(document.getElementById("minRuns").value || 3);
-  const metric  = document.getElementById("rankMetric").value; // ★追加
+  const metric  = document.getElementById("rankMetric").value;
 
   const byCourse = groupBy(records, r => r.course);
   const rows = [];
@@ -4817,130 +4832,103 @@ function updateRankingView() {
       avgScore: s.avgScore,
       avgTotalScore12: s.avgTotalScore12,
     
-      // ▼ 安定度・爆発力・下位回避など
       stdRank: s.stdRank,
       firstRate: s.firstRate,
       avoidBottom: s.avoidBottomRate,
       rankScore: s.rankScore,
       efficiency: s.efficiency,
     
-      // ▼ ★ 新しい順位分布（1〜5 / 6〜15 / 16〜24）
-      topRate: s.topRate,       // 上位率（1〜5）
-      midRate: s.midRate,       // 中位率（6〜15）
-      bottomRate: s.bottomRate, // 下位率（16〜24）
+      topRate: s.topRate,
+      midRate: s.midRate,
+      bottomRate: s.bottomRate,
     
-      // ▼ 得意・苦手・成長スコア
       strongScore,
       weakScore,
       growth
     });
   }
 
-  // ▼ 基準に応じてソート切り替え（★ここが今回の本体）
-    // ▼ 基準に応じてソート切り替え（★完全版）
   let sorted;
   switch (metric) {
-
-    // ▼ 既存
     case "strong":
       sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
       break;
-  
     case "weak":
       sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore);
       break;
-  
     case "growth":
       sorted = [...rows].sort((a,b)=>b.growth - a.growth);
       break;
-  
     case "winRate":
       sorted = [...rows].sort((a,b)=>b.winRate - a.winRate);
       break;
-  
     case "avgRank":
       sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank);
       break;
-  
     case "avgScore":
       sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
       break;
-  
     case "avgTotalScore12":
-      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12);
+      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - b.avgTotalScore12);
       break;
-  
-    // ▼ 安定度（低いほど良い）
     case "stdRank":
       sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank);
       break;
-  
-    // ▼ 爆発力（1位率）
     case "firstRate":
       sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate);
       break;
-  
-    // ▼ 下位回避率（高いほど良い）
     case "avoidBottom":
       sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom);
       break;
-  
-    // ▼ 順位逆数スコア
     case "rankScore":
       sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore);
       break;
-  
-    // ▼ スコア効率
     case "efficiency":
       sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency);
       break;
-  
-    // ▼ ★ 上位率（1〜5）
     case "topRate":
       sorted = [...rows].sort((a,b)=>b.topRate - a.topRate);
       break;
-  
-    // ▼ ★ 中位率（6〜15）
     case "midRate":
       sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
       break;
-  
-    // ▼ ★ 下位率（16〜24）
     case "bottomRate":
       sorted = [...rows].sort((a,b)=>b.bottomRate - a.bottomRate);
       break;
-  
-    // ▼ デフォルト（得意スコア）
     default:
       sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
       break;
   }
-
 
   const maxRank = Number(document.getElementById("rankLimit").value || 10);
   
   const strongSorted = sorted.slice(0, maxRank);
   const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0, maxRank);
 
+  // コース名を言語に応じて翻訳するヘルパー関数
+  const formatCourseName = (courseName) => {
+    return (typeof translateMKWorldCourse === 'function') 
+      ? translateMKWorldCourse(courseName, currentLang) 
+      : courseName;
+  };
 
-  
   strongTable.innerHTML = `
     <tr>
-      <th>コース</th>
-      <th>回数</th>
-      <th>勝率%</th>
-      <th>平均順位</th>
-      <th>平均スコア</th>
-      <th>上位率%</th>
-      <th>中位率%</th>
-      <th>下位率%</th>
-      <th>得意スコア</th>
+      <th>${tCourse}</th>
+      <th>${tCount}</th>
+      <th>${tWinRate}</th>
+      <th>${tAvgRank}</th>
+      <th>${tAvgScore}</th>
+      <th>${tTopRate}</th>
+      <th>${tMidRate}</th>
+      <th>${tBottomRate}</th>
+      <th>${tStrong}</th>
     </tr>
     ${
       strongSorted.length
         ? strongSorted.map(r => `
           <tr>
-            <td>${r.course}</td>
+            <td>${formatCourseName(r.course)}</td>
             <td>${r.count}</td>
             <td>${(r.winRate*100).toFixed(1)}</td>
             <td>${r.avgRank.toFixed(2)}</td>
@@ -4951,27 +4939,27 @@ function updateRankingView() {
             <td>${r.strongScore.toFixed(1)}</td>
           </tr>
         `).join("")
-        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
+        : `<tr><td colspan="9">${tNoMatch}</td></tr>`
     }
   `;
 
   weakTable.innerHTML = `
     <tr>
-      <th>コース</th>
-      <th>回数</th>
-      <th>勝率%</th>
-      <th>平均順位</th>
-      <th>平均スコア</th>
-      <th>上位率%</th>
-      <th>中位率%</th>
-      <th>下位率%</th>
-      <th>苦手スコア</th>
+      <th>${tCourse}</th>
+      <th>${tCount}</th>
+      <th>${tWinRate}</th>
+      <th>${tAvgRank}</th>
+      <th>${tAvgScore}</th>
+      <th>${tTopRate}</th>
+      <th>${tMidRate}</th>
+      <th>${tBottomRate}</th>
+      <th>${tWeak}</th>
     </tr>
     ${
       weakSorted.length
         ? weakSorted.map(r => `
           <tr>
-            <td>${r.course}</td>
+            <td>${formatCourseName(r.course)}</td>
             <td>${r.count}</td>
             <td>${(r.winRate*100).toFixed(1)}</td>
             <td>${r.avgRank.toFixed(2)}</td>
@@ -4982,11 +4970,13 @@ function updateRankingView() {
             <td>${r.weakScore.toFixed(1)}</td>
           </tr>
         `).join("")
-        : `<tr><td colspan="9">条件に合うコースがありません</td></tr>`
+        : `<tr><td colspan="9">${tNoMatch}</td></tr>`
     }
   `;
 }
 
+
+  
 /* ==========
    AIコース評価
 ========== */
