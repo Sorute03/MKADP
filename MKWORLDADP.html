@@ -865,6 +865,23 @@ const i18nDict = {
     metric_avoidBottom: "Bottom Avoid Rate",
     metric_rankScore: "Reciprocal Rank Score",
     metric_efficiency: "Score Efficiency"
+    // i18nDict の 'en' 側に追加しておくと良いキーの例
+    course_compare_title: "Select up to 5 courses:",
+    course_stats_filter: "Course Statistics Filters",
+    mode_lounge: "Lounge",
+    mode_nora: "Nora",
+    mode_tournament: "Tournament",
+    label_filter_mode: "Filter Mode",
+    adp_bg_title: "Background Image Settings (For Course Comparison Image)",
+    text_color_title: "Text Color Settings",
+    label_text_color: "Text Color",
+    label_stroke_color: "Stroke Color",
+    label_stroke_width: "Stroke Width (px)",
+    label_shadow_blur: "Shadow Blur (px)",
+    label_shadow_color: "Shadow Color",
+    btn_show: "Show",
+    btn_send_text_discord: "Send Text to Discord",
+    btn_send_image_discord: "Send Image to Discord"
     }
   };
 
@@ -1255,9 +1272,9 @@ document.addEventListener('DOMContentLoaded', () => {
       <label data-i18n="lbl_mode">モード</label><br>
       <select id="adpModeSelect" style="width:200px;">
         <option value="ALL">ALL</option>
-        <option value="lounge">ラウンジ</option>
-        <option value="nora">野良</option>
-        <option value="tournament">大会</option>
+        <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+        <option value="nora" data-i18n="mode_nora">野良</option>
+        <option value="tournament" data-i18n="mode_tournament">大会</option>
       </select><br><br>
 
       <label data-i18n="lbl_season">Season</label><br>
