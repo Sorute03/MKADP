@@ -6429,29 +6429,85 @@ function extractSeasonFromUrl(url) {
   return u.searchParams.get("season") || "ALL";
 }
 
-async function fetchWorldHTML(playerId, season = 1) {
+// 共通のプロキシ経由フェッチ関数（エラーハンドリング・ログ強化版）
+async function fetchViaProxy(targetUrl) {
+  // どちらか確実な方のプロキシURLに統一してください
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
-  
-  // シーズンに応じたURLを構築（必要に応じて調整してください）
-  const targetUrl = season === "ALL" 
-    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}` 
-    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
-
   const fetchUrl = `${proxy}?url=${encodeURIComponent(targetUrl)}`;
 
   try {
     const res = await fetch(fetchUrl);
     if (!res.ok) {
-      throw new Error(`Failed to fetch HTML for player ID: ${playerId} (Season: ${season})`);
+      throw new Error(`HTTP error! status: ${res.status} for URL: ${targetUrl}`);
     }
-    const htmlText = await res.text();
-    return htmlText;
+    return res;
   } catch (error) {
-    console.error("fetchWorldHTML Error:", error);
+    console.error("Proxy fetch error:", error);
     return null;
   }
 }
 
+// 1. HTMLを直接取得する関数
+async function fetchWorldHTML(playerId, season = 1) {
+  const targetUrl = (season === "ALL" || !season)
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}` 
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
+
+  const res = await fetchViaProxy(targetUrl);
+  if (!res) return null;
+  
+  return await res.text();
+}
+
+// 2. API経由でJSONデータを取得する関数
+async function fetchWorldData(playerId, season = "ALL") {
+  const detailsUrl = `https://mkcentral.com/api/world/player/${playerId}`;
+  const historyUrl = `https://mkcentral.com/api/world/player/${playerId}/history`;
+  const seasonUrl = season !== "ALL" 
+    ? `https://mkcentral.com/api/world/player/${playerId}/season/${season}` 
+    : null;
+
+  const [detailsRes, historyRes] = await Promise.all([
+    fetchViaProxy(detailsUrl),
+    fetchViaProxy(historyUrl)
+  ]);
+
+  const details = detailsRes ? await detailsRes.json().catch(() => null) : null;
+  const history = historyRes ? await historyRes.json().catch(() => null) : null;
+
+  let seasonData = null;
+  if (seasonUrl) {
+    const seasonRes = await fetchViaProxy(seasonUrl);
+    seasonData = seasonRes ? await seasonRes.json().catch(() => null) : null;
+  }
+
+  return { details, history, seasonData };
+}
+
+// 3. Lounge API経由のデータ取得関数
+async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
+  const detailsUrl = `https://lounge.mkcentral.com/api/player?playerId=${playerId}&game=${game}`;
+  const historyUrl = `https://lounge.mkcentral.com/api/player/history?playerId=${playerId}&game=${game}`;
+  const seasonUrl = season !== "ALL" 
+    ? `https://lounge.mkcentral.com/api/player/season?playerId=${playerId}&season=${season}&game=${game}` 
+    : null;
+
+  const [detailsRes, historyRes] = await Promise.all([
+    fetchViaProxy(detailsUrl),
+    fetchViaProxy(historyUrl)
+  ]);
+
+  const details = detailsRes ? await detailsRes.json().catch(() => null) : null;
+  const history = historyRes ? await historyRes.json().catch(() => null) : null;
+
+  let seasonData = null;
+  if (seasonUrl) {
+    const seasonRes = await fetchViaProxy(seasonUrl);
+    seasonData = seasonRes ? await seasonRes.json().catch(() => null) : null;
+  }
+
+  return { details, history, seasonData };
+}
 async function fetchWorldData(playerId, season = "ALL") {
 
   const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
