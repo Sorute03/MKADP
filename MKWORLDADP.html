@@ -6429,7 +6429,28 @@ function extractSeasonFromUrl(url) {
   return u.searchParams.get("season") || "ALL";
 }
 
+async function fetchWorldHTML(playerId, season = 1) {
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
+  
+  // シーズンに応じたURLを構築（必要に応じて調整してください）
+  const targetUrl = season === "ALL" 
+    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}` 
+    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
 
+  const fetchUrl = `${proxy}?url=${encodeURIComponent(targetUrl)}`;
+
+  try {
+    const res = await fetch(fetchUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch HTML for player ID: ${playerId} (Season: ${season})`);
+    }
+    const htmlText = await res.text();
+    return htmlText;
+  } catch (error) {
+    console.error("fetchWorldHTML Error:", error);
+    return null;
+  }
+}
 
 async function fetchWorldData(playerId, season = "ALL") {
 
