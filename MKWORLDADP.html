@@ -6946,8 +6946,8 @@ function filterLoungeHistory(history) {
 
   
 async function drawLoungeImage(stats) {
-
   const canvas = document.getElementById("loungeImageCanvas");
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
 
   const W = canvas.width;
@@ -6996,44 +6996,68 @@ async function drawLoungeImage(stats) {
   ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
   ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
 
-  // ▼ MMR変異グラフ（合成）
-  const mmr = stats.mmr_history;
-  if (mmr && mmr.length > 1) {
-
-    const gx = 500;      // グラフ左端
+  // ▼ MMR変異グラフ（セグメントごとの色分け対応・丸なし）
+  const history = stats.mmr_history; // 配列 [{mmr, ...}, ...] または数値配列
+  if (history && history.length > 1) {
+    const gx = 500;       // グラフ左端
     const gy = 280;       // グラフ上端
-    const gw = 450;      // グラフ幅
-    const gh = 300;      // グラフ高さ
+    const gw = 450;       // グラフ幅
+    const gh = 300;       // グラフ高さ
 
     // 枠線
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(gx, gy, gw, gh);
 
-    const minMMR = Math.min(...mmr);
-    const maxMMR = Math.max(...mmr);
+    // MMR値の抽出
+    const ratings = history.map(item => (typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item));
+    let minMMR = Math.min(...ratings);
+    let maxMMR = Math.max(...ratings);
 
-    ctx.strokeStyle = getTierColor(stats.tier);
-    ctx.lineWidth = 3;
-    ctx.beginPath();
+    if (minMMR === maxMMR) {
+      minMMR -= 100;
+      maxMMR += 100;
+    }
 
-    mmr.forEach((v, i) => {
-      const px = gx + (i / (mmr.length - 1)) * gw;
-      const py = gy + gh - ((v - minMMR) / (maxMMR - minMMR)) * gh;
+    // 各ポイントの座標とシーズン情報を計算
+    const selectedSeasonVal = (typeof loungeSeasonSelect !== 'undefined' && loungeSeasonSelect) ? loungeSeasonSelect.value : "1";
+    const points = history.map((item, i) => {
+      const val = typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item;
+      const seasonNum = (typeof item === 'object' && item !== null && item.season) 
+        ? Number(item.season) 
+        : (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal) || 1);
 
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+      const px = gx + (i / (history.length - 1)) * gw;
+      const py = gy + gh - ((val - minMMR) / (maxMMR - minMMR)) * gh;
+      return { px, py, mmr: val, season: seasonNum };
     });
 
-    ctx.stroke();
+    ctx.lineWidth = 3;
 
-    // タイトル
+    // ★ セグメント（区間）ごとにその時のレート・ランク色に切り替えて線を描画（丸は描かない）
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+
+      const avgMmr = (p0.mmr + p1.mmr) / 2;
+      const rankInfo = getRankInfo(avgMmr, p0.season);
+
+      ctx.strokeStyle = rankInfo.color;
+      ctx.beginPath();
+      ctx.moveTo(p0.px, p0.py);
+      ctx.lineTo(p1.px, p1.py);
+      ctx.stroke();
+    }
+
+    // タイトル (多言語対応)
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    const titleText = isEn ? "MMR Progression" : "MMR変異グラフ";
+
     ctx.fillStyle = "white";
     ctx.font = "24px sans-serif";
-    ctx.fillText("MMR変異グラフ", gx, gy - 10);
+    ctx.fillText(titleText, gx, gy - 10);
   }
 }
-
 
 function aggregateWorldStats(leaderboard, htmlParsed) {
 
