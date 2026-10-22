@@ -2532,17 +2532,17 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <script>
 
-let dbInstance = null;
+let dbPromise = null;
 
-// 1. データベース接続をキャッシュして安全に取得する関数（初回自動作成対応）
+// 1. データベース接続を Promise ごとキャッシュして安全に取得する関数
 function openDB() {
-  if (dbInstance) {
-    return Promise.resolve(dbInstance);
+  if (dbPromise) {
+    return dbPromise;
   }
 
-  return new Promise((resolve, reject) => {
-    // データベース名を "mogiDB"、バージョンを 1 に設定
-    const req = indexedDB.open("mogiDB", 1);
+  dbPromise = new Promise((resolve, reject) => {
+    // ★ バージョンを 2 に上げることで、既存のデータベースにストアがない場合でも確実に作成処理(onupgradeneeded)を走らせます
+    const req = indexedDB.open("mogiDB", 2);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
@@ -2553,19 +2553,22 @@ function openDB() {
     };
 
     req.onsuccess = e => {
-      dbInstance = e.target.result;
-      // 接続が予期せぬ形で切断された場合の処理
-      dbInstance.onclose = () => {
-        dbInstance = null;
+      const db = e.target.result;
+      // 接続が切断されたらキャッシュをクリア
+      db.onclose = () => {
+        dbPromise = null;
       };
-      resolve(dbInstance);
+      resolve(db);
     };
 
     req.onerror = e => {
       console.error("[IndexedDB] openDB error:", e.target.error);
+      dbPromise = null; // エラー時はキャッシュをリセット
       reject(e.target.error);
     };
   });
+
+  return dbPromise;
 }
 
 // トランザクション完了を正確にPromiseで待つヘルパー関数
@@ -2706,6 +2709,11 @@ async function fixMissingTimestamps() {
   await promisifyTx(tx);
   console.log("timestamp 修復完了");
 }
+
+
+
+
+  
 /* ==========
    共通データ
 ========== */
