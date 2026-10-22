@@ -1940,7 +1940,6 @@ async function deleteRecord(ts) {
 
 <script>
 /* ▼ 保存処理（新構造対応・編集モード対応） */
-/* ▼ 保存処理（新構造対応・編集モード対応） */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
   const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
@@ -1982,13 +1981,13 @@ saveRaceBtn.onclick = async () => {
 
   /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
   if (editingTimestamp) {
-    await deleteRecordFromDB(editingTimestamp);
+    await deleteRecord(editingTimestamp); // deleteRecordFromDB -> deleteRecord に合わせる場合は調整
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
-  /* ▼ 新規レコードを DB に保存 */
+  /* ▼ 新規レコードを DB に保存 (cord から addRecord に修正) */
   for (const r of newRecords) {
-    await cord(r);
+    await addRecord(r);
   }
 
   /* ▼ メモリ側 allRecords に反映 */
@@ -2002,12 +2001,10 @@ saveRaceBtn.onclick = async () => {
   /* ▼ UI 再描画（新構造） */
   renderRaceHistory(getFilteredRecords());
 
-
   /* ▼ 後処理 */
   editingTimestamp = null;
   modal.classList.remove("show");
 };
-
 
 </script>
 
