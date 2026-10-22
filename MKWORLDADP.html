@@ -1252,6 +1252,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="loungeBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
   <label data-i18n="label_opacity">透過度</label><br><input type="range" id="loungeBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
   <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
+  
+  <button id="updateLoungeBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
 </div>
 
 <!-- ▼ コース統計・比較タブ -->
@@ -7416,9 +7418,45 @@ function activateLoungeTab() {
     drawLoungeImage(window.latestLoungeStats);
   }
 }
-
-
   
+
+
+// ボタンクリックによる背景即時反映の紐付け
+const updateLoungeBgBtn = document.getElementById("updateLoungeBgBtn");
+if (updateLoungeBgBtn) {
+  updateLoungeBgBtn.onclick = async () => {
+    if (window.latestLoungeStats) {
+      const imgStats = convertStatsForImage(window.latestLoungeStats);
+      await drawLoungeImage(imgStats);
+      console.log("背景画像の設定を即時反映しました");
+    } else {
+      // まだデータ取得していない場合は、とりあえず黒背景＋設定値で描画をクリア・更新するなどの処理も可
+      const canvas = document.getElementById("loungeImageCanvas");
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 背景だけでもプレビュー描画したい場合
+        // await drawBackgroundOnly(ctx, canvas.width, canvas.height); 
+      }
+      alert("先に「データ取得」を行ってプレイヤーデータを読み込んでください。");
+    }
+  };
+}
+
+// 各レンジスライダーやファイル変更時にも自動で即時反映させたい場合は、以下のようにイベントを追加することも可能です
+['loungeBgBrightness', 'loungeBgContrast', 'loungeBgOpacity', 'loungeBgBlur'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.oninput = async (e) => {
+      state[id.replace('loungeBg', 'loungeBg').toLowerCase()] = Number(e.target.value); // お手元のstate管理に合わせて調整
+      // 値変更時に即座に反映させたい場合はここで自動再描画も可能
+      if (window.latestLoungeStats) {
+        const imgStats = convertStatsForImage(window.latestLoungeStats);
+        await drawLoungeImage(imgStats);
+      }
+    };
+  }
+});
 
   
 
