@@ -7030,7 +7030,7 @@ async function drawLoungeImage(stats) {
   ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
 
   // ▼ MMR変異グラフ（セグメントごとの色分け対応・丸なし）
-  const history = stats.mmr_history; // 配列 [{mmr, ...}, ...] または数値配列
+  const history = stats.mmr_history; // 配列 [{mmr, season, ...}, ...] または数値配列
   if (history && history.length > 1) {
     const gx = 500;       // グラフ左端
     const gy = 280;       // グラフ上端
@@ -7053,12 +7053,17 @@ async function drawLoungeImage(stats) {
     }
 
     // 各ポイントの座標とシーズン情報を計算
-    const selectedSeasonVal = (typeof loungeSeasonSelect !== 'undefined' && loungeSeasonSelect) ? loungeSeasonSelect.value : "1";
+    const selectedSeasonVal = (typeof loungeSeasonSelect !== 'undefined' && loungeSeasonSelect) ? loungeSeasonSelect.value : "ALL";
     const points = history.map((item, i) => {
       const val = typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item;
-      const seasonNum = (typeof item === 'object' && item !== null && item.season) 
-        ? Number(item.season) 
-        : (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal) || 1);
+      
+      // 各データが持っている season を最優先し、なければ選択中の値やフォールバックを使用
+      let seasonNum = 2;
+      if (typeof item === 'object' && item !== null && item.season !== undefined && item.season !== null) {
+        seasonNum = Number(item.season);
+      } else {
+        seasonNum = (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal) || 1);
+      }
 
       const px = gx + (i / (history.length - 1)) * gw;
       const py = gy + gh - ((val - minMMR) / (maxMMR - minMMR)) * gh;
@@ -7092,6 +7097,7 @@ async function drawLoungeImage(stats) {
   }
 }
 
+  
 function aggregateWorldStats(leaderboard, htmlParsed) {
 
   const name = htmlParsed.name || "Unknown";
@@ -7185,12 +7191,15 @@ function drawLoungeMMRChart(stats) {
     labelText = isEn ? `MMR Progression (Season ${selectedSeasonVal})` : `MMR推移（Season ${selectedSeasonVal})`;
   }
 
-  // 各履歴データのシーズンとMMR値を抽出
+ // 各履歴データのシーズンとMMR値を抽出
   const seasons = history.map(item => {
     if (typeof item === 'object' && item !== null) {
-      return item.season ?? (selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal));
+      // item.season があればそれを数値として利用、なければ選択中のセレクトボックスをみる
+      if (item.season !== undefined && item.season !== null) {
+        return Number(item.season);
+      }
     }
-    return selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal);
+    return selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal) || 1;
   });
 
   const mmrValues = history.map(item => {
