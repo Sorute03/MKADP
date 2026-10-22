@@ -7048,7 +7048,9 @@ async function renderSavedBackgrounds() {
     wrapper.style.width = "60px";
     wrapper.style.height = "40px";
     wrapper.style.cursor = "pointer";
-    wrapper.style.border = state.loungeBackgroundImage === bg.dataUrl ? "2px solid #00ffcc" : "1px solid #444";
+    
+    // ★ 毎回変わる Blob URL ではなく、固有の id（フォルダ名）で選択中かどうかを判定する
+    wrapper.style.border = (typeof state.activeBgId !== 'undefined' && state.activeBgId === bg.id) ? "2px solid #00ffcc" : "1px solid #444";
 
     const img = document.createElement("img");
     img.src = bg.dataUrl;
@@ -7056,9 +7058,10 @@ async function renderSavedBackgrounds() {
     img.style.height = "100%";
     img.style.objectFit = "cover";
 
-    // サムネイルクリック時：背景画像 ＋ スライダー設定を一括復元
+    // サムネイルクリック時
     wrapper.onclick = async () => {
       state.loungeBackgroundImage = bg.dataUrl;
+      state.activeBgId = bg.id; // 選択中のIDを保持
 
       state.loungeBgBrightness = bg.settings.brightness;
       state.loungeBgContrast = bg.settings.contrast;
@@ -7094,8 +7097,9 @@ async function renderSavedBackgrounds() {
       e.stopPropagation();
       if (confirm("この背景画像と設定を削除しますか？")) {
         await deleteBackgroundFromOPFS(bg.id);
-        if (state.loungeBackgroundImage === bg.dataUrl) {
+        if (state.activeBgId === bg.id) {
           state.loungeBackgroundImage = null;
+          state.activeBgId = null;
         }
         await renderSavedBackgrounds();
       }
@@ -7252,19 +7256,20 @@ async function drawLoungeImage(stats) {
 
   ctx.clearRect(0, 0, W, H);
 
-  // ▼ 背景画像
-  // ▼ 背景画像
+  // ▼ 背景画像描画
   if (state.loungeBackgroundImage) {
+    let imageLoaded = false;
     try {
       const bg = new Image();
       bg.src = state.loungeBackgroundImage;
 
-      // decode() または onload で確実に画像のロードを待つ
-      await bg.decode().catch(() => {
-        return new Promise((resolve, reject) => {
-          bg.onload = resolve;
-          bg.onerror = reject;
-        });
+      await new Promise((resolve) => {
+        bg.onload = resolve;
+        bg.onerror = () => {
+          console.warn("[Canvas] 背景画像の読み込みに失敗しました");
+          resolve();
+        };
+        if (bg.complete) resolve();
       });
 
       ctx.save();
@@ -7277,8 +7282,12 @@ async function drawLoungeImage(stats) {
 
       ctx.drawImage(bg, 0, 0, W, H);
       ctx.restore();
+      imageLoaded = true;
     } catch (err) {
-      console.error("[Canvas] 背景画像のデコードに失敗しました:", err);
+      console.error("[Canvas] 背景画像の描画中にエラーが発生しました:", err);
+    }
+
+    if (!imageLoaded) {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
     }
@@ -7306,20 +7315,18 @@ async function drawLoungeImage(stats) {
   ctx.fillText(`MMR Rank: ${stats.mmr_rank}`, 40, 600);
   ctx.fillText(`Peak Rank: ${stats.peak_mmr_rank}`, 40, 660);
 
-  // ▼ MMR変異グラフ（セグメントごとの色分け対応・丸なし）
-  const history = stats.mmr_history; // 配列 [{mmr, season, ...}, ...] または数値配列
+  // ▼ MMR変異グラフ
+  const history = stats.mmr_history;
   if (history && history.length > 1) {
-    const gx = 500;       // グラフ左端
-    const gy = 280;       // グラフ上端
-    const gw = 450;       // グラフ幅
-    const gh = 300;       // グラフ高さ
+    const gx = 500;
+    const gy = 280;
+    const gw = 450;
+    const gh = 300;
 
-    // 枠線
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(gx, gy, gw, gh);
 
-    // MMR値の抽出
     const ratings = history.map(item => (typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item));
     let minMMR = Math.min(...ratings);
     let maxMMR = Math.max(...ratings);
@@ -7329,12 +7336,10 @@ async function drawLoungeImage(stats) {
       maxMMR += 100;
     }
 
-    // 各ポイントの座標とシーズン情報を計算
     const selectedSeasonVal = (typeof loungeSeasonSelect !== 'undefined' && loungeSeasonSelect) ? loungeSeasonSelect.value : "ALL";
     const points = history.map((item, i) => {
       const val = typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item;
       
-      // 各データが持っている season を最優先し、なければ選択中の値やフォールバックを使用
       let seasonNum = 2;
       if (typeof item === 'object' && item !== null && item.season !== undefined && item.season !== null) {
         seasonNum = Number(item.season);
@@ -7349,7 +7354,6 @@ async function drawLoungeImage(stats) {
 
     ctx.lineWidth = 3;
 
-    // ★ セグメント（区間）ごとにその時のレート・ランク色に切り替えて線を描画（丸は描かない）
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[i];
       const p1 = points[i + 1];
@@ -7364,7 +7368,6 @@ async function drawLoungeImage(stats) {
       ctx.stroke();
     }
 
-    // タイトル (多言語対応)
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     const titleText = isEn ? "MMR Progression" : "MMR変異グラフ";
 
@@ -7374,6 +7377,11 @@ async function drawLoungeImage(stats) {
   }
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
+  await renderSavedBackgrounds();
+});
+
+  
   
 function aggregateWorldStats(leaderboard, htmlParsed) {
 
