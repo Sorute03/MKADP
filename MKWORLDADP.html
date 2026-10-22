@@ -7253,22 +7253,35 @@ async function drawLoungeImage(stats) {
   ctx.clearRect(0, 0, W, H);
 
   // ▼ 背景画像
+  // ▼ 背景画像
   if (state.loungeBackgroundImage) {
-    const bg = new Image();
-    bg.src = state.loungeBackgroundImage;
-    await bg.decode();
+    try {
+      const bg = new Image();
+      bg.src = state.loungeBackgroundImage;
 
-    ctx.filter = `
-      brightness(${state.loungeBgBrightness})
-      contrast(${state.loungeBgContrast})
-      blur(${state.loungeBgBlur}px)
-    `;
-    ctx.globalAlpha = state.loungeBgOpacity;
+      // decode() または onload で確実に画像のロードを待つ
+      await bg.decode().catch(() => {
+        return new Promise((resolve, reject) => {
+          bg.onload = resolve;
+          bg.onerror = reject;
+        });
+      });
 
-    ctx.drawImage(bg, 0, 0, W, H);
+      ctx.save();
+      ctx.filter = `
+        brightness(${state.loungeBgBrightness})
+        contrast(${state.loungeBgContrast})
+        blur(${state.loungeBgBlur}px)
+      `;
+      ctx.globalAlpha = state.loungeBgOpacity;
 
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
+      ctx.drawImage(bg, 0, 0, W, H);
+      ctx.restore();
+    } catch (err) {
+      console.error("[Canvas] 背景画像のデコードに失敗しました:", err);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+    }
   } else {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
