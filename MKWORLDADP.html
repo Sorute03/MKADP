@@ -6530,26 +6530,26 @@ function parseWorldHTML_Season1(html) {
     currentMMR: 0,
     peakMMR: 0,
     rank: "",          // 順位
-    tier: "",          // ★ Iron / Bronze / Silver / Gold / Platinum / Diamond / Master
+    tier: "",          // Iron / Bronze / Silver / Gold / Platinum / Diamond / Master
     wins: 0,
     losses: 0,
-    ave: 0,            // ★ Average Score
-    aveNoSQ: 0,        // ★ Average Score (No SQ)
-    aveLast10: 0,      // ★ Average Score (Last 10)
-    partnerAve: 0,     // ★ Partner Average Score
-    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
+    ave: 0,            // Average Score
+    aveNoSQ: 0,        // Average Score (No SQ)
+    aveLast10: 0,      // Average Score (Last 10)
+    partnerAve: 0,     // Partner Average Score
+    partnerAveNoSQ: 0, // Partner Average Score (No SQ)
     history: [],
     mmrHistory: [],
-    eventsPlayed: 0    // ★ 追加：試合数
+    eventsPlayed: 0
   };
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前 + 段位（Iron / Bronze / Silver / Gold / Platinum / Diamond / Master）
+  // ① 名前 + 段位
   const nameEl = doc.querySelector("h1, h2");
   if (nameEl) {
-    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const txt = nameEl.textContent.trim();
     const parts = txt.split("-");
     result.name = parts[0].trim();
     result.tier = parts[1]?.trim() || "";
@@ -6563,7 +6563,7 @@ function parseWorldHTML_Season1(html) {
     if (dd) result.country = dd.textContent.trim();
   }
 
-  // ③ Rank（順位）
+  // ③ Rank
   const rankDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.trim() === "Rank");
   if (rankDt) {
@@ -6581,7 +6581,7 @@ function parseWorldHTML_Season1(html) {
     }
   }
 
-  // ⑤ Peak MMR（Season1 は存在しない場合がある）
+  // ⑤ Peak MMR
   const peakDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.trim() === "Peak MMR");
   if (peakDt) {
@@ -6591,7 +6591,7 @@ function parseWorldHTML_Season1(html) {
     }
   }
 
-  // ⑥ Win-Loss（Season1 は表記が違う）
+  // ⑥ Win-Loss
   const wlDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.includes("Win - Loss"));
   if (wlDt) {
@@ -6645,7 +6645,8 @@ function parseWorldHTML_Season1(html) {
     if (dd) result.partnerAveNoSQ = Number(dd.textContent);
   }
 
-  // ⑫ 試合履歴（Season1 は table）
+  // ⑫ 試合履歴（HTML上は最新→古い順で並んでいるため配列取得後に反転）
+  const tempHistory = [];
   const rows = doc.querySelectorAll("table tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -6656,47 +6657,46 @@ function parseWorldHTML_Season1(html) {
     const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
     const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
 
-    result.history.push({ event, date, delta, mmr });
-    result.mmrHistory.push(mmr);
+    tempHistory.push({ event, date, delta, mmr, season: 1 });
   });
 
-  // ★★★ 追加：イベント数（試合数）
+  // ★ 上から取得した「最新→古い」を「古い→最新（時系列順）」に反転
+  tempHistory.reverse();
+
+  result.history = tempHistory;
+  result.mmrHistory = tempHistory.map(item => item.mmr);
   result.eventsPlayed = result.history.length;
 
   return result;
 }
 
-
-
-  
-
-function parseWorldHTML_Season2(html) {
+function parseWorldHTML_Season2(html, seasonNum = 2) {
   const result = {
     name: "Unknown",
     country: "",
     currentMMR: 0,
     peakMMR: 0,
     rank: "",          // 順位
-    tier: "",          // ★ Silver / Gold / Platinum など
+    tier: "",          // Silver / Gold / Platinum など
     wins: 0,
     losses: 0,
-    ave: 0,            // ★ Average Score
-    aveNoSQ: 0,        // ★ Average Score (No SQ)
-    aveLast10: 0,      // ★ Average Score (Last 10)
-    partnerAve: 0,     // ★ Partner Average Score
-    partnerAveNoSQ: 0, // ★ Partner Average Score (No SQ)
+    ave: 0,            // Average Score
+    aveNoSQ: 0,        // Average Score (No SQ)
+    aveLast10: 0,      // Average Score (Last 10)
+    partnerAve: 0,     // Partner Average Score
+    partnerAveNoSQ: 0, // Partner Average Score (No SQ)
     history: [],
     mmrHistory: [],
-    eventsPlayed: 0    // ★ 追加：試合数
+    eventsPlayed: 0
   };
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  // ① 名前 + 段位（Silver / Gold / Platinum）
+  // ① 名前 + 段位
   const nameEl = doc.querySelector("h1");
   if (nameEl) {
-    const txt = nameEl.textContent.trim(); // "Sorute - Silver"
+    const txt = nameEl.textContent.trim();
     const parts = txt.split("-");
     result.name = parts[0].trim();
     result.tier = parts[1]?.trim() || "";
@@ -6710,7 +6710,7 @@ function parseWorldHTML_Season2(html) {
     if (dd) result.country = dd.textContent.trim();
   }
 
-  // ③ Rank（順位）
+  // ③ Rank
   const rankDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.trim() === "Rank");
   if (rankDt) {
@@ -6734,7 +6734,7 @@ function parseWorldHTML_Season2(html) {
     if (dd) result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
   }
 
-  // ⑥ Win-Loss (Last 10)
+  // ⑥ Win-Loss
   const wlDt = [...doc.querySelectorAll("dt")]
     .find(dt => dt.textContent.includes("Win - Loss"));
   if (wlDt) {
@@ -6788,7 +6788,8 @@ function parseWorldHTML_Season2(html) {
     if (dd) result.partnerAveNoSQ = Number(dd.textContent);
   }
 
-  // ⑫ 試合履歴（table）
+  // ⑫ 試合履歴（HTML上は最新→古い順で並んでいるため配列取得後に反転）
+  const tempHistory = [];
   const rows = doc.querySelectorAll("table.table-dark tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("td");
@@ -6799,23 +6800,23 @@ function parseWorldHTML_Season2(html) {
     const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
     const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
 
-    result.history.push({ event, date, delta, mmr });
-    result.mmrHistory.push(mmr);
+    tempHistory.push({ event, date, delta, mmr, season: Number(seasonNum) });
   });
 
-  // ★★★ 追加：イベント数（試合数）
+  // ★ 上から取得した「最新→古い」を「古い→最新（時系列順）」に反転
+  tempHistory.reverse();
+
+  result.history = tempHistory;
+  result.mmrHistory = tempHistory.map(item => item.mmr);
   result.eventsPlayed = result.history.length;
 
   return result;
 }
 
-  
 function parseWorldHTML(html, season) {
   if (season == 1) return parseWorldHTML_Season1(html);
-  return parseWorldHTML_Season2(html);
+  return parseWorldHTML_Season2(html, season);
 }
-
-
 
 function parseWorldHTML_ALL(htmlList) {
   const merged = {
@@ -6838,11 +6839,12 @@ function parseWorldHTML_ALL(htmlList) {
     mmrHistory: []
   };
 
+  // シーズン順（S1 -> S2 -> S3 ...）にループして結合
   htmlList.forEach(({ html, season }) => {
     const parsed =
       season == 1
         ? parseWorldHTML_Season1(html)
-        : parseWorldHTML_Season2(html);
+        : parseWorldHTML_Season2(html, season);
 
     parsed.mmrHistory = parsed.mmrHistory || [];
     parsed.history = parsed.history || [];
@@ -6864,11 +6866,12 @@ function parseWorldHTML_ALL(htmlList) {
     if (parsed.partnerAve > 0) merged.partnerAve += parsed.partnerAve;
     if (parsed.partnerAveNoSQ > 0) merged.partnerAveNoSQ += parsed.partnerAveNoSQ;
 
-    merged.mmrHistory.push(...parsed.mmrHistory);
+    // 各シーズン内ですでに時系列順（古い→最新）になっているものを順番に追記
     merged.history.push(...parsed.history);
+    merged.mmrHistory.push(...parsed.mmrHistory);
   });
 
-  const seasonCount = htmlList.length;
+  const seasonCount = htmlList.length || 1;
 
   if (merged.ave > 0) merged.ave /= seasonCount;
   if (merged.aveNoSQ > 0) merged.aveNoSQ /= seasonCount;
@@ -6876,12 +6879,10 @@ function parseWorldHTML_ALL(htmlList) {
   if (merged.partnerAve > 0) merged.partnerAve /= seasonCount;
   if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ /= seasonCount;
 
-  // ★★★ 追加：イベント数（試合数）
   merged.eventsPlayed = merged.history.length;
 
   return merged;
 }
-
 
 
 
