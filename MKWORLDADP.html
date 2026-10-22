@@ -1315,12 +1315,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
       <h3 data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
-      <label data-i18n="label_bg_image">背景画像</label><br>
-      <input type="file" id="adpCourseBgInput" accept="image/*" onchange="setBgImage(this.files[0])"><br>
+      
+      <!-- ① ローカルファイルから毎回直接選択する方式 -->
+      <label data-i18n="label_bg_image">ローカルからファイルを選択（一時的）</label><br>
+      <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
+
+      <!-- ② OPFS保存・選択式（最大5枚）の方式 -->
+      <label>OPFS保存済み背景から選択（最大5枚）</label><br>
+      <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
+      <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;">現在の画像をOPFSに保存</button><br>
+      <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #666; padding: 8px;">
+        <!-- 動的にサムネイルが生成されます -->
+      </div>
+      <br>
+
       <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
       <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
       <label data-i18n="label_opacity">透過度</label><br><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
       <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
+
+      <button id="updateAdpCourseBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
     </div>
 
     <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
@@ -8243,6 +8257,263 @@ function setBgBrightness(v) { state.bgBrightness = Number(v); }
 function setBgContrast(v) { state.bgContrast = Number(v); }
 function setBgOpacity(v) { state.bgOpacity = Number(v); }
 function setBgBlur(v) { state.bgBlur = Number(v); }
+
+
+
+
+
+// ==========================================
+// コース統計用 背景画像・OPFS管理スクリプト
+// ==========================================
+if (typeof state === 'undefined') window.state = {};
+state.adpCourseBackgroundImage = null;
+state.adpCourseBgBrightness = 1;
+state.adpCourseBgContrast = 1;
+state.adpCourseBgOpacity = 1;
+state.adpCourseBgBlur = 0;
+state.activeAdpBgId = null;
+
+// キャンバス（adpCourseImage）を即時再描画するヘルパー
+async function triggerAdpCanvasRedraw() {
+  if (typeof drawAdpCourseImage === "function" && window.latestAdpCourseStats) {
+    await drawAdpCourseImage(window.latestAdpCourseStats);
+  }
+}
+
+// OPFSディレクトリ（コース比較用）
+const ADP_OPFS_DIR = "adp_course_backgrounds";
+
+async function getAdpOpfsDirectory() {
+  const root = await navigator.storage.getDirectory();
+  return await root.getDirectoryHandle(ADP_OPFS_DIR, { create: true });
+}
+
+async function getSavedAdpBackgroundsOPFS() {
+  try {
+    const dirHandle = await getAdpOpfsDirectory();
+    const list = [];
+    
+    for await (const [idName, handle] of dirHandle.entries()) {
+      if (handle.kind === "directory") {
+        const bgDir = handle;
+        try {
+          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
+          const imgFile = await imgFileHandle.getFile();
+          const dataUrl = URL.createObjectURL(imgFile);
+
+          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
+          try {
+            const metaFileHandle = await bgDir.getFileHandle("meta.json");
+            const metaFile = await metaFileHandle.getFile();
+            settings = JSON.parse(await metaFile.text());
+          } catch (e) {}
+
+          list.push({ id: idName, dataUrl, settings, size: imgFile.size });
+        } catch (err) {
+          console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
+        }
+      }
+    }
+    return list;
+  } catch (err) {
+    console.error("[OPFS/ADP] 一覧取得失敗:", err);
+    return [];
+  }
+}
+
+async function saveAdpBackgroundToOPFS(file, settings) {
+  const currentList = await getSavedAdpBackgroundsOPFS();
+  if (currentList.length >= 5) {
+    throw new Error("コース背景の保存上限（最大5枚）に達しています。不要な画像を削除してください。");
+  }
+
+  const dirHandle = await getAdpOpfsDirectory();
+  const idName = `adp_bg_${Date.now()}`;
+  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
+
+  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+  const imgW = await imgHandle.createWritable();
+  await imgW.write(file);
+  await imgW.close();
+
+  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+  const metaW = await metaHandle.createWritable();
+  await metaW.write(JSON.stringify(settings));
+  await metaW.close();
+}
+
+async function deleteAdpBackgroundFromOPFS(idName) {
+  try {
+    const dirHandle = await getAdpOpfsDirectory();
+    await dirHandle.removeEntry(idName, { recursive: true });
+  } catch (err) {
+    console.error("[OPFS/ADP] 削除失敗:", err);
+  }
+}
+
+async function renderSavedAdpBackgrounds() {
+  const container = document.getElementById("savedAdpBgListContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const backgrounds = await getSavedAdpBackgroundsOPFS();
+
+  if (backgrounds.length === 0) {
+    container.innerHTML = "<span style='color: #aaa; font-size: 12px;'>保存された背景はありません（OPFS）</span>";
+    return;
+  }
+
+  backgrounds.forEach((bg) => {
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "relative";
+    wrapper.style.width = "60px";
+    wrapper.style.height = "40px";
+    wrapper.style.cursor = "pointer";
+    wrapper.style.border = (state.activeAdpBgId === bg.id) ? "2px solid #00ffcc" : "1px solid #444";
+
+    const img = document.createElement("img");
+    img.src = bg.dataUrl;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    wrapper.onclick = async () => {
+      state.adpCourseBackgroundImage = bg.dataUrl;
+      state.activeAdpBgId = bg.id;
+
+      state.adpCourseBgBrightness = bg.settings.brightness;
+      state.adpCourseBgContrast = bg.settings.contrast;
+      state.adpCourseBgOpacity = bg.settings.opacity;
+      state.adpCourseBgBlur = bg.settings.blur;
+
+      if (document.getElementById("adpCourseBgBrightness")) document.getElementById("adpCourseBgBrightness").value = bg.settings.brightness;
+      if (document.getElementById("adpCourseBgContrast")) document.getElementById("adpCourseBgContrast").value = bg.settings.contrast;
+      if (document.getElementById("adpCourseBgOpacity")) document.getElementById("adpCourseBgOpacity").value = bg.settings.opacity;
+      if (document.getElementById("adpCourseBgBlur")) document.getElementById("adpCourseBgBlur").value = bg.settings.blur;
+
+      await renderSavedAdpBackgrounds();
+      await triggerAdpCanvasRedraw();
+    };
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "×";
+    delBtn.style.position = "absolute";
+    delBtn.style.top = "-5px";
+    delBtn.style.right = "-5px";
+    delBtn.style.background = "red";
+    delBtn.style.color = "white";
+    delBtn.style.border = "none";
+    delBtn.style.borderRadius = "50%";
+    delBtn.style.width = "16px";
+    delBtn.style.height = "16px";
+    delBtn.style.fontSize = "10px";
+    delBtn.style.cursor = "pointer";
+    
+    delBtn.onclick = async (e) => {
+      e.stopPropagation();
+      if (confirm("この背景画像と設定を削除しますか？")) {
+        await deleteAdpBackgroundFromOPFS(bg.id);
+        if (state.activeAdpBgId === bg.id) {
+          state.adpCourseBackgroundImage = null;
+          state.activeAdpBgId = null;
+        }
+        await renderSavedAdpBackgrounds();
+      }
+    };
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(delBtn);
+    container.appendChild(wrapper);
+  });
+}
+
+// イベントリスナー紐付け
+const adpCourseBgLocalInput = document.getElementById("adpCourseBgLocalInput");
+if (adpCourseBgLocalInput) {
+  adpCourseBgLocalInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      state.adpCourseBackgroundImage = reader.result;
+      state.activeAdpBgId = null;
+      await renderSavedAdpBackgrounds();
+      await triggerAdpCanvasRedraw();
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+// スライダー変更時リアルタイム連動
+const setupAdpSlider = (id, key) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.oninput = async e => {
+      state[key] = Number(e.target.value);
+      await triggerAdpCanvasRedraw();
+    };
+  }
+};
+
+setupAdpSlider("adpCourseBgBrightness", "adpCourseBgBrightness");
+setupAdpSlider("adpCourseBgContrast", "adpCourseBgContrast");
+setupAdpSlider("adpCourseBgOpacity", "adpCourseBgOpacity");
+setupAdpSlider("adpCourseBgBlur", "adpCourseBgBlur");
+
+let opfsAdpSelectedFile = null;
+const adpCourseBgOpfsInput = document.getElementById("adpCourseBgOpfsInput");
+if (adpCourseBgOpfsInput) {
+  adpCourseBgOpfsInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    opfsAdpSelectedFile = file;
+  };
+}
+
+const saveAdpBgToOpfsBtn = document.getElementById("saveAdpBgToOpfsBtn");
+if (saveAdpBgToOpfsBtn) {
+  saveAdpBgToOpfsBtn.onclick = async () => {
+    if (!opfsAdpSelectedFile) {
+      alert("保存する画像ファイルが選択されていません。");
+      return;
+    }
+    const currentSettings = {
+      brightness: Number(document.getElementById("adpCourseBgBrightness")?.value || 1),
+      contrast: Number(document.getElementById("adpCourseBgContrast")?.value || 1),
+      opacity: Number(document.getElementById("adpCourseBgOpacity")?.value || 1),
+      blur: Number(document.getElementById("adpCourseBgBlur")?.value || 0)
+    };
+
+    try {
+      await saveAdpBackgroundToOPFS(opfsAdpSelectedFile, currentSettings);
+      alert("コース統計の背景と設定をOPFSに保存しました！");
+      opfsAdpSelectedFile = null;
+      adpCourseBgOpfsInput.value = "";
+      await renderSavedAdpBackgrounds();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+}
+
+// 即時反映ボタン
+const updateAdpCourseBgBtn = document.getElementById("updateAdpCourseBgBtn");
+if (updateAdpCourseBgBtn) {
+  updateAdpCourseBgBtn.onclick = async () => {
+    await triggerAdpCanvasRedraw();
+    alert("背景設定を即時反映しました！");
+  };
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await renderSavedAdpBackgrounds();
+});
+
+
+
+
+
+  
 
 /* ============================================================
    ▼ 背景描画
