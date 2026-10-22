@@ -1725,7 +1725,7 @@ saveRaceBtn.onclick = async () => {
      DB に保存（新規レコード）
   ========== */
   for (const r of newRecords) {
-    await addRecord(r);
+    await cord(r);
   }
 
   /* ==========
@@ -1960,7 +1960,7 @@ saveRaceBtn.onclick = async () => {
 
   /* ▼ 新規レコードを DB に保存 */
   for (const r of newRecords) {
-    await addRecord(r);
+    await cord(r);
   }
 
   /* ▼ メモリ側 allRecords に反映 */
@@ -2530,76 +2530,98 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 
 <script>
 
+let dbInstance = null;
+
+// 1. データベース接続をキャッシュして安全に取得する関数（初回自動作成対応）
 function openDB() {
+  if (dbInstance) {
+    return Promise.resolve(dbInstance);
+  }
+
   return new Promise((resolve, reject) => {
+    // データベース名を "mogiDB"、バージョンを 1 に設定
     const req = indexedDB.open("mogiDB", 1);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains("records")) {
         db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+        console.log("[IndexedDB] 'records' オブジェクトストアを新規作成しました。");
       }
     };
 
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror = e => reject(e.target.error);
+    req.onsuccess = e => {
+      dbInstance = e.target.result;
+      // 接続が予期せぬ形で切断された場合の処理
+      dbInstance.onclose = () => {
+        dbInstance = null;
+      };
+      resolve(dbInstance);
+    };
+
+    req.onerror = e => {
+      console.error("[IndexedDB] openDB error:", e.target.error);
+      reject(e.target.error);
+    };
   });
 }
 
+// トランザクション完了を正確にPromiseで待つヘルパー関数
+function promisifyTx(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
 
 async function addRecord(record) {
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   const store = tx.objectStore("records");
 
-  // timestamp が無ければ付ける
   if (!record.timestamp) {
     record.timestamp = Date.now();
   }
 
-  const id = await new Promise(resolve => {
+  const id = await new Promise((resolve, reject) => {
     const req = store.add(record);
     req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 
-  await tx.done;
-
+  await promisifyTx(tx);
   return { ...record, id };
 }
-
 
 async function clearRecords() {
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   tx.objectStore("records").clear();
-  await tx.done;
+  await promisifyTx(tx);
 }
-
 
 async function updateRecord(record) {
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   tx.objectStore("records").put(record);
-  await tx.done;
+  await promisifyTx(tx);
 }
-
 
 async function deleteRecord(id) {
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   tx.objectStore("records").delete(id);
-  await tx.done;
+  await promisifyTx(tx);
 }
 
 async function getAllRecords() {
   try {
     const db = await openDB();
-
-    // ★ ストアが存在するかどうかの安全チェックを追加
     const storeName = "records";
+
     if (!db.objectStoreNames || !db.objectStoreNames.contains(storeName)) {
-      console.warn(`[IndexedDB] ストア '${storeName}' が見つかりません。空配列を返します。`);
-      if (typeof db.close === 'function') db.close();
+      console.warn(`[IndexedDB] ストア '${storeName}' が見つかりません。`);
       return [];
     }
 
@@ -2608,18 +2630,15 @@ async function getAllRecords() {
       const store = tx.objectStore(storeName);
       const req = store.getAll();
 
-      req.onsuccess = () => {
-        // 必要に応じて db.close() やコネクション管理があればここに記述
-        resolve(req.result || []);
-      };
+      req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => {
-        console.warn('[IndexedDB] records ストアからのデータ取得に失敗しました。');
+        console.warn('[IndexedDB] データ取得に失敗しました。');
         resolve([]);
       };
     });
   } catch (err) {
-    console.warn('[IndexedDB] openDB またはトランザクションの作成に失敗しました:', err);
-    return []; // エラーでもクラッシュさせず空配列を返す
+    console.warn('[IndexedDB] openDB またはトランザクションに失敗しました:', err);
+    return [];
   }
 }
 
@@ -2649,42 +2668,42 @@ async function removeDuplicateRecords() {
     }
   }
 
-  // DB を初期化して unique のみ保存
   await clearRecords();
   for (const r of unique) {
     await addRecord(r);
   }
 
-  allRecords = unique;
+  if (typeof allRecords !== 'undefined') allRecords = unique;
 
-  refreshAllAnalysisViews();
-  renderRaceHistory();
+  if (typeof refreshAllAnalysisViews === 'function') refreshAllAnalysisViews();
+  if (typeof renderRaceHistory === 'function') renderRaceHistory();
 
   alert(`重複データを削除しました！\n${records.length} → ${unique.length} 件`);
 }
 
-document.getElementById("removeDupBtn").onclick = async () => {
-  await removeDuplicateRecords();
-};
+const removeDupBtn = document.getElementById("removeDupBtn");
+if (removeDupBtn) {
+  removeDupBtn.onclick = async () => {
+    await removeDuplicateRecords();
+  };
+}
 
 async function fixMissingTimestamps() {
-  const records = await getAllRecords();
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   const store = tx.objectStore("records");
 
+  const records = await getAllRecords();
   for (const r of records) {
     if (!r.timestamp) {
-      r.timestamp = Date.now() + Math.random(); // 重複防止
+      r.timestamp = Date.now() + Math.random();
       store.put(r);
     }
   }
 
-  await tx.done;
+  await promisifyTx(tx);
   console.log("timestamp 修復完了");
 }
-
-
 /* ==========
    共通データ
 ========== */
