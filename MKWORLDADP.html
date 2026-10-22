@@ -6931,10 +6931,29 @@ state.loungeBgBlur = 0;
 
 // キャンバスを即時再描画するヘルパー関数
 async function triggerCanvasRedraw() {
-  if (window.latestLoungeStats) {
-    const imgStats = convertStatsForImage(window.latestLoungeStats);
-    await drawLoungeImage(imgStats);
-  }
+  const canvas = document.getElementById("loungeImageCanvas");
+  if (!canvas) return;
+
+  // 統計データが未取得でも背景プレビューを表示できるようにする
+  const statsToDraw = window.latestLoungeStats || {
+    name: "Player Name",
+    mmr: 0,
+    peak_mmr: 0,
+    wins: 0,
+    losses: 0,
+    win_rate: 0,
+    wins_last_10: 0,
+    losses_last_10: 0,
+    gain_loss_last_10: 0,
+    events_played: 0,
+    largest_gain: 0,
+    mmr_rank: "-",
+    peak_mmr_rank: "-",
+    mmr_history: []
+  };
+
+  const imgStats = convertStatsForImage(statsToDraw);
+  await drawLoungeImage(imgStats);
 }
 
 // ==========================================
