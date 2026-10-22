@@ -7692,7 +7692,11 @@ function getRankInfoV2(mmr) {
 }
 
 function getRankInfo(mmr, season) {
-  return season >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+  // season が "ALL" の場合、または数値化できない場合はデフォルトで V2（あるいは必要に応じたバージョン）を適用
+  // 基本的には個別の試合データ側が持つ season 番号が渡される想定ですが、念のためフォールバックを入れます
+  const seasonNum = (season === "ALL" || season === undefined || season === null) ? 2 : Number(season);
+
+  return seasonNum >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
 }
 
 async function loadADPIndexedDBRecords() {
