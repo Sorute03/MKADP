@@ -1246,15 +1246,27 @@ document.addEventListener('DOMContentLoaded', () => {
   <canvas id="loungeImageCanvas" width="1600" height="600" style="margin-top:20px; border:1px solid #ccc;"></canvas>
 
   <h3 data-i18n="lounge_bg_title">背景画像設定（ラウンジ画像用）</h3>
-  <label data-i18n="label_bg_image">背景画像</label><br>
-  <input type="file" id="loungeBgInput" accept="image/*"><br><br>
+  
+  <!-- ① 従来のローカルから毎回選択する方式 -->
+  <label data-i18n="label_bg_image">ローカルからファイルを選択（一時的/毎回変更）</label><br>
+  <input type="file" id="loungeBgLocalInput" accept="image/*"><br><br>
+  
+  <!-- ② OPFS保存・選択式（最大5枚）の方式 -->
+  <label>OPFS保存済み背景から選択（最大5枚）</label><br>
+  <input type="file" id="loungeBgOpfsInput" accept="image/*">
+  <button id="saveBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;">現在の画像をOPFSに保存</button><br>
+  <div id="savedBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #666; padding: 8px;">
+    <!-- 動的にサムネイルが生成されます -->
+  </div>
+  <br>
+  
   <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="loungeBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
   <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="loungeBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
   <label data-i18n="label_opacity">透過度</label><br><input type="range" id="loungeBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
   <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
   
   <button id="updateLoungeBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
-</div>
+  </div>
 
 <!-- ▼ コース統計・比較タブ -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
@@ -6907,25 +6919,268 @@ function extractSeasonFromUrl(url) {
 }
 
 
+// ==========================================
+// 1. グローバルステートの初期化
+// ==========================================
+if (typeof state === 'undefined') window.state = {};
 state.loungeBackgroundImage = null;
 state.loungeBgBrightness = 1;
 state.loungeBgContrast = 1;
 state.loungeBgOpacity = 1;
 state.loungeBgBlur = 0;
 
-document.getElementById("loungeBgInput").onchange = e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  reader.onload = () => state.loungeBackgroundImage = reader.result;
-  reader.readAsDataURL(file);
+// キャンバスを即時再描画するヘルパー関数
+async function triggerCanvasRedraw() {
+  if (window.latestLoungeStats) {
+    const imgStats = convertStatsForImage(window.latestLoungeStats);
+    await drawLoungeImage(imgStats);
+  }
+}
+
+// ==========================================
+// 2. OPFS関連のヘルパー関数（画像 ＋ メタデータの保存対応）
+// ==========================================
+const OPFS_DIR = "lounge_backgrounds";
+
+async function getOpfsDirectory() {
+  const root = await navigator.storage.getDirectory();
+  return await root.getDirectoryHandle(OPFS_DIR, { create: true });
+}
+
+// サブフォルダ（各背景ごとのストレージ）の一覧を取得
+async function getSavedBackgroundsOPFS() {
+  try {
+    const dirHandle = await getOpfsDirectory();
+    const list = [];
+    
+    for await (const [idName, handle] of dirHandle.entries()) {
+      if (handle.kind === "directory") {
+        const bgDir = handle;
+        try {
+          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
+          const imgFile = await imgFileHandle.getFile();
+          const dataUrl = URL.createObjectURL(imgFile);
+
+          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
+          try {
+            const metaFileHandle = await bgDir.getFileHandle("meta.json");
+            const metaFile = await metaFileHandle.getFile();
+            const text = await metaFile.text();
+            settings = JSON.parse(text);
+          } catch (e) {
+            // メタデータがない場合のフォールバック
+          }
+
+          list.push({
+            id: idName,
+            dataUrl: dataUrl,
+            settings: settings,
+            size: imgFile.size
+          });
+        } catch (err) {
+          console.warn(`[OPFS] フォルダ ${idName} の読み込みに失敗しました:`, err);
+        }
+      }
+    }
+    return list;
+  } catch (err) {
+    console.error("[OPFS] 一覧の取得に失敗しました:", err);
+    return [];
+  }
+}
+
+// 画像と現在のスライダー設定をセットで保存
+async function saveBackgroundToOPFS(file, settings) {
+  const currentList = await getSavedBackgroundsOPFS();
+  if (currentList.length >= 5) {
+    throw new Error("OPFSの保存上限（最大5枚）に達しています。不要な画像を削除してください。");
+  }
+
+  const dirHandle = await getOpfsDirectory();
+  const idName = `bg_${Date.now()}`;
+  
+  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
+
+  // 1. 画像保存
+  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+  const imgWritable = await imgHandle.createWritable();
+  await imgWritable.write(file);
+  await imgWritable.close();
+
+  // 2. 設定値JSON保存
+  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+  const metaWritable = await metaHandle.createWritable();
+  await metaWritable.write(JSON.stringify(settings));
+  await metaWritable.close();
+
+  console.log("[OPFS] 背景と設定を保存しました:", idName);
+}
+
+// 指定した背景フォルダを削除
+async function deleteBackgroundFromOPFS(idName) {
+  try {
+    const dirHandle = await getOpfsDirectory();
+    await dirHandle.removeEntry(idName, { recursive: true });
+    console.log("[OPFS] 削除しました:", idName);
+  } catch (err) {
+    console.error("[OPFS] 削除に失敗しました:", err);
+  }
+}
+
+// ==========================================
+// 3. サムネイル一覧の描画・更新
+// ==========================================
+async function renderSavedBackgrounds() {
+  const container = document.getElementById("savedBgListContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const backgrounds = await getSavedBackgroundsOPFS();
+
+  if (backgrounds.length === 0) {
+    container.innerHTML = "<span style='color: #aaa; font-size: 12px;'>保存された背景はありません（OPFS）</span>";
+    return;
+  }
+
+  backgrounds.forEach((bg) => {
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "relative";
+    wrapper.style.width = "60px";
+    wrapper.style.height = "40px";
+    wrapper.style.cursor = "pointer";
+    wrapper.style.border = state.loungeBackgroundImage === bg.dataUrl ? "2px solid #00ffcc" : "1px solid #444";
+
+    const img = document.createElement("img");
+    img.src = bg.dataUrl;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    // サムネイルクリック時：背景画像 ＋ スライダー設定を一括復元
+    wrapper.onclick = async () => {
+      state.loungeBackgroundImage = bg.dataUrl;
+
+      state.loungeBgBrightness = bg.settings.brightness;
+      state.loungeBgContrast = bg.settings.contrast;
+      state.loungeBgOpacity = bg.settings.opacity;
+      state.loungeBgBlur = bg.settings.blur;
+
+      // HTMLのスライダー要素の位置も同期
+      if (document.getElementById("loungeBgBrightness")) document.getElementById("loungeBgBrightness").value = bg.settings.brightness;
+      if (document.getElementById("loungeBgContrast")) document.getElementById("loungeBgContrast").value = bg.settings.contrast;
+      if (document.getElementById("loungeBgOpacity")) document.getElementById("loungeBgOpacity").value = bg.settings.opacity;
+      if (document.getElementById("loungeBgBlur")) document.getElementById("loungeBgBlur").value = bg.settings.blur;
+
+      renderSavedBackgrounds();
+      await triggerCanvasRedraw();
+    };
+
+    // 削除ボタン (×)
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "×";
+    delBtn.style.position = "absolute";
+    delBtn.style.top = "-5px";
+    delBtn.style.right = "-5px";
+    delBtn.style.background = "red";
+    delBtn.style.color = "white";
+    delBtn.style.border = "none";
+    delBtn.style.borderRadius = "50%";
+    delBtn.style.width = "16px";
+    delBtn.style.height = "16px";
+    delBtn.style.fontSize = "10px";
+    delBtn.style.cursor = "pointer";
+    
+    delBtn.onclick = async (e) => {
+      e.stopPropagation();
+      if (confirm("この背景画像と設定を削除しますか？")) {
+        await deleteBackgroundFromOPFS(bg.id);
+        if (state.loungeBackgroundImage === bg.dataUrl) {
+          state.loungeBackgroundImage = null;
+        }
+        await renderSavedBackgrounds();
+      }
+    };
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(delBtn);
+    container.appendChild(wrapper);
+  });
+}
+
+// ==========================================
+// 4. イベントリスナー（ローカル選択・スライダー操作・保存ボタン）
+// ==========================================
+
+// ① ローカルから直接ファイルを選択する入力（一時的・毎回変更用）
+const loungeBgLocalInput = document.getElementById("loungeBgLocalInput") || document.getElementById("loungeBgInput");
+if (loungeBgLocalInput) {
+  loungeBgLocalInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    state.loungeBackgroundImage = URL.createObjectURL(file);
+    triggerCanvasRedraw();
+  };
+}
+
+// ② スライダー操作時の即時再描画対応
+const setupSliderEvent = (id, stateKey) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.oninput = async e => {
+      state[stateKey] = Number(e.target.value);
+      await triggerCanvasRedraw();
+    };
+  }
 };
 
-document.getElementById("loungeBgBrightness").oninput = e => state.loungeBgBrightness = Number(e.target.value);
-document.getElementById("loungeBgContrast").oninput = e => state.loungeBgContrast = Number(e.target.value);
-document.getElementById("loungeBgOpacity").oninput = e => state.loungeBgOpacity = Number(e.target.value);
-document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Number(e.target.value);
+setupSliderEvent("loungeBgBrightness", "loungeBgBrightness");
+setupSliderEvent("loungeBgContrast", "loungeBgContrast");
+setupSliderEvent("loungeBgOpacity", "loungeBgOpacity");
+setupSliderEvent("loungeBgBlur", "loungeBgBlur");
 
+// ③ OPFS保存用ファイルの選択保持
+let opfsSelectedFile = null;
+const loungeBgOpfsInput = document.getElementById("loungeBgOpfsInput");
+if (loungeBgOpfsInput) {
+  loungeBgOpfsInput.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    opfsSelectedFile = file;
+  };
+}
 
+// ④ 「現在の画像をOPFSに保存する」ボタン
+const saveBgToOpfsBtn = document.getElementById("saveBgToOpfsBtn");
+if (saveBgToOpfsBtn) {
+  saveBgToOpfsBtn.onclick = async () => {
+    if (!opfsSelectedFile) {
+      alert("保存する画像ファイルが選択されていません（OPFS用選択欄）。");
+      return;
+    }
+    
+    const currentSettings = {
+      brightness: Number(document.getElementById("loungeBgBrightness")?.value || 1),
+      contrast: Number(document.getElementById("loungeBgContrast")?.value || 1),
+      opacity: Number(document.getElementById("loungeBgOpacity")?.value || 1),
+      blur: Number(document.getElementById("loungeBgBlur")?.value || 0)
+    };
+
+    try {
+      await saveBackgroundToOPFS(opfsSelectedFile, currentSettings);
+      alert("背景画像と現在の設定をOPFSに保存しました！");
+      opfsSelectedFile = null;
+      loungeBgOpfsInput.value = "";
+      await renderSavedBackgrounds();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+}
+
+// ページ起動時にOPFS背景一覧を読み込む
+document.addEventListener("DOMContentLoaded", async () => {
+  await renderSavedBackgrounds();
+});
 
 
 async function fetchLoungeData(playerId, game = "mkworld24p", season = "ALL") {
@@ -7331,11 +7586,10 @@ function buildMKCUrl(playerId, season) {
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
 
-
-
+// ==========================================
+// 1. ラウンジデータ読み込み（ONLOAD）
+// ==========================================
 async function onLoadLoungeStats() {
-
-  // ▼ プレイヤー選択チェック
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
   }
@@ -7349,10 +7603,8 @@ async function onLoadLoungeStats() {
 
   let stats;
 
-  // ★★★ Season=ALL のときは全シーズンを取得して統合 ★★★
   if (selectedSeason === "ALL") {
-
-    const latestSeason = 3; // 必要なら自動取得に変更可能
+    const latestSeason = 3; // 必要に応じて自動取得等に拡張可能
     const htmlList = [];
 
     for (let s = 1; s <= latestSeason; s++) {
@@ -7366,8 +7618,6 @@ async function onLoadLoungeStats() {
     stats = parseWorldHTML_ALL(htmlList);
 
   } else {
-
-    // ★★★ 単一シーズン処理 ★★★
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
     console.log("detailsUrl:", detailsUrl);
 
@@ -7392,10 +7642,10 @@ async function onLoadLoungeStats() {
     courseStats: null
   });
 
-  // ▼ グラフ
+  // ▼ グラフ描画
   drawLoungeMMRChart(stats);
 
-  // ▼ 画像生成用 stats
+  // ▼ 画像生成用 stats & 描画
   const imgStats = convertStatsForImage(stats);
   await drawLoungeImage(imgStats);
 
@@ -7403,41 +7653,52 @@ async function onLoadLoungeStats() {
   window.latestLoungeStats = stats;
 }
 
-
-
-
-
-
-
-  
+// ==========================================
+// 2. ラウンジタブのアクティブ化・イベント同期
+// ==========================================
 function activateLoungeTab() {
-
   const imgCanvas = document.getElementById("loungeImageCanvas");
-  imgCanvas.width = 1000;
-  imgCanvas.height = 600;
+  if (imgCanvas) {
+    imgCanvas.width = 1000;
+    imgCanvas.height = 600;
+  }
 
   const chartCanvas = document.getElementById("loungeMMRChart");
-  chartCanvas.width = 1000;
-  chartCanvas.height = 300;
+  if (chartCanvas) {
+    chartCanvas.width = 1000;
+    chartCanvas.height = 300;
+  }
 
   const btn = document.getElementById("loadLoungeBtn");
-  if (btn) btn.onclick = onLoadLoungeStats;  // ★ MKWorld版だけ
+  if (btn) btn.onclick = onLoadLoungeStats;
 
   const bgInput = document.getElementById("loungeBgInput");
-  if (bgInput) bgInput.onchange = onLoungeBgChange;
+  if (bgInput && typeof onLoungeBgChange === "function") {
+    bgInput.onchange = onLoungeBgChange;
+  }
 
-  document.getElementById("loungeBgBrightness").oninput = e => state.loungeBgBrightness = Number(e.target.value);
-  document.getElementById("loungeBgContrast").oninput = e => state.loungeBgContrast = Number(e.target.value);
-  document.getElementById("loungeBgOpacity").oninput = e => state.loungeBgOpacity = Number(e.target.value);
-  document.getElementById("loungeBgBlur").oninput = e => state.loungeBgBlur = Number(e.target.value);
+  // スライダー変更時に state を更新し、即座に画像描画へ反映
+  ['loungeBgBrightness', 'loungeBgContrast', 'loungeBgOpacity', 'loungeBgBlur'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.oninput = async (e) => {
+        const stateKey = id.replace('loungeBg', 'loungeBg');
+        state[stateKey] = Number(e.target.value);
+
+        if (window.latestLoungeStats) {
+          const imgStats = convertStatsForImage(window.latestLoungeStats);
+          await drawLoungeImage(imgStats);
+        }
+      };
+    }
+  });
 
   if (window.latestLoungeStats) {
     drawLoungeMMRChart(window.latestLoungeStats);
-    drawLoungeImage(window.latestLoungeStats);
+    const imgStats = convertStatsForImage(window.latestLoungeStats);
+    drawLoungeImage(imgStats);
   }
 }
-  
-
 
 // ボタンクリックによる背景即時反映の紐付け
 const updateLoungeBgBtn = document.getElementById("updateLoungeBgBtn");
@@ -7448,104 +7709,73 @@ if (updateLoungeBgBtn) {
       await drawLoungeImage(imgStats);
       console.log("背景画像の設定を即時反映しました");
     } else {
-      // まだデータ取得していない場合は、とりあえず黒背景＋設定値で描画をクリア・更新するなどの処理も可
-      const canvas = document.getElementById("loungeImageCanvas");
-      if (canvas) {
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // 背景だけでもプレビュー描画したい場合
-        // await drawBackgroundOnly(ctx, canvas.width, canvas.height); 
-      }
       alert("先に「データ取得」を行ってプレイヤーデータを読み込んでください。");
     }
   };
 }
 
-// 各レンジスライダーやファイル変更時にも自動で即時反映させたい場合は、以下のようにイベントを追加することも可能です
-['loungeBgBrightness', 'loungeBgContrast', 'loungeBgOpacity', 'loungeBgBlur'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.oninput = async (e) => {
-      state[id.replace('loungeBg', 'loungeBg').toLowerCase()] = Number(e.target.value); // お手元のstate管理に合わせて調整
-      // 値変更時に即座に反映させたい場合はここで自動再描画も可能
-      if (window.latestLoungeStats) {
-        const imgStats = convertStatsForImage(window.latestLoungeStats);
-        await drawLoungeImage(imgStats);
-      }
-    };
-  }
-});
-
-  
-
+// ==========================================
+// 3. ADP フィルター & API ヘルパー
+// ==========================================
 function initAdpTierSelect() {
   const sel = document.getElementById("adpTierSelect");
-  sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+  if (sel && typeof loungeTiers !== 'undefined') {
+    sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
 }
-initAdpTierSelect();
+if (document.getElementById("adpTierSelect")) initAdpTierSelect();
 
 function updateAdpFilterByMode() {
-  const mode = adpModeSelect.value;
+  const adpModeSelect = document.getElementById("adpModeSelect");
+  if (!adpModeSelect) return;
 
+  const mode = adpModeSelect.value;
   const seasonSel = document.getElementById("adpSeasonSelect");
   const tierSel   = document.getElementById("adpTierSelect");
 
   if (mode === "lounge") {
-    seasonSel.disabled = false;
-    tierSel.disabled = false;
+    if (seasonSel) seasonSel.disabled = false;
+    if (tierSel) tierSel.disabled = false;
   } else {
-    seasonSel.value = "ALL";
-    tierSel.value = "ALL";
-    seasonSel.disabled = true;
-    tierSel.disabled = true;
+    if (seasonSel) { seasonSel.value = "ALL"; seasonSel.disabled = true; }
+    if (tierSel) { tierSel.value = "ALL"; tierSel.disabled = true; }
   }
 }
 
-document.getElementById("adpModeSelect").addEventListener("change", updateAdpFilterByMode);
-updateAdpFilterByMode();
-
-
+const adpModeSelectEl = document.getElementById("adpModeSelect");
+if (adpModeSelectEl) {
+  adpModeSelectEl.addEventListener("change", updateAdpFilterByMode);
+  updateAdpFilterByMode();
+}
 
 async function apiSearchPlayer(name) {
-  const apiUrl =
-    `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
-
-  const proxyUrl =
-    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
-
+  const apiUrl = `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
+  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
   return await fetchJson(proxyUrl);
 }
 
-
 async function apiPlayerDetails(playerId) {
-  const apiUrl =
-    `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
-
-  const proxyUrl =
-    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
-
+  const apiUrl = `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
+  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
   return await fetchJson(proxyUrl);
 }
 
 async function apiPlayerHistory(playerId) {
-  const apiUrl =
-    `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
-
-  const proxyUrl =
-    `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
-
+  const apiUrl = `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
+  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
   return await fetchJson(proxyUrl);
 }
 
-
-
+// 重複を解消・CORS対策済み
 async function fetchRateHistory(playerId, season, playerCount = 3000) {
-  const url = season === 1
+  const targetUrl = season === 1
     ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
     : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
 
-  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-  const html = await res.text();
+  // プロキシまたは fetchWorldHTML 経由で安全に取得
+  const html = typeof fetchWorldHTML === 'function' 
+    ? await fetchWorldHTML(targetUrl)
+    : await (await fetch(`${GAS_URL}?url=${encodeURIComponent(targetUrl)}`)).text();
 
   let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
   if (mmrMatches.length === 0 && season === 1) {
@@ -7553,26 +7783,7 @@ async function fetchRateHistory(playerId, season, playerCount = 3000) {
   }
 
   const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
-
-  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
-}
-
-async function fetchRateHistory(playerId, season, playerCount = 3000) {
-  const url = season === 1
-    ? `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`
-    : `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${playerCount}`;
-
-  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-  const html = await res.text();
-
-  let mmrMatches = [...html.matchAll(/class="rank-[^"]*"\s*>\s*([\d,]+)\s*</g)];
-  if (mmrMatches.length === 0 && season === 1) {
-    mmrMatches = [...html.matchAll(/class="rating"[^>]*>\s*([\d,]+)\s*</g)];
-  }
-
-  const mmrs = mmrMatches.map(m => Number(m[1].replace(/,/g, "")));
-
-  return mmrs.map((mmr, i) => ({ rating:mmr, index:i, season }));
+  return mmrs.map((mmr, i) => ({ rating: mmr, index: i, season }));
 }
 
 async function fetchAllStatsByName(name) {
@@ -7607,14 +7818,19 @@ async function fetchAllStatsByName(name) {
   };
 }
 
+// ==========================================
+// 4. UI 描画 & Discord 送信
+// ==========================================
 function drawLoungeStats(data) {
-  const { details, history, courseStats } = data;
-
+  const { details, courseStats } = data;
   const box = document.getElementById("loungeStats");
+  if (!box) return;
 
-  const rankInfo = getRankInfo(details.mmr, 2);
+  const selectedSeasonVal = document.getElementById("loungeSeasonSelect")?.value || "ALL";
+  const seasonNum = selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal);
+  const rankInfo = getRankInfo(details.mmr, seasonNum);
 
-  box.innerHTML = `
+  let html = `
     <h3>${details.name} - Lounge Stats</h3>
     <p>MMR: ${details.mmr}</p>
     <p>Peak MMR: ${details.peak_mmr}</p>
@@ -7623,8 +7839,8 @@ function drawLoungeStats(data) {
     <p>Rank: <span style="color:${rankInfo.color}; font-weight:bold;">${rankInfo.rank}</span></p>
   `;
 
-  if (courseStats) {
-    let html = "<h3>コース別戦績（ADP IndexedDB）</h3>";
+  if (courseStats && Array.isArray(courseStats)) {
+    html += "<h3>コース別戦績（ADP IndexedDB）</h3>";
     html += "<table border='1' style='border-collapse:collapse;'>";
     html += "<tr><th>コース</th><th>回数</th><th>平均順位</th><th>平均得点</th></tr>";
 
@@ -7640,41 +7856,37 @@ function drawLoungeStats(data) {
     });
 
     html += "</table>";
-
-    box.innerHTML += html;
   }
+
+  box.innerHTML = html;
 }
 
+const sendLoungeDiscordBtn = document.getElementById("sendLoungeDiscordBtn");
+if (sendLoungeDiscordBtn) {
+  sendLoungeDiscordBtn.onclick = async () => {
+    if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
+      return alert("Webhook が選択されていません");
+    }
 
+    const { url } = webhookList[activeWebhookIndex];
+    const canvas = document.getElementById("loungeImageCanvas");
+    if (!canvas) {
+      return alert("Canvas が見つかりません");
+    }
 
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
-  
-document.getElementById("sendLoungeDiscordBtn").onclick = async () => {
-  if (activeWebhookIndex === -1) {
-    return alert("Webhook が選択されていません");
-  }
+    const form = new FormData();
+    form.append("file", blob, "lounge_stats.png");
 
-  const { url } = webhookList[activeWebhookIndex];
+    await fetch(url, {
+      method: "POST",
+      body: form
+    });
 
-  const canvas = document.getElementById("loungeImageCanvas");
-  if (!canvas) {
-    return alert("Canvas が見つかりません");
-  }
-
-  // ★ canvas.toBlob を Promise 化して await で扱う
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-
-  const form = new FormData();
-  form.append("file", blob, "lounge_stats.png");
-
-  await fetch(url, {
-    method: "POST",
-    body: form
-  });
-
-  alert("画像を送信しました");
-};
-
+    alert("画像を送信しました");
+  };
+}
 
 
 
