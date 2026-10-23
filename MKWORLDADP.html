@@ -1279,52 +1279,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   <button id="updateLoungeBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
   </div>
+
+  
 <!-- ▼ コース統計・比較タブ -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
-  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-    <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <select id="adpCourseSelect1" style="width:200px;"></select>
-      <select id="adpCourseSelect2" style="width:200px;"></select>
-      <select id="adpCourseSelect3" style="width:200px;"></select>
-      <select id="adpCourseSelect4" style="width:200px;"></select>
-      <select id="adpCourseSelect5" style="width:200px;"></select>
-    </div>
-
-    <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
-      <h3 data-i18n="course_stats_filter">コース統計フィルター</h3>
-      
-      <label data-i18n="lbl_mode">モード</label><br>
-      <select id="adpModeSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-        <option value="nora" data-i18n="mode_nora">野良</option>
-        <option value="tournament" data-i18n="mode_tournament">大会</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="adpSeasonSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="adpTierSelect" style="width:200px;"></select><br><br>
-
-      <label data-i18n="label_recent">直近 N レース</label><br>
-      <select id="adpRecentSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-      </select><br><br>
-
-      <label data-i18n="label_filter_mode">フィルター方式</label><br>
-      <select id="adpFilterModeSelect" style="width:200px;">
-        <option value="AND">AND</option>
-        <option value="OR">OR</option>
-      </select>
-    </div>
-
-    <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
   <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
     <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1412,7 +1370,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
-
 <!-- ▼ オーバーレイ設定 -->
 <h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
 <div id="overlayFilterBox" style="margin:10px 0;">
