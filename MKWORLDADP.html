@@ -1410,8 +1410,47 @@ document.addEventListener('DOMContentLoaded', () => {
 <h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
 <div id="overlayFilterBox" style="margin:10px 0;">
   
-  <!-- ▼ 自動追尾のオンオフ切り替えスイッチ ＆ 合算設定 -->
-  <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
+  <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
+  <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
+  <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
+  <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
+  
+  <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
+    <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
+    <button onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
+      🔄 即時反映・再接続
+    </button>
+  </div>
+  
+  <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
+
+  <!-- モード選択 -->
+  <label data-i18n="lbl_mode">モード</label><br>
+  <select id="overlayModeSelect" style="width:200px;">
+    <option value="ALL" data-i18n="opt_all">ALL</option>
+    <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+    <option value="nora" data-i18n="mode_nora">野良</option>
+    <option value="tournament" data-i18n="mode_tournament">大会</option>
+  </select>
+
+  <!-- ラウンジ用フィルター（シーズン・Tier） -->
+  <div id="loungeFilters" style="margin-top:10px; display:none;">
+    <label data-i18n="lbl_season">シーズン</label><br>
+    <select id="loungeSeasonSelect2" style="width:200px;"></select><br><br>
+    <label data-i18n="lbl_tier">Tier</label><br>
+    <select id="loungeTierSelect2" style="width:200px;"></select>
+  </div>
+
+  <br>
+  <label data-i18n="label_recent">Recent</label><br>
+  <select id="loungeRecentSelect2" style="width:200px;">
+    <option value="ALL" data-i18n="opt_all">ALL</option>
+    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+  </select>
+
+  <!-- ▼ 【移動配置】モード選択やフィルターの下に配置した自動追尾・合算設定 -->
+  <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
       <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
       <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px;">
@@ -1421,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     <!-- Tier補完ルールの切り替え設定 -->
     <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555;">
-      <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ有効）:</span>
+      <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ）:</span>
       <select id="fallbackTierModeSelect" style="padding: 2px 6px;">
         <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
         <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
@@ -1430,44 +1469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 
-  <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
-  <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
-  <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
-  <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
-  
-  <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
-    <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
-    <!-- ▼ 即時反映・再接続ボタンを追加 -->
-    <button onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
-      🔄 即時反映・再接続
-    </button>
-  </div>
-  
-  <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
-
-  <label data-i18n="lbl_mode">モード</label><br>
-  <select id="overlayModeSelect" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-    <option value="nora" data-i18n="mode_nora">野良</option>
-    <option value="tournament" data-i18n="mode_tournament">大会</option>
-  </select>
-
-  <div id="loungeFilters" style="margin-top:10px; display:none;">
-    <label data-i18n="lbl_season">シーズン</label><br>
-    <select id="loungeSeasonSelect2" style="width:200px;"></select><br><br>
-    <label data-i18n="lbl_tier">Tier</label><br>
-    <select id="loungeTierSelect2" style="width:200px;"></select>
-  </div>
-  <br><br>
-  <label data-i18n="label_recent">Recent</label><br>
-  <select id="loungeRecentSelect2" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-  </select>
 </div>
-
 
 
 
