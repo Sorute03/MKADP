@@ -1409,6 +1409,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
   
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
 <div id="analysisTab" class="tabContent" style="display:block;">
@@ -2036,7 +2037,6 @@ saveRaceBtn.onclick = async () => {
 
 
 <script>
-
   function getFilteredRecords() {
     const activeTab = document.querySelector(".tabBtn.active")?.dataset.tab;
   
@@ -2101,7 +2101,8 @@ saveRaceBtn.onclick = async () => {
 </script>
 
 <script>
-document.getElementById("backToAnalysisBtn").onclick = () => {
+
+  document.getElementById("backToAnalysisBtn").onclick = () => {
 
   // ▼ 全タブを閉じる
   document.querySelectorAll(".tabContent").forEach(tab => {
@@ -2133,7 +2134,8 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </script>
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
-
+<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
+<div id="analysisTab" class="tabContent" style="display:block;">
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
   <h3 data-i18n="basic_stats_title">基本統計 / 勝率・平均順位・平均スコア</h3>
@@ -2564,7 +2566,8 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <div id="loungeSetView" style="margin-top:20px;"></div>
   </div>
 </div>
-
+</div>
+  
 <!-- 通信結果で画面が切り替わるのを防ぐための隠しiframe -->
 <iframe name="hidden_sync_frame" style="display:none;"></iframe>
 
