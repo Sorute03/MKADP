@@ -1726,16 +1726,17 @@ async function openEditRecord(ts) {
     const idx = allRecords.findIndex(x => x.timestamp === ts);
     if (idx >= 0) allRecords[idx] = r;
 
-    // ▼ UI 更新
-    const filtered = getGloballyFilteredRecords();
-    refreshModeView();
+    // ▼ UI 更新（正しい関数名に修正）
+    const filtered = getFilteredRecords();
+    if (typeof refreshAllAnalysisViews === "function") {
+      refreshAllAnalysisViews();
+    }
     renderRaceHistory(filtered);
 
     modal.classList.remove("show");
     editingTimestamp = null;
   };
 }
-
 
 </script>
 
@@ -1789,8 +1790,8 @@ saveRaceBtn.onclick = async () => {
      編集モード処理（DB版）
   ========== */
   if (editingTimestamp) {
-    // ▼ DB から削除
-    await deleteRecord(editingTimestamp);
+    // ▼ DB から確認なしで直接削除
+    await deleteRecordFromDB(editingTimestamp);
 
     // ▼ メモリ側から削除
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
@@ -1808,7 +1809,7 @@ saveRaceBtn.onclick = async () => {
      DB に保存（新規レコード）
   ========== */
   for (const r of newRecords) {
-    await cord(r);
+    await addRecord(r); // ★ cord から修正
   }
 
   /* ==========
@@ -1819,9 +1820,11 @@ saveRaceBtn.onclick = async () => {
   /* ==========
      UI 再描画（共通フィルター適用）
   ========== */
-  const filtered = getGloballyFilteredRecords();
+  const filtered = getFilteredRecords(); // ★ getGloballyFilteredRecords から修正
 
-  refreshModeView();
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews(); // ★ refreshModeView から修正
+  }
   renderRaceHistory(filtered);
 
   /* ==========
@@ -1830,7 +1833,6 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
-
 </script>
 
 
@@ -2000,72 +2002,79 @@ async function deleteRecord(ts) {
 </script>
     
 <script>
-  /* ▼ 保存処理（新構造対応・編集モード対応） */
-  saveRaceBtn.onclick = async () => {
-    const mode = modalMode.value;
-    const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
-  
-    const newRecords = [];
-    const raceScores = [];
-  
-    // ▼ 入力されたレースを収集
-    for (let i = 1; i <= count; i++) {
-      const rank = Number(document.getElementById(`raceRank_${i}`).value);
-      if (!rank) continue;
-  
-      const course = document.getElementById(`raceCourse_${i}`).value;
-      const score = calcScore(rank);
-  
-      raceScores.push(score);
-  
-      newRecords.push({
-        mode,
-        season: mode === "lounge" ? modalSeason.value : null,
-        tier: mode === "lounge" ? modalTier.value : null,
-        course,
-        rank,
-        score,
-        timestamp: editingTimestamp ?? Date.now()
-      });
-    }
-  
-    if (!newRecords.length) {
-      alert("1レース以上入力してください");
-      return;
-    }
-  
-    /* ▼ ラウンジモードなら totalScore12 を付与 */
-    if (mode === "lounge" && newRecords.length === 12) {
-      const totalScore12 = raceScores.reduce((a, b) => a + b, 0);
-      newRecords.forEach(r => (r.totalScore12 = totalScore12));
-    }
-  
-    /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
-    if (editingTimestamp) {
-      await deleteRecordFromDB(editingTimestamp); // ★ 確認なしでDBから直接削除
-      allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
-    }
-  
-    /* ▼ 新規レコードを DB に保存 */
-    for (const r of newRecords) {
-      await addRecord(r);
-    }
-  
-    /* ▼ メモリ側 allRecords に反映 */
-    allRecords.push(...newRecords);
-  
-    /* ▼ 送信キューに追加 */
-    const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
-    queue.push(...newRecords);
-    localStorage.setItem("sendQueue", JSON.stringify(queue));
-  
-    /* ▼ UI 再描画（新構造） */
+saveRaceBtn.onclick = async () => {
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+
+  const newRecords = [];
+  const raceScores = [];
+
+  // ▼ 入力されたレースを収集
+  for (let i = 1; i <= count; i++) {
+    const rank = Number(document.getElementById(`raceRank_${i}`).value);
+    if (!rank) continue;
+
+    const course = document.getElementById(`raceCourse_${i}`).value;
+    const score = calcScore(rank);
+
+    raceScores.push(score);
+
+    newRecords.push({
+      mode,
+      season: mode === "lounge" ? modalSeason.value : null,
+      tier: mode === "lounge" ? modalTier.value : null,
+      course,
+      rank,
+      score,
+      timestamp: editingTimestamp ?? Date.now()
+    });
+  }
+
+  if (!newRecords.length) {
+    alert("1レース以上入力してください");
+    return;
+  }
+
+  /* ▼ ラウンジモードなら totalScore12 を付与 */
+  if (mode === "lounge" && newRecords.length === 12) {
+    const totalScore12 = raceScores.reduce((a, b) => a + b, 0);
+    newRecords.forEach(r => (r.totalScore12 = totalScore12));
+  }
+
+  /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
+  if (editingTimestamp) {
+    await deleteRecordFromDB(editingTimestamp);
+    allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
+  }
+
+  /* ▼ 新規レコードを DB に保存 */
+  for (const r of newRecords) {
+    await addRecord(r);
+  }
+
+  /* ▼ メモリ側 allRecords に反映 */
+  allRecords.push(...newRecords);
+
+  /* ▼ 送信キューに追加 */
+  const queue = JSON.parse(localStorage.getItem("sendQueue") || "[]");
+  queue.push(...newRecords);
+  localStorage.setItem("sendQueue", JSON.stringify(queue));
+
+  /* ▼ UI 再描画・ビュー更新 */
+  if (typeof getFilteredRecords === "function") {
     renderRaceHistory(getFilteredRecords());
+  } else {
+    renderRaceHistory(allRecords);
+  }
   
-    /* ▼ 後処理 */
-    editingTimestamp = null;
-    modal.classList.remove("show");
-  };
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
+  }
+
+  /* ▼ 後処理 */
+  editingTimestamp = null;
+  modal.classList.remove("show");
+};
 </script>
 
 
@@ -2104,34 +2113,33 @@ async function deleteRecord(ts) {
   
     
     
-  document.querySelectorAll(".tabBtn").forEach(btn => {
-    btn.onclick = () => {
-      const target = btn.dataset.tab;
+ document.querySelectorAll(".tabBtn").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.tab;
   
-      document.querySelectorAll(".tabContent").forEach(tab => {
-        tab.style.display = "none";
-      });
+    document.querySelectorAll(".tabContent").forEach(tab => {
+      tab.style.display = "none";
+    });
   
-      document.querySelectorAll(".tabBtn").forEach(b => {
-        b.classList.remove("active");
-      });
+    document.querySelectorAll(".tabBtn").forEach(b => {
+      b.classList.remove("active");
+    });
   
-      document.getElementById(target).style.display = "block";
-      btn.classList.add("active");
+    document.getElementById(target).style.display = "block";
+    btn.classList.add("active");
   
-      if (target === "historyTab") {
-        renderRaceHistory(getGloballyFilteredRecords());
-  
-      } else if (target === "analysisTab") {
-        initGrowthSelectors();
-        refreshModeView();
-  
-      } else if (target === "loungeTab") {
-        // ★★★ これが必要 ★★★
-        activateLoungeTab();
-      }
-    };
-  });
+    if (target === "historyTab") {
+      renderRaceHistory(getFilteredRecords()); // ★ 修正
+
+    } else if (target === "analysisTab") {
+      if (typeof initGrowthSelectors === "function") initGrowthSelectors();
+      if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews(); // ★ 修正
+
+    } else if (target === "loungeTab") {
+      if (typeof activateLoungeTab === "function") activateLoungeTab();
+    }
+  };
+});
 
 </script>
 
@@ -3875,28 +3883,34 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
     });
 
     // 対象タブを表示
-    document.getElementById(target).style.display = "block";
+    const targetTabEl = document.getElementById(target);
+    if (targetTabEl) targetTabEl.style.display = "block";
     btn.classList.add("active");
 
     // ▼ タブ別の処理
     if (target === "historyTab") {
-      renderRaceHistory(getGloballyFilteredRecords());
+      renderRaceHistory(getFilteredRecords()); // ★ 修正
 
     } else if (target === "analysisTab") {
-      refreshModeView();
+      if (typeof refreshAllAnalysisViews === "function") {
+        refreshAllAnalysisViews(); // ★ 修正
+      }
 
     } else if (target === "coursestatsTab") {
-      activateCourseStatsTab();
+      if (typeof activateCourseStatsTab === "function") {
+        activateCourseStatsTab();
+      }
 
     } else if (target === "loungeTab") {
-      // ★ これを追加する！
-      activateLoungeTab();
+      if (typeof activateLoungeTab === "function") {
+        activateLoungeTab();
+      }
     }
   };
 });
 
-  
 
+  
 function activateCourseStatsTab() {
 
   // 非表示 Canvas はサイズが 0 になるため復元
