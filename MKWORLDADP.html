@@ -697,7 +697,10 @@ const i18nDict = {
     msg_no_data: "該当するデータがありません",
     lbl_saved_bg: "ストレージに保存済み背景から選択（最大5枚）",
     btn_save_bg_storage: "現在の画像をストレージに保存",
-    btn_update_bg: "背景を即時反映"
+    btn_update_bg: "背景を即時反映",
+    course_compare_title: "コースを最大5つ選択:",
+    course_stats_filter: "コース統計フィルター",
+    label_bg_image_local: "ローカルからファイルを選択（一時的）",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -888,6 +891,9 @@ const i18nDict = {
     lbl_saved_bg: "Select from saved backgrounds in storage (max 5)",
     btn_save_bg_storage: "Save current image to storage",
     btn_update_bg: "Apply Background Instantly",
+    course_compare_title: "Select up to 5 courses:",
+    course_stats_filter: "Course Stats Filter",
+    label_bg_image_local: "Select local file (temporary)",
     }
   };
 
@@ -1318,17 +1324,61 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
     </div>
 
+    <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
+  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
+    <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <select id="adpCourseSelect1" style="width:200px;"></select>
+      <select id="adpCourseSelect2" style="width:200px;"></select>
+      <select id="adpCourseSelect3" style="width:200px;"></select>
+      <select id="adpCourseSelect4" style="width:200px;"></select>
+      <select id="adpCourseSelect5" style="width:200px;"></select>
+    </div>
+
+    <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
+      <h3 data-i18n="course_stats_filter">コース統計フィルター</h3>
+      
+      <label data-i18n="lbl_mode">モード</label><br>
+      <select id="adpModeSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+        <option value="nora" data-i18n="mode_nora">野良</option>
+        <option value="tournament" data-i18n="mode_tournament">大会</option>
+      </select><br><br>
+
+      <label data-i18n="lbl_season">Season</label><br>
+      <select id="adpSeasonSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
+      </select><br><br>
+
+      <label data-i18n="lbl_tier">Tier</label><br>
+      <select id="adpTierSelect" style="width:200px;"></select><br><br>
+
+      <label data-i18n="label_recent">直近 N レース</label><br>
+      <select id="adpRecentSelect" style="width:200px;">
+        <option value="ALL">ALL</option>
+        <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+      </select><br><br>
+
+      <label data-i18n="label_filter_mode">フィルター方式</label><br>
+      <select id="adpFilterModeSelect" style="width:200px;">
+        <option value="AND">AND</option>
+        <option value="OR">OR</option>
+      </select>
+    </div>
+
     <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
       <h3 data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
       
       <!-- ① ローカルファイルから毎回直接選択する方式 -->
-      <label data-i18n="label_bg_image">ローカルからファイルを選択（一時的）</label><br>
+      <label data-i18n="label_bg_image_local">ローカルからファイルを選択（一時的）</label><br>
       <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
 
       <!-- ② OPFS保存・選択式（最大5枚）の方式 -->
-      <label>OPFS保存済み背景から選択（最大5枚）</label><br>
+      <label data-i18n="lbl_saved_bg">ストレージに保存済みの背景から選択（最大5枚）</label><br>
       <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
-      <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;">現在の画像をOPFSに保存</button><br>
+      <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;" data-i18n="btn_save_bg_storage">現在の画像をストレージに保存</button><br>
       <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #666; padding: 8px;">
         <!-- 動的にサムネイルが生成されます -->
       </div>
