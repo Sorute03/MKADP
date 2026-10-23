@@ -1927,18 +1927,24 @@ function generateRaceInputs(count) {
 async function deleteRecord(ts) {
   if (!confirm("このレースを削除しますか？")) return;
 
+  // DBから削除
   await deleteRecordFromDB(ts);
+
+  // メモリ側から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ 新構造：タブに応じたフィルターで再描画
+  // UI再描画
   renderRaceHistory(getFilteredRecords());
+  
+  // もし他の分析ビューも更新する必要があるならここで呼ぶ
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
+  }
 }
-
 
 </script>
 
 
-<script>
 /* ▼ 保存処理（新構造対応・編集モード対応） */
 saveRaceBtn.onclick = async () => {
   const mode = modalMode.value;
@@ -1981,11 +1987,11 @@ saveRaceBtn.onclick = async () => {
 
   /* ▼ 編集モードなら古いレコードを削除（DB + メモリ） */
   if (editingTimestamp) {
-    await deleteRecord(editingTimestamp); // deleteRecordFromDB -> deleteRecord に合わせる場合は調整
+    await deleteRecordFromDB(editingTimestamp); // ★ 確認なしでDBから直接削除
     allRecords = allRecords.filter(r => r.timestamp !== editingTimestamp);
   }
 
-  /* ▼ 新規レコードを DB に保存 (cord から addRecord に修正) */
+  /* ▼ 新規レコードを DB に保存 */
   for (const r of newRecords) {
     await addRecord(r);
   }
@@ -2636,7 +2642,7 @@ async function updateRecord(record) {
   await promisifyTx(tx);
 }
 
-async function deleteRecord(id) {
+async function deleteRecordFromDB(id) {
   const db = await openDB();
   const tx = db.transaction("records", "readwrite");
   tx.objectStore("records").delete(id);
