@@ -9938,69 +9938,71 @@ function getFilteredStatsForOverlay(stats) {
   let filtered = [...stats.history];
   const shouldFallback = isAutoTrackEnabled();
 
-  // ▼ UIからユーザーが指定した最低レース数を取得（デフォルトは12）
   const minCountInput = document.getElementById("fallbackMinCountInput");
   const minCount = minCountInput ? (parseInt(minCountInput.value, 10) || 12) : 12;
 
-  // 要素を取得するヘルパー
   const getValue = (id) => {
     const el = document.getElementById(id);
     return el ? el.value : "ALL";
   };
 
-  // ★ Mode
   const mode = getValue("overlayModeSelect");
   if (mode !== "ALL") {
     filtered = filtered.filter(r => r.mode == mode);
   }
 
-  // ★ Season
+  // ★ Season 判定のデバッグ
   const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
   const season = seasonEl ? seasonEl.value : "ALL";
   
   if (season !== "ALL") {
-    let seasonFiltered = filtered.filter(r => r.season == season);
-    
-    // 追尾ONかつユーザー指定の件数未満の場合、1つ前のシーズンと合算
+    let seasonFiltered = filtered.filter(r => String(r.season) === String(season));
+    console.log(`[Debug Season] 選択シーズン: ${season}, 該当件数: ${seasonFiltered.length}, 最低閾値: ${minCount}, 追尾ON: ${shouldFallback}`);
+
     if (shouldFallback && seasonFiltered.length < minCount) {
       const prevSeason = Number(season) - 1;
+      console.log(`[Debug Season] 件数不足のためシーズン ${prevSeason} と合算を試みます`);
       if (prevSeason > 0) {
-        seasonFiltered = filtered.filter(r => r.season == season || r.season == prevSeason);
+        seasonFiltered = filtered.filter(r => String(r.season) === String(season) || String(r.season) === String(prevSeason));
+        console.log(`[Debug Season] 合算後の件数: ${seasonFiltered.length}`);
       }
     }
     filtered = seasonFiltered;
   }
 
-  // ★ Tier
+  // ★ Tier 判定のデバッグ
   const tierEl = document.getElementById("loungeTierSelect") || document.getElementById("loungeTierSelect2");
   const tier = tierEl ? tierEl.value : "ALL";
 
   if (tier !== "ALL") {
     let tierFiltered = filtered.filter(r => r.tier == tier);
+    console.log(`[Debug Tier] 選択Tier: ${tier}, 該当件数: ${tierFiltered.length}`);
 
-    // 追尾ONかつユーザー指定の件数未満の場合、ポリシーに従って合算
     if (shouldFallback && tierFiltered.length < minCount) {
       const tierModeSelect = document.getElementById("fallbackTierModeSelect");
       const tierMode = tierModeSelect ? tierModeSelect.value : "lower";
+      console.log(`[Debug Tier] 件数不足のためTier合算を実行 (モード: ${tierMode})`);
 
       if (tierMode === "ALL") {
-        tierFiltered = filtered; // シーズン内の全Tierと合算
+        tierFiltered = filtered;
       } else if (tierMode === "lower") {
         const lowerTier = getLowerTier(tier);
+        console.log(`[Debug Tier] 1個下のTier: ${lowerTier}`);
         if (lowerTier) {
           tierFiltered = filtered.filter(r => r.tier == tier || r.tier == lowerTier);
         }
       }
+      console.log(`[Debug Tier] 合算後の件数: ${tierFiltered.length}`);
     }
     filtered = tierFiltered;
   }
 
-  // ★ Recent
   const recent = getValue("loungeRecentSelect") || getValue("loungeRecentSelect2");
   if (recent !== "ALL") {
     filtered = filtered.slice(-Number(recent));
   }
 
+  console.log(`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
   return { history: filtered };
 }
   
