@@ -718,6 +718,8 @@ const i18nDict = {
     status_connected: "接続済み", // 必要に応じて
     label_recent: "Recent",
     btn_apply_overlay: "🔄 条件を即時反映（送信）",
+    label_fallback_min_count: "合算を発動する最低レース数:",
+    label_races_unit: "レース未満",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -928,6 +930,8 @@ const i18nDict = {
     status_connected: "Connected",
     label_recent: "Recent",
     btn_apply_overlay: "🔄 Apply & Send Overlay Now",
+    label_fallback_min_count: "Min races required for fallback:",
+    label_races_unit: "races",
     }
   };
 
@@ -1449,13 +1453,22 @@ document.addEventListener('DOMContentLoaded', () => {
     <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
   </select>
 
-  <!-- ▼ 【移動配置】モード選択やフィルターの下に配置した自動追尾・合算設定 -->
+ <!-- ▼ モード選択やフィルターの下に配置した自動追尾・合算・件数指定設定 -->
   <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
+    
+    <!-- 自動追尾ON/OFF -->
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
       <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
       <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px;">
         モーダル条件のオーバーレイ自動追尾を有効にする
       </label>
+    </div>
+
+    <!-- ▼ ユーザーによる一定回数（最小レース数）の指定UI -->
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555;">
+      <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
+      <input type="number" id="fallbackMinCountInput" value="12" min="1" max="100" style="width: 60px; padding: 2px 4px; text-align: center;">
+      <span data-i18n="label_races_unit">レース未満</span>
     </div>
     
     <!-- Tier補完ルールの切り替え設定 -->
@@ -1468,7 +1481,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
     </div>
   </div>
-
 </div>
 
 
@@ -9917,12 +9929,18 @@ function isAutoTrackEnabled() {
 // ==========================================
 // 2. スマート合算対応のオーバーレイ用フィルタリング関数
 // ==========================================
+// ==========================================
+// スマート合算対応のオーバーレイ用フィルタリング関数（件数入力UI対応版）
+// ==========================================
 function getFilteredStatsForOverlay(stats) {
   if (!stats || !stats.history) return { history: [] };
 
   let filtered = [...stats.history];
-  const minCount = 12; // 最低件数のしきい値
   const shouldFallback = isAutoTrackEnabled();
+
+  // ▼ UIからユーザーが指定した最低レース数を取得（デフォルトは12）
+  const minCountInput = document.getElementById("fallbackMinCountInput");
+  const minCount = minCountInput ? (parseInt(minCountInput.value, 10) || 12) : 12;
 
   // 要素を取得するヘルパー
   const getValue = (id) => {
@@ -9936,14 +9954,14 @@ function getFilteredStatsForOverlay(stats) {
     filtered = filtered.filter(r => r.mode == mode);
   }
 
-  // ★ Season (loungeSeasonSelect2 または loungeSeasonSelect の両方に対応)
+  // ★ Season
   const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
   const season = seasonEl ? seasonEl.value : "ALL";
   
   if (season !== "ALL") {
     let seasonFiltered = filtered.filter(r => r.season == season);
     
-    // 追尾ONかつ件数不足の場合、1つ前のシーズンと合算
+    // 追尾ONかつユーザー指定の件数未満の場合、1つ前のシーズンと合算
     if (shouldFallback && seasonFiltered.length < minCount) {
       const prevSeason = Number(season) - 1;
       if (prevSeason > 0) {
@@ -9953,14 +9971,14 @@ function getFilteredStatsForOverlay(stats) {
     filtered = seasonFiltered;
   }
 
-  // ★ Tier (loungeTierSelect または loungeTierSelect2 の両方に対応)
+  // ★ Tier
   const tierEl = document.getElementById("loungeTierSelect") || document.getElementById("loungeTierSelect2");
   const tier = tierEl ? tierEl.value : "ALL";
 
   if (tier !== "ALL") {
     let tierFiltered = filtered.filter(r => r.tier == tier);
 
-    // 追尾ONかつ件数不足の場合、ポリシーに従って合算
+    // 追尾ONかつユーザー指定の件数未満の場合、ポリシーに従って合算
     if (shouldFallback && tierFiltered.length < minCount) {
       const tierModeSelect = document.getElementById("fallbackTierModeSelect");
       const tierMode = tierModeSelect ? tierModeSelect.value : "lower";
@@ -9985,7 +10003,7 @@ function getFilteredStatsForOverlay(stats) {
 
   return { history: filtered };
 }
-
+  
 function updateOverlayJson(payload) {
   const tag = document.getElementById("mkadp-data");
   if (tag) tag.textContent = JSON.stringify(payload);
