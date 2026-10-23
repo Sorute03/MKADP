@@ -9799,6 +9799,99 @@ async function disconnectOBS() {
 }
 
 
+
+// ==========================================
+// 1. モーダルの現在条件を確実に取得するヘルパー
+// ==========================================
+function getModalCurrentConditions() {
+  // モーダル内の各要素のIDに合わせて適宜変更してください
+  const modeEl = document.getElementById("modalModeSelect") || document.getElementById("modalMode");
+  const seasonEl = document.getElementById("modalSeasonSelect") || document.getElementById("modalSeason");
+  const tierEl = document.getElementById("modalTierSelect") || document.getElementById("modalTier");
+
+  const mode = modeEl ? modeEl.value : "lounge";
+  const season = (mode === "lounge" && seasonEl) ? seasonEl.value : "ALL";
+  const tier = (mode === "lounge" && tierEl) ? tierEl.value : "ALL";
+  
+  return { mode, season, tier };
+}
+
+// ==========================================
+// 2. モーダル条件をオーバーレイ設定に反映＆送信する関数
+// ==========================================
+function sendOverlayWithModalTracking(sourceDataset) {
+  if (!isAutoTrackEnabled()) return;
+
+  const conditions = getModalCurrentConditions();
+  console.log("★ 自動追尾による条件検出:", conditions);
+
+  // オーバーレイ設定側のセレクトボックスを自動連動
+  const overlayModeSelect = document.getElementById("overlayModeSelect");
+  if (overlayModeSelect) {
+    overlayModeSelect.value = conditions.mode;
+    const loungeFilters = document.getElementById("loungeFilters");
+    if (loungeFilters) {
+      loungeFilters.style.display = (conditions.mode === "lounge") ? "block" : "none";
+    }
+  }
+
+  if (conditions.mode === "lounge") {
+    const loungeSeasonSelect2 = document.getElementById("loungeSeasonSelect2");
+    if (loungeSeasonSelect2 && conditions.season) loungeSeasonSelect2.value = conditions.season;
+
+    const loungeTierSelect2 = document.getElementById("loungeTierSelect2");
+    if (loungeTierSelect2 && conditions.tier) loungeTierSelect2.value = conditions.tier;
+  }
+
+  // Recent設定の取得
+  const recentSelect = document.getElementById("loungeRecentSelect2");
+  const recentLimit = recentSelect ? recentSelect.value : "ALL";
+
+  // スマート合算フィルタ適用＆送信
+  if (typeof getFilteredStatsForOverlay === "function" && typeof allRecords !== 'undefined') {
+    sendLoungeOverlay({ history: allRecords });
+  }
+}
+
+// ==========================================
+// 3. イベントリスナーの動的登録
+// ==========================================
+function initModalAutoTracking() {
+  // 監視したいモーダル内の要素IDの候補を配列で指定
+  const targetIds = [
+    "modalModeSelect", "modalMode",
+    "modalSeasonSelect", "modalSeason",
+    "modalTierSelect", "modalTier"
+  ];
+
+  targetIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", () => {
+        console.log(`[AutoTrack] ${id} の変更を検知しました`);
+        sendOverlayWithModalTracking(allRecords);
+      });
+    }
+  });
+
+  // レース入力欄（コースや順位など）の変更時にも追尾
+  for (let i = 1; i <= 24; i++) {
+    ['raceCourse', 'raceRank', 'raceScore'].forEach(prefix => {
+      const inputEl = document.getElementById(`${prefix}_${i}`);
+      if (inputEl) {
+        inputEl.addEventListener("input", () => {
+          sendOverlayWithModalTracking(allRecords);
+        });
+      }
+    });
+  }
+}
+
+// ページの読み込み完了後、およびモーダルが開かれたタイミングなどで初期化を実行
+document.addEventListener("DOMContentLoaded", () => {
+  initModalAutoTracking();
+});
+
   
 
 // ==========================================
