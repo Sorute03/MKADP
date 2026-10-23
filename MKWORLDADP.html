@@ -701,6 +701,23 @@ const i18nDict = {
     course_compare_title: "コースを最大5つ選択:",
     course_stats_filter: "コース統計フィルター",
     label_bg_image_local: "ローカルからファイルを選択（一時的）",
+    label_auto_track: "モーダル条件のオーバーレイ自動追尾を有効にする",
+    overlay_settings_title: "オーバーレイ設定",
+    label_auto_track: "モーダル条件のオーバーレイ自動追尾を有効にする",
+    label_fallback_tier_note: "データ不足時のTier補完（追尾ON時のみ有効）:",
+    opt_tier_lower: "1個下のTierと合算",
+    opt_tier_all: "ALL（全Tier）と合算",
+    opt_tier_none: "合算しない",
+    obs_websocket_title: "OBS WebSocket接続",
+    label_host: "ホスト",
+    label_port: "ポート",
+    label_password: "パスワード",
+    btn_connect: "接続",
+    btn_disconnect: "切断",
+    status_disconnected: "未接続",
+    status_connected: "接続済み", // 必要に応じて
+    label_recent: "Recent",
+    btn_apply_overlay: "🔄 条件を即時反映（送信）",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -894,6 +911,23 @@ const i18nDict = {
     course_compare_title: "Select up to 5 courses:",
     course_stats_filter: "Course Stats Filter",
     label_bg_image_local: "Select local file (temporary)",
+    label_auto_track: "Enable auto-tracking of modal conditions for overlay",
+    overlay_settings_title: "Overlay Settings",
+    label_auto_track: "Enable auto-tracking of modal conditions for overlay",
+    label_fallback_tier_note: "Tier fallback on low data (Auto-track ON only):",
+    opt_tier_lower: "Combine with lower Tier",
+    opt_tier_all: "Combine with ALL Tiers",
+    opt_tier_none: "Do not combine",
+    obs_websocket_title: "OBS WebSocket Connection",
+    label_host: "Host",
+    label_port: "Port",
+    label_password: "Password",
+    btn_connect: "Connect",
+    btn_disconnect: "Disconnect",
+    status_disconnected: "Disconnected",
+    status_connected: "Connected",
+    label_recent: "Recent",
+    btn_apply_overlay: "🔄 Apply & Send Overlay Now",
     }
   };
 
@@ -1370,27 +1404,54 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
+
+  
 <!-- ▼ オーバーレイ設定 -->
 <h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
 <div id="overlayFilterBox" style="margin:10px 0;">
+  
+  <!-- ▼ 自動追尾のオンオフ切り替えスイッチ ＆ 合算設定 -->
+  <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+      <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
+      <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px;">
+        モーダル条件のオーバーレイ自動追尾を有効にする
+      </label>
+    </div>
+    
+    <!-- Tier補完ルールの切り替え設定 -->
+    <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555;">
+      <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ有効）:</span>
+      <select id="fallbackTierModeSelect" style="padding: 2px 6px;">
+        <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
+        <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
+        <option value="none" data-i18n="opt_tier_none">合算しない</option>
+      </select>
+    </div>
+  </div>
+
   <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
   <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
   <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
   <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
   
-  <div style="margin-top:10px;">
+  <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
     <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
     <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
+    <!-- ▼ 即時反映・再接続ボタンを追加 -->
+    <button onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
+      🔄 即時反映・再接続
+    </button>
   </div>
   
   <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
 
   <label data-i18n="lbl_mode">モード</label><br>
   <select id="overlayModeSelect" style="width:200px;">
-    <option value="ALL">ALL</option>
-    <option value="lounge">ラウンジ</option>
-    <option value="nora">野良</option>
-    <option value="tournament">大会</option>
+    <option value="ALL" data-i18n="opt_all">ALL</option>
+    <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+    <option value="nora" data-i18n="mode_nora">野良</option>
+    <option value="tournament" data-i18n="mode_tournament">大会</option>
   </select>
 
   <div id="loungeFilters" style="margin-top:10px; display:none;">
@@ -1402,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <br><br>
   <label data-i18n="label_recent">Recent</label><br>
   <select id="loungeRecentSelect2" style="width:200px;">
-    <option value="ALL">ALL</option>
+    <option value="ALL" data-i18n="opt_all">ALL</option>
     <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
   </select>
 </div>
@@ -9740,23 +9801,39 @@ async function disconnectOBS() {
 
   
 
+// ==========================================
+// 1. 階層定義（Tier補完用）
+// ==========================================
+const tierHierarchy = ["X", "S", "A", "B", "BC", "C", "CD", "D", "DE", "E", "EF", "F", "FG", "G", "SQ", "Q"];
+
+function getLowerTier(currentTier) {
+  const index = tierHierarchy.indexOf(currentTier);
+  if (index >= 0 && index < tierHierarchy.length - 1) {
+    return tierHierarchy[index + 1];
+  }
+  return null;
+}
+
+function isAutoTrackEnabled() {
+  const toggle = document.getElementById("autoTrackOverlayToggle");
+  return toggle ? toggle.checked : true;
+}
+
+// ==========================================
+// 2. スマート合算対応のオーバーレイ用フィルタリング関数
+// ==========================================
 function getFilteredStatsForOverlay(stats) {
   if (!stats || !stats.history) return { history: [] };
 
   let filtered = [...stats.history];
+  const minCount = 12; // 最低件数のしきい値
+  const shouldFallback = isAutoTrackEnabled();
 
-  // 安全に要素を取得するヘルパー関数
+  // 要素を取得するヘルパー
   const getValue = (id) => {
     const el = document.getElementById(id);
     return el ? el.value : "ALL";
   };
-
-  // ★ Season (loungeSeasonSelect2 または loungeSeasonSelect の両方に対応)
-  const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
-  const season = seasonEl ? seasonEl.value : "ALL";
-  if (season !== "ALL") {
-    filtered = filtered.filter(r => r.season == season);
-  }
 
   // ★ Mode
   const mode = getValue("overlayModeSelect");
@@ -9764,15 +9841,49 @@ function getFilteredStatsForOverlay(stats) {
     filtered = filtered.filter(r => r.mode == mode);
   }
 
+  // ★ Season (loungeSeasonSelect2 または loungeSeasonSelect の両方に対応)
+  const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
+  const season = seasonEl ? seasonEl.value : "ALL";
+  
+  if (season !== "ALL") {
+    let seasonFiltered = filtered.filter(r => r.season == season);
+    
+    // 追尾ONかつ件数不足の場合、1つ前のシーズンと合算
+    if (shouldFallback && seasonFiltered.length < minCount) {
+      const prevSeason = Number(season) - 1;
+      if (prevSeason > 0) {
+        seasonFiltered = filtered.filter(r => r.season == season || r.season == prevSeason);
+      }
+    }
+    filtered = seasonFiltered;
+  }
+
   // ★ Tier (loungeTierSelect または loungeTierSelect2 の両方に対応)
   const tierEl = document.getElementById("loungeTierSelect") || document.getElementById("loungeTierSelect2");
   const tier = tierEl ? tierEl.value : "ALL";
+
   if (tier !== "ALL") {
-    filtered = filtered.filter(r => r.tier == tier);
+    let tierFiltered = filtered.filter(r => r.tier == tier);
+
+    // 追尾ONかつ件数不足の場合、ポリシーに従って合算
+    if (shouldFallback && tierFiltered.length < minCount) {
+      const tierModeSelect = document.getElementById("fallbackTierModeSelect");
+      const tierMode = tierModeSelect ? tierModeSelect.value : "lower";
+
+      if (tierMode === "ALL") {
+        tierFiltered = filtered; // シーズン内の全Tierと合算
+      } else if (tierMode === "lower") {
+        const lowerTier = getLowerTier(tier);
+        if (lowerTier) {
+          tierFiltered = filtered.filter(r => r.tier == tier || r.tier == lowerTier);
+        }
+      }
+    }
+    filtered = tierFiltered;
   }
 
   // ★ Recent
-  const recent = getValue("loungeRecentSelect");
+  const recent = getValue("loungeRecentSelect") || getValue("loungeRecentSelect2");
   if (recent !== "ALL") {
     filtered = filtered.slice(-Number(recent));
   }
@@ -9782,10 +9893,12 @@ function getFilteredStatsForOverlay(stats) {
 
 function updateOverlayJson(payload) {
   const tag = document.getElementById("mkadp-data");
-  tag.textContent = JSON.stringify(payload);
+  if (tag) tag.textContent = JSON.stringify(payload);
 }
 
-
+// ==========================================
+// 3. オーバーレイ送信メイン処理
+// ==========================================
 async function sendLoungeOverlay(stats) {
   try {
     const filteredStats = getFilteredStatsForOverlay(stats);
@@ -9796,7 +9909,7 @@ async function sendLoungeOverlay(stats) {
       return;
     }
 
-    const nextCourseStats = calcCourseStats(filteredStats, nextCourse);
+    const nextCourseStats = typeof calcCourseStats === "function" ? calcCourseStats(filteredStats, nextCourse) : {};
 
     const payload = {
       nextCourse,
@@ -9806,7 +9919,7 @@ async function sendLoungeOverlay(stats) {
 
     console.log("★ 送信用 payload 作成完了:", payload);
 
-    // ★ PeerJS 送信（要素が存在する場合のみ）
+    // ★ PeerJS 送信
     const userSelect = document.getElementById("overlayUserSelect");
     if (userSelect && typeof sendOverlayToPeer === "function") {
       sendOverlayToPeer(userSelect.value, payload);
@@ -9820,20 +9933,13 @@ async function sendLoungeOverlay(stats) {
   }
 }
 
-
-
-
-
-
-
-
-
-
+// ==========================================
+// 4. OBS WebSocket 送信
+// ==========================================
 async function sendOverlayOBS(payload) {
-  if (!obs || !payload) return;
+  if (typeof obs === "undefined" || !obs || !payload) return;
 
   try {
-   
     await obs.call("BroadcastCustomEvent", {
       eventData: {
         type: "MKADP_OVERLAY_UPDATE",
@@ -9847,59 +9953,44 @@ async function sendOverlayOBS(payload) {
 }
 
 
+// ==========================================
+// 接続状態の確認 ＆ 切断・再接続を伴う即時反映関数
+// ==========================================
+async function applyOverlayManually() {
+  console.log("[Overlay] 即時反映ボタンが押されました：接続確認・再接続およびデータ送信を開始します...");
 
+  try {
+    // 1. もし obs オブジェクトが存在し、何らかの理由でフリーズしている可能性を考慮して一度クリーンアップを試みる
+    if (typeof disconnectOBS === "function") {
+      try {
+        disconnectOBS();
+      } catch (e) {
+        console.warn("[Overlay] 切断処理中の軽微な警告:", e);
+      }
+    }
 
+    // 2. わずかにウェイトを置いてから再接続を実行（接続関数が非同期の場合は await）
+    if (typeof connectOBS === "function") {
+      console.log("[Overlay] OBS WebSocket へ再接続中...");
+      // connectOBS が Promise を返す設計であれば await する
+      await connectOBS();
+    }
 
-    // ここは ADP 側から overlay を更新するための関数例
-    // 実際の MKADP の構造に合わせて中身を差し替えてOK
-  function renderOverlay(payload) {
-    if (!payload) return;
-    const box = document.getElementById("overlayBox");
-    const course = payload.nextCourse || "コース不明";
-  　const s = payload.nextCourseStats || {};
+    // 3. 再接続（または接続確認）が完了した後に、最新データを即時送信
+    if (typeof allRecords !== 'undefined' && Array.isArray(allRecords)) {
+      await sendLoungeOverlay({ history: allRecords });
+      console.log("[Overlay] 接続の再確立 ＆ オーバーレイデータの即時送信が完了しました！");
+    } else {
+      console.warn("[Overlay] 送信対象の allRecords データが見つかりません");
+    }
 
-    const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
-    const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
+  } catch (err) {
+    console.error("[Overlay] 即時再接続・送信処理中にエラーが発生しました:", err);
+    alert("OBSへの再接続またはデータ送信に失敗しました。接続設定をご確認ください。");
+  }
+}
 
-    box.innerHTML = `
-      <div><b>${course}</b></div>
-      <div>平均順位：${fmt(s.avgRank)}位</div>
-      <div>平均得点：${fmt(s.avgScore)}点</div>
-      <div>試行回数：${s.count}回</div>
-      <div>上位率：${percent(s.topRate)}</div>
-      <div>中位率：${percent(s.midRate)}</div>
-      <div>下位率：${percent(s.bottomRate)}</div>
-    `;
-  　}
-
-    // 例：ADP 内部からこう呼べば overlay が更新される
-    // renderOverlay({ nextCourse: "コース名", nextCourseStats: {...} });
-
-
-
-
-
-document.getElementById('downloadMkadpBtn').addEventListener('click', function() {
-    const fileUrl = 'https://sorute03.github.io/MKADP/MKWORLDADP.html';
-    
-    fetch(fileUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'MKWORLDADP(ローカルファイル版)'; // 保存時のファイル名
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(() => {
-        // クロスドメイン(CORS)等でfetchが失敗した場合はフォールバック
-        window.location.href = fileUrl;
-      });
-  });
-
+  
 
 document.getElementById('downloadoverlayBtn').addEventListener('click', function() {
     const fileUrl = 'https://sorute03.github.io/MKADP/overlay.html';
