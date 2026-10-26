@@ -2161,27 +2161,42 @@ saveRaceBtn.onclick = async () => {
   
     
     
- document.querySelectorAll(".tabBtn").forEach(btn => {
+document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
     const target = btn.dataset.tab;
   
+    // すべてのタブを非表示にする
     document.querySelectorAll(".tabContent").forEach(tab => {
       tab.style.display = "none";
     });
   
+    // すべてのボタンから active を外す
     document.querySelectorAll(".tabBtn").forEach(b => {
       b.classList.remove("active");
     });
   
-    document.getElementById(target).style.display = "block";
+    // 対象のタブを表示し、ボタンをアクティブにする
+    const targetTabEl = document.getElementById(target);
+    if (targetTabEl) {
+      targetTabEl.style.display = "block";
+    }
     btn.classList.add("active");
   
+    // タブごとの個別処理
     if (target === "historyTab") {
-      renderRaceHistory(getFilteredRecords()); // ★ 修正
+      if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
+        renderRaceHistory(getFilteredRecords());
+      }
 
     } else if (target === "analysisTab") {
-      if (typeof initGrowthSelectors === "function") initGrowthSelectors();
-      if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews(); // ★ 修正
+      // ★ display: block が確実に適用されてレイアウトが確定した後に描画を実行
+      setTimeout(() => {
+        if (typeof initGrowthSelectors === "function") initGrowthSelectors();
+        if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
+        
+        // グラフライブラリ（Chart.jsなど）がサイズを再計算するようにウィンドウのresizeを通知
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
 
     } else if (target === "loungeTab") {
       if (typeof activateLoungeTab === "function") activateLoungeTab();
