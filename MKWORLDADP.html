@@ -9932,12 +9932,16 @@ function isAutoTrackEnabled() {
 // ==========================================
 // スマート合算対応のオーバーレイ用フィルタリング関数（件数入力UI対応版）
 // ==========================================
+// ==========================================
+// 段階的フォールバック（指定S ➔ 前S ➔ ALLシーズン・指定Tier ➔ ALLシーズン・ALL Tier）
+// ==========================================
 function getFilteredStatsForOverlay(stats) {
   if (!stats || !stats.history) return { history: [] };
 
   let filtered = [...stats.history];
   const shouldFallback = isAutoTrackEnabled();
 
+  // ユーザー指定の最低レース数（デフォルト12）
   const minCountInput = document.getElementById("fallbackMinCountInput");
   const minCount = minCountInput ? (parseInt(minCountInput.value, 10) || 12) : 12;
 
@@ -9951,52 +9955,66 @@ function getFilteredStatsForOverlay(stats) {
     filtered = filtered.filter(r => r.mode == mode);
   }
 
-  // ★ Season 判定のデバッグ
-  const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
-  const season = seasonEl ? seasonEl.value : "ALL";
-  
-  if (season !== "ALL") {
-    let seasonFiltered = filtered.filter(r => String(r.season) === String(season));
-    console.log(`[Debug Season] 選択シーズン: ${season}, 該当件数: ${seasonFiltered.length}, 最低閾値: ${minCount}, 追尾ON: ${shouldFallback}`);
+  if (mode === "lounge") {
+    const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
+    const targetSeason = seasonEl ? seasonEl.value : "ALL";
 
-    if (shouldFallback && seasonFiltered.length < minCount) {
-      const prevSeason = Number(season) - 1;
-      console.log(`[Debug Season] 件数不足のためシーズン ${prevSeason} と合算を試みます`);
-      if (prevSeason > 0) {
-        seasonFiltered = filtered.filter(r => String(r.season) === String(season) || String(r.season) === String(prevSeason));
-        console.log(`[Debug Season] 合算後の件数: ${seasonFiltered.length}`);
-      }
-    }
-    filtered = seasonFiltered;
-  }
+    const tierEl = document.getElementById("loungeTierSelect2") || document.getElementById("loungeTierSelect") || document.getElementById("modalTier");
+    const targetTier = tierEl ? tierEl.value : "ALL";
 
-  // ★ Tier 判定のデバッグ
-  const tierEl = document.getElementById("loungeTierSelect") || document.getElementById("loungeTierSelect2");
-  const tier = tierEl ? tierEl.value : "ALL";
+    let resultRecords = [];
 
-  if (tier !== "ALL") {
-    let tierFiltered = filtered.filter(r => r.tier == tier);
-    console.log(`[Debug Tier] 選択Tier: ${tier}, 該当件数: ${tierFiltered.length}`);
+    // シーズンとTierの両方が指定されている場合の段階的フォールバック
+    if (targetSeason !== "ALL" && targetTier !== "ALL") {
+      
+      // Step 1: 指定シーズン ＆ 指定Tier
+      let exactMatch = filtered.filter(r => String(r.season) === String(targetSeason) && String(r.tier).trim() === String(targetTier).trim());
+      console.log(`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length}`);
 
-    if (shouldFallback && tierFiltered.length < minCount) {
-      const tierModeSelect = document.getElementById("fallbackTierModeSelect");
-      const tierMode = tierModeSelect ? tierModeSelect.value : "lower";
-      console.log(`[Debug Tier] 件数不足のためTier合算を実行 (モード: ${tierMode})`);
+      if (!shouldFallback || exactMatch.length >= minCount) {
+        resultRecords = exactMatch;
+      } else {
+        // Step 2: 指定シーズン + 1個前のシーズン (同条件Tier)
+        const prevSeason = Number(targetSeason) - 1;
+        let seasonFallbackMatch = filtered.filter(r => 
+          (String(r.season) === String(targetSeason) || (prevSeason > 0 && String(r.season) === String(prevSeason))) && 
+          String(r.tier).trim() === String(targetTier).trim()
+        );
+        console.log(`[Fallback Step 2] 前シーズン(${prevSeason})合算 -> 件数: ${seasonFallbackMatch.length}`);
 
-      if (tierMode === "ALL") {
-        tierFiltered = filtered;
-      } else if (tierMode === "lower") {
-        const lowerTier = getLowerTier(tier);
-        console.log(`[Debug Tier] 1個下のTier: ${lowerTier}`);
-        if (lowerTier) {
-          tierFiltered = filtered.filter(r => r.tier == tier || r.tier == lowerTier);
+        if (seasonFallbackMatch.length >= minCount) {
+          resultRecords = seasonFallbackMatch;
+        } else {
+          // Step 3: ALLシーズン ＆ 指定Tier（すべてのシーズン＋指定Tier）
+          let allSeasonMatch = filtered.filter(r => String(r.tier).trim() === String(targetTier).trim());
+          console.log(`[Fallback Step 3] ALLシーズン同Tier合算 -> 件数: ${allSeasonMatch.length}`);
+
+          if (allSeasonMatch.length >= minCount) {
+            resultRecords = allSeasonMatch;
+          } else {
+            // Step 4: それでも足りない場合は ALLシーズン ＆ ALL Tier（モード内の全履歴）
+            let allSeasonAllTierMatch = filtered;
+            console.log(`[Fallback Step 4] ALLシーズン・ALL Tier（全履歴）合算 -> 件数: ${allSeasonAllTierMatch.length}`);
+
+            resultRecords = allSeasonAllTierMatch;
+          }
         }
       }
-      console.log(`[Debug Tier] 合算後の件数: ${tierFiltered.length}`);
+    } else {
+      // シーズンまたはTierが「ALL」の場合の通常の絞り込み
+      resultRecords = filtered;
+      if (targetSeason !== "ALL") {
+        resultRecords = resultRecords.filter(r => String(r.season) === String(targetSeason));
+      }
+      if (targetTier !== "ALL") {
+        resultRecords = resultRecords.filter(r => String(r.tier).trim() === String(targetTier).trim());
+      }
     }
-    filtered = tierFiltered;
+
+    filtered = resultRecords;
   }
 
+  // Recent 制限
   const recent = getValue("loungeRecentSelect") || getValue("loungeRecentSelect2");
   if (recent !== "ALL") {
     filtered = filtered.slice(-Number(recent));
@@ -10005,6 +10023,7 @@ function getFilteredStatsForOverlay(stats) {
   console.log(`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
   return { history: filtered };
 }
+  
   
 function updateOverlayJson(payload) {
   const tag = document.getElementById("mkadp-data");
