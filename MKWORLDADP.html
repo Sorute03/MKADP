@@ -3850,6 +3850,7 @@ window.addEventListener("load", async () => {
       await loadAllRecords();
     }
     getAllRecords();
+    refreshAllAnalysisViews();
     // ▼ 3. 各種 UI セレクタやオプションの初期化
     if (typeof populateSeasonAndTierOptions === 'function') populateSeasonAndTierOptions();
     if (typeof initADPRecords === 'function') initADPRecords();
