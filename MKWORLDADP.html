@@ -9736,14 +9736,44 @@ function renderPlayerIdList() {
 // ▼ 追加
 document.getElementById("addPlayerIdBtn").onclick = () => {
   const name = document.getElementById("playerNameInput").value.trim();
-  const id = document.getElementById("playerIdInput").value.trim();
+  const rawId = document.getElementById("playerIdInput").value.trim();
 
-  if (!name || !id) return alert("名前とIDを入力してください");
+  if (!name || !rawId) return alert("名前とIDを入力してください");
+
+  // URLの場合はIDを抽出し、それ以外（通常のID入力など）はそのまま返す
+  const id = extractLoungePlayerId(rawId);
 
   playerIdList.push({ name, id });
   savePlayerIdList();
   renderPlayerIdList();
+
+  // 登録後に入力欄をクリア
+  document.getElementById("playerIdInput").value = "";
 };
+
+/**
+ * URLまたは入力文字列からラウンジのプレイヤーIDを抽出する関数
+ * （URLでなければそのまま元の文字列を返します）
+ */
+function extractLoungePlayerId(inputStr) {
+  if (!inputStr) return "";
+  const trimmed = inputStr.trim();
+
+  // 1. MKCentral Lounge (PlayerDetails/15479) のURL形式から抽出
+  const mkcentralMatch = trimmed.match(/PlayerDetails\/([0-9a-zA-Z_-]+)/i);
+  if (mkcentralMatch && mkcentralMatch[1]) {
+    return mkcentralMatch[1];
+  }
+
+  // 2. 一般的なプロフィールURL (profile/12345 など) から抽出
+  const generalMatch = trimmed.match(/(?:profile|player)\/([0-9a-zA-Z_-]+)/i);
+  if (generalMatch && generalMatch[1]) {
+    return generalMatch[1];
+  }
+
+  // 3. URLではない場合はそのまま返す（これまで通りの動作）
+  return trimmed;
+}
 
 // ▼ 削除
 document.getElementById("deletePlayerIdBtn").onclick = () => {
