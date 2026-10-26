@@ -10102,9 +10102,11 @@ async function sendLoungeOverlay(stats) {
     const nextCourseStats = typeof calcCourseStats === "function" ? calcCourseStats(filteredStats, nextCourse) : {};
 
     // ==========================================
-    // ▼ メタ情報（言語・シーズン・Tier）の取得
+    // ▼ 本体側の言語設定を確実につかむ
     // ==========================================
-    const currentLang = (typeof currentLanguage !== 'undefined') ? currentLanguage : (localStorage.getItem('lang') || 'ja');
+    const currentLangToSend = (typeof currentLang !== 'undefined' && currentLang) 
+      ? currentLang 
+      : (localStorage.getItem('mkworld_adp_lang') || 'ja');
 
     const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
     const currentSeason = seasonEl ? seasonEl.value : "ALL";
@@ -10115,9 +10117,8 @@ async function sendLoungeOverlay(stats) {
     const payload = {
       nextCourse,
       nextCourseStats,
-      // ★ 送信データにメタ情報を追加
       meta: {
-        language: currentLang,
+        language: currentLangToSend, // ここに正しい "en" または "ja" が入ります
         season: currentSeason,
         tier: currentTier
       },
