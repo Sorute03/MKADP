@@ -7112,88 +7112,197 @@ async function triggerCanvasRedraw() {
 // ==========================================
 const OPFS_DIR = "lounge_backgrounds";
 
+// ==========================================
+// 1. IndexedDB フォールバック用ヘルパー
+// ==========================================
+function openBackgroundDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("MKWorldBackgroundDB", 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("backgrounds")) {
+        db.createObjectStore("backgrounds", { keyPath: "id" });
+      }
+    };
+  });
+}
+
+// OPFSが安全に使える環境かどうか判定
+async function checkOpfsUsable() {
+  try {
+    if (!window.isSecureContext || !navigator.storage || !navigator.storage.getDirectory) {
+      return false;
+    }
+    const root = await navigator.storage.getDirectory();
+    await root.getDirectoryHandle(OPFS_DIR, { create: true });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function getOpfsDirectory() {
   const root = await navigator.storage.getDirectory();
   return await root.getDirectoryHandle(OPFS_DIR, { create: true });
 }
 
-// サブフォルダ（各背景ごとのストレージ）の一覧を取得
+// ==========================================
+// 2. 一覧の取得（OPFS ➔ 失敗時は IndexedDB）
+// ==========================================
 async function getSavedBackgroundsOPFS() {
+  // ① まず OPFS での取得を試みる
   try {
-    const dirHandle = await getOpfsDirectory();
-    const list = [];
-    
-    for await (const [idName, handle] of dirHandle.entries()) {
-      if (handle.kind === "directory") {
-        const bgDir = handle;
-        try {
-          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
-          const imgFile = await imgFileHandle.getFile();
-          const dataUrl = URL.createObjectURL(imgFile);
-
-          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
+    if (await checkOpfsUsable()) {
+      const dirHandle = await getOpfsDirectory();
+      const list = [];
+      
+      for await (const [idName, handle] of dirHandle.entries()) {
+        if (handle.kind === "directory") {
+          const bgDir = handle;
           try {
-            const metaFileHandle = await bgDir.getFileHandle("meta.json");
-            const metaFile = await metaFileHandle.getFile();
-            const text = await metaFile.text();
-            settings = JSON.parse(text);
-          } catch (e) {
-            // メタデータがない場合のフォールバック
-          }
+            const imgFileHandle = await bgDir.getFileHandle("image.jpg");
+            const imgFile = await imgFileHandle.getFile();
+            const dataUrl = URL.createObjectURL(imgFile);
 
-          list.push({
-            id: idName,
-            dataUrl: dataUrl,
-            settings: settings,
-            size: imgFile.size
-          });
-        } catch (err) {
-          console.warn(`[OPFS] フォルダ ${idName} の読み込みに失敗しました:`, err);
+            let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
+            try {
+              const metaFileHandle = await bgDir.getFileHandle("meta.json");
+              const metaFile = await metaFileHandle.getFile();
+              const text = await metaFile.text();
+              settings = JSON.parse(text);
+            } catch (e) {}
+
+            list.push({
+              id: idName,
+              dataUrl: dataUrl,
+              settings: settings,
+              size: imgFile.size
+            });
+          } catch (err) {
+            console.warn(`[OPFS] フォルダ ${idName} の読み込みに失敗しました:`, err);
+          }
         }
       }
+      return list;
     }
-    return list;
   } catch (err) {
-    console.error("[OPFS] 一覧の取得に失敗しました:", err);
+    console.warn("[OPFS] 利用不可のためIndexedDBから読み込みます:", err);
+  }
+
+  // ② 【フォールバック】IndexedDB から取得
+  try {
+    const db = await openBackgroundDB();
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction("backgrounds", "readonly");
+      const store = transaction.objectStore("backgrounds");
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const records = request.result || [];
+        const list = records.map(item => {
+          const dataUrl = URL.createObjectURL(item.file);
+          return {
+            id: item.id,
+            dataUrl: dataUrl,
+            settings: item.settings || { brightness: 1, contrast: 1, opacity: 1, blur: 0 },
+            size: item.file.size
+          };
+        });
+        resolve(list);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (dbErr) {
+    console.error("[IndexedDB] 一覧の取得に失敗しました:", dbErr);
     return [];
   }
 }
 
-// 画像と現在のスライダー設定をセットで保存
+// ==========================================
+// 3. 保存処理（OPFS ➔ 失敗時は IndexedDB）
+// ==========================================
 async function saveBackgroundToOPFS(file, settings) {
   const currentList = await getSavedBackgroundsOPFS();
   if (currentList.length >= 5) {
-    throw new Error("OPFSの保存上限（最大5枚）に達しています。不要な画像を削除してください。");
+    throw new Error("保存上限（最大5枚）に達しています。不要な画像を削除してください。");
   }
 
-  const dirHandle = await getOpfsDirectory();
   const idName = `bg_${Date.now()}`;
-  
-  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
 
-  // 1. 画像保存
-  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
-  const imgWritable = await imgHandle.createWritable();
-  await imgWritable.write(file);
-  await imgWritable.close();
+  // ① OPFS での保存を試みる
+  try {
+    if (await checkOpfsUsable()) {
+      const dirHandle = await getOpfsDirectory();
+      const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
 
-  // 2. 設定値JSON保存
-  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
-  const metaWritable = await metaHandle.createWritable();
-  await metaWritable.write(JSON.stringify(settings));
-  await metaWritable.close();
+      const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+      const imgWritable = await imgHandle.createWritable();
+      await imgWritable.write(file);
+      await imgWritable.close();
 
-  console.log("[OPFS] 背景と設定を保存しました:", idName);
+      const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+      const metaWritable = await metaHandle.createWritable();
+      await metaWritable.write(JSON.stringify(settings));
+      await metaWritable.close();
+
+      console.log("[OPFS] 背景と設定を保存しました:", idName);
+      return;
+    }
+  } catch (err) {
+    console.warn("[OPFS] 保存失敗、IndexedDBへフォールバックします:", err);
+  }
+
+  // ② 【フォールバック】IndexedDB へ保存
+  try {
+    const db = await openBackgroundDB();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction("backgrounds", "readwrite");
+      const store = transaction.objectStore("backgrounds");
+      const request = store.put({
+        id: idName,
+        file: file,
+        settings: settings
+      });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    console.log("[IndexedDB] 背景と設定を保存しました:", idName);
+  } catch (dbErr) {
+    console.error("[IndexedDB] 保存に失敗しました:", dbErr);
+    throw new Error("背景の保存に失敗しました。");
+  }
 }
 
-// 指定した背景フォルダを削除
+// ==========================================
+// 4. 削除処理（OPFS と IndexedDB の両方から安全に削除）
+// ==========================================
 async function deleteBackgroundFromOPFS(idName) {
+  // OPFSからの削除を試みる
   try {
-    const dirHandle = await getOpfsDirectory();
-    await dirHandle.removeEntry(idName, { recursive: true });
-    console.log("[OPFS] 削除しました:", idName);
+    if (await checkOpfsUsable()) {
+      const dirHandle = await getOpfsDirectory();
+      await dirHandle.removeEntry(idName, { recursive: true });
+      console.log("[OPFS] 削除しました:", idName);
+    }
   } catch (err) {
-    console.error("[OPFS] 削除に失敗しました:", err);
+    // OPFSになければ無視
+  }
+
+  // IndexedDBからの削除を試みる
+  try {
+    const db = await openBackgroundDB();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction("backgrounds", "readwrite");
+      const store = transaction.objectStore("backgrounds");
+      const request = store.delete(idName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    console.log("[IndexedDB] 削除しました:", idName);
+  } catch (dbErr) {
+    console.error("[IndexedDB] 削除に失敗しました:", dbErr);
   }
 }
 
