@@ -720,6 +720,14 @@ const i18nDict = {
     btn_apply_overlay: "🔄 条件を即時反映（送信）",
     label_fallback_min_count: "合算を発動する最低レース数:",
     label_races_unit: "レース未満",
+    btn_apply_overlay: "🔄 即時反映・再接続",
+    label_auto_track: "モーダル条件のオーバーレイ自動追尾を有効にする",
+    label_fallback_min_count: "合算を発動する最低レース数 (30模擬分):",
+    label_races_unit: "レース未満",
+    label_fallback_tier_note: "データ不足時のTier補完（追尾ON時のみ）:",
+    opt_tier_lower: "1個下のTierと合算",
+    opt_tier_all: "ALL（全Tier）と合算",
+    opt_tier_none: "合算しない",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -932,6 +940,14 @@ const i18nDict = {
     btn_apply_overlay: "🔄 Apply & Send Overlay Now",
     label_fallback_min_count: "Min races required for fallback:",
     label_races_unit: "races",
+    btn_apply_overlay: "🔄 Apply & Reconnect Now",
+    label_auto_track: "Enable auto-tracking of modal conditions for overlay",
+    label_fallback_min_count: "Min races for fallback (30 lobbies):",
+    label_races_unit: "races",
+    label_fallback_tier_note: "Tier fallback (Auto-track ON only):",
+    opt_tier_lower: "Merge with lower Tier",
+    opt_tier_all: "Merge with ALL Tiers",
+    opt_tier_none: "Do not merge",
     }
   };
 
@@ -1467,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- ▼ ユーザーによる一定回数（最小レース数）の指定UI -->
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555;">
       <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
-      <input type="number" id="fallbackMinCountInput" value="12" min="1" max="100" style="width: 60px; padding: 2px 4px; text-align: center;">
+      <input type="number" id="fallbackMinCountInput" value="360" min="1" max="10000" style="width: 60px; padding: 2px 4px; text-align: center;">
       <span data-i18n="label_races_unit">レース未満</span>
     </div>
     
