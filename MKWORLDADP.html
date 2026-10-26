@@ -10101,9 +10101,26 @@ async function sendLoungeOverlay(stats) {
 
     const nextCourseStats = typeof calcCourseStats === "function" ? calcCourseStats(filteredStats, nextCourse) : {};
 
+    // ==========================================
+    // ▼ メタ情報（言語・シーズン・Tier）の取得
+    // ==========================================
+    const currentLang = (typeof currentLanguage !== 'undefined') ? currentLanguage : (localStorage.getItem('lang') || 'ja');
+
+    const seasonEl = document.getElementById("loungeSeasonSelect2") || document.getElementById("loungeSeasonSelect");
+    const currentSeason = seasonEl ? seasonEl.value : "ALL";
+
+    const tierEl = document.getElementById("loungeTierSelect2") || document.getElementById("loungeTierSelect") || document.getElementById("modalTier");
+    const currentTier = tierEl ? tierEl.value : "ALL";
+
     const payload = {
       nextCourse,
       nextCourseStats,
+      // ★ 送信データにメタ情報を追加
+      meta: {
+        language: currentLang,
+        season: currentSeason,
+        tier: currentTier
+      },
       updatedAt: Date.now()
     };
 
