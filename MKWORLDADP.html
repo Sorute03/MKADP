@@ -3997,6 +3997,12 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
       setTimeout(() => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            // 分析タブ内のすべての canvas のスタイル幅を確実に再適用
+            const analysisCanvasList = document.querySelectorAll("#analysisTab canvas");
+            analysisCanvasList.forEach(canvas => {
+              if (!canvas.style.width) canvas.style.width = "100%";
+            });
+
             if (typeof initGrowthSelectors === "function") initGrowthSelectors();
             if (typeof refreshAllAnalysisViews === "function") {
               refreshAllAnalysisViews();
@@ -4027,7 +4033,6 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
     }
   };
 });
-
 
 
 // 再描画ボタン等がある場合の共通ハンドラ
