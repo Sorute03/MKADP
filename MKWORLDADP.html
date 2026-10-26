@@ -3956,19 +3956,35 @@ let webhookList = [];
 
   
 function refreshAllAnalysisViews() {
-  // それぞれのビュー更新を try-catch で独立させ、1つが失敗しても他が止まらないようにする
-  
-  try { if (typeof updateStatsView === "function") updateStatsView(); } catch (e) { console.error("updateStatsView error:", e); }
-  try { if (typeof updateGrowthView === "function") updateGrowthView(); } catch (e) { console.error("updateGrowthView error:", e); }
-  try { if (typeof updateRadarView === "function") updateRadarView(); } catch (e) { console.error("updateRadarView error:", e); }
-  try { if (typeof updateHeatmapView === "function") updateHeatmapView(); } catch (e) { console.error("updateHeatmapView error:", e); }
-  try { if (typeof updateRankingView === "function") updateRankingView(); } catch (e) { console.error("updateRankingView error:", e); }
-  try { if (typeof updateAICourseView === "function") updateAICourseView(); } catch (e) { console.error("updateAICourseView error:", e); }
-  try { if (typeof update3DView === "function") update3DView(); } catch (e) { console.error("update3DView error:", e); }
-  try { if (typeof updateScatterView === "function") updateScatterView(); } catch (e) { console.error("updateScatterView error:", e); }
-  try { if (typeof updateLoungeSetView === "function") updateLoungeSetView(); } catch (e) { console.error("updateLoungeSetView error:", e); }
+  // 分析タブ内にある、現在アクティブなサブビュー・タブの要素や状態を判定して更新する
+  // 例として、現在表示されているコンテナや、アクティブなサブタブに応じて呼び分けます
+
+  const activeSubTab = document.querySelector(".analysisSubTabBtn.active")?.dataset.view || "all";
+
+  // 例：それぞれのビューに対応するコンテナが表示されているかチェックしてから更新する
+  try {
+    if (typeof updateStatsView === "function" && isVisible("statsViewContainer")) updateStatsView();
+    if (typeof updateGrowthView === "function" && isVisible("growthViewContainer")) updateGrowthView();
+    if (typeof updateRadarView === "function" && isVisible("radarViewContainer")) updateRadarView();
+    if (typeof updateHeatmapView === "function" && isVisible("heatmapViewContainer")) updateHeatmapView();
+    if (typeof updateRankingView === "function" && isVisible("rankingViewContainer")) updateRankingView();
+    if (typeof updateAICourseView === "function" && isVisible("aiViewContainer")) updateAICourseView();
+    if (typeof update3DView === "function" && isVisible("view3dContainer")) update3DView();
+    if (typeof updateScatterView === "function" && isVisible("scatterViewContainer")) updateScatterView();
+    if (typeof updateLoungeSetView === "function" && isVisible("loungeSetContainer")) updateLoungeSetView();
+  } catch (e) {
+    console.error("View update error:", e);
+  }
 }
 
+// 要素が画面上に実際に表示されている（display が none ではない）か判定するヘルパー
+function isVisible(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return true; // 要素IDがない場合は安全のためtrueにしておく
+  return el.style.display !== "none" && el.offsetParent !== null;
+}
+
+  
 document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
     const target = btn.dataset.tab;
@@ -4037,24 +4053,38 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 });
 
 
-// 再描画ボタン等がある場合の共通ハンドラ
+// 分析タブ等の再描画共通ハンドラ（完全版）
 function triggerAnalysisRefresh() {
+  // ブラウザが display: block を反映し、レイアウト計算を終えるのを確実に待つため少し遅延させる
   setTimeout(() => {
     requestAnimationFrame(() => {
-      if (typeof refreshAllAnalysisViews === "function") {
-        refreshAllAnalysisViews();
-      }
-      if (typeof Chart !== "undefined" && Chart.instances) {
-        Object.values(Chart.instances).forEach(chart => {
-          chart.resize();
-          chart.update();
-        });
-      }
-      window.dispatchEvent(new Event('resize'));
-    });
-  }, 30);
-}
+      requestAnimationFrame(() => {
+        try {
+          // 1. 各ビューのデータを最新化
+          if (typeof refreshAllAnalysisViews === "function") {
+            refreshAllAnalysisViews();
+          }
 
+          // 2. 画面上のすべての Chart.js インスタンスを強制リサイズ＆アップデート
+          if (typeof Chart !== "undefined" && Chart.instances) {
+            Object.values(Chart.instances).forEach(chart => {
+              if (chart && typeof chart.resize === "function") {
+                chart.resize();
+                chart.update();
+              }
+            });
+          }
+
+          // 3. ブラウザ全体のレイアウト再計算を促す
+          window.dispatchEvent(new Event('resize'));
+          console.log("[Analysis] すべてのグラフの再描画とリサイズが完了しました。");
+        } catch (err) {
+          console.error("[Analysis] 再描画中にエラーが発生しました:", err);
+        }
+      });
+    });
+  }, 60); // 50〜100ms程度が最も安定します
+}
   
 function activateCourseStatsTab() {
 
