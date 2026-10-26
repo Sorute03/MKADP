@@ -1513,7 +1513,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="section-block">
     <label>直近 N レースで比較：</label>
     <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-    <button onclick="refreshAllAnalysisViews(allRecords)">再描画</button>
+    <button onclick="(allRecords)">再描画</button>
   </div>
 
   <!-- ここにグラフや分析UIが続く -->
@@ -1782,8 +1782,8 @@ async function openEditRecord(ts) {
 
     // ▼ UI 更新（正しい関数名に修正）
     const filtered = getFilteredRecords();
-    if (typeof refreshAllAnalysisViews === "function") {
-      refreshAllAnalysisViews();
+    if (typeof  === "function") {
+      ();
     }
     renderRaceHistory(filtered);
 
@@ -1804,7 +1804,7 @@ async function deleteSet(ts) {
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
   // ▼ UI 更新
-  refreshAllAnalysisViews();
+  ();
   renderRaceHistory();
 }
 
@@ -1876,8 +1876,8 @@ saveRaceBtn.onclick = async () => {
   ========== */
   const filtered = getFilteredRecords(); // ★ getGloballyFilteredRecords から修正
 
-  if (typeof refreshAllAnalysisViews === "function") {
-    refreshAllAnalysisViews(); // ★ refreshModeView から修正
+  if (typeof  === "function") {
+    (); // ★ refreshModeView から修正
   }
   renderRaceHistory(filtered);
 
@@ -2048,7 +2048,7 @@ async function deleteRecord(ts) {
   renderRaceHistory(getFilteredRecords());
   
   // もし他の分析ビューも更新する必要があるならここで呼ぶ
-  if (typeof refreshAllAnalysisViews === "function") {
+  if (typeof  === "function") {
     refreshAllAnalysisViews();
   }
 }
@@ -3961,22 +3961,16 @@ let webhookList = [];
 
   
 function refreshAllAnalysisViews() {
-  // 分析タブ内にある、現在アクティブなサブビュー・タブの要素や状態を判定して更新する
-  // 例として、現在表示されているコンテナや、アクティブなサブタブに応じて呼び分けます
-
-  const activeSubTab = document.querySelector(".analysisSubTabBtn.active")?.dataset.view || "all";
-
-  // 例：それぞれのビューに対応するコンテナが表示されているかチェックしてから更新する
   try {
-    if (typeof updateStatsView === "function" && isVisible("statsViewContainer")) updateStatsView();
-    if (typeof updateGrowthView === "function" && isVisible("growthViewContainer")) updateGrowthView();
-    if (typeof updateRadarView === "function" && isVisible("radarViewContainer")) updateRadarView();
-    if (typeof updateHeatmapView === "function" && isVisible("heatmapViewContainer")) updateHeatmapView();
-    if (typeof updateRankingView === "function" && isVisible("rankingViewContainer")) updateRankingView();
-    if (typeof updateAICourseView === "function" && isVisible("aiViewContainer")) updateAICourseView();
-    if (typeof update3DView === "function" && isVisible("view3dContainer")) update3DView();
-    if (typeof updateScatterView === "function" && isVisible("scatterViewContainer")) updateScatterView();
-    if (typeof updateLoungeSetView === "function" && isVisible("loungeSetContainer")) updateLoungeSetView();
+    if (typeof updateStatsView === "function") updateStatsView();
+    if (typeof updateGrowthView === "function") updateGrowthView();
+    if (typeof updateRadarView === "function") updateRadarView();
+    if (typeof updateHeatmapView === "function") updateHeatmapView();
+    if (typeof updateRankingView === "function") updateRankingView();
+    if (typeof updateAICourseView === "function") updateAICourseView();
+    if (typeof update3DView === "function") update3DView();
+    if (typeof updateScatterView === "function") updateScatterView();
+    if (typeof updateLoungeSetView === "function") updateLoungeSetView();
   } catch (e) {
     console.error("View update error:", e);
   }
