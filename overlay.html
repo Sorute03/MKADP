@@ -18,8 +18,8 @@
     position: absolute;
     bottom: 20px;
     right: 20px;
-    background: rgba(0,0,0,0.55);
-    padding: 12px 16px;
+    background: rgba(0,0,0,0.6);
+    padding: 14px 18px;
     border-radius: 8px;
     font-size: 20px;
     line-height: 1.5;
@@ -31,21 +31,21 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 4px;
+    gap: 20px;
+    margin-bottom: 6px;
   }
 
-  /* Season / Tier 表示用バッジ */
+  /* ★ Season / Tier 表示用バッジ（サイズを大きく拡大） */
   #overlayMetaBadge {
-    font-size: 13px;
-    background: rgba(255, 255, 255, 0.2);
-    color: #f3f4f6;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: normal;
+    font-size: 16px;
+    font-weight: bold;
+    background: rgba(37, 99, 235, 0.8); /* 少し青み掛けて目立たせることも可能（rgba(255,255,255,0.25)でもOK） */
+    color: #ffffff;
+    padding: 3px 10px;
+    border-radius: 5px;
+    letter-spacing: 0.5px;
   }
   
-  /* ★ OBS設定パネル（OBS画面でのインタラクト時のみ使用） */
   #configBox {
     position: absolute;
     top: 20px;
@@ -85,15 +85,11 @@
   }
 </style>
 
-<!-- ★ PeerJS ライブラリ -->
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
-<!-- ★ OBS WebSocket ライブラリ -->
 <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.3/dist/obs-ws.min.js"></script>
 </head>
 <body>
 
-<!-- OBS接続設定フォーム -->
 <div id="configBox">
   <b>OBS WebSocket 接続設定</b>
   <input type="text" id="obsHost" placeholder="localhost" value="localhost">
@@ -105,7 +101,7 @@
 
 <div id="overlayBox">
   <div class="overlay-header">
-    <b id="overlayCourseName">待機中...</b>
+    <b id="overlayCourseName" style="font-size: 22px;">待機中...</b>
     <span id="overlayMetaBadge">Season -- / Tier --</span>
   </div>
   <div id="overlayStatsLine1">平均順位：- / 平均得点：- / 試行回数：0回</div>
@@ -113,9 +109,6 @@
 </div>
 
 <script>
-// ==========================================
-// 多言語化辞書 (i18n)
-// ==========================================
 const overlayI18n = {
   ja: {
     waiting: "待機中...",
@@ -145,61 +138,18 @@ const overlayI18n = {
   }
 };
 
-// ======================================================
-// 1. PeerJS 連携処理
-// ======================================================
 const params = new URLSearchParams(location.search);
 const USER = params.get("user");
 
-console.log("[overlay] USER =", USER);
-
 if (USER) {
-  console.log("[overlay] PeerJS を初期化します…");
   const peer = new Peer("overlay-" + USER);
-
-  peer.on("open", id => {
-    console.log("[overlay] PeerID open:", id);
-  });
-
-  peer.on("error", err => {
-    console.error("[overlay] PeerJS error:", err);
-  });
-
-  peer.on("disconnected", () => {
-    console.warn("[overlay] PeerJS disconnected");
-  });
-
-  peer.on("close", () => {
-    console.warn("[overlay] PeerJS connection closed");
-  });
-
   peer.on("connection", conn => {
-    console.log("[overlay] ADP と接続:", conn.peer);
-
-    conn.on("open", () => {
-      console.log("[overlay] conn.open: 接続成功");
-    });
-
     conn.on("data", payload => {
-      console.log("[overlay] PeerJS 受信 payload:", payload);
       renderOverlay(payload);
     });
-
-    conn.on("error", err => {
-      console.error("[overlay] conn error:", err);
-    });
-
-    conn.on("close", () => {
-      console.warn("[overlay] conn closed");
-    });
   });
-} else {
-  console.log("[overlay] ?user パラメータなし。PeerJS 連携はスキップします");
 }
 
-// ======================================================
-// 2. OBS WebSocket 連携処理
-// ======================================================
 const obs = new OBSWebSocket();
 
 function saveSettings() {
@@ -209,13 +159,9 @@ function saveSettings() {
 }
 
 function loadSettings() {
-  const host = localStorage.getItem("obsHost_overlay") || "localhost";
-  const port = localStorage.getItem("obsPort_overlay") || "4455";
-  const pass = localStorage.getItem("obsPassword_overlay") || "";
-
-  document.getElementById("obsHost").value = host;
-  document.getElementById("obsPort").value = port;
-  document.getElementById("obsPassword").value = pass;
+  document.getElementById("obsHost").value = localStorage.getItem("obsHost_overlay") || "localhost";
+  document.getElementById("obsPort").value = localStorage.getItem("obsPort_overlay") || "4455";
+  document.getElementById("obsPassword").value = localStorage.getItem("obsPassword_overlay") || "";
 }
 
 async function initOBS() {
@@ -227,14 +173,11 @@ async function initOBS() {
   saveSettings();
 
   try {
-    console.log("[overlay] OBS WebSocket 接続試行...");
     statusText.style.color = "#facc15";
     statusText.textContent = "接続中...";
 
     obs.removeAllListeners("CustomEvent");
     obs.on("CustomEvent", (data) => {
-      console.log("[overlay] OBS イベント受信:", data);
-      
       const eventData = data.eventData || data;
       if (eventData && eventData.type === "MKADP_OVERLAY_UPDATE") {
         renderOverlay(eventData.payload);
@@ -242,23 +185,14 @@ async function initOBS() {
     });
 
     await obs.connect(`ws://${host}:${port}`, password);
-
-    console.log("[overlay] OBS WebSocket 接続成功");
     document.getElementById("configBox").style.display = "none";
-
   } catch (e) {
-    console.error("[overlay] OBS WebSocket 接続失敗:", e);
     statusText.style.color = "#f87171";
-    statusText.textContent = "接続失敗: パスワードを確認してください";
+    statusText.textContent = "接続失敗";
   }
 }
 
-// ======================================================
-// 3. 共通 描画処理（多言語＆メタ情報バッジ対応）
-// ======================================================
 function renderOverlay(payload) {
-  console.log("[overlay] renderOverlay 呼び出し:", payload);
-
   const courseNameEl = document.getElementById("overlayCourseName");
   const metaBadgeEl = document.getElementById("overlayMetaBadge");
   const line1El = document.getElementById("overlayStatsLine1");
@@ -272,31 +206,29 @@ function renderOverlay(payload) {
     return;
   }
 
-  // メタ情報（言語、シーズン、Tier）の取得
   const meta = payload.meta || { language: "ja", season: "ALL", tier: "ALL" };
-  const lang = overlayI18n[meta.language] ? meta.language : "ja";
-  const t = overlayI18n[lang];
+  
+  // 言語コードを安全に判定（"en" が含まれていれば英語、それ以外は日本語）
+  const langKey = (meta.language && meta.language.toLowerCase().includes("en")) ? "en" : "ja";
+  const t = overlayI18n[langKey];
 
-  // コース名とスタッツ
   const course = payload.nextCourse || t.unknownCourse;
   const s = payload.nextCourseStats || {};
 
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
   const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
 
-  // 1. ヘルパー（コース名 ＋ メタ情報バッジ）の更新
+  // 表示更新
   courseNameEl.textContent = course;
   metaBadgeEl.textContent = `${t.season} ${meta.season} / ${t.tier} ${meta.tier}`;
 
-  // 2. 統計数値の更新（多言語対応）
-  line1El.innerHTML = `${t.avgRank}：${fmt(s.avgRank)}位 / ${t.avgScore}：${fmt(s.avgScore)}点 / ${t.count}：${s.count ?? 0}${t.times}`;
+  line1El.innerHTML = `${t.avgRank}：${fmt(s.avgRank)} / ${t.avgScore}：${fmt(s.avgScore)} / ${t.count}：${s.count ?? 0}${t.times}`;
   line2El.innerHTML = `${t.topRate}：${percent(s.topRate)} / ${t.midRate}：${percent(s.midRate)} / ${t.bottomRate}：${percent(s.bottomRate)}`;
 }
 
-// 初期化
 window.addEventListener("DOMContentLoaded", () => {
   loadSettings();
-  initOBS(); // OBS接続を自動試行
+  initOBS();
 });
 </script>
 </body>
