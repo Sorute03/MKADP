@@ -2168,52 +2168,46 @@ saveRaceBtn.onclick = async () => {
     
 document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
-    const target = btn.dataset.tab;
-  
-    // すべてのタブを非表示にする
+    const target = btn.dataset.tab; // 例: "analysisTab", "historyTab" など
+
+    // 1. すべてのタブコンテンツを非表示にする
     document.querySelectorAll(".tabContent").forEach(tab => {
       tab.style.display = "none";
     });
-  
-    // すべてのボタンから active を外す
+
+    // 2. すべてのタブボタンから active クラスを外す
     document.querySelectorAll(".tabBtn").forEach(b => {
       b.classList.remove("active");
     });
-  
-    // 対象のタブを表示し、ボタンをアクティブにする
+
+    // 3. 対象のタブだけを確実に表示し、ボタンをアクティブにする
     const targetTabEl = document.getElementById(target);
     if (targetTabEl) {
-      targetTabEl.style.display = "block";
+      targetTabEl.style.display = "block"; // ★ここで必ず block にする！
+    } else {
+      console.error(`[Tab Error] ID "${target}" のタブ要素が見つかりません。`);
     }
     btn.classList.add("active");
-  
-    // タブごとの個別処理
+
+    // 4. ▼ タブ別の個別処理
     if (target === "historyTab") {
       if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
         renderRaceHistory(getFilteredRecords());
       }
 
     } else if (target === "analysisTab") {
-      // ★ 確実にレイアウトが確定した後に描画を走らせるため setTimeout と二重 rAF を併用
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (typeof initGrowthSelectors === "function") initGrowthSelectors();
-            if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
-            
-            if (typeof Chart !== "undefined" && Chart.instances) {
-              Object.values(Chart.instances).forEach(chart => {
-                chart.resize();
-                chart.update();
-              });
-            }
-            window.dispatchEvent(new Event('resize'));
-          });
-        });
-      }, 50);
+      // ★ 分析タブ用の再描画＆リサイズ処理
+      triggerAnalysisRefresh();
+
+    } else if (target === "coursestatsTab") {
+      if (typeof activateCourseStatsTab === "function") {
+        activateCourseStatsTab();
+      }
 
     } else if (target === "loungeTab") {
-      if (typeof activateLoungeTab === "function") activateLoungeTab();
+      if (typeof activateLoungeTab === "function") {
+        activateLoungeTab();
+      }
     }
   };
 });
@@ -3986,57 +3980,36 @@ function isVisible(elementId) {
   
 document.querySelectorAll(".tabBtn").forEach(btn => {
   btn.onclick = () => {
-    const target = btn.dataset.tab;
+    const target = btn.dataset.tab; // 例: "analysisTab", "historyTab" など
 
-    // すべてのタブを非表示
+    // 1. すべてのタブコンテンツを非表示にする
     document.querySelectorAll(".tabContent").forEach(tab => {
       tab.style.display = "none";
     });
 
-    // タブボタンの active をリセット
+    // 2. すべてのタブボタンから active クラスを外す
     document.querySelectorAll(".tabBtn").forEach(b => {
       b.classList.remove("active");
     });
 
-    // 対象タブを表示
+    // 3. 対象のタブだけを確実に表示し、ボタンをアクティブにする
     const targetTabEl = document.getElementById(target);
-    if (targetTabEl) targetTabEl.style.display = "block";
+    if (targetTabEl) {
+      targetTabEl.style.display = "block"; // ★ここで必ず block にする！
+    } else {
+      console.error(`[Tab Error] ID "${target}" のタブ要素が見つかりません。`);
+    }
     btn.classList.add("active");
 
-    // ▼ タブ別の処理
+    // 4. ▼ タブ別の個別処理
     if (target === "historyTab") {
       if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
         renderRaceHistory(getFilteredRecords());
       }
 
     } else if (target === "analysisTab") {
-      // ★ 分析タブ内の各種グラフや Canvas が確実にサイズを持つよう少し遅延させて再描画
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // 分析タブ内のすべての canvas のスタイル幅を確実に再適用
-            const analysisCanvasList = document.querySelectorAll("#analysisTab canvas");
-            analysisCanvasList.forEach(canvas => {
-              if (!canvas.style.width) canvas.style.width = "100%";
-            });
-
-            if (typeof initGrowthSelectors === "function") initGrowthSelectors();
-            if (typeof refreshAllAnalysisViews === "function") {
-              refreshAllAnalysisViews();
-            }
-
-            // Chart.js インスタンスがある場合はすべて強制リサイズ
-            if (typeof Chart !== "undefined" && Chart.instances) {
-              Object.values(Chart.instances).forEach(chart => {
-                chart.resize();
-                chart.update();
-              });
-            }
-
-            window.dispatchEvent(new Event('resize'));
-          });
-        });
-      }, 50);
+      // ★ 分析タブ用の再描画＆リサイズ処理
+      triggerAnalysisRefresh();
 
     } else if (target === "coursestatsTab") {
       if (typeof activateCourseStatsTab === "function") {
@@ -4054,17 +4027,16 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 
 // 分析タブ等の再描画共通ハンドラ（完全版）
 function triggerAnalysisRefresh() {
-  // ブラウザが display: block を反映し、レイアウト計算を終えるのを確実に待つため少し遅延させる
   setTimeout(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         try {
-          // 1. 各ビューのデータを最新化
+          // 各ビューの最新化
           if (typeof refreshAllAnalysisViews === "function") {
             refreshAllAnalysisViews();
           }
 
-          // 2. 画面上のすべての Chart.js インスタンスを強制リサイズ＆アップデート
+          // Chart.js インスタンスの強制リサイズ＆アップデート
           if (typeof Chart !== "undefined" && Chart.instances) {
             Object.values(Chart.instances).forEach(chart => {
               if (chart && typeof chart.resize === "function") {
@@ -4074,15 +4046,13 @@ function triggerAnalysisRefresh() {
             });
           }
 
-          // 3. ブラウザ全体のレイアウト再計算を促す
           window.dispatchEvent(new Event('resize'));
-          console.log("[Analysis] すべてのグラフの再描画とリサイズが完了しました。");
         } catch (err) {
-          console.error("[Analysis] 再描画中にエラーが発生しました:", err);
+          console.error("[Analysis Refresh Error]:", err);
         }
       });
     });
-  }, 60); // 50〜100ms程度が最も安定します
+  }, 50);
 }
   
 function activateCourseStatsTab() {
