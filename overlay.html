@@ -21,9 +21,28 @@
     background: rgba(0,0,0,0.55);
     padding: 12px 16px;
     border-radius: 8px;
-    font-size: 20px; /* 文字サイズはお好みに応じて調整してください */
+    font-size: 20px;
     line-height: 1.5;
-    white-space: nowrap; /* 各行が自動改行されないように固定 */
+    white-space: nowrap;
+  }
+  
+  /* コース名とメタ情報のヘッダー行 */
+  .overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 4px;
+  }
+
+  /* Season / Tier 表示用バッジ */
+  #overlayMetaBadge {
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: normal;
   }
   
   /* ★ OBS設定パネル（OBS画面でのインタラクト時のみ使用） */
@@ -84,9 +103,48 @@
   <div id="statusText"></div>
 </div>
 
-<div id="overlayBox">待機中...</div>
+<div id="overlayBox">
+  <div class="overlay-header">
+    <b id="overlayCourseName">待機中...</b>
+    <span id="overlayMetaBadge">Season -- / Tier --</span>
+  </div>
+  <div id="overlayStatsLine1">平均順位：- / 平均得点：- / 試行回数：0回</div>
+  <div id="overlayStatsLine2">上位率：- / 中位率：- / 下位率：-</div>
+</div>
 
 <script>
+// ==========================================
+// 多言語化辞書 (i18n)
+// ==========================================
+const overlayI18n = {
+  ja: {
+    waiting: "待機中...",
+    unknownCourse: "コース不明",
+    avgRank: "平均順位",
+    avgScore: "平均得点",
+    count: "試行回数",
+    times: "回",
+    topRate: "上位率",
+    midRate: "中位率",
+    bottomRate: "下位率",
+    season: "Season",
+    tier: "Tier"
+  },
+  en: {
+    waiting: "Waiting...",
+    unknownCourse: "Unknown Course",
+    avgRank: "Avg Rank",
+    avgScore: "Avg Score",
+    count: "Count",
+    times: "",
+    topRate: "Top Rate",
+    midRate: "Mid Rate",
+    bottomRate: "Bottom Rate",
+    season: "Season",
+    tier: "Tier"
+  }
+};
+
 // ======================================================
 // 1. PeerJS 連携処理
 // ======================================================
@@ -173,7 +231,6 @@ async function initOBS() {
     statusText.style.color = "#facc15";
     statusText.textContent = "接続中...";
 
-    // イベント重複登録を防止
     obs.removeAllListeners("CustomEvent");
     obs.on("CustomEvent", (data) => {
       console.log("[overlay] OBS イベント受信:", data);
@@ -197,33 +254,45 @@ async function initOBS() {
 }
 
 // ======================================================
-// 3. 共通 描画処理
-// ======================================================
-// ======================================================
-// 3. 共通 描画処理（3行レイアウト）
+// 3. 共通 描画処理（多言語＆メタ情報バッジ対応）
 // ======================================================
 function renderOverlay(payload) {
   console.log("[overlay] renderOverlay 呼び出し:", payload);
 
-  const box = document.getElementById("overlayBox");
+  const courseNameEl = document.getElementById("overlayCourseName");
+  const metaBadgeEl = document.getElementById("overlayMetaBadge");
+  const line1El = document.getElementById("overlayStatsLine1");
+  const line2El = document.getElementById("overlayStatsLine2");
 
   if (!payload) {
-    box.innerHTML = "待機中...";
+    courseNameEl.textContent = "待機中...";
+    metaBadgeEl.textContent = "Season -- / Tier --";
+    line1El.textContent = "";
+    line2El.textContent = "";
     return;
   }
 
-  const course = payload.nextCourse || "コース不明";
+  // メタ情報（言語、シーズン、Tier）の取得
+  const meta = payload.meta || { language: "ja", season: "ALL", tier: "ALL" };
+  const lang = overlayI18n[meta.language] ? meta.language : "ja";
+  const t = overlayI18n[lang];
+
+  // コース名とスタッツ
+  const course = payload.nextCourse || t.unknownCourse;
   const s = payload.nextCourseStats || {};
 
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
   const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
 
-  box.innerHTML = `
-    <div><b>${course}</b></div>
-    <div>平均順位：${fmt(s.avgRank)}位 / 平均得点：${fmt(s.avgScore)}点 / 試行回数：${s.count ?? 0}回</div>
-    <div>上位率：${percent(s.topRate)} / 中位率：${percent(s.midRate)} / 下位率：${percent(s.bottomRate)}</div>
-  `;
+  // 1. ヘルパー（コース名 ＋ メタ情報バッジ）の更新
+  courseNameEl.textContent = course;
+  metaBadgeEl.textContent = `${t.season} ${meta.season} / ${t.tier} ${meta.tier}`;
+
+  // 2. 統計数値の更新（多言語対応）
+  line1El.innerHTML = `${t.avgRank}：${fmt(s.avgRank)}位 / ${t.avgScore}：${fmt(s.avgScore)}点 / ${t.count}：${s.count ?? 0}${t.times}`;
+  line2El.innerHTML = `${t.topRate}：${percent(s.topRate)} / ${t.midRate}：${percent(s.midRate)} / ${t.bottomRate}：${percent(s.bottomRate)}`;
 }
+
 // 初期化
 window.addEventListener("DOMContentLoaded", () => {
   loadSettings();
