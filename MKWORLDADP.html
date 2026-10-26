@@ -1507,18 +1507,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   
-<!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
-<div id="analysisTab" class="tabContent" style="display:block;">
-
-  <div class="section-block">
-    <label>直近 N レースで比較：</label>
-    <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-    <button onclick="(allRecords)">再描画</button>
-  </div>
-
-  <!-- ここにグラフや分析UIが続く -->
-</div>
-  
 <button id="openModalBtn" data-i18n="btn_race_register" style="
   position: fixed;
   bottom: 24px;
@@ -2273,6 +2261,12 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 <div id="overlayBox">待機中...</div>
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
 <div id="analysisTab" class="tabContent" style="display:block;">
+  <div class="section-block">
+    <label>直近 N レースで比較：</label>
+    <input id="rangeN" type="number" value="30" min="1" max="20000" step="5">
+    <button onclick="(allRecords)">再描画</button>
+  </div>
+
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
   <h3 data-i18n="basic_stats_title">基本統計 / 勝率・平均順位・平均スコア</h3>
