@@ -1508,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="section-block">
     <label>直近 N レースで比較：</label>
     <input id="rangeN" type="number" value="30" min="5" max="200" step="5">
-    <button onclick="refreshModeView(allRecords)">再描画</button>
+    <button onclick="refreshAllAnalysisViews(allRecords)">再描画</button>
   </div>
 
   <!-- ここにグラフや分析UIが続く -->
@@ -2225,7 +2225,7 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
   document.querySelector('[data-tab="analysisTab"]').classList.add("active");
 
   // ▼ 分析タブを最新化
-  refreshModeView();
+  refreshAllAnalysisViews();
 
   // ▼ ★ コース stats タブを閉じたので Canvas を復元（安全対策）
   const imgCanvas = document.getElementById("adpCourseImage");
