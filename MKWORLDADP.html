@@ -3956,15 +3956,17 @@ let webhookList = [];
 
   
 function refreshAllAnalysisViews() {
-  updateStatsView();
-  updateGrowthView();
-  updateRadarView();
-  updateHeatmapView();
-  updateRankingView();
-  updateAICourseView();
-  update3DView();
-  updateScatterView();
-  updateLoungeSetView();
+  // それぞれのビュー更新を try-catch で独立させ、1つが失敗しても他が止まらないようにする
+  
+  try { if (typeof updateStatsView === "function") updateStatsView(); } catch (e) { console.error("updateStatsView error:", e); }
+  try { if (typeof updateGrowthView === "function") updateGrowthView(); } catch (e) { console.error("updateGrowthView error:", e); }
+  try { if (typeof updateRadarView === "function") updateRadarView(); } catch (e) { console.error("updateRadarView error:", e); }
+  try { if (typeof updateHeatmapView === "function") updateHeatmapView(); } catch (e) { console.error("updateHeatmapView error:", e); }
+  try { if (typeof updateRankingView === "function") updateRankingView(); } catch (e) { console.error("updateRankingView error:", e); }
+  try { if (typeof updateAICourseView === "function") updateAICourseView(); } catch (e) { console.error("updateAICourseView error:", e); }
+  try { if (typeof update3DView === "function") update3DView(); } catch (e) { console.error("update3DView error:", e); }
+  try { if (typeof updateScatterView === "function") updateScatterView(); } catch (e) { console.error("updateScatterView error:", e); }
+  try { if (typeof updateLoungeSetView === "function") updateLoungeSetView(); } catch (e) { console.error("updateLoungeSetView error:", e); }
 }
 
 document.querySelectorAll(".tabBtn").forEach(btn => {
