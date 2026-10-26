@@ -21,7 +21,7 @@
     background: rgba(0,0,0,0.6);
     padding: 14px 18px;
     border-radius: 8px;
-    font-size: 20px; /* 他の項目と揃えた文字サイズ */
+    font-size: 20px;
     line-height: 1.5;
     white-space: nowrap;
   }
@@ -89,8 +89,7 @@
 
 <div id="overlayBox">
   <div class="overlay-header">
-    <b id="overlayCourseName" style="font-size: 22px;">待icum...</b>
-    <!-- バッジ装飾を外し、他の項目と同じテキスト形式・同じ位置で表示 -->
+    <b id="overlayCourseName" style="font-size: 22px;">待機中...</b>
     <span id="overlayMetaText" style="font-size: 18px; color: #d1d5db; font-weight: normal;">Season -- / Tier --</span>
   </div>
   <div id="overlayStatsLine1">平均順位：- / 平均得点：- / 試行回数：0回</div>
@@ -98,6 +97,62 @@
 </div>
 
 <script>
+// コース名英語変換用辞書
+const MKWORLD_COURSE_I18N = {
+  "マリオブラザーズサーキット": "Mario Bros. Circuit",
+  "トロフィーシティ": "Crown City",
+  "シュポポコースター": "Whistlestop Summit",
+  "DKうちゅうセンター": "DK Spaceport",
+  "サンサンさばく": "Desert Hills",
+  "ヘイホーカーニバル": "Shy Guy Bazaar",
+  "ワリオスタジアム": "Wario Stadium",
+  "キラーシップ": "Airship Fortress",
+  "DKスノーマウンテン": "DK Pass",
+  "ロゼッタてんもんだい": "Starview Peak",
+  "アイスビルディング": "Sky-High Sundae",
+  "バニラレイク": "SNES Vanilla Lake 1",
+  "ワリオシップ": "Wario Shipyard",
+  "ノコノコビーチ": "Koopa Troopa Beach",
+  "SFCノコノコビーチ": "SNES Koopa Beach 1",
+  "リバーサイドサファリ": "Faraway Oasis",
+  "ピーチスタジアム": "Peach Stadium",
+  "ピーチビーチ": "Peach Beach",
+  "ソルティータウン": "Salty Salty Speedway",
+  "ディノディノジャングル": "Dino Dino Jungle",
+  "ハテナしんでん": "Great ? Block Ruins",
+  "プクプクフォールズ": "Cheep Cheep Falls",
+  "ショーニューロード": "Dandelion Depths",
+  "おばけシネマ": "Boo Cinema",
+  "おばけぬま1": "SNES Ghost Valley 1",
+  "おばけぬま2": "SNES Ghost Valley 2",
+  "おばけぬま3": "SNES Ghost Valley 3",
+  "ホネホネツイスター": "Dry Bones Burnout",
+  "モーモーカントリー": "Moo Moo Meadows",
+  "チョコマウンテン": "Choco Mountain",
+  "チョコレーとう1": "SNES Choco Island 1",
+  "チョコレーとう2": "SNES Choco Island 2",
+  "キノピオファクトリー": "Toad's Factory",
+  "クッパキャッスル": "Bowser's Castle",
+  "どんぐりツリーハウス": "Acorn Heights",
+  "マリオサーキット": "Mario Circuit",
+  "SFCマリオサーキット1": "SNES Mario Circuit 1",
+  "SFCマリオサーキット2": "SNES Mario Circuit 2",
+  "SFCマリオサーキット3": "SNES Mario Circuit 3",
+  "レインボーロード": "Rainbow Road"
+};
+
+// コース単体の翻訳ヘルパー（遷移コース "→" にも対応）
+function translateCourseForOverlay(courseName, lang) {
+  if (!courseName) return '';
+  if (lang !== 'en') return courseName;
+
+  if (courseName.includes('→') || courseName.includes('->')) {
+    const sep = courseName.includes('→') ? '→' : '->';
+    return courseName.split(sep).map(p => MKWORLD_COURSE_I18N[p.trim()] || p.trim()).join(' → ');
+  }
+  return MKWORLD_COURSE_I18N[courseName] || courseName;
+}
+
 const overlayI18n = {
   ja: {
     waiting: "待機中...",
@@ -199,14 +254,17 @@ function renderOverlay(payload) {
   const langKey = (meta.language && meta.language.toLowerCase().includes("en")) ? "en" : "ja";
   const t = overlayI18n[langKey];
 
-  const course = payload.nextCourse || t.unknownCourse;
+  // コース名の翻訳処理を適用
+  const rawCourse = payload.nextCourse || t.unknownCourse;
+  const displayCourse = translateCourseForOverlay(rawCourse, langKey);
+
   const s = payload.nextCourseStats || {};
 
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
   const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
 
-  // 表示更新（バッジを排除し、通常のテキスト形式でコース名の右側に配置）
-  courseNameEl.textContent = course;
+  // 表示更新
+  courseNameEl.textContent = displayCourse;
   metaTextEl.textContent = `${t.season} ${meta.season} / ${t.tier} ${meta.tier}`;
 
   line1El.innerHTML = `${t.avgRank}：${fmt(s.avgRank)} / ${t.avgScore}：${fmt(s.avgScore)} / ${t.count}：${s.count ?? 0}${t.times}`;
