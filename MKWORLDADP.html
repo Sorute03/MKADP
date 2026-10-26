@@ -2189,24 +2189,23 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
       }
 
     } else if (target === "analysisTab") {
-      // ★ ブラウザの描画フレーム（ペイント完了後）に確実にあわせる
-      requestAnimationFrame(() => {
+      // ★ 確実にレイアウトが確定した後に描画を走らせるため setTimeout と二重 rAF を併用
+      setTimeout(() => {
         requestAnimationFrame(() => {
-          if (typeof initGrowthSelectors === "function") initGrowthSelectors();
-          if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
-          
-          // ★ 画面上のすべての Chart.js インスタンスを強制的に再計算・再描画
-          if (typeof Chart !== "undefined" && Chart.instances) {
-            Object.values(Chart.instances).forEach(chart => {
-              chart.resize();
-              chart.update();
-            });
-          }
-
-          // ウィンドウの resize イベントも発火
-          window.dispatchEvent(new Event('resize'));
+          requestAnimationFrame(() => {
+            if (typeof initGrowthSelectors === "function") initGrowthSelectors();
+            if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
+            
+            if (typeof Chart !== "undefined" && Chart.instances) {
+              Object.values(Chart.instances).forEach(chart => {
+                chart.resize();
+                chart.update();
+              });
+            }
+            window.dispatchEvent(new Event('resize'));
+          });
         });
-      });
+      }, 50);
 
     } else if (target === "loungeTab") {
       if (typeof activateLoungeTab === "function") activateLoungeTab();
@@ -2233,25 +2232,25 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   const analysisTabBtn = document.querySelector('[data-tab="analysisTab"]');
   if (analysisTabBtn) analysisTabBtn.classList.add("active");
 
-  // ▼ 分析タブを最新化（描画フレームを正確に捉えてから実行）
-  requestAnimationFrame(() => {
+  // ▼ 少し遅延させてから描画とリサイズを実行
+  setTimeout(() => {
     requestAnimationFrame(() => {
-      if (typeof refreshAllAnalysisViews === "function") {
-        refreshAllAnalysisViews();
-      }
+      requestAnimationFrame(() => {
+        if (typeof refreshAllAnalysisViews === "function") {
+          refreshAllAnalysisViews();
+        }
 
-      // ▼ すべての Chart.js インスタンスを強制リサイズ＆再描画
-      if (typeof Chart !== "undefined" && Chart.instances) {
-        Object.values(Chart.instances).forEach(chart => {
-          chart.resize();
-          chart.update();
-        });
-      }
+        if (typeof Chart !== "undefined" && Chart.instances) {
+          Object.values(Chart.instances).forEach(chart => {
+            chart.resize();
+            chart.update();
+          });
+        }
 
-      // ▼ ウィンドウの resize イベントも発火してレイアウトを安定させる
-      window.dispatchEvent(new Event('resize'));
+        window.dispatchEvent(new Event('resize'));
+      });
     });
-  });
+  }, 50);
 
   // ▼ ★ コース stats タブを閉じたので Canvas を復元（安全対策）
   const imgCanvas = document.getElementById("adpCourseImage");
@@ -2267,6 +2266,10 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   }
 };
 </script>
+
+
+
+  
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
@@ -3985,12 +3988,32 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 
     // ▼ タブ別の処理
     if (target === "historyTab") {
-      renderRaceHistory(getFilteredRecords()); // ★ 修正
+      if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
+        renderRaceHistory(getFilteredRecords());
+      }
 
     } else if (target === "analysisTab") {
-      if (typeof refreshAllAnalysisViews === "function") {
-        refreshAllAnalysisViews(); // ★ 修正
-      }
+      // ★ 分析タブ内の各種グラフや Canvas が確実にサイズを持つよう少し遅延させて再描画
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (typeof initGrowthSelectors === "function") initGrowthSelectors();
+            if (typeof refreshAllAnalysisViews === "function") {
+              refreshAllAnalysisViews();
+            }
+
+            // Chart.js インスタンスがある場合はすべて強制リサイズ
+            if (typeof Chart !== "undefined" && Chart.instances) {
+              Object.values(Chart.instances).forEach(chart => {
+                chart.resize();
+                chart.update();
+              });
+            }
+
+            window.dispatchEvent(new Event('resize'));
+          });
+        });
+      }, 50);
 
     } else if (target === "coursestatsTab") {
       if (typeof activateCourseStatsTab === "function") {
@@ -4005,6 +4028,25 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
   };
 });
 
+
+
+// 再描画ボタン等がある場合の共通ハンドラ
+function triggerAnalysisRefresh() {
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      if (typeof refreshAllAnalysisViews === "function") {
+        refreshAllAnalysisViews();
+      }
+      if (typeof Chart !== "undefined" && Chart.instances) {
+        Object.values(Chart.instances).forEach(chart => {
+          chart.resize();
+          chart.update();
+        });
+      }
+      window.dispatchEvent(new Event('resize'));
+    });
+  }, 30);
+}
 
   
 function activateCourseStatsTab() {
