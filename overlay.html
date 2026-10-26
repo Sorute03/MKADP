@@ -21,31 +21,19 @@
     background: rgba(0,0,0,0.6);
     padding: 14px 18px;
     border-radius: 8px;
-    font-size: 20px;
+    font-size: 20px; /* 他の項目と揃えた文字サイズ */
     line-height: 1.5;
     white-space: nowrap;
   }
   
-  /* コース名とメタ情報のヘッダー行 */
+  /* コース名とシーズン/Tierを同じ形式で横並びにするヘッダー行 */
   .overlay-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
+    align-items: baseline;
+    gap: 15px;
     margin-bottom: 6px;
   }
 
-  /* ★ Season / Tier 表示用バッジ（サイズを大きく拡大） */
-  #overlayMetaBadge {
-    font-size: 16px;
-    font-weight: bold;
-    background: rgba(37, 99, 235, 0.8); /* 少し青み掛けて目立たせることも可能（rgba(255,255,255,0.25)でもOK） */
-    color: #ffffff;
-    padding: 3px 10px;
-    border-radius: 5px;
-    letter-spacing: 0.5px;
-  }
-  
   #configBox {
     position: absolute;
     top: 20px;
@@ -101,8 +89,9 @@
 
 <div id="overlayBox">
   <div class="overlay-header">
-    <b id="overlayCourseName" style="font-size: 22px;">待機中...</b>
-    <span id="overlayMetaBadge">Season -- / Tier --</span>
+    <b id="overlayCourseName" style="font-size: 22px;">待icum...</b>
+    <!-- バッジ装飾を外し、他の項目と同じテキスト形式・同じ位置で表示 -->
+    <span id="overlayMetaText" style="font-size: 18px; color: #d1d5db; font-weight: normal;">Season -- / Tier --</span>
   </div>
   <div id="overlayStatsLine1">平均順位：- / 平均得点：- / 試行回数：0回</div>
   <div id="overlayStatsLine2">上位率：- / 中位率：- / 下位率：-</div>
@@ -194,21 +183,19 @@ async function initOBS() {
 
 function renderOverlay(payload) {
   const courseNameEl = document.getElementById("overlayCourseName");
-  const metaBadgeEl = document.getElementById("overlayMetaBadge");
+  const metaTextEl = document.getElementById("overlayMetaText");
   const line1El = document.getElementById("overlayStatsLine1");
   const line2El = document.getElementById("overlayStatsLine2");
 
   if (!payload) {
     courseNameEl.textContent = "待機中...";
-    metaBadgeEl.textContent = "Season -- / Tier --";
+    metaTextEl.textContent = "Season -- / Tier --";
     line1El.textContent = "";
     line2El.textContent = "";
     return;
   }
 
   const meta = payload.meta || { language: "ja", season: "ALL", tier: "ALL" };
-  
-  // 言語コードを安全に判定（"en" が含まれていれば英語、それ以外は日本語）
   const langKey = (meta.language && meta.language.toLowerCase().includes("en")) ? "en" : "ja";
   const t = overlayI18n[langKey];
 
@@ -218,9 +205,9 @@ function renderOverlay(payload) {
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : v);
   const percent = (v) => (typeof v === "number" ? (v * 100).toFixed(1) + "%" : v);
 
-  // 表示更新
+  // 表示更新（バッジを排除し、通常のテキスト形式でコース名の右側に配置）
   courseNameEl.textContent = course;
-  metaBadgeEl.textContent = `${t.season} ${meta.season} / ${t.tier} ${meta.tier}`;
+  metaTextEl.textContent = `${t.season} ${meta.season} / ${t.tier} ${meta.tier}`;
 
   line1El.innerHTML = `${t.avgRank}：${fmt(s.avgRank)} / ${t.avgScore}：${fmt(s.avgScore)} / ${t.count}：${s.count ?? 0}${t.times}`;
   line2El.innerHTML = `${t.topRate}：${percent(s.topRate)} / ${t.midRate}：${percent(s.midRate)} / ${t.bottomRate}：${percent(s.bottomRate)}`;
