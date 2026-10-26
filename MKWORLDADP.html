@@ -2189,26 +2189,34 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
       }
 
     } else if (target === "analysisTab") {
-      // ★ display: block が確実に適用されてレイアウトが確定した後に描画を実行
-      setTimeout(() => {
-        if (typeof initGrowthSelectors === "function") initGrowthSelectors();
-        if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
-        
-        // グラフライブラリ（Chart.jsなど）がサイズを再計算するようにウィンドウのresizeを通知
-        window.dispatchEvent(new Event('resize'));
-      }, 50);
+      // ★ ブラウザの描画フレーム（ペイント完了後）に確実にあわせる
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (typeof initGrowthSelectors === "function") initGrowthSelectors();
+          if (typeof refreshAllAnalysisViews === "function") refreshAllAnalysisViews();
+          
+          // ★ 画面上のすべての Chart.js インスタンスを強制的に再計算・再描画
+          if (typeof Chart !== "undefined" && Chart.instances) {
+            Object.values(Chart.instances).forEach(chart => {
+              chart.resize();
+              chart.update();
+            });
+          }
+
+          // ウィンドウの resize イベントも発火
+          window.dispatchEvent(new Event('resize'));
+        });
+      });
 
     } else if (target === "loungeTab") {
       if (typeof activateLoungeTab === "function") activateLoungeTab();
     }
   };
 });
-
 </script>
 
 <script>
-
-  document.getElementById("backToAnalysisBtn").onclick = () => {
+document.getElementById("backToAnalysisBtn").onclick = () => {
 
   // ▼ 全タブを閉じる
   document.querySelectorAll(".tabContent").forEach(tab => {
@@ -2222,21 +2230,42 @@ document.querySelectorAll(".tabBtn").forEach(btn => {
 
   // ▼ 分析タブを表示
   document.getElementById("analysisTab").style.display = "block";
-  document.querySelector('[data-tab="analysisTab"]').classList.add("active");
+  const analysisTabBtn = document.querySelector('[data-tab="analysisTab"]');
+  if (analysisTabBtn) analysisTabBtn.classList.add("active");
 
-  // ▼ 分析タブを最新化
-  refreshAllAnalysisViews();
+  // ▼ 分析タブを最新化（描画フレームを正確に捉えてから実行）
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (typeof refreshAllAnalysisViews === "function") {
+        refreshAllAnalysisViews();
+      }
+
+      // ▼ すべての Chart.js インスタンスを強制リサイズ＆再描画
+      if (typeof Chart !== "undefined" && Chart.instances) {
+        Object.values(Chart.instances).forEach(chart => {
+          chart.resize();
+          chart.update();
+        });
+      }
+
+      // ▼ ウィンドウの resize イベントも発火してレイアウトを安定させる
+      window.dispatchEvent(new Event('resize'));
+    });
+  });
 
   // ▼ ★ コース stats タブを閉じたので Canvas を復元（安全対策）
   const imgCanvas = document.getElementById("adpCourseImage");
-  imgCanvas.width = 800;
-  imgCanvas.height = 600;
+  if (imgCanvas) {
+    imgCanvas.width = 800;
+    imgCanvas.height = 600;
+  }
 
   const chartCanvas = document.getElementById("adpCourseStatsChart");
-  chartCanvas.width = 600;
-  chartCanvas.height = 300;
+  if (chartCanvas) {
+    chartCanvas.width = 600;
+    chartCanvas.height = 300;
+  }
 };
-
 </script>
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
