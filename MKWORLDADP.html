@@ -9927,13 +9927,30 @@ function isAutoTrackEnabled() {
 }
 
 // ==========================================
-// 2. スマート合算対応のオーバーレイ用フィルタリング関数
+// 前のシーズン文字列を安全に算出するヘルパー関数 (例: "S3" -> "S2", "3" -> "2")
 // ==========================================
+function getPrevSeason(seasonStr) {
+  if (!seasonStr) return null;
+  const str = String(seasonStr).trim();
+  
+  // 数字のみの場合
+  if (!isNaN(str)) {
+    const num = Number(str) - 1;
+    return num > 0 ? String(num) : null;
+  }
+  
+  // "S3", "season3", "S_3" などのプレフィックス付きの場合
+  const match = str.match(/^([a-zA-Z_-]*?)(\d+)$/);
+  if (match) {
+    const prefix = match[1];
+    const num = parseInt(match[2], 10) - 1;
+    return num > 0 ? prefix + num : null;
+  }
+  return null;
+}
+
 // ==========================================
-// スマート合算対応のオーバーレイ用フィルタリング関数（件数入力UI対応版）
-// ==========================================
-// ==========================================
-// 段階的フォールバック（指定S ➔ 前S ➔ ALLシーズン・指定Tier ➔ ALLシーズン・ALL Tier）
+// 段階的フォールバック対応のオーバーレイ用フィルタリング関数
 // ==========================================
 function getFilteredStatsForOverlay(stats) {
   if (!stats || !stats.history) return { history: [] };
@@ -9969,18 +9986,24 @@ function getFilteredStatsForOverlay(stats) {
       
       // Step 1: 指定シーズン ＆ 指定Tier
       let exactMatch = filtered.filter(r => String(r.season) === String(targetSeason) && String(r.tier).trim() === String(targetTier).trim());
-      console.log(`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length}`);
+      console.log(`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length} (閾値: ${minCount})`);
 
       if (!shouldFallback || exactMatch.length >= minCount) {
         resultRecords = exactMatch;
       } else {
         // Step 2: 指定シーズン + 1個前のシーズン (同条件Tier)
-        const prevSeason = Number(targetSeason) - 1;
-        let seasonFallbackMatch = filtered.filter(r => 
-          (String(r.season) === String(targetSeason) || (prevSeason > 0 && String(r.season) === String(prevSeason))) && 
-          String(r.tier).trim() === String(targetTier).trim()
-        );
-        console.log(`[Fallback Step 2] 前シーズン(${prevSeason})合算 -> 件数: ${seasonFallbackMatch.length}`);
+        const prevSeason = getPrevSeason(targetSeason);
+        console.log(`[Fallback Step 2] 前シーズン計算結果: ${prevSeason}`);
+
+        let seasonFallbackMatch = filtered.filter(r => {
+          const s = String(r.season);
+          const isTarget = s === String(targetSeason);
+          const isPrev = prevSeason && s === String(prevSeason);
+          const isSameTier = String(r.tier).trim() === String(targetTier).trim();
+          return (isTarget || isPrev) && isSameTier;
+        });
+        
+        console.log(`[Fallback Step 2] 前シーズン合算 -> 件数: ${seasonFallbackMatch.length}`);
 
         if (seasonFallbackMatch.length >= minCount) {
           resultRecords = seasonFallbackMatch;
@@ -10023,6 +10046,8 @@ function getFilteredStatsForOverlay(stats) {
   console.log(`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
   return { history: filtered };
 }
+
+  
   
   
 function updateOverlayJson(payload) {
