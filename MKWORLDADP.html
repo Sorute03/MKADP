@@ -1794,9 +1794,14 @@ async function deleteSet(ts) {
   // ▼ メモリ側から削除
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
-  // ▼ UI 更新
-  ();
-  renderRaceHistory();
+  // ▼ UI 更新（分析ビューの再描画と履歴の再描画）
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
+  }
+
+  if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
+    renderRaceHistory(getFilteredRecords());
+  }
 }
 
 
@@ -1854,7 +1859,7 @@ saveRaceBtn.onclick = async () => {
      DB に保存（新規レコード）
   ========== */
   for (const r of newRecords) {
-    await addRecord(r); // ★ cord から修正
+    await addRecord(r);
   }
 
   /* ==========
@@ -1865,12 +1870,16 @@ saveRaceBtn.onclick = async () => {
   /* ==========
      UI 再描画（共通フィルター適用）
   ========== */
-  const filtered = getFilteredRecords(); // ★ getGloballyFilteredRecords から修正
+  const filtered = getFilteredRecords();
 
-  if (typeof  === "function") {
-    (); // ★ refreshModeView から修正
+  // ▼ 分析ビューとレース履歴の再描画を確実に実行
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
   }
-  renderRaceHistory(filtered);
+  
+  if (typeof renderRaceHistory === "function") {
+    renderRaceHistory(filtered);
+  }
 
   /* ==========
      後処理
@@ -1878,6 +1887,7 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+  
 </script>
 
 
@@ -2036,14 +2046,15 @@ async function deleteRecord(ts) {
   allRecords = allRecords.filter(r => r.timestamp !== ts);
 
   // UI再描画
-  renderRaceHistory(getFilteredRecords());
+  if (typeof renderRaceHistory === "function" && typeof getFilteredRecords === "function") {
+    renderRaceHistory(getFilteredRecords());
+  }
   
-  // もし他の分析ビューも更新する必要があるならここで呼ぶ
-  if (typeof  === "function") {
+  // 分析ビューの更新
+  if (typeof refreshAllAnalysisViews === "function") {
     refreshAllAnalysisViews();
   }
 }
-
 </script>
     
 <script>
