@@ -1667,8 +1667,10 @@ function renderRaceHistory(records) {
   // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
   list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
 
+  const dict = i18nDict[currentLang] || i18nDict['ja'];
+
   if (!list.length) {
-    box.innerHTML = "<p>レース履歴がありません。</p>";
+    box.innerHTML = `<p>${dict.msg_no_data || "レース履歴がありません。"}</p>`;
     return;
   }
 
@@ -1680,18 +1682,27 @@ function renderRaceHistory(records) {
     div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
     const date = new Date(r.timestamp).toLocaleString();
+    
+    // コース名を現在の言語に合わせて翻訳
+    const translatedCourse = typeof translateMKWorldCourse === "function" 
+      ? translateMKWorldCourse(r.course, currentLang) 
+      : r.course;
+
+    // 順位やスコアの単位（日本語「位/点」、英語は空または単位付き）
+    const rankSuffix = dict.unit_rank !== undefined ? dict.unit_rank : "位";
+    const ptsSuffix = dict.unit_pts !== undefined ? dict.unit_pts : "点";
 
     div.innerHTML = `
-      <strong>${r.course}</strong>
-      (${r.rank}位 / ${r.score}点 / ${r.mode})
+      <strong>${translatedCourse}</strong>
+      (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${r.mode})
       <span style="margin-left:10px; color:#555;">${date}</span>
 
-      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;">
-        編集
+      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_edit">
+        ${dict.btn_edit || "編集"}
       </button>
 
-      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;">
-        削除
+      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_delete">
+        ${dict.btn_delete || "削除"}
       </button>
     `;
 
