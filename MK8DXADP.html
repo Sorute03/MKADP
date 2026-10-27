@@ -897,8 +897,8 @@ const MK8DX_COURSE_I18N = {
 
 // 逆引き辞書（英語名 -> 日本語名）
 const MKWORLD_COURSE_REVERSE = {};
-Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
-  MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
+Object.keys(MK8DX_COURSE_I18N).forEach(ja => {
+  MKWORLD_COURSE_REVERSE[MK8DX_COURSE_I18N[ja]] = ja;
 });
 
 /**
@@ -916,7 +916,7 @@ function translateMKWorldCourse(courseName, targetLang = currentLang) {
 
 function translateSingleTrack(name, targetLang) {
   if (targetLang === 'en') {
-    return MKWORLD_COURSE_I18N[name] || name;
+    return MK8DX_COURSE_I18N[name] || name;
   } else {
     return MKWORLD_COURSE_REVERSE[name] || name;
   }
