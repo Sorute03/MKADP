@@ -1688,21 +1688,29 @@ function renderRaceHistory(records) {
       ? translateMKWorldCourse(r.course, currentLang) 
       : r.course;
 
-    // 順位やスコアの単位（日本語「位/点」、英語は空または単位付き）
+    // 順位やスコアの単位
     const rankSuffix = dict.unit_rank !== undefined ? dict.unit_rank : "位";
     const ptsSuffix = dict.unit_pts !== undefined ? dict.unit_pts : "点";
 
+    // モード名を言語に合わせて綺麗に変換（辞書から取得、なければそのまま）
+    let modeKey = `opt_mode_${r.mode}`;
+    const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, ''); // 括弧書きがあれば省くかそのまま
+
+    // ボタンのテキスト
+    const editLabel = dict.btn_edit || "編集";
+    const deleteLabel = dict.btn_delete || "削除";
+
     div.innerHTML = `
       <strong>${translatedCourse}</strong>
-      (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${r.mode})
+      (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${translatedMode})
       <span style="margin-left:10px; color:#555;">${date}</span>
 
       <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_edit">
-        ${dict.btn_edit || "編集"}
+        ${editLabel}
       </button>
 
       <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_delete">
-        ${dict.btn_delete || "削除"}
+        ${deleteLabel}
       </button>
     `;
 
