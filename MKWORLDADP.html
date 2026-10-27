@@ -1748,9 +1748,9 @@ async function openEditRecord(ts) {
   // 1. モーダルを表示
   modal.classList.add("show");
 
-  // 2. まずモーダル内の Season / Tier のセレクトボックス（<option>）を確実に生成・更新する
-  if (typeof populateSeasonAndTierOptions === "function") {
-    populateSeasonAndTierOptions();
+  // 2. モーダル内のセレクトの選択肢（<option>）を生成
+  if (typeof initModalSelectors === "function") {
+    initModalSelectors();
   }
 
   // 3. モードをセットして入力欄の表示状態を切り替える
@@ -1759,66 +1759,56 @@ async function openEditRecord(ts) {
     updateModalMode();
   }
 
-  // 4. Lounge モードの場合、セレクトの選択肢が生成された後に Tier と Season の値をセット
+  // 4. Lounge モードの場合、Tier と Season の値をセット
   if (r.mode === "lounge") {
-    const tierEl = document.getElementById("modalTier") || modalTier;
-    const seasonEl = document.getElementById("modalSeason") || modalSeason;
+    // modalTier に r.tier が存在するかチェック（"ALL" や存在しない値対策）
+    const tierExists = Array.from(modalTier.options).some(opt => opt.value === r.tier);
+    if (tierExists) {
+      modalTier.value = r.tier;
+    } else {
+      // 存在しない場合（ALL等）は先頭のTierを選択状態にする
+      modalTier.selectedIndex = 0;
+    }
 
-    if (tierEl) tierEl.value = r.tier || "ALL";
-    if (seasonEl) seasonEl.value = r.season || "ALL";
+    modalSeason.value = r.season || "ALL";
   }
 
-  // 5. レース入力欄（1件分）を生成
+  // 5. レース入力欄（1件分）を生成＆値セット
   generateRaceInputs(1);
 
-  // 6. コース・順位・スコアをセット
-  const courseEl = document.getElementById("raceCourse_1");
-  const rankEl   = document.getElementById("raceRank_1");
-  const scoreEl  = document.getElementById("raceScore_1");
+  document.getElementById("raceCourse_1").value = r.course || "";
+  document.getElementById("raceRank_1").value = r.rank || "";
+  document.getElementById("raceScore_1").value = r.score || "";
 
-  if (courseEl) courseEl.value = r.course || "";
-  if (rankEl)   rankEl.value   = r.rank || "";
-  if (scoreEl)  scoreEl.value  = r.score || "";
-
-  // 7. 保存ボタンのイベント登録
+  // 6. 保存ボタンのイベント登録
   saveRaceBtn.onclick = async () => {
-    const course = document.getElementById("raceCourse_1")?.value;
-    const rank   = Number(document.getElementById("raceRank_1")?.value);
-    const score  = Number(document.getElementById("raceScore_1")?.value);
+    const course = document.getElementById("raceCourse_1").value;
+    const rank   = Number(document.getElementById("raceRank_1").value);
+    const score  = Number(document.getElementById("raceScore_1").value);
 
     if (!course || !rank) {
       alert("コースと順位は必須です");
       return;
     }
 
-    // ▼ レコード更新
     r.course = course;
     r.rank   = rank;
     r.score  = score;
     r.mode   = modalMode.value;
 
     if (r.mode === "lounge") {
-      const tierEl = document.getElementById("modalTier") || modalTier;
-      const seasonEl = document.getElementById("modalSeason") || modalSeason;
-      r.tier   = tierEl ? tierEl.value : "ALL";
-      r.season = seasonEl ? seasonEl.value : "ALL";
+      r.tier   = modalTier.value;
+      r.season = modalSeason.value;
     } else {
       r.tier = null;
       r.season = null;
     }
 
-    // ▼ DB に保存
-    if (typeof updateRecord === "function") {
-      await updateRecord(r);
-    } else if (typeof updateRecordFromDB === "function") {
-      await updateRecordFromDB(r);
-    }
+    await updateRecord(r);
 
-    // ▼ メモリ側も更新
     const idx = allRecords.findIndex(x => x.timestamp === ts);
     if (idx >= 0) allRecords[idx] = r;
 
-    // ▼ UI 更新
     if (typeof refreshAllAnalysisViews === "function") {
       refreshAllAnalysisViews();
     }
