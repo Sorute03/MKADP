@@ -733,6 +733,8 @@ const i18nDict = {
     opt_tier_lower: "1個下のTierと合算",
     opt_tier_all: "ALL（全Tier）と合算",
     opt_tier_none: "合算しない",
+    btn_edit: "編集",
+    btn_delete: "削除",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -953,6 +955,8 @@ const i18nDict = {
     opt_tier_lower: "Merge with lower Tier",
     opt_tier_all: "Merge with ALL Tiers",
     opt_tier_none: "Do not merge",
+    btn_edit: "Edit",
+    btn_delete: "Delete",
     }
   };
 
@@ -1697,9 +1701,7 @@ function renderRaceHistory(records) {
     const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, ''); // 括弧書きがあれば省くかそのまま
 
     // ボタンのテキスト
-    const editLabel = dict.btn_edit || "編集";
-    const deleteLabel = dict.btn_delete || "削除";
-
+   
     div.innerHTML = `
       <strong>${translatedCourse}</strong>
       (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${translatedMode})
