@@ -1746,30 +1746,30 @@ async function openEditRecord(ts) {
   // 1. モーダルを表示
   modal.classList.add("show");
 
-  // 2. モーダル内の Tier / Season 選択肢（<option>）を生成・最新化
+  // 2. まずモーダル内の Season / Tier のセレクトボックス（<option>）を確実に生成・更新する
   if (typeof populateSeasonAndTierOptions === "function") {
     populateSeasonAndTierOptions();
   }
-  if (typeof populateModalSeasonAndTier === "function") {
-    populateModalSeasonAndTier();
-  }
 
-  // 3. モードをセットしてUI切り替え
+  // 3. モードをセットして入力欄の表示状態を切り替える
   modalMode.value = r.mode;
   if (typeof updateModalMode === "function") {
     updateModalMode();
   }
 
-  // 4. Modeがloungeの場合、選択肢が生成された後に Tier と Season をセット
+  // 4. Lounge モードの場合、セレクトの選択肢が生成された後に Tier と Season の値をセット
   if (r.mode === "lounge") {
-    if (modalTier) modalTier.value = r.tier || "ALL";
-    if (modalSeason) modalSeason.value = r.season || "ALL";
+    const tierEl = document.getElementById("modalTier") || modalTier;
+    const seasonEl = document.getElementById("modalSeason") || modalSeason;
+
+    if (tierEl) tierEl.value = r.tier || "ALL";
+    if (seasonEl) seasonEl.value = r.season || "ALL";
   }
 
-  // 5. レース入力欄を生成（編集時は1件）
+  // 5. レース入力欄（1件分）を生成
   generateRaceInputs(1);
 
-  // 6. コース・順位・スコアのセット（選択肢が存在することを確認してセット）
+  // 6. コース・順位・スコアをセット
   const courseEl = document.getElementById("raceCourse_1");
   const rankEl   = document.getElementById("raceRank_1");
   const scoreEl  = document.getElementById("raceScore_1");
@@ -1778,7 +1778,7 @@ async function openEditRecord(ts) {
   if (rankEl)   rankEl.value   = r.rank || "";
   if (scoreEl)  scoreEl.value  = r.score || "";
 
-  // 7. 保存処理のクリックハンドラ登録
+  // 7. 保存ボタンのイベント登録
   saveRaceBtn.onclick = async () => {
     const course = document.getElementById("raceCourse_1")?.value;
     const rank   = Number(document.getElementById("raceRank_1")?.value);
@@ -1796,8 +1796,13 @@ async function openEditRecord(ts) {
     r.mode   = modalMode.value;
 
     if (r.mode === "lounge") {
-      r.tier   = modalTier ? modalTier.value : "ALL";
-      r.season = modalSeason ? modalSeason.value : "ALL";
+      const tierEl = document.getElementById("modalTier") || modalTier;
+      const seasonEl = document.getElementById("modalSeason") || modalSeason;
+      r.tier   = tierEl ? tierEl.value : "ALL";
+      r.season = seasonEl ? seasonEl.value : "ALL";
+    } else {
+      r.tier = null;
+      r.season = null;
     }
 
     // ▼ DB に保存
@@ -1811,7 +1816,7 @@ async function openEditRecord(ts) {
     const idx = allRecords.findIndex(x => x.timestamp === ts);
     if (idx >= 0) allRecords[idx] = r;
 
-    // ▼ UI 更新（分析ビューとレース履歴を両方最新化）
+    // ▼ UI 更新
     if (typeof refreshAllAnalysisViews === "function") {
       refreshAllAnalysisViews();
     }
