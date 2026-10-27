@@ -1199,12 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <br><br>
 
   <label data-i18n="lbl_mode">モード</label><br>
-  <select id="loungeModeSelect" style="width:200px;">
-    <option value="ALL">ALL</option>
-    <option value="12">12P</option>
-    <option value="24">24P</option>
-  </select>
-  <br><br>
+  
 
   <div id="loungeStats" style="margin-top:20px;"></div>
   <canvas id="loungeMMRChart" width="1000" height="500" style="margin-top:20px;"></canvas>
@@ -7512,7 +7507,6 @@ function filterLoungeHistory(history) {
   const season = loungeSeasonSelect.value;
   const tier = loungeTierSelect.value;
   const recent = loungeRecentSelect.value;
-  const mode = loungeModeSelect.value;
 
   let result = history;
 
