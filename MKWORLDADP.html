@@ -1768,18 +1768,21 @@ async function openEditRecord(ts) {
     const idx = allRecords.findIndex(x => x.timestamp === ts);
     if (idx >= 0) allRecords[idx] = r;
 
-    // ▼ UI 更新（正しい関数名に修正）
-    const filtered = getFilteredRecords();
-    if (typeof  === "function") {
-      ();
+    // ▼ UI 更新（分析ビューとレース履歴を両方最新化）
+    if (typeof refreshAllAnalysisViews === "function") {
+      refreshAllAnalysisViews();
     }
-    renderRaceHistory(filtered);
+    
+    const filtered = getFilteredRecords();
+    if (typeof renderRaceHistory === "function") {
+      renderRaceHistory(filtered);
+    }
 
     modal.classList.remove("show");
     editingTimestamp = null;
   };
 }
-
+  
 </script>
 
 
