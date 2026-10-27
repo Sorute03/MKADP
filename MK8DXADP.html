@@ -2659,7 +2659,7 @@ function openDB() {
 
   dbPromise = new Promise((resolve, reject) => {
     // ★ バージョンを 2 に上げることで、既存のデータベースにストアがない場合でも確実に作成処理(onupgradeneeded)を走らせます
-    const req = indexedDB.open("mogiDB", 2);
+    const req = indexedDB.open("mogiDXDB", 2);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
@@ -8241,7 +8241,7 @@ function getRankInfo(mmr, season) {
 async function loadADPIndexedDBRecords() {
   try {
     const db = await new Promise((resolve, reject) => {
-      const req = indexedDB.open("mogiDB"); // バージョン指定は既存の定義に合わせてください
+      const req = indexedDB.open("mogiDXDB"); // バージョン指定は既存の定義に合わせてください
       req.onerror = () => reject(req.error);
       req.onsuccess = () => resolve(req.result);
     });
@@ -10383,8 +10383,8 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
 // ==========================================
 // 1. 定数・設定定義
 // ==========================================
-const GAME_TYPE = 'MKWORLD'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
-const DB_NAME = 'mogiDB';
+const GAME_TYPE = 'MK8DX'; // ファイルごとに 'MK8DX' や 'MKWORLD' に定義
+const DB_NAME = 'mogiDXDB';
 const STORE_NAME = 'records';
 const WORKER_URL = 'https://mkadp.lemochan.workers.dev/api/sync'; // ★ご自身の Worker URL に置き換えてください
 
@@ -10546,7 +10546,7 @@ async function sendToCloudflareWorker(payload) {
  */
 async function sendBackupDataViaForm() {
   try {
-    console.log('[Sync] mogiDB からデータを取得してバックアップ送信を開始します...');
+    console.log('[Sync] mogiDXDB からデータを取得してバックアップ送信を開始します...');
 
     // 1. mogiDB から全データを自動取得
     const allRecords = await getAllRecordsFromMogiDB();
