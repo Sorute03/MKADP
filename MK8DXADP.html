@@ -7850,25 +7850,23 @@ function drawLoungeMMRChart(stats) {
 function getRankInfoV1(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
-  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
-  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
-  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
-  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
-  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
-  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
-  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  if (mmr >= 14500) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 13000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 11500) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 10000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 7000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 5500)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 4000)  return { rank: "Bronze", color: "#cc6600" };
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
 function getRankInfoV2(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
-  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
-  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 14000) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 13000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
   if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
   if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
   if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
@@ -7877,8 +7875,51 @@ function getRankInfoV2(mmr) {
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
+
+function getRankInfoV3(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 15000) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 14000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 12000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 10000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+
+function getRankInfoV4(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 17000) return { rank: "Grand Master", color: "#4B0000" };
+  if (mmr >= 16000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 14000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 12000)  return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 10000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+
 function getRankInfo(mmr, season) {
-  return Number(season) >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+  const s = Number(season) || 0;
+
+  if (s <= 4) {
+    return getRankInfoV1(mmr);
+  } else if (s === 5) {
+    return getRankInfoV2(mmr);
+  } else if (s === 6 || s === 7) {
+    return getRankInfoV3(mmr);
+  } else {
+    // season 8 以降
+    return getRankInfoV4(mmr);
+  }
 }
 
 
