@@ -7886,13 +7886,13 @@ function buildMKCUrl(playerId, season) {
 
   // ★ Season1 は p を付けない
   if (season == 1) {
-    return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
+    return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=1`;
   }
 
   // ★ Season2 以降は p を自動決定（MKADP は 24 が標準）
   const p = 24;
 
-  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
+  return `https://lounge.mkcentral.com/mk8dx/PlayerDetails/${playerId}?season=${season}`;
 }
 
 // ==========================================
