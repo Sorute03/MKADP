@@ -859,15 +859,16 @@ async function fetchSingleGameData(targetGameType) {
     let partIndex = 1;
     let hasMore = true;
 
-    // 1番から順にファイルが存在しなくなる（404等）まで自動で読み込む（最大20分割まで対応）
     while (hasMore && partIndex <= 20) {
       const fileSuffix = partIndex === 1 ? '' : `_${partIndex}`;
       const fileName = `${lowerGame}${fileSuffix}_records.json`;
       const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
 
       const res = await fetch(fileUrl, { cache: 'no-cache' });
+      
       if (!res.ok) {
-        // ファイルが存在しない場合は分割終了とみなす
+        // 1番目(基本ファイル)が404の場合は単にデータなしとして終了
+        // 2番目以降が404の場合は、すべての分割ファイルを読み終えたとみなして正常終了
         hasMore = false;
         break;
       }
