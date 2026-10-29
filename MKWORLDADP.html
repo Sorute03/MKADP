@@ -5530,13 +5530,10 @@ async function updateRankingView() {
   const tNoData     = isEn ? 'No data available' : 'データがありません';
   const tNoMatch    = isEn ? 'No courses match criteria' : '条件に合うコースがありません';
 
-  // ▼ 現在選択されているモードを取得
+  // ▼ 修正：モードが "nora" のときだけレート列を表示する（ALLのときは非表示）
   const rankModeEl = document.getElementById("rankMode");
   const currentMode = rankModeEl ? rankModeEl.value : "ALL";
-  // 野良モード、またはALLのときにレートを表示するかどうか（基本は野良のみ、またはALLでも野良が含まれる場合）
-  // ここでは分かりやすく「nora」のとき、あるいはALLのときでも判定できるようにします
-  const showRate = (currentMode === "nora" || currentMode === "ALL"); 
-  // ※もしALLのときもレートを出したくない場合は `currentMode === "nora"` だけにしてください。
+  const showRate = (currentMode === "nora");
 
   if (!records || !records.length) {
     const colSpan = showRate ? 8 : 6;
@@ -5633,7 +5630,6 @@ async function updateRankingView() {
       const avgColor = avgChgVal > 0 ? '#28a745' : (avgChgVal < 0 ? '#dc3545' : 'inherit');
       const totalColor = totalChgVal > 0 ? '#28a745' : (totalChgVal < 0 ? '#dc3545' : 'inherit');
 
-      // ▼ レート列のHTML生成（showRate が true のときだけ埋め込む）
       const rateCells = showRate ? `
         <td style="color: ${avgColor}; font-weight: bold;">${avgChgStr}</td>
         <td style="color: ${totalColor}; font-weight: bold;">${totalChgStr}</td>
@@ -5665,6 +5661,8 @@ async function updateRankingView() {
     ${buildRows(worst)}
   `;
 }
+
+  
 
   
 /* ==========
