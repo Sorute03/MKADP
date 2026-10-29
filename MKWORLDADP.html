@@ -10571,23 +10571,33 @@ function toggleLiveWebhookSetting(checkbox) {
 
 // 修正版：送信関数（ONのときだけ実行されるようにガード）
 async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
-  console.log("🔍 [Webhook] 送信関数が呼び出されました", { currentSessionRaces, matchInfo });
-
-  // 1. チェックボックスの確認
+  // 1. チェックボックスの確認 (OFFなら処理終了)
   const isEnabled = localStorage.getItem('mkadp_live_webhook_enabled') === 'true';
-  console.log("🔍 [Webhook] 有効状態:", isEnabled);
-  if (!isEnabled) {
-    console.log("⚠️ [Webhook] 設定がOFFのため送信をスキップしました");
-    return;
+  if (!isEnabled) return;
+
+  // 2. URLの確認 (mk_webhooks の JSON から正確に取得)
+  let webhookUrl = null;
+  try {
+    const rawWebhooks = localStorage.getItem('mk_webhooks');
+    if (rawWebhooks) {
+      const parsed = JSON.parse(rawWebhooks);
+      if (parsed && Array.isArray(parsed.list) && parsed.list.length > 0) {
+        const activeIdx = typeof parsed.active === 'number' ? parsed.active : 0;
+        webhookUrl = parsed.list[activeIdx]?.url || parsed.list[0]?.url;
+      }
+    }
+  } catch (e) {
+    // 静かにスルー
   }
 
-  // 2. URLの確認
-  const webhookUrl = localStorage.getItem('mkadp_selected_webhook_url');
-  console.log("🔍 [Webhook] 設定されたURL:", webhookUrl ? "URLあり" : "URLなし");
+  // フォールバック
   if (!webhookUrl) {
-    console.log("⚠️ [Webhook] Webhook URLが未設定のため送信できません");
-    return;
+    webhookUrl = localStorage.getItem('mkadp_selected_webhook_url') || 
+                 localStorage.getItem('webhook_url') || 
+                 localStorage.getItem('discord_webhook_url');
   }
+
+  if (!webhookUrl) return;
 
   const totalRaces = currentSessionRaces.length;
   const currentScoreSum = currentSessionRaces.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
@@ -10622,7 +10632,7 @@ async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
     // ラウンジの場合
     const tier = matchInfo.tier ? `Tier ${matchInfo.tier}` : '';
     const season = matchInfo.season ? `Season ${matchInfo.season}` : '';
-    embedTitle = `${gameType} - Lounge [${[tier, season].filter(Boolean.join(' ') || 'General')}]`;
+    embedTitle = `${gameType} - Lounge [${[tier, season].filter(Boolean).join(' ') || 'General'}]`;
     extraFields = [
       { name: "消化レース数", value: `${totalRaces} レース`, inline: true },
       { name: "現在の合計得点", value: `${currentScoreSum} pt`, inline: true }
@@ -10634,7 +10644,7 @@ async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
     embeds: [
       {
         title: embedTitle,
-        color: mode === 'tournament' ? 0xffaa00 : 0x0066ff, // 大会はオレンジ、ラウンジは青など色分けも可能
+        color: mode === 'tournament' ? 0xffaa00 : 0x0066ff,
         description: descriptionLines.join('\n') || 'まだレースデータがありません',
         fields: extraFields,
         timestamp: new Date().toISOString()
@@ -10643,26 +10653,19 @@ async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
   };
 
   try {
-    const res = await fetch(webhookUrl, {
+    await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(discordPayload)
     });
-
-    if (!res.ok) {
-      console.error('❌ Webhook送信失敗:', res.status, await res.text());
-    }
   } catch (err) {
-    console.error('❌ Webhook通信エラー:', err);
+    // 静かにエラー処理
   }
 }
 
 window.toggleLiveWebhookSetting = function(checkbox) {
   localStorage.setItem('mkadp_live_webhook_enabled', checkbox.checked);
-  console.log(`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
 };
-
-
 
 
 
