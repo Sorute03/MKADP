@@ -1262,7 +1262,14 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
+<div class="setting-group" style="margin-top: 10px;">
+  <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+    <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
+    <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
+  </label>
+</div>
 
+  
 
   
 <button id="openModalBtn" data-i18n="btn_race_register" style="
@@ -10226,6 +10233,113 @@ document.getElementById('downloadoverlayBtn').addEventListener('click', function
       });
   });
 
+/**
+ * 1コース入力完了時に、集計中の全レースデータをWebhookへリアルタイム送信する関数
+ * @param {Array} currentSessionRaces - 現在の集計セッションで走ったレースの配列 [{ course: "...", rank: 1, score: 15 }, ...]
+ * @param {Object} matchInfo - 現在の模擬のメタ情報（プレイヤー名、現在の総合得点、Tierなど）
+ */
+// 初期化時（DOMContentLoadedなど）に呼び出す
+function initLiveWebhookSetting() {
+  const checkbox = document.getElementById('toggle-live-webhook');
+  if (!checkbox) return;
+
+  // 保存されている設定を読み込む（デフォルトはオフ、またはお好みでtrue）
+  const isEnabled = localStorage.getItem('mkadp_live_webhook_enabled') === 'true';
+  checkbox.checked = isEnabled;
+}
+
+// チェックボックス変更時の保存処理
+function toggleLiveWebhookSetting(checkbox) {
+  localStorage.setItem('mkadp_live_webhook_enabled', checkbox.checked);
+  console.log(`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
+}
+
+// 修正版：送信関数（ONのときだけ実行されるようにガード）
+async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
+  const isEnabled = localStorage.getItem('mkadp_live_webhook_enabled') === 'true';
+  if (!isEnabled) return;
+
+  const webhookUrl = localStorage.getItem('mkadp_selected_webhook_url');
+  if (!webhookUrl) return;
+
+  const totalRaces = currentSessionRaces.length;
+  const currentScoreSum = currentSessionRaces.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
+  
+  // モードの判定 (lounge, tournament, nora など)
+  const mode = (matchInfo.mode || 'lounge').toLowerCase();
+  const gameType = matchInfo.gameType || 'MKWORLD';
+
+  // 1コースごとの詳細行を作成
+  const descriptionLines = currentSessionRaces.map((r, i) => {
+    return `R${i + 1}: **${r.course}** (${r.rank}位 / ${r.score}pt)`;
+  });
+
+  // モードに応じたタイトルや表示の切り替え
+  let embedTitle = `${gameType} - Lounge`;
+  let extraFields = [];
+
+  if (mode === 'tournament') {
+    const tournamentName = matchInfo.tournamentName || matchInfo.eventName || '大会イベント';
+    embedTitle = `${gameType} - 大会 (${tournamentName})`;
+    extraFields = [
+      { name: "消化レース", value: `${totalRaces} レース`, inline: true },
+      { name: "現在得点", value: `${currentScoreSum} pt`, inline: true }
+    ];
+  } else if (mode === 'nora') {
+    embedTitle = `${gameType} - 野良 (Worldwide/Regional)`;
+    extraFields = [
+      { name: "消化レース", value: `${totalRaces} レース`, inline: true },
+      { name: "現在得点", value: `${currentScoreSum} pt`, inline: true }
+    ];
+  } else {
+    // ラウンジの場合
+    const tier = matchInfo.tier ? `Tier ${matchInfo.tier}` : '';
+    const season = matchInfo.season ? `Season ${matchInfo.season}` : '';
+    embedTitle = `${gameType} - Lounge [${[tier, season].filter(Boolean.join(' ') || 'General')}]`;
+    extraFields = [
+      { name: "消化レース数", value: `${totalRaces} レース`, inline: true },
+      { name: "現在の合計得点", value: `${currentScoreSum} pt`, inline: true }
+    ];
+  }
+
+  const discordPayload = {
+    content: "🏎️ **【リアルタイム戦績速報】** 1コース集計完了！",
+    embeds: [
+      {
+        title: embedTitle,
+        color: mode === 'tournament' ? 0xffaa00 : 0x0066ff, // 大会はオレンジ、ラウンジは青など色分けも可能
+        description: descriptionLines.join('\n') || 'まだレースデータがありません',
+        fields: extraFields,
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(discordPayload)
+    });
+
+    if (!res.ok) {
+      console.error('❌ Webhook送信失敗:', res.status, await res.text());
+    }
+  } catch (err) {
+    console.error('❌ Webhook通信エラー:', err);
+  }
+}
+
+
+
+
+
+
+
+
+
+  
+  
 
 
 /**
