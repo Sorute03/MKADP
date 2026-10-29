@@ -10520,7 +10520,6 @@ function toggleLiveWebhookSetting(checkbox) {
 
 // 修正版：送信関数（ONのときだけ実行されるようにガード）
 async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
-async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
   console.log("🔍 [Webhook] 送信関数が呼び出されました", { currentSessionRaces, matchInfo });
 
   // 1. チェックボックスの確認
