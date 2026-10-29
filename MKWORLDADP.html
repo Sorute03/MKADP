@@ -3960,32 +3960,36 @@ function populateSeasonAndTierOptions() {
   const seasonSelects = [
     statsSeason, growthSeason, radarSeason, heatmapSeason,
     rankSeason, aiSeason, bubbleSeason, scatterSeason,
-    loungeSetSeason,loungeSeasonSelect2
+    window.loungeSetSeason, window.loungeSeasonSelect2
   ];
 
   // ▼ Tier を持つ全セレクト
   const tierSelects = [
     statsTier, growthTier, radarTier, heatmapTier,
     rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier,loungeTierSelect2
+    window.loungeSetTier, window.loungeTierSelect2
   ];
 
   // ▼ Season（buildSeasonOptions に統一）
   const seasonHTML = buildSeasonOptions();
   for (const sel of seasonSelects) {
-    sel.innerHTML = seasonHTML;
+    if (sel && typeof sel.innerHTML !== 'undefined') {
+      sel.innerHTML = seasonHTML;
+    }
   }
 
   // ▼ Tier（ALL + loungeTiers）
   const tierHTML =
     `<option value="ALL">ALL</option>` +
-    loungeTiers
+    (typeof loungeTiers !== 'undefined' ? loungeTiers : [])
       .filter(t => t !== "ALL")
       .map(t => `<option value="${t}">${t}</option>`)
       .join("");
 
   for (const sel of tierSelects) {
-    sel.innerHTML = tierHTML;
+    if (sel && typeof sel.innerHTML !== 'undefined') {
+      sel.innerHTML = tierHTML;
+    }
   }
 }
 
@@ -3997,7 +4001,6 @@ function buildSeasonOptions() {
   }
   return arr.map(s => `<option value="${s}">${s}</option>`).join("");
 }
- 
 
 /* ==========
    初期ロード（IndexedDB版）
