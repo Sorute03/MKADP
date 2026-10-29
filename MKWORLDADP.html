@@ -10518,11 +10518,24 @@ function toggleLiveWebhookSetting(checkbox) {
 
 // 修正版：送信関数（ONのときだけ実行されるようにガード）
 async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
-  const isEnabled = localStorage.getItem('mkadp_live_webhook_enabled') === 'true';
-  if (!isEnabled) return;
+async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
+  console.log("🔍 [Webhook] 送信関数が呼び出されました", { currentSessionRaces, matchInfo });
 
+  // 1. チェックボックスの確認
+  const isEnabled = localStorage.getItem('mkadp_live_webhook_enabled') === 'true';
+  console.log("🔍 [Webhook] 有効状態:", isEnabled);
+  if (!isEnabled) {
+    console.log("⚠️ [Webhook] 設定がOFFのため送信をスキップしました");
+    return;
+  }
+
+  // 2. URLの確認
   const webhookUrl = localStorage.getItem('mkadp_selected_webhook_url');
-  if (!webhookUrl) return;
+  console.log("🔍 [Webhook] 設定されたURL:", webhookUrl ? "URLあり" : "URLなし");
+  if (!webhookUrl) {
+    console.log("⚠️ [Webhook] Webhook URLが未設定のため送信できません");
+    return;
+  }
 
   const totalRaces = currentSessionRaces.length;
   const currentScoreSum = currentSessionRaces.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
