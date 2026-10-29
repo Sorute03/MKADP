@@ -5530,14 +5530,23 @@ async function updateRankingView() {
   const tNoData     = isEn ? 'No data available' : 'データがありません';
   const tNoMatch    = isEn ? 'No courses match criteria' : '条件に合うコースがありません';
 
+  // ▼ 現在選択されているモードを取得
+  const rankModeEl = document.getElementById("rankMode");
+  const currentMode = rankModeEl ? rankModeEl.value : "ALL";
+  // 野良モード、またはALLのときにレートを表示するかどうか（基本は野良のみ、またはALLでも野良が含まれる場合）
+  // ここでは分かりやすく「nora」のとき、あるいはALLのときでも判定できるようにします
+  const showRate = (currentMode === "nora" || currentMode === "ALL"); 
+  // ※もしALLのときもレートを出したくない場合は `currentMode === "nora"` だけにしてください。
+
   if (!records || !records.length) {
+    const colSpan = showRate ? 8 : 6;
     strongTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
-      <tr><td colspan="8">${tNoData}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${showRate ? `<th>${tAvgRateChg}</th><th>${tTotalRateChg}</th>` : ''}<th>${tStrong}</th></tr>
+      <tr><td colspan="${colSpan}">${tNoData}</td></tr>
     `;
     weakTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
-      <tr><td colspan="8">${tNoData}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${showRate ? `<th>${tAvgRateChg}</th><th>${tTotalRateChg}</th>` : ''}<th>${tWeak}</th></tr>
+      <tr><td colspan="${colSpan}">${tNoData}</td></tr>
     `;
     return;
   }
@@ -5545,7 +5554,6 @@ async function updateRankingView() {
   const minRuns = Number(document.getElementById("minRuns")?.value || 3);
   const metric  = document.getElementById("rankMetric")?.value || "strong";
 
-  // ▼ 表示件数（rankLimit の値を取得。未定義ならデフォルト10件）
   const limitEl = document.getElementById("rankLimit");
   const displayLimit = limitEl ? Number(limitEl.value || 10) : 10;
 
@@ -5575,14 +5583,6 @@ async function updateRankingView() {
       avgTotalScore12: s.avgTotalScore12,
       avgRateChange,
       totalRateChange,
-      stdRank: s.stdRank,
-      firstRate: s.firstRate,
-      avoidBottom: s.avoidBottomRate,
-      rankScore: s.rankScore,
-      efficiency: s.efficiency,
-      topRate: s.topRate,
-      midRate: s.midRate,
-      bottomRate: s.bottomRate,
       strongScore,
       weakScore,
       growth
@@ -5599,34 +5599,23 @@ async function updateRankingView() {
     case "avgScore": sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore); break;
     case "avgRateChange": sorted = [...rows].sort((a,b)=>b.avgRateChange - a.avgRateChange); break;
     case "totalRateChange": sorted = [...rows].sort((a,b)=>b.totalRateChange - a.totalRateChange); break;
-    case "avgTotalScore12": sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12); break;
-    case "stdRank": sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank); break;
-    case "firstRate": sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate); break;
-    case "avoidBottom": sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom); break;
-    case "rankScore": sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore); break;
-    case "efficiency": sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency); break;
-    case "topRate": sorted = [...rows].sort((a,b)=>b.topRate - a.topRate); break;
-    case "midRate": sorted = [...rows].sort((a,b)=>b.midRate - a.midRate); break;
-    case "bottomRate": sorted = [...rows].sort((a,b)=>b.bottomRate - b.bottomRate); break;
     default: sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore); break;
   }
 
   if (!sorted.length) {
+    const colSpan = showRate ? 8 : 6;
     strongTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
-      <tr><td colspan="8">${tNoMatch}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${showRate ? `<th>${tAvgRateChg}</th><th>${tTotalRateChg}</th>` : ''}<th>${tStrong}</th></tr>
+      <tr><td colspan="${colSpan}">${tNoMatch}</td></tr>
     `;
     weakTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
-      <tr><td colspan="8">${tNoMatch}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${showRate ? `<th>${tAvgRateChg}</th><th>${tTotalRateChg}</th>` : ''}<th>${tWeak}</th></tr>
+      <tr><td colspan="${colSpan}">${tNoMatch}</td></tr>
     `;
     return;
   }
 
-  // ▼ 得意コース（上から displayLimit 件）
   const best = sorted.slice(0, displayLimit);
-  
-  // ▼ 苦手コース（下位から displayLimit 件を正確に取得し、ワーストが上に来るように反転）
   const worst = [...sorted].slice(-displayLimit).reverse();
 
   const buildRows = (items) => {
@@ -5644,6 +5633,12 @@ async function updateRankingView() {
       const avgColor = avgChgVal > 0 ? '#28a745' : (avgChgVal < 0 ? '#dc3545' : 'inherit');
       const totalColor = totalChgVal > 0 ? '#28a745' : (totalChgVal < 0 ? '#dc3545' : 'inherit');
 
+      // ▼ レート列のHTML生成（showRate が true のときだけ埋め込む）
+      const rateCells = showRate ? `
+        <td style="color: ${avgColor}; font-weight: bold;">${avgChgStr}</td>
+        <td style="color: ${totalColor}; font-weight: bold;">${totalChgStr}</td>
+      ` : '';
+
       return `
         <tr>
           <td>${cName}</td>
@@ -5651,24 +5646,27 @@ async function updateRankingView() {
           <td>${(item.winRate * 100).toFixed(1)}%</td>
           <td>${item.avgRank.toFixed(2)}</td>
           <td>${item.avgScore.toFixed(1)}</td>
-          <td style="color: ${avgColor}; font-weight: bold;">${avgChgStr}</td>
-          <td style="color: ${totalColor}; font-weight: bold;">${totalChgStr}</td>
+          ${rateCells}
           <td>${item.strongScore.toFixed(1)}</td>
         </tr>
       `;
     }).join("");
   };
 
+  const headerRateTh = showRate ? `<th>${tAvgRateChg}</th><th>${tTotalRateChg}</th>` : '';
+
   strongTable.innerHTML = `
-    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
+    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${headerRateTh}<th>${tStrong}</th></tr>
     ${buildRows(best)}
   `;
 
   weakTable.innerHTML = `
-    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
+    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th>${headerRateTh}<th>${tWeak}</th></tr>
     ${buildRows(worst)}
   `;
 }
+
+  
 /* ==========
    AIコース評価
 ========== */
