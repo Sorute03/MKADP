@@ -10332,7 +10332,10 @@ async function sendLiveProgressWebhook(currentSessionRaces, matchInfo) {
 
 
 
-
+window.toggleLiveWebhookSetting = function(checkbox) {
+  localStorage.setItem('mkadp_live_webhook_enabled', checkbox.checked);
+  console.log(`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
+};
 
 
 
