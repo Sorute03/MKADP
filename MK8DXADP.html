@@ -10882,8 +10882,7 @@ async function updateGrowthView() {
   }
 } 
 
-
- // ▼ 3Dバブルチャート用フィルター
+// ▼ 3Dバブルチャート用フィルター
 async function get3DFilteredRecords() {
   let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
   if (!r) r = [];
@@ -10940,7 +10939,7 @@ async function updateLoungeSetView() {
   if (!container) return;
   
   // 必要に応じた処理をここに記述（なければ空のままでエラー回避可能）
-} 
+}
   
 // ページ読み込み完了時にスケジューラーを起動
 document.addEventListener('DOMContentLoaded', () => {
