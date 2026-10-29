@@ -1915,12 +1915,38 @@ function updateModalMode() {
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
 
+  const mode = modalMode.value;
   const tRace = (currentLang === 'en') ? 'Race' : 'レース目';
   const tCourse = (currentLang === 'en') ? 'Track' : 'コース';
   const tRank = (currentLang === 'en') ? 'Placement' : '順位';
   const tScore = (currentLang === 'en') ? 'Score (Auto)' : 'スコア（自動）';
 
+  // 直近の野良レースから最新のレートを取得して初期の基準値にする
+  let baseRate = "";
+  if (mode === 'nora' && typeof allRecords !== 'undefined' && allRecords.length > 0) {
+    const noraRecords = allRecords.filter(r => r.mode === 'nora' && r.rate != null).sort((a, b) => b.timestamp - a.timestamp);
+    if (noraRecords.length > 0) {
+      baseRate = noraRecords[0].rate;
+    }
+  }
+
+  // 野良モードのときのみ「基準レートの再設定」欄を表示
+  if (mode === 'nora') {
+    modalRaceInputs.innerHTML += `
+      <div style="background: #f0f7ff; border: 1px solid #b6d4fe; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+        <label style="font-weight: bold; color: #084298;">⚙️ 基準レート（前回の最終レート）</label><br>
+        <span style="font-size: 11px; color: #666;">※入力漏れ等でズレた場合はここで正しい現在のレートに再設定できます</span>
+        <input id="noraBaseRateInput" type="number" value="${baseRate}" placeholder="例: 15000" style="width:100%; margin-top:4px; padding:4px;">
+      </div>
+    `;
+  }
+
   for (let i = 1; i <= count; i++) {
+    const rateFieldHTML = (mode === 'nora') ? `
+      <label>レース後のレート</label><br>
+      <input id="raceRate_${i}" type="number" placeholder="例: 15012" style="width:100%; margin-bottom:8px;">
+    ` : '';
+
     modalRaceInputs.innerHTML += `
       <div style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px;">
         <strong>${i} ${tRace}</strong><br>
@@ -1933,11 +1959,13 @@ function generateRaceInputs(count) {
         <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
           <option value="">-- 選択してください --</option>
-          ${Array.from({length: 12}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
         <label>${tScore}</label><br>
-        <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee;">
+        <input id="raceScore_${i}" type="number" readonly style="width:100%; background:#eee; margin-bottom:8px;">
+
+        ${rateFieldHTML}
       </div>
     `;
   }
@@ -1952,10 +1980,6 @@ function generateRaceInputs(count) {
         const rankVal = Number(rankInput.value);
         scoreInput.value = rankVal ? calcScore(rankVal) : "";
         saveNextCourse();
-
-        // ==========================================
-        // ★ 1コースの順位が入力・変更されたタイミングでWebhook送信を実行！
-        // ==========================================
         triggerLiveWebhookProgress();
       };
     }
@@ -1966,7 +1990,6 @@ function generateRaceInputs(count) {
         if (typeof courseStatsSource !== 'undefined' && courseStatsSource) {
           sendLoungeOverlay(courseStatsSource);
         }
-        // コース変更時も連動させる場合
         triggerLiveWebhookProgress();
       };
     }
@@ -2048,6 +2071,15 @@ saveRaceBtn.onclick = async () => {
   const newRecords = [];
   const raceScores = [];
 
+  // 野良モードの場合の初期基準レートを取得
+  let previousRate = null;
+  if (mode === "nora") {
+    const baseRateInput = document.getElementById("noraBaseRateInput");
+    if (baseRateInput && baseRateInput.value !== "") {
+      previousRate = Number(baseRateInput.value);
+    }
+  }
+
   // ▼ 入力されたレースを収集
   for (let i = 1; i <= count; i++) {
     const rank = Number(document.getElementById(`raceRank_${i}`).value);
@@ -2058,6 +2090,20 @@ saveRaceBtn.onclick = async () => {
 
     raceScores.push(score);
 
+    let currentRate = null;
+    let rateChange = 0;
+
+    if (mode === "nora") {
+      const rateInput = document.getElementById(`raceRate_${i}`);
+      if (rateInput && rateInput.value !== "") {
+        currentRate = Number(rateInput.value);
+        if (previousRate !== null) {
+          rateChange = currentRate - previousRate;
+        }
+        previousRate = currentRate;
+      }
+    }
+
     newRecords.push({
       mode,
       season: mode === "lounge" ? modalSeason.value : null,
@@ -2065,6 +2111,8 @@ saveRaceBtn.onclick = async () => {
       course,
       rank,
       score,
+      rate: currentRate,
+      rateChange: rateChange, // レート増減値
       timestamp: editingTimestamp ?? Date.now()
     });
   }
@@ -4086,433 +4134,6 @@ function groupBy(records, keyFn) {
   return map;
 }
 
-function calcStats(records) {
-  if (!records.length) {
-    return {
-      count: 0,
-      winRate: 0,
-      avgRank: 0,
-      avgScore: 0,
-      avgTotalScore12: 0,
-      stdRank: 0,
-      firstRate: 0,
-      avoidBottomRate: 0,
-      rankScore: 0,
-      efficiency: 0,
-      topRate: 0,
-      midRate: 0,
-      bottomRate: 0
-    };
-  }
-
-  const count = records.length;
-
-  // ▼ 基本統計
-  const wins = records.filter(r => r.rank <= 3).length;
-  const sumRank = records.reduce((s, r) => s + r.rank, 0);
-  const sumScore = records.reduce((s, r) => s + r.score, 0);
-
-  const avgRank = sumRank / count;
-  const avgScore = sumScore / count;
-
-  // ▼ 12レース合計スコア（ラウンジセットのみ）
-  const loungeSets = records.filter(r => r.totalScore12 != null);
-  const avgTotalScore12 =
-    loungeSets.length > 0
-      ? loungeSets.reduce((s, r) => s + r.totalScore12, 0) / loungeSets.length
-      : 0;
-
-  // ▼ 安定度（順位の標準偏差）
-  const stdRank = Math.sqrt(
-    records.reduce((a, r) => a + Math.pow(r.rank - avgRank, 2), 0) / count
-  );
-
-  // ▼ 爆発力（1位率）
-  const firstRate = records.filter(r => r.rank === 1).length / count;
-
-  // ▼ ★ 新しい順位分布
-  const topRate    = records.filter(r => r.rank >= 1 && r.rank <= 5).length / count;
-  const midRate    = records.filter(r => r.rank >= 6 && r.rank <= 15).length / count;
-  const bottomRate = records.filter(r => r.rank >= 16).length / count;
-
-  // ▼ 下位回避率（1 - 下位率）
-  const avoidBottomRate = 1 - bottomRate;
-
-  // ▼ 順位逆数スコア（高いほど良い）
-  const rankScore = 12 - avgRank;
-
-  // ▼ スコア効率（平均スコア ÷ 平均順位）
-  const efficiency = avgScore / avgRank;
-
-  return {
-    count,
-    winRate: wins / count,
-    avgRank,
-    avgScore,
-    avgTotalScore12,
-    stdRank,
-    firstRate,
-    avoidBottomRate,
-    rankScore,
-    efficiency,
-    topRate,
-    midRate,
-    bottomRate
-  };
-}
-
-
-/* ==========
-   基本統計 & モード別グラフ
-========== */
-async function getStatsFilteredRecords() {
-  let r = await getAllRecords();
-
-  const mode   = statsMode?.value ?? "ALL";
-  const season = statsSeason?.value ?? "ALL";
-  const tier   = statsTier?.value ?? "ALL";
-
-  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
-
-  const rangeSel = statsRangeSelect?.value ?? "ALL";
-  if (rangeSel !== "ALL") {
-    let N = rangeSel === "CUSTOM"
-      ? Number(statsRangeInput?.value || 0)
-      : Number(rangeSel);
-
-    if (N > 0) {
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-
-
-function getGrowthFilteredRecords() {
-  let r = [...allRecords];
-
-  const tier   = growthTier.value;
-  const season = growthSeason.value;
-  const course = growthCourse.value;
-
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = growthRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(growthRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-function getRadarFilteredRecords() {
-  let r = [...allRecords];
-
-  const course = radarCourse.value;
-  const season = radarSeason.value;
-  const tier   = radarTier.value;
-
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = radarRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(radarRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-
-function getHeatmapFilteredRecords() {
-  let r = [...allRecords];
-
-  const mode   = heatmapMode.value;
-  const season = heatmapSeason.value;
-  const tier   = heatmapTier.value;
-  const course = heatmapCourse.value;
-
-  if (mode !== "ALL")   r = r.filter(x => x.mode === mode);
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-  if (course !== "ALL") r = r.filter(x => x.course === course);
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = heatmapRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(heatmapRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-function getRankingFilteredRecords() {
-  let r = [...allRecords];
-
-  const season = rankSeason.value;
-  const tier   = rankTier.value;
-
-  // ▼ Season（ALL のときは完全スルー）
-  if (season !== "ALL") {
-    r = r.filter(x => x.season === season);
-  }
-
-  // ▼ Tier（ALL のときは完全スルー）
-  if (tier !== "ALL") {
-    r = r.filter(x => x.tier === tier);
-  }
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = rankRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  // ▼ 最低走行回数
-  const min = Number(document.getElementById("minRuns").value || 0);
-  if (min > 0) {
-    const grouped = {};
-    r.forEach(x => {
-      grouped[x.course] = (grouped[x.course] || 0) + 1;
-    });
-    r = r.filter(x => grouped[x.course] >= min);
-  }
-
-  return r;
-}
-
-
-
-function getAIFilteredRecords() {
-  let r = [...allRecords];
-
-  const course = aiCourse.value;
-  const season = aiSeason.value;
-  const tier   = aiTier.value;
-  const mode   = aiMode.value;
-
-  // ▼ mode（ALL のときは完全スルー）
-  if (mode !== "ALL") {
-    r = r.filter(x => x.mode === mode);
-  }
-
-  // ▼ course（ALL のときは完全スルー）
-  if (course !== "ALL") {
-    r = r.filter(x => x.course === course);
-  }
-
-  // ▼ season（ALL のときは完全スルー）
-  if (season !== "ALL") {
-    r = r.filter(x => x.season === season);
-  }
-
-  // ▼ tier（ALL のときは完全スルー）
-  if (tier !== "ALL") {
-    r = r.filter(x => x.tier === tier);
-  }
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = aiRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(aiRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-
-
-function get3DFilteredRecords() {
-  let r = [...allRecords];
-
-  const season = bubbleSeason.value;
-  const tier   = bubbleTier.value;
-
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = bubbleRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(bubbleRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-
-function getLoungeSetFilteredRecords() {
-  let r = [...allRecords];
-
-  const season = loungeSetSeason.value;
-  const tier   = loungeSetTier.value;
-
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ★ DB版：セット表示は timestamp 順が自然
-  r.sort((a, b) => (a.setTimestamp || a.timestamp || 0) - (b.setTimestamp || b.timestamp || 0));
-
-  return r;
-}
-
-
-
-function getScatterFilteredRecords() {
-  let r = [...allRecords];
-
-  const season = scatterSeason.value;
-  const tier   = scatterTier.value;
-
-  if (season !== "ALL") r = r.filter(x => x.season === season);
-  if (tier !== "ALL")   r = r.filter(x => x.tier === tier);
-
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
-  const sel = scatterRangeSelect.value;
-  if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(scatterRangeInput.value || 0) : Number(sel);
-
-    if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
-      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      r = r.slice(-N);
-    }
-  }
-
-  return r;
-}
-
-async function updateStatsView() {
-  const records = await getStatsFilteredRecords();
-  if (!records) return;
-
-  const isEn = (currentLang === 'en');
-
-  // 言語に応じたラベル
-  const tRaceCount  = isEn ? 'Total Races: ' : '対象レース数：';
-  const tWinRate    = isEn ? 'Win Rate: ' : '勝率：';
-  const tAvgRank    = isEn ? ' / Avg Rank: ' : ' / 平均順位：';
-  const tAvgScore   = isEn ? ' / Avg Score: ' : ' / 平均スコア：';
-  const tAvg12Score = isEn ? 'Avg 12-Race Total Score: ' : '12レース平均合計スコア：';
-  const tPoints     = isEn ? ' pts' : '点';
-
-  const count = records.length;
-  const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
-  const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
-  const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
-
-  const basicStatsEl = document.getElementById("basicStats");
-  if (basicStatsEl) {
-    basicStatsEl.innerHTML = `
-      <p>${tRaceCount}${count}</p>
-      <p>${tWinRate}${(winRate*100).toFixed(1)}%${tAvgRank}${avgRank.toFixed(2)}${tAvgScore}${avgScore.toFixed(2)}</p>
-    `;
-  }
-
-  const avg12El = document.getElementById("avgTotalScore12Text");
-  if (avg12El) {
-    const lounge12 = records.filter(r => r.totalScore12);
-    if (lounge12.length) {
-      const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-      avg12El.innerText = `${tAvg12Score}${avg12.toFixed(1)}${tPoints}`;
-    } else {
-      avg12El.innerText = "";
-    }
-  }
-
-  if (typeof drawWinRateChart === "function") drawWinRateChart(records);
-  if (typeof drawAvgRankChart === "function") drawAvgRankChart(records);
-  if (typeof drawAvgScoreChart === "function") drawAvgScoreChart(records);
-}
-
-
-function updateGrowthView() {
-  const records = getGrowthFilteredRecords();
-  if (!records.length) {
-    drawGrowthChart([], []);
-    return;
-  }
-
-  const grouped = {};
-  records.forEach(r => {
-    if (!grouped[r.course]) grouped[r.course] = [];
-    grouped[r.course].push(r.score);
-  });
-
-  const rawLabels = Object.keys(grouped);
-  
-  // コース名を言語に応じて翻訳（translateMKWorldCourse が利用可能な場合）
-  const labels = rawLabels.map(c => 
-    (typeof translateMKWorldCourse === 'function') 
-      ? translateMKWorldCourse(c, currentLang) 
-      : c
-  );
-
-  const values = rawLabels.map(c => {
-    const arr = grouped[c];
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-  });
-
-  drawGrowthChart(labels, values);
-}
-
-
-
-function updateLoungeSetView() {
-  const records = getLoungeSetFilteredRecords();
-  const div = document.getElementById("loungeSetView");
-  if (!div) return;
-
-  const isEn = (currentLang === 'en');
-
-  // 言語に応じたラベル
-  const tPoints = isEn ? ' pts' : '点';
   const tNoData = isEn ? 'No data available' : 'データなし';
 
   const sets = {};
@@ -4876,44 +4497,34 @@ function draw3DChart(points) {
 function updateBasicStats(records) {
   const isEn = (currentLang === 'en');
 
-  // 言語に応じたラベル定義
   const tAvgTotalScore12 = isEn ? 'Avg 12-Race Total Score: ' : '平均合計スコア(12R)：';
   const tTotalRaces      = isEn ? 'Total Races: ' : '対象レース数：';
   const tWinRate         = isEn ? 'Win Rate (Top 3): ' : '勝率（3位以内）：';
   const tAvgRank         = isEn ? ' / Avg Rank: ' : ' / 平均順位：';
   const tAvgScore        = isEn ? ' / Avg Score: ' : ' / 平均スコア：';
+  const tRateChangeInfo  = isEn ? 'Rate Chg (Total/Avg): ' : 'レート増減(総計/平均)：';
   const tLoungeLabel     = isEn ? 'Lounge: ' : 'ラウンジ：';
   const tTournamentLabel = isEn ? ' / Tournament: ' : ' / 大会：';
   const tNoraLabel       = isEn ? ' / Nora: ' : ' / 野良：';
 
-  // ▼ 全体
   const statsAll = calcStats(records);
-
-  // ▼ モード別
   const statsLounge     = calcStats(records.filter(r => r.mode === "lounge"));
   const statsTournament = calcStats(records.filter(r => r.mode === "tournament"));
   const statsNora       = calcStats(records.filter(r => r.mode === "nora"));
 
-  // ▼ ラウンジ totalScore12 平均
   let avgTotalScore12 = 0;
   const loungeSets = records.filter(r => r.mode === "lounge" && r.totalScore12 != null);
-
   if (loungeSets.length > 0) {
-    avgTotalScore12 =
-      loungeSets.reduce((a, b) => a + b.totalScore12, 0) / loungeSets.length;
-  }
-
-  // ▼ 表示
-  const avgTextEl = document.getElementById("avgTotalScore12Text");
-  if (avgTextEl) {
-    avgTextEl.textContent =
-      loungeSets.length > 0
-        ? `${tAvgTotalScore12}${avgTotalScore12.toFixed(1)}`
-        : "";
+    avgTotalScore12 = loungeSets.reduce((a, b) => a + b.totalScore12, 0) / loungeSets.length;
   }
 
   const basicDiv = document.getElementById("basicStats");
   if (basicDiv) {
+    // 野良データが含まれている、または野良モードのときはレート増減を表示
+    const hasNoraData = statsNora.count > 0;
+    const totalChgText = statsAll.totalRateChange > 0 ? `+${statsAll.totalRateChange}` : statsAll.totalRateChange;
+    const avgChgText = statsAll.avgRateChange > 0 ? `+${statsAll.avgRateChange.toFixed(1)}` : statsAll.avgRateChange.toFixed(1);
+
     basicDiv.innerHTML = `
       <p>${tTotalRaces}${statsAll.count}</p>
       <p>
@@ -4922,6 +4533,10 @@ function updateBasicStats(records) {
         ${tAvgScore}${statsAll.avgScore.toFixed(2)}
         ${loungeSets.length > 0 ? ` / ${tAvgTotalScore12}${avgTotalScore12.toFixed(1)}` : ""}
       </p>
+      ${hasNoraData ? `
+      <p style="color: #0d6efd; font-weight: bold;">
+        ${tRateChangeInfo} ${totalChgText} (${avgChgText}/戦)
+      </p>` : ""}
       <p>
         ${tLoungeLabel}${statsLounge.count}
         ${tTournamentLabel}${statsTournament.count}
@@ -4930,7 +4545,6 @@ function updateBasicStats(records) {
     `;
   }
 }
-
   
 function updateModeGraphs(records) {
   const isEn = (currentLang === 'en');
@@ -4939,11 +4553,13 @@ function updateModeGraphs(records) {
   const tWinRateLabel  = isEn ? 'Win Rate (%)' : '勝率(%)';
   const tAvgRankLabel  = isEn ? 'Average Rank' : '平均順位';
   const tAvgScoreLabel = isEn ? 'Average Score' : '平均スコア';
+  const tRateChgLabel  = isEn ? 'Rate Change' : 'レート変動';
 
   if (!records.length) {
-    if (chartWinRate) chartWinRate.destroy();
-    if (chartAvgRank) chartAvgRank.destroy();
-    if (chartAvgScore) chartAvgScore.destroy();
+    if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") window.chartWinRate.destroy();
+    if (window.chartAvgRank && typeof window.chartAvgRank.destroy === "function") window.chartAvgRank.destroy();
+    if (window.chartAvgScore && typeof window.chartAvgScore.destroy === "function") window.chartAvgScore.destroy();
+    if (window.chartRateChange && typeof window.chartRateChange.destroy === "function") window.chartRateChange.destroy();
     return;
   }
 
@@ -4968,8 +4584,8 @@ function updateModeGraphs(records) {
   const canvasW = document.getElementById("chartWinRate");
   if (canvasW) {
     const ctxW = canvasW.getContext("2d");
-    if (chartWinRate) chartWinRate.destroy();
-    chartWinRate = new Chart(ctxW, {
+    if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") window.chartWinRate.destroy();
+    window.chartWinRate = new Chart(ctxW, {
       type: "bar",
       data: {
         labels,
@@ -4992,8 +4608,8 @@ function updateModeGraphs(records) {
   const canvasR = document.getElementById("chartAvgRank");
   if (canvasR) {
     const ctxR = canvasR.getContext("2d");
-    if (chartAvgRank) chartAvgRank.destroy();
-    chartAvgRank = new Chart(ctxR, {
+    if (window.chartAvgRank && typeof window.chartAvgRank.destroy === "function") window.chartAvgRank.destroy();
+    window.chartAvgRank = new Chart(ctxR, {
       type: "bar",
       data: {
         labels,
@@ -5004,7 +4620,7 @@ function updateModeGraphs(records) {
         }]
       },
       options: {
-        responsive: true,
+        responsive: /responsive/,
         scales: { y: { beginAtZero: true, max: 24 } }
       }
     });
@@ -5016,8 +4632,8 @@ function updateModeGraphs(records) {
   const canvasS = document.getElementById("chartAvgScore");
   if (canvasS) {
     const ctxS = canvasS.getContext("2d");
-    if (chartAvgScore) chartAvgScore.destroy();
-    chartAvgScore = new Chart(ctxS, {
+    if (window.chartAvgScore && typeof window.chartAvgScore.destroy === "function") window.chartAvgScore.destroy();
+    window.chartAvgScore = new Chart(ctxS, {
       type: "bar",
       data: {
         labels,
@@ -5039,9 +4655,44 @@ function updateModeGraphs(records) {
       }
     });
   }
+
+  /* ==========
+     野良レート変動グラフ（野良モード単体選択時のみ描画、ALLの時は破棄）
+  ========== */
+  const canvasRate = document.getElementById("chartRateChange");
+  if (canvasRate) {
+    const statsModeSelect = document.getElementById("statsMode"); // 統計画面のモードセレクト等
+    const isOnlyNora = (statsModeSelect && statsModeSelect.value === "nora") || 
+                       (records.length > 0 && records.every(r => r.mode === 'nora'));
+
+    if (window.chartRateChange && typeof window.chartRateChange.destroy === "function") {
+      window.chartRateChange.destroy();
+    }
+
+    if (isOnlyNora) {
+      const noraRecords = sorted.filter(r => r.mode === "nora" && r.rate != null);
+      const rateLabels = noraRecords.map((_, i) => `#${i + 1}`);
+      const rateValues = noraRecords.map(r => r.rateChange || 0);
+
+      window.chartRateChange = new Chart(canvasRate.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: rateLabels,
+          datasets: [{
+            label: tRateChgLabel,
+            data: rateValues,
+            backgroundColor: rateValues.map(v => v >= 0 ? "rgba(40, 167, 69, 0.6)" : "rgba(220, 53, 69, 0.6)")
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+  }
 }
-
-
+  
 function renderLoungeSets(records) {
   const div = document.getElementById("loungeSetView");
   if (!div) return;
@@ -5128,6 +4779,8 @@ function initRadarSelector() {
 
 /* ============================================================
    ▼ コース別レーダー評価（多言語対応版）
+/* ============================================================
+   ▼ レーダー（コース別評価：ALLの時は従来通り、野良モード単体の時のみレート増減を追加）
 ============================================================ */
 function updateRadarView() {
   const records = getRadarFilteredRecords();
@@ -5141,51 +4794,157 @@ function updateRadarView() {
   const avgScore = records.reduce((a,b)=>a+b.score,0) / records.length;
   const winRate  = records.filter(r => r.rank <= 3).length / records.length;
 
-  // 言語に応じたレーダー軸ラベルの切り替え
-  const labels = (currentLang === 'en')
-    ? ["Win Rate", "Avg Rank", "Avg Score"]
-    : ["勝率", "平均順位", "平均スコア"];
+  // 野良モード専用のフィルターやUIセレクトがある場合はここで判定
+  // 例: radarMode セレクトがあればその値、あるいはレコード全体がすべて野良か、などで判定
+  const radarModeSelect = document.getElementById("radarMode"); // もし存在する場合
+  const isOnlyNora = (radarModeSelect && radarModeSelect.value === "nora") || 
+                     (records.length > 0 && records.every(r => r.mode === 'nora'));
 
-  const values = [
-    winRate * 100,
-    13 - avgRank,
-    avgScore
-  ];
+  let labels, values;
+
+  if (isOnlyNora) {
+    // ▼ 【野良モード単体選択時】平均レート増減を4軸目に含める
+    const rateChanges = records.filter(r => r.rateChange != null).map(r => r.rateChange);
+    const avgRateChange = rateChanges.length > 0 ? rateChanges.reduce((a, b) => a + b, 0) / rateChanges.length : 0;
+
+    labels = (currentLang === 'en')
+      ? ["Win Rate", "Avg Rank", "Avg Score", "Avg Rate Chg"]
+      : ["勝率", "平均順位", "平均スコア", "平均レート増減"];
+
+    values = [
+      winRate * 100,
+      13 - avgRank,
+      avgScore,
+      Math.max(0, avgRateChange * 10) // スケール調整
+    ];
+  } else {
+    // ▼ 【ALL または 他モード】これまで通りの通常の3軸
+    labels = (currentLang === 'en')
+      ? ["Win Rate", "Avg Rank", "Avg Score"]
+      : ["勝率", "平均順位", "平均スコア"];
+
+    values = [
+      winRate * 100,
+      13 - avgRank,
+      avgScore
+    ];
+  }
 
   drawRadarChart(labels, values);
 }
-
 
 
 /* ============================================================
    ▼ ヒートマップ（コース × 指標）
    ※コース名を辞書や translateMKWorldCourse で多言語化している場合に対応
 ============================================================ */
+/* ============================================================
+   ▼ ヒートマップ（ALLや他モードの時は従来通り、野良モード単体の時のみレート増減）
+============================================================ */
 function updateHeatmapView() {
   const records = getHeatmapFilteredRecords();
 
-  const map = {};
-  records.forEach(r => {
-    // 内部的なキーは元のコース名のままで集計
-    if (!map[r.course]) map[r.course] = Array(24).fill(0);
-    map[r.course][r.rank - 1]++;
-  });
-
-  // もしヒートマップ側でコース名を日本語/英語に変換して描画したい場合は、
-  // 描画関数 (drawHeatmap) の方で translateMKWorldCourse を通すか、
-  // ここでキーを変換した新しいオブジェクトを渡すと完璧です。
-  const translatedMap = {};
-  for (const [course, counts] of Object.entries(map)) {
-    const tCourse = (typeof translateMKWorldCourse === 'function') 
-      ? translateMKWorldCourse(course, currentLang) 
-      : course;
-    translatedMap[tCourse] = counts;
+  if (!records.length) {
+    if (window.chartHeatmap && typeof window.chartHeatmap.destroy === "function") {
+      window.chartHeatmap.destroy();
+    }
+    return;
   }
 
-  drawHeatmap(translatedMap);
+  // 現在のフィルター条件で「野良モード単体」に絞り込まれているかチェック
+  // （※ heatmapMode セレクトが存在し、かつ value が "nora" の場合のみレート増減にする）
+  const heatmapModeSelect = document.getElementById("heatmapMode");
+  const isOnlyNora = heatmapModeSelect && heatmapModeSelect.value === "nora";
+
+  if (isOnlyNora) {
+    // ▼ 【野良モード単体選択時】コースごとの平均レート増減を集計
+    const courseRateStats = {};
+    records.forEach(r => {
+      if (r.rateChange != null) {
+        if (!courseRateStats[r.course]) {
+          courseRateStats[r.course] = { sum: 0, count: 0 };
+        }
+        courseRateStats[r.course].sum += r.rateChange;
+        courseRateStats[r.course].count += 1;
+      }
+    });
+
+    const translatedRateMap = {};
+    for (const [course, data] of Object.entries(courseRateStats)) {
+      const tCourse = (typeof translateMKWorldCourse === 'function') 
+        ? translateMKWorldCourse(course, currentLang) 
+        : course;
+      translatedRateMap[tCourse] = data.count > 0 ? data.sum / data.count : 0;
+    }
+
+    drawRateHeatmap(translatedRateMap);
+
+  } else {
+    // ▼ 【ALL または ラウンジ・大会など】これまで通りの順位分布ヒートマップ
+    const map = {};
+    records.forEach(r => {
+      // 内部的なキーは元のコース名のままで集計
+      if (!map[r.course]) map[r.course] = Array(24).fill(0);
+      map[r.course][r.rank - 1]++;
+    });
+
+    const translatedMap = {};
+    for (const [course, counts] of Object.entries(map)) {
+      const tCourse = (typeof translateMKWorldCourse === 'function') 
+        ? translateMKWorldCourse(course, currentLang) 
+        : course;
+      translatedMap[tCourse] = counts;
+    }
+
+    drawHeatmap(translatedMap);
+  }
 }
 
+/**
+ * 野良レート増減専用のヒートマップ描画ヘルパー
+ */
+function drawRateHeatmap(rateMap) {
+  const canvas = document.getElementById("chartHeatmap");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  if (window.chartHeatmap && typeof window.chartHeatmap.destroy === "function") {
+    window.chartHeatmap.destroy();
+  }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Average Rate Change' : '平均レート増減';
+
+  const courses = Object.keys(rateMap);
+  const values = courses.map(c => rateMap[c]);
+
+  window.chartHeatmap = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: courses,
+      datasets: [{
+        label: tLabel,
+        data: values,
+        backgroundColor: values.map(v => {
+          return v >= 0 ? "rgba(40, 167, 69, 0.7)" : "rgba(220, 53, 69, 0.7)";
+        })
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+}
   
+/* ==========
+   コースランキング（得意 / 苦手）
+========== */
+
 /* ==========
    コースランキング（得意 / 苦手）
 ========== */
@@ -5203,9 +4962,8 @@ function updateRankingView() {
   const tWinRate    = isEn ? 'Win Rate%' : '勝率%';
   const tAvgRank    = isEn ? 'Avg Rank' : '平均順位';
   const tAvgScore   = isEn ? 'Avg Score' : '平均スコア';
-  const tTopRate    = isEn ? 'Top Rate%' : '上位率%';
-  const tMidRate    = isEn ? 'Mid Rate%' : '中位率%';
-  const tBottomRate = isEn ? 'Bottom Rate%' : '下位率%';
+  const tAvgRateChg = isEn ? 'Avg Rate Chg' : '平均レート増減';
+  const tTotalRateChg = isEn ? 'Total Rate Chg' : '総レート増減';
   const tStrong     = isEn ? 'Best Score' : '得意スコア';
   const tWeak       = isEn ? 'Worst Score' : '苦手スコア';
   const tNoData     = isEn ? 'No data available' : 'データがありません';
@@ -5213,12 +4971,12 @@ function updateRankingView() {
 
   if (!records || !records.length) {
     strongTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tStrong}</th></tr>
-      <tr><td colspan="6">${tNoData}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
+      <tr><td colspan="8">${tNoData}</td></tr>
     `;
     weakTable.innerHTML = `
-      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tWeak}</th></tr>
-      <tr><td colspan="6">${tNoData}</td></tr>
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
+      <tr><td colspan="8">${tNoData}</td></tr>
     `;
     return;
   }
@@ -5235,6 +4993,11 @@ function updateRankingView() {
 
     const s = calcStats(rs);
 
+    // ▼ 野良モードのレート増減（rateChange）の集計
+    const rateChanges = rs.filter(r => r.rateChange !== undefined && r.rateChange !== null).map(r => r.rateChange);
+    const totalRateChange = rateChanges.reduce((sum, val) => sum + val, 0);
+    const avgRateChange = rateChanges.length > 0 ? totalRateChange / rateChanges.length : 0;
+
     const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
     const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
     const growth      = strongScore - weakScore;
@@ -5246,6 +5009,8 @@ function updateRankingView() {
       winRate: s.winRate,
       avgScore: s.avgScore,
       avgTotalScore12: s.avgTotalScore12,
+      avgRateChange,      // 平均レート増減
+      totalRateChange,    // 総レート増減
     
       stdRank: s.stdRank,
       firstRate: s.firstRate,
@@ -5283,8 +5048,14 @@ function updateRankingView() {
     case "avgScore":
       sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
       break;
+    case "avgRateChange": // 平均レート増減順
+      sorted = [...rows].sort((a,b)=>b.avgRateChange - a.avgRateChange);
+      break;
+    case "totalRateChange": // 総レート増減順
+      sorted = [...rows].sort((a,b)=>b.totalRateChange - a.totalRateChange);
+      break;
     case "avgTotalScore12":
-      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - b.avgTotalScore12);
+      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12);
       break;
     case "stdRank":
       sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank);
@@ -5308,85 +5079,61 @@ function updateRankingView() {
       sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
       break;
     case "bottomRate":
-      sorted = [...rows].sort((a,b)=>b.bottomRate - a.bottomRate);
+      sorted = [...rows].sort((a,b)=>a.bottomRate - b.bottomRate);
       break;
     default:
       sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
       break;
   }
 
-  const maxRank = Number(document.getElementById("rankLimit").value || 10);
-  
-  const strongSorted = sorted.slice(0, maxRank);
-  const weakSorted   = [...rows].sort((a,b)=>b.weakScore - a.weakScore).slice(0, maxRank);
+  if (!sorted.length) {
+    strongTable.innerHTML = `
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
+      <tr><td colspan="8">${tNoMatch}</td></tr>
+    `;
+    weakTable.innerHTML = `
+      <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
+      <tr><td colspan="8">${tNoMatch}</td></tr>
+    `;
+    return;
+  }
 
-  // コース名を言語に応じて翻訳するヘルパー関数
-  const formatCourseName = (courseName) => {
-    return (typeof translateMKWorldCourse === 'function') 
-      ? translateMKWorldCourse(courseName, currentLang) 
-      : courseName;
+  const best = sorted.slice(0, 5);
+  const worst = [...sorted].reverse().slice(0, 5);
+
+  const buildRows = (items) => {
+    return items.map(item => {
+      const cName = (typeof translateMKWorldCourse === 'function')
+        ? translateMKWorldCourse(item.course, currentLang)
+        : item.course;
+
+      // プラスマイナスの符号付き表示（色分けもお好みで可能）
+      const avgChgStr = (item.avgRateChange > 0 ? `+${item.avgRateChange}` : item.avgRateChange).toFixed(1);
+      const totalChgStr = item.totalRateChange > 0 ? `+${item.totalRateChange}` : item.totalRateChange;
+
+      return `
+        <tr>
+          <td>${cName}</td>
+          <td>${item.count}</td>
+          <td>${(item.winRate * 100).toFixed(1)}%</td>
+          <td>${item.avgRank.toFixed(2)}</td>
+          <td>${item.avgScore.toFixed(1)}</td>
+          <td>${avgChgStr}</td>
+          <td>${totalChgStr}</td>
+          <td>${item.strongScore.toFixed(1)}</td>
+        </tr>
+      `;
+    }).join("");
   };
 
   strongTable.innerHTML = `
-    <tr>
-      <th>${tCourse}</th>
-      <th>${tCount}</th>
-      <th>${tWinRate}</th>
-      <th>${tAvgRank}</th>
-      <th>${tAvgScore}</th>
-      <th>${tTopRate}</th>
-      <th>${tMidRate}</th>
-      <th>${tBottomRate}</th>
-      <th>${tStrong}</th>
-    </tr>
-    ${
-      strongSorted.length
-        ? strongSorted.map(r => `
-          <tr>
-            <td>${formatCourseName(r.course)}</td>
-            <td>${r.count}</td>
-            <td>${(r.winRate*100).toFixed(1)}</td>
-            <td>${r.avgRank.toFixed(2)}</td>
-            <td>${r.avgScore.toFixed(2)}</td>
-            <td>${(r.topRate*100).toFixed(1)}</td>
-            <td>${(r.midRate*100).toFixed(1)}</td>
-            <td>${(r.bottomRate*100).toFixed(1)}</td>
-            <td>${r.strongScore.toFixed(1)}</td>
-          </tr>
-        `).join("")
-        : `<tr><td colspan="9">${tNoMatch}</td></tr>`
-    }
+    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tStrong}</th></tr>
+    ${buildRows(best)}
   `;
 
   weakTable.innerHTML = `
-    <tr>
-      <th>${tCourse}</th>
-      <th>${tCount}</th>
-      <th>${tWinRate}</th>
-      <th>${tAvgRank}</th>
-      <th>${tAvgScore}</th>
-      <th>${tTopRate}</th>
-      <th>${tMidRate}</th>
-      <th>${tBottomRate}</th>
-      <th>${tWeak}</th>
-    </tr>
-    ${
-      weakSorted.length
-        ? weakSorted.map(r => `
-          <tr>
-            <td>${formatCourseName(r.course)}</td>
-            <td>${r.count}</td>
-            <td>${(r.winRate*100).toFixed(1)}</td>
-            <td>${r.avgRank.toFixed(2)}</td>
-            <td>${r.avgScore.toFixed(2)}</td>
-            <td>${(r.topRate*100).toFixed(1)}</td>
-            <td>${(r.midRate*100).toFixed(1)}</td>
-            <td>${(r.bottomRate*100).toFixed(1)}</td>
-            <td>${r.weakScore.toFixed(1)}</td>
-          </tr>
-        `).join("")
-        : `<tr><td colspan="9">${tNoMatch}</td></tr>`
-    }
+    <tr><th>${tCourse}</th><th>${tCount}</th><th>${tWinRate}</th><th>${tAvgRank}</th><th>${tAvgScore}</th><th>${tAvgRateChg}</th><th>${tTotalRateChg}</th><th>${tWeak}</th></tr>
+    ${buildRows(worst)}
   `;
 }
 
@@ -5667,6 +5414,7 @@ function getWinRate(filtered) {
   const wins = filtered.filter(r => r.rank <= 3).length;
   return wins / filtered.length;
 }
+
 
 
 
