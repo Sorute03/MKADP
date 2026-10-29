@@ -4443,49 +4443,43 @@ function getHeatmapFilteredRecords() {
 }
 
 async function getRankingFilteredRecords() {
-  // allRecords が空の場合に備えて確実に非同期で取得する
   let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
 
   const rankModeEl = document.getElementById("rankMode");
   const mode = rankModeEl ? rankModeEl.value : "ALL";
 
-  const season = rankSeason.value;
-  const tier   = rankTier.value;
+  // ▼ 元の ID（rankSeason, rankTier）に戻して安全に取得する
+  const seasonEl = document.getElementById("rankSeason");
+  const tierEl = document.getElementById("rankTier");
+  const season = seasonEl ? seasonEl.value : "ALL";
+  const tier   = tierEl ? tierEl.value : "ALL";
 
-  if (mode !== "ALL") {
-    r = r.filter(x => x.mode === mode);
-  }
-  if (season !== "ALL") {
-    r = r.filter(x => x.season === season);
-  }
-  if (tier !== "ALL") {
-    r = r.filter(x => x.tier === tier);
-  }
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
 
-  // ▼ 直近 N
-  const sel = rankRangeSelect.value;
+  const sel = rankRangeSelect ? rankRangeSelect.value : "ALL";
   if (sel !== "ALL") {
-    let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
-
+    let N = sel === "CUSTOM" ? Number(rankRangeInput?.value || 0) : Number(sel);
     if (N > 0) {
       r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       r = r.slice(-N);
     }
   }
 
-  // ▼ 最低走行回数
-  const min = Number(document.getElementById("minRuns").value || 0);
+  const min = Number(document.getElementById("minRuns")?.value || 3);
   if (min > 0) {
     const grouped = {};
-    r.forEach(x => {
-      grouped[x.course] = (grouped[x.course] || 0) + 1;
-    });
+    r.forEach(x => { grouped[x.course] = (grouped[x.course] || 0) + 1; });
     r = r.filter(x => grouped[x.course] >= min);
   }
 
   return r;
 }
 
+
+  
 function getAIFilteredRecords() {
   let r = [...allRecords];
 
