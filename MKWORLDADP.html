@@ -1260,6 +1260,13 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="webhookListArea" style="margin-top:10px;"></div>
 </div>
 
+<div class="setting-group" style="margin-top: 10px;">
+  <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+    <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
+    <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
+  </label>
+</div>
+  
 <!-- ▼ ラウンジ統計タブ -->
 <div id="loungeTab" class="tabContent" style="display:none; padding:20px;">
   <h2 data-i18n="lounge_stats_title">Lounge Stats Viewer</h2>
@@ -1508,12 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<div class="setting-group" style="margin-top: 10px;">
-  <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-    <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
-    <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
-  </label>
-</div>
+
 
 
 
