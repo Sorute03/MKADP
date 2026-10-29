@@ -10586,7 +10586,7 @@ function markMogiDBRecordsAsSynced(updatedRecords) {
  */
 function createRecordSignature(record) {
   const ts = record.timestamp || record.timestamp_iso || record.created_at || '';
-  const game = record.game_type || GAME_TYPE || 'MK8DX';
+  const game = record.game_type || GAME_TYPE || 'MKWORLD';
   const mode = record.mode || 'lounge';
   const season = record.season || 1;
 
