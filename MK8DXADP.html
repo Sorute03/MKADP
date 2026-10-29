@@ -10819,6 +10819,70 @@ function initFixedTimeSyncScheduler() {
   });
 }
 
+
+
+
+
+
+async function getAIFilteredRecords() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
+
+  const mode = document.getElementById("aiMode")?.value || "ALL";
+  const course = document.getElementById("aiCourse")?.value || "ALL";
+  const season = document.getElementById("aiSeason")?.value || "ALL";
+  const tier   = document.getElementById("aiTier")?.value || "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+  if (season !== "ALL") r = r.filter(x => season === "ALL" || x.season === season);
+  if (tier !== "ALL") r = r.filter(x => tier === "ALL" || x.tier === tier);
+
+  const sel = aiRangeSelect ? aiRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(aiRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+
+async function updateGrowthView() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
+
+  const mode = document.getElementById("growthMode")?.value || "ALL";
+  const tier = document.getElementById("growthTier")?.value || "ALL";
+  const season = document.getElementById("growthSeason")?.value || "ALL";
+  const course = document.getElementById("growthCourse")?.value || "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+
+  const sel = growthRangeSelect ? growthRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(growthRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  // 簡易的な成長推移のラベルとデータの生成
+  const labels = r.map((_, i) => `#${i + 1}`);
+  const values = r.map(x => x.score || x.totalScore12 || 0);
+
+  if (typeof drawGrowthChart === "function") {
+    drawGrowthChart(labels, values);
+  }
+} 
+
+  
 // ページ読み込み完了時にスケジューラーを起動
 document.addEventListener('DOMContentLoaded', () => {
   initFixedTimeSyncScheduler();
