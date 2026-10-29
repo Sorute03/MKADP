@@ -857,25 +857,25 @@ async function fetchSingleGameData(targetGameType) {
 
   try {
     let partIndex = 1;
-    let hasMore = true;
 
-    while (hasMore && partIndex <= 20) {
+    while (partIndex <= 20) {
       const fileSuffix = partIndex === 1 ? '' : `_${partIndex}`;
       const fileName = `${lowerGame}${fileSuffix}_records.json`;
       const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
 
       const res = await fetch(fileUrl, { cache: 'no-cache' });
       
+      // 404 (ファイル未存在) の場合は、これ以上分割ファイルがないため正常にループ終了
+      if (res.status === 404) {
+        break;
+      }
+
       if (!res.ok) {
-        // 1番目(基本ファイル)が404の場合は単にデータなしとして終了
-        // 2番目以降が404の場合は、すべての分割ファイルを読み終えたとみなして正常終了
-        hasMore = false;
         break;
       }
 
       const payload = await res.json();
       if (!payload || !payload.data) {
-        hasMore = false;
         break;
       }
 
@@ -894,6 +894,7 @@ async function fetchSingleGameData(targetGameType) {
 
   return allRecords;
 }
+
 
 async function loadAndDecryptGameData(targetGameType) {
   const tbody = document.getElementById('course-stats-tbody');
