@@ -4949,13 +4949,12 @@ function drawRateHeatmap(rateMap) {
    コースランキング（得意 / 苦手）
 ========== */
 
-function updateRankingView() {
-  const records = getRankingFilteredRecords();
+async function updateRankingView() {
+  const records = await getRankingFilteredRecords();
 
   const strongTable = document.getElementById("tableStrong");
   const weakTable   = document.getElementById("tableWeak");
 
-  // 言語に応じたラベル・メッセージの切り替え
   const isEn = (currentLang === 'en');
   const tCourse     = isEn ? 'Track' : 'コース';
   const tCount      = isEn ? 'Races' : '回数';
@@ -4981,8 +4980,12 @@ function updateRankingView() {
     return;
   }
 
-  const minRuns = Number(document.getElementById("minRuns").value || 3);
-  const metric  = document.getElementById("rankMetric").value;
+  const minRuns = Number(document.getElementById("minRuns")?.value || 3);
+  const metric  = document.getElementById("rankMetric")?.value || "strong";
+
+  // ▼ 表示件数（rankLimit の値を取得。未定義ならデフォルト10件）
+  const limitEl = document.getElementById("rankLimit");
+  const displayLimit = limitEl ? Number(limitEl.value || 10) : 10;
 
   const byCourse = groupBy(records, r => r.course);
   const rows = [];
@@ -4993,7 +4996,6 @@ function updateRankingView() {
 
     const s = calcStats(rs);
 
-    // ▼ 野良モードのレート増減（rateChange）の集計
     const rateChanges = rs.filter(r => r.rateChange !== undefined && r.rateChange !== null).map(r => r.rateChange);
     const totalRateChange = rateChanges.reduce((sum, val) => sum + val, 0);
     const avgRateChange = rateChanges.length > 0 ? totalRateChange / rateChanges.length : 0;
@@ -5009,19 +5011,16 @@ function updateRankingView() {
       winRate: s.winRate,
       avgScore: s.avgScore,
       avgTotalScore12: s.avgTotalScore12,
-      avgRateChange,      // 平均レート増減
-      totalRateChange,    // 総レート増減
-    
+      avgRateChange,
+      totalRateChange,
       stdRank: s.stdRank,
       firstRate: s.firstRate,
       avoidBottom: s.avoidBottomRate,
       rankScore: s.rankScore,
       efficiency: s.efficiency,
-    
       topRate: s.topRate,
       midRate: s.midRate,
       bottomRate: s.bottomRate,
-    
       strongScore,
       weakScore,
       growth
@@ -5030,60 +5029,24 @@ function updateRankingView() {
 
   let sorted;
   switch (metric) {
-    case "strong":
-      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
-      break;
-    case "weak":
-      sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore);
-      break;
-    case "growth":
-      sorted = [...rows].sort((a,b)=>b.growth - a.growth);
-      break;
-    case "winRate":
-      sorted = [...rows].sort((a,b)=>b.winRate - a.winRate);
-      break;
-    case "avgRank":
-      sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank);
-      break;
-    case "avgScore":
-      sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
-      break;
-    case "avgRateChange": // 平均レート増減順
-      sorted = [...rows].sort((a,b)=>b.avgRateChange - a.avgRateChange);
-      break;
-    case "totalRateChange": // 総レート増減順
-      sorted = [...rows].sort((a,b)=>b.totalRateChange - a.totalRateChange);
-      break;
-    case "avgTotalScore12":
-      sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12);
-      break;
-    case "stdRank":
-      sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank);
-      break;
-    case "firstRate":
-      sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate);
-      break;
-    case "avoidBottom":
-      sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom);
-      break;
-    case "rankScore":
-      sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore);
-      break;
-    case "efficiency":
-      sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency);
-      break;
-    case "topRate":
-      sorted = [...rows].sort((a,b)=>b.topRate - a.topRate);
-      break;
-    case "midRate":
-      sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
-      break;
-    case "bottomRate":
-      sorted = [...rows].sort((a,b)=>a.bottomRate - b.bottomRate);
-      break;
-    default:
-      sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
-      break;
+    case "strong": sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore); break;
+    case "weak": sorted = [...rows].sort((a,b)=>b.weakScore - a.weakScore); break;
+    case "growth": sorted = [...rows].sort((a,b)=>b.growth - a.growth); break;
+    case "winRate": sorted = [...rows].sort((a,b)=>b.winRate - a.winRate); break;
+    case "avgRank": sorted = [...rows].sort((a,b)=>a.avgRank - b.avgRank); break;
+    case "avgScore": sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore); break;
+    case "avgRateChange": sorted = [...rows].sort((a,b)=>b.avgRateChange - a.avgRateChange); break;
+    case "totalRateChange": sorted = [...rows].sort((a,b)=>b.totalRateChange - a.totalRateChange); break;
+    case "avgTotalScore12": sorted = [...rows].sort((a,b)=>b.avgTotalScore12 - a.avgTotalScore12); break;
+    case "stdRank": sorted = [...rows].sort((a,b)=>a.stdRank - b.stdRank); break;
+    case "firstRate": sorted = [...rows].sort((a,b)=>b.firstRate - a.firstRate); break;
+    case "avoidBottom": sorted = [...rows].sort((a,b)=>b.avoidBottom - a.avoidBottom); break;
+    case "rankScore": sorted = [...rows].sort((a,b)=>b.rankScore - a.rankScore); break;
+    case "efficiency": sorted = [...rows].sort((a,b)=>b.efficiency - a.efficiency); break;
+    case "topRate": sorted = [...rows].sort((a,b)=>b.topRate - a.topRate); break;
+    case "midRate": sorted = [...rows].sort((a,b)=>b.midRate - a.midRate); break;
+    case "bottomRate": sorted = [...rows].sort((a,b)=>b.bottomRate - b.bottomRate); break;
+    default: sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore); break;
   }
 
   if (!sorted.length) {
@@ -5098,8 +5061,9 @@ function updateRankingView() {
     return;
   }
 
-  const best = sorted.slice(0, 5);
-  const worst = [...sorted].reverse().slice(0, 5);
+  // ▼ ベスト・ワーストともに可変の displayLimit 件数を適用
+  const best = sorted.slice(0, displayLimit);
+  const worst = [...sorted].reverse().slice(0, displayLimit);
 
   const buildRows = (items) => {
     return items.map(item => {
@@ -5107,9 +5071,14 @@ function updateRankingView() {
         ? translateMKWorldCourse(item.course, currentLang)
         : item.course;
 
-      // プラスマイナスの符号付き表示（色分けもお好みで可能）
-      const avgChgStr = (item.avgRateChange > 0 ? `+${item.avgRateChange}` : item.avgRateChange).toFixed(1);
-      const totalChgStr = item.totalRateChange > 0 ? `+${item.totalRateChange}` : item.totalRateChange;
+      const avgChgVal = item.avgRateChange;
+      const totalChgVal = item.totalRateChange;
+
+      const avgChgStr = (avgChgVal > 0 ? `+${avgChgVal.toFixed(1)}` : avgChgVal.toFixed(1));
+      const totalChgStr = (totalChgVal > 0 ? `+${totalChgVal}` : totalChgVal);
+
+      const avgColor = avgChgVal > 0 ? '#28a745' : (avgChgVal < 0 ? '#dc3545' : 'inherit');
+      const totalColor = totalChgVal > 0 ? '#28a745' : (totalChgVal < 0 ? '#dc3545' : 'inherit');
 
       return `
         <tr>
@@ -5118,8 +5087,8 @@ function updateRankingView() {
           <td>${(item.winRate * 100).toFixed(1)}%</td>
           <td>${item.avgRank.toFixed(2)}</td>
           <td>${item.avgScore.toFixed(1)}</td>
-          <td>${avgChgStr}</td>
-          <td>${totalChgStr}</td>
+          <td style="color: ${avgColor}; font-weight: bold;">${avgChgStr}</td>
+          <td style="color: ${totalColor}; font-weight: bold;">${totalChgStr}</td>
           <td>${item.strongScore.toFixed(1)}</td>
         </tr>
       `;
@@ -5136,8 +5105,6 @@ function updateRankingView() {
     ${buildRows(worst)}
   `;
 }
-
-
   
 /* ==========
    AIコース評価
