@@ -3839,37 +3839,56 @@ const loungeSetTier = document.getElementById("loungeSetTier");
 
   
 function populateSeasonAndTierOptions() {
-  // ▼ Season を持つ全セレクト
   const seasonSelects = [
-    statsSeason, growthSeason, radarSeason, heatmapSeason,
-    rankSeason, aiSeason, bubbleSeason, scatterSeason,
-    loungeSetSeason,loungeSeasonSelect2
-  ];
+    typeof statsSeason !== 'undefined' ? statsSeason : null,
+    typeof growthSeason !== 'undefined' ? growthSeason : null,
+    typeof radarSeason !== 'undefined' ? radarSeason : null,
+    typeof heatmapSeason !== 'undefined' ? heatmapSeason : null,
+    typeof rankSeason !== 'undefined' ? rankSeason : null,
+    typeof aiSeason !== 'undefined' ? aiSeason : null,
+    typeof bubbleSeason !== 'undefined' ? bubbleSeason : null,
+    typeof scatterSeason !== 'undefined' ? scatterSeason : null,
+    typeof loungeSetSeason !== 'undefined' ? loungeSetSeason : null,
+    typeof loungeSeasonSelect2 !== 'undefined' ? loungeSeasonSelect2 : null
+  ].filter(Boolean);
 
-  // ▼ Tier を持つ全セレクト
   const tierSelects = [
-    statsTier, growthTier, radarTier, heatmapTier,
-    rankTier, aiTier, bubbleTier, scatterTier,
-    loungeSetTier,loungeTierSelect2
-  ];
+    typeof statsTier !== 'undefined' ? statsTier : null,
+    typeof growthTier !== 'undefined' ? growthTier : null,
+    typeof radarTier !== 'undefined' ? radarTier : null,
+    typeof heatmapTier !== 'undefined' ? heatmapTier : null,
+    typeof rankTier !== 'undefined' ? rankTier : null,
+    typeof aiTier !== 'undefined' ? aiTier : null,
+    typeof bubbleTier !== 'undefined' ? bubbleTier : null,
+    typeof scatterTier !== 'undefined' ? scatterTier : null,
+    typeof loungeSetTier !== 'undefined' ? loungeSetTier : null,
+    typeof loungeTierSelect2 !== 'undefined' ? loungeTierSelect2 : null
+  ].filter(Boolean);
 
-  // ▼ Season（buildSeasonOptions に統一）
   const seasonHTML = buildSeasonOptions();
   for (const sel of seasonSelects) {
-    sel.innerHTML = seasonHTML;
+    if (sel) sel.innerHTML = seasonHTML;
   }
 
-  // ▼ Tier（ALL + loungeTiers）
+  const tiers = (typeof loungeTiers !== 'undefined' ? loungeTiers : []);
   const tierHTML =
     `<option value="ALL">ALL</option>` +
-    loungeTiers
+    tiers
       .filter(t => t !== "ALL")
       .map(t => `<option value="${t}">${t}</option>`)
       .join("");
 
   for (const sel of tierSelects) {
-    sel.innerHTML = tierHTML;
+    if (sel) sel.innerHTML = tierHTML;
   }
+}
+
+function buildSeasonOptions() {
+  const arr = ["ALL"];
+  for (let i = 1; i <= 30; i++) {
+    arr.push(`S${i}`);
+  }
+  return arr.map(s => `<option value="${s}">${s}</option>`).join("");
 }
 
 
@@ -4821,6 +4840,33 @@ function updateRadarView() {
 }
 
 
+
+async function getRadarFilteredRecords() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
+
+  const mode = document.getElementById("radarMode")?.value || "ALL";
+  const course = document.getElementById("radarCourse")?.value || "ALL";
+  const season = document.getElementById("radarSeason")?.value || "ALL";
+  const tier   = document.getElementById("radarTier")?.value || "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+
+  const sel = radarRangeSelect ? radarRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(radarRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
+  
 /* ============================================================
    ▼ ヒートマップ（コース × 指標）
    ※コース名を辞書や translateMKWorldCourse で多言語化している場合に対応
