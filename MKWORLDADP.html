@@ -4439,38 +4439,32 @@ function getHeatmapFilteredRecords() {
   return r;
 }
 
-function getRankingFilteredRecords() {
-  let r = [...allRecords];
+async function getRankingFilteredRecords() {
+  // allRecords が空の場合に備えて確実に非同期で取得する
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
 
-  // ▼ モード選択（もしランキング画面に rankMode セレクトがある場合）
   const rankModeEl = document.getElementById("rankMode");
   const mode = rankModeEl ? rankModeEl.value : "ALL";
 
   const season = rankSeason.value;
   const tier   = rankTier.value;
 
-  // ▼ Mode（ALL のときは完全スルー）
   if (mode !== "ALL") {
     r = r.filter(x => x.mode === mode);
   }
-
-  // ▼ Season（ALL のときは完全スルー）
   if (season !== "ALL") {
     r = r.filter(x => x.season === season);
   }
-
-  // ▼ Tier（ALL のときは完全スルー）
   if (tier !== "ALL") {
     r = r.filter(x => x.tier === tier);
   }
 
-  // ▼ 直近 N（DB版では timestamp ソートが必須）
+  // ▼ 直近 N
   const sel = rankRangeSelect.value;
   if (sel !== "ALL") {
     let N = sel === "CUSTOM" ? Number(rankRangeInput.value || 0) : Number(sel);
 
     if (N > 0) {
-      // ★ DB版：timestamp でソートしてから slice
       r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       r = r.slice(-N);
     }
@@ -4488,7 +4482,6 @@ function getRankingFilteredRecords() {
 
   return r;
 }
-
 
 function getAIFilteredRecords() {
   let r = [...allRecords];
@@ -5518,8 +5511,8 @@ function drawRateHeatmap(rateMap) {
    コースランキング（得意 / 苦手）
 ========== */
 
-function updateRankingView() {
-  const records = getRankingFilteredRecords();
+async function updateRankingView() {
+  const records = await getRankingFilteredRecords();
 
   const strongTable = document.getElementById("tableStrong");
   const weakTable   = document.getElementById("tableWeak");
@@ -5711,7 +5704,6 @@ function updateRankingView() {
     ${buildRows(worst)}
   `;
 }
-
   
 /* ==========
    AIコース評価
