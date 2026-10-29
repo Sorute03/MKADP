@@ -4500,6 +4500,35 @@ function draw3DChart(points) {
 }
 
 
+async function updateStatsView() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
+
+  const mode = document.getElementById("statsMode")?.value || "ALL";
+  const season = document.getElementById("statsSeason")?.value || "ALL";
+  const tier   = document.getElementById("statsTier")?.value || "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+
+  const sel = statsRangeSelect ? statsRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(statsRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  // 基本統計の数値計算やグラフ描画の呼び出し
+  if (typeof drawWinRateChart === "function") {
+    drawWinRateChart(r);
+  }
+}
+
+  
+
 function updateBasicStats(records) {
   const isEn = (currentLang === 'en');
 
@@ -4977,7 +5006,31 @@ function drawRateHeatmap(rateMap) {
 /* ==========
    コースランキング（得意 / 苦手）
 ========== */
+async function getHeatmapFilteredRecords() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
 
+  const mode = document.getElementById("heatmapMode")?.value || "ALL";
+  const season = document.getElementById("heatmapSeason")?.value || "ALL";
+  const tier   = document.getElementById("heatmapTier")?.value || "ALL";
+  const course = document.getElementById("heatmapCourse")?.value || "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+  if (course !== "ALL") r = r.filter(x => x.course === course);
+
+  const sel = heatmapRangeSelect ? heatmapRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(heatmapRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  return r;
+}
 /* ==========
    コースランキング（得意 / 苦手）
 ========== */
