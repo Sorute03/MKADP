@@ -4442,8 +4442,17 @@ function getHeatmapFilteredRecords() {
 function getRankingFilteredRecords() {
   let r = [...allRecords];
 
+  // ▼ モード選択（もしランキング画面に rankMode セレクトがある場合）
+  const rankModeEl = document.getElementById("rankMode");
+  const mode = rankModeEl ? rankModeEl.value : "ALL";
+
   const season = rankSeason.value;
   const tier   = rankTier.value;
+
+  // ▼ Mode（ALL のときは完全スルー）
+  if (mode !== "ALL") {
+    r = r.filter(x => x.mode === mode);
+  }
 
   // ▼ Season（ALL のときは完全スルー）
   if (season !== "ALL") {
@@ -4479,7 +4488,6 @@ function getRankingFilteredRecords() {
 
   return r;
 }
-
 
 
 function getAIFilteredRecords() {
@@ -5570,7 +5578,7 @@ function updateRankingView() {
       winRate: s.winRate,
       avgScore: s.avgScore,
       avgTotalScore12: s.avgTotalScore12,
-      avgRateChange,      // 平均レート増減
+      avgRateChange,       // 平均レート増減
       totalRateChange,    // 総レート増減
     
       stdRank: s.stdRank,
@@ -5609,10 +5617,10 @@ function updateRankingView() {
     case "avgScore":
       sorted = [...rows].sort((a,b)=>b.avgScore - a.avgScore);
       break;
-    case "avgRateChange": // 平均レート増減順
+    case "avgRateChange":
       sorted = [...rows].sort((a,b)=>b.avgRateChange - a.avgRateChange);
       break;
-    case "totalRateChange": // 総レート増減順
+    case "totalRateChange":
       sorted = [...rows].sort((a,b)=>b.totalRateChange - a.totalRateChange);
       break;
     case "avgTotalScore12":
@@ -5640,7 +5648,7 @@ function updateRankingView() {
       sorted = [...rows].sort((a,b)=>b.midRate - a.midRate);
       break;
     case "bottomRate":
-      sorted = [...rows].sort((a,b)=>a.bottomRate - b.bottomRate);
+      sorted = [...rows].sort((a,b)=>b.bottomRate - b.bottomRate);
       break;
     default:
       sorted = [...rows].sort((a,b)=>b.strongScore - a.strongScore);
@@ -5668,9 +5676,15 @@ function updateRankingView() {
         ? translateMKWorldCourse(item.course, currentLang)
         : item.course;
 
-      // プラスマイナスの符号付き表示（色分けもお好みで可能）
-      const avgChgStr = (item.avgRateChange > 0 ? `+${item.avgRateChange}` : item.avgRateChange).toFixed(1);
-      const totalChgStr = item.totalRateChange > 0 ? `+${item.totalRateChange}` : item.totalRateChange;
+      const avgChgVal = item.avgRateChange;
+      const totalChgVal = item.totalRateChange;
+
+      const avgChgStr = (avgChgVal > 0 ? `+${avgChgVal.toFixed(1)}` : avgChgVal.toFixed(1));
+      const totalChgStr = (totalChgVal > 0 ? `+${totalChgVal}` : totalChgVal);
+
+      // プラスは緑、マイナスは赤で色分け
+      const avgColor = avgChgVal > 0 ? '#28a745' : (avgChgVal < 0 ? '#dc3545' : 'inherit');
+      const totalColor = totalChgVal > 0 ? '#28a745' : (totalChgVal < 0 ? '#dc3545' : 'inherit');
 
       return `
         <tr>
@@ -5679,8 +5693,8 @@ function updateRankingView() {
           <td>${(item.winRate * 100).toFixed(1)}%</td>
           <td>${item.avgRank.toFixed(2)}</td>
           <td>${item.avgScore.toFixed(1)}</td>
-          <td>${avgChgStr}</td>
-          <td>${totalChgStr}</td>
+          <td style="color: ${avgColor}; font-weight: bold;">${avgChgStr}</td>
+          <td style="color: ${totalColor}; font-weight: bold;">${totalChgStr}</td>
           <td>${item.strongScore.toFixed(1)}</td>
         </tr>
       `;
@@ -5697,7 +5711,6 @@ function updateRankingView() {
     ${buildRows(worst)}
   `;
 }
-
 
   
 /* ==========
