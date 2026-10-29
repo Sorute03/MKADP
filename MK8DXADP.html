@@ -4099,33 +4099,33 @@ function triggerAnalysisRefresh() {
 }
   
 function activateCourseStatsTab() {
-
   // 非表示 Canvas はサイズが 0 になるため復元
   const imgCanvas = document.getElementById("adpCourseImage");
-  imgCanvas.width = 800;
-  imgCanvas.height = 600;
+  if (imgCanvas) {
+    imgCanvas.width = 800;
+    imgCanvas.height = 600;
+  }
 
   const chartCanvas = document.getElementById("adpCourseStatsChart");
-  chartCanvas.width = 600;
-  chartCanvas.height = 300;
+  if (chartCanvas) {
+    chartCanvas.width = 600;
+    chartCanvas.height = 300;
+  }
 
   // 表示ボタンの onclick をここで登録
-  document.getElementById("showAdpCourseStatsBtn").onclick = runCourseStats;
+  const btn = document.getElementById("showAdpCourseStatsBtn");
+  if (btn) btn.onclick = runCourseStats;
 
   // もし前回の結果があれば再描画
   if (window.latestAdpCourseStats) {
-    drawAdpCourseStatsChart(window.latestAdpCourseStats);
-    drawAdpCourseImage(window.latestAdpCourseStats, state.backgroundImage);
+    if (typeof drawAdpCourseStatsChart === "function") drawAdpCourseStatsChart(window.latestAdpCourseStats);
+    if (typeof drawAdpCourseImage === "function") drawAdpCourseImage(window.latestAdpCourseStats, state.backgroundImage);
   }
 }
-
-
-
 
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
-
 
 function groupBy(records, keyFn) {
   const map = {};
@@ -4137,29 +4137,12 @@ function groupBy(records, keyFn) {
   return map;
 }
 
-  const tNoData = isEn ? 'No data available' : 'データなし';
+// ※元々ここに剥き出しで置かれていたコードは、特定の関数の中に入れるか削除してください。
+// 例として、必要であれば以下のようなユーティリティ関数などに収めます。
 
-  const sets = {};
-  records.forEach(r => {
-    if (!r.totalScore12) return;
-    if (!sets[r.timestamp]) sets[r.timestamp] = r.totalScore12;
-  });
-
-  const html = Object.entries(sets)
-    .sort((a, b) => b[0] - a[0])
-    .map(([ts, score]) => {
-      // 英語環境なら 'en-US'、日本語環境なら 'ja-JP' の日時表記に自動切替
-      const date = new Date(Number(ts)).toLocaleString(isEn ? 'en-US' : 'ja-JP');
-      return `<p>${date}：${score}${tPoints}</p>`;
-    })
-    .join("");
-
-  div.innerHTML = html || `<p>${tNoData}</p>`;
-}
-  
 function drawWinRateChart(records) {
   const canvas = document.getElementById("chartWinRate");
-  if (!canvas) return;  // ★ DOM が無ければ描画しない
+  if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -4171,7 +4154,7 @@ function drawWinRateChart(records) {
   const isEn = (currentLang === 'en');
   const tLabel = isEn ? 'Win Rate (%)' : '勝率(%)';
 
-  if (!records.length) {
+  if (!records || !records.length) {
     window.chartWinRate = new Chart(ctx, {
       type: "bar",
       data: { labels: [], datasets: [] }
@@ -4179,8 +4162,8 @@ function drawWinRateChart(records) {
     return;
   }
 
-  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
-  const labels = sorted.map((_,i)=>`#${i+1}`);
+  const sorted = [...records].sort((a, b) => a.timestamp - b.timestamp);
+  const labels = sorted.map((_, i) => `#${i + 1}`);
   const winRates = sorted.map(r => (r.rank <= 3 ? 100 : 0));
 
   window.chartWinRate = new Chart(ctx, {
@@ -4232,6 +4215,7 @@ function drawGrowthChart(labels, values) {
 }
 
 
+  
 function drawRadarChart(labels, values) {
   const canvas = document.getElementById("chartRadar");
   if (!canvas) return;
