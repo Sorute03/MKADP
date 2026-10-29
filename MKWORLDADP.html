@@ -2027,10 +2027,12 @@ function updateModalMode() {
 /* ============================================================
    ▼ レース入力欄生成（modalDraft 削除済み）
 ============================================================ */
+// ============================================================
+// ▼ レース入力欄生成（1コースごとの入力・変更イベントにWebhook送信を連動）
+// ============================================================
 function generateRaceInputs(count) {
   modalRaceInputs.innerHTML = "";
 
-  // 言語に応じたラベル文言（i18nDictに合わせたキー、または三項演算子）
   const tRace = (currentLang === 'en') ? 'Race' : 'レース目';
   const tCourse = (currentLang === 'en') ? 'Track' : 'コース';
   const tRank = (currentLang === 'en') ? 'Placement' : '順位';
@@ -2048,6 +2050,7 @@ function generateRaceInputs(count) {
 
         <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
+          <option value="">-- 選択してください --</option>
           ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
@@ -2064,8 +2067,14 @@ function generateRaceInputs(count) {
 
     if (rankInput && scoreInput) {
       rankInput.onchange = () => {
-        scoreInput.value = calcScore(Number(rankInput.value));
+        const rankVal = Number(rankInput.value);
+        scoreInput.value = rankVal ? calcScore(rankVal) : "";
         saveNextCourse();
+
+        // ==========================================
+        // ★ 1コースの順位が入力・変更されたタイミングでWebhook送信を実行！
+        // ==========================================
+        triggerLiveWebhookProgress();
       };
     }
 
@@ -2075,11 +2084,53 @@ function generateRaceInputs(count) {
         if (typeof courseStatsSource !== 'undefined' && courseStatsSource) {
           sendLoungeOverlay(courseStatsSource);
         }
+        // コース変更時も連動させる場合
+        triggerLiveWebhookProgress();
       };
     }
   }
 
   saveNextCourse();
+}
+
+/**
+ * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
+ */
+function triggerLiveWebhookProgress() {
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+  const currentSessionRaces = [];
+
+  for (let i = 1; i <= count; i++) {
+    const rankEl = document.getElementById(`raceRank_${i}`);
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    const scoreEl = document.getElementById(`raceScore_${i}`);
+
+    if (rankEl && rankEl.value) {
+      currentSessionRaces.push({
+        raceNum: i,
+        course: courseEl ? courseEl.value : `Race ${i}`,
+        rank: Number(rankEl.value),
+        score: Number(scoreEl ? scoreEl.value : calcScore(Number(rankEl.value)))
+      });
+    }
+  }
+
+  // 入力されたレースが1件以上ある場合のみ送信
+  if (currentSessionRaces.length > 0) {
+    const matchInfo = {
+      gameType: typeof GAME_TYPE !== 'undefined' ? GAME_TYPE : 'MKWORLD',
+      mode: mode,
+      tournamentName: document.getElementById('tournamentNameInput')?.value || '大会イベント',
+      season: mode === 'lounge' ? modalSeason.value : null,
+      tier: mode === 'lounge' ? modalTier.value : null
+    };
+
+    // 先ほど定義したリアルタイムWebhook送信関数を呼び出し
+    if (typeof sendLiveProgressWebhook === 'function') {
+      sendLiveProgressWebhook(currentSessionRaces, matchInfo);
+    }
+  }
 }
 </script>
 
