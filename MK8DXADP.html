@@ -2356,6 +2356,7 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 </div>
 
 <!-- ▼ ランキング -->
+<!-- ▼ ランキング -->
 <div class="section-block">
   <h3 data-i18n="ranking_title">コースランキング（得意・苦手）</h3>
 
@@ -2375,6 +2376,8 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="winRate" data-i18n="metric_winRate">勝率</option>
     <option value="avgRank" data-i18n="metric_avgRank">平均順位</option>
     <option value="avgScore" data-i18n="metric_avgScore">平均スコア</option>
+    <option value="avgRateChange">平均レート増減</option>
+    <option value="totalRateChange">総レート増減</option>
     <option value="stdRank" data-i18n="metric_stdRank">安定度（順位のブレ）</option>
     <option value="firstRate" data-i18n="metric_firstRate">爆発力（1位率）</option>
     <option value="avoidBottom" data-i18n="metric_avoidBottom">下位回避率</option>
@@ -2382,13 +2385,14 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="efficiency" data-i18n="metric_efficiency">スコア効率</option>
   </select>
 
-  <label for="rankSeason" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
-  <select id="rankSeason" onchange="updateRankingView()">
+  <!-- ▼ 重複回避のため ID を rankSeason -> rankSeasonSelect などに変更 -->
+  <label for="rankSeasonSelect" style="margin-left:16px;" data-i18n="lbl_season">Season：</label>
+  <select id="rankSeasonSelect" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
-  <label for="rankTier" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
-  <select id="rankTier" onchange="updateRankingView()">
+  <label for="rankTierSelect" style="margin-left:16px;" data-i18n="lbl_tier">Tier：</label>
+  <select id="rankTierSelect" onchange="updateRankingView()">
     <option value="ALL">ALL</option>
   </select>
 
@@ -2437,7 +2441,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   <h4 style="margin-top:20px;" data-i18n="weak_top10">苦手コース TOP10</h4>
   <table id="tableWeak" border="1" cellpadding="6" style="width:100%; background:#fff;"></table>
 </div>
-
 <!-- ▼ 精密評価 -->
 <div class="section-block">
   <h3 data-i18n="precise_eval_title">精密コース評価</h3>
@@ -5109,7 +5112,40 @@ async function updateRankingView() {
 /* ==========
    AIコース評価
 ========== */
+async function getRankingFilteredRecords() {
+  let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
+  if (!r) r = [];
 
+  const rankModeEl = document.getElementById("rankMode");
+  const mode = rankModeEl ? rankModeEl.value : "ALL";
+
+  const seasonEl = document.getElementById("rankSeasonSelect");
+  const tierEl = document.getElementById("rankTierSelect");
+  const season = seasonEl ? seasonEl.value : "ALL";
+  const tier   = tierEl ? tierEl.value : "ALL";
+
+  if (mode !== "ALL") r = r.filter(x => x.mode === mode);
+  if (season !== "ALL") r = r.filter(x => x.season === season);
+  if (tier !== "ALL") r = r.filter(x => x.tier === tier);
+
+  const sel = rankRangeSelect ? rankRangeSelect.value : "ALL";
+  if (sel !== "ALL") {
+    let N = sel === "CUSTOM" ? Number(rankRangeInput?.value || 0) : Number(sel);
+    if (N > 0) {
+      r.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      r = r.slice(-N);
+    }
+  }
+
+  const min = Number(document.getElementById("minRuns")?.value || 3);
+  if (min > 0) {
+    const grouped = {};
+    r.forEach(x => { grouped[x.course] = (grouped[x.course] || 0) + 1; });
+    r = r.filter(x => grouped[x.course] >= min);
+  }
+
+  return r;
+}
 /* ============================================================
    ▼ AIセレクタ初期化（多言語対応版）
 ============================================================ */
