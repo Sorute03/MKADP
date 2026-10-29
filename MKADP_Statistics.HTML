@@ -148,6 +148,7 @@
         <select id="filter-game">
           <option value="ALL" data-i18n="opt_all">すべて (指定なし)</option>
           <option value="MKWORLD" selected>MKWORLD</option>
+          <option value="MKWORLD12P">MKWORLD12P</option>
           <option value="MK8DX">MK8DX</option>
         </select>
       </div>
@@ -363,6 +364,165 @@ const i18nDict = {
   }
 };
 
+
+const COURSE_NAME_I18N = {
+  // ----------------------------------------
+  // MK8DX 全96コース (ご提示いただいた名称に対応)
+  // ----------------------------------------
+  "マリオカートスタジアム(WiiU)": "Mario Kart Stadium",
+  "ウォーターパーク(WiiU)": "Water Park",
+  "スイーツキャニオン(WiiU)": "Sweet Sweet Canyon",
+  "ドッスンいせき(WiiU)": "Thwomp Ruins",
+  "マリオサーキット(WiiU)": "Mario Circuit",
+  "キノピオハーバー(WiiU)": "Toad Harbor",
+  "ねじれマンション(WiiU)": "Twisted Mansion",
+  "ヘイホーこうざん(WiiU)": "Shy Guy Falls",
+  "サンシャインくうこう(WiiU)": "Sunshine Airport",
+  "ドルフィンみさき(WiiU)": "Dolphin Shoals",
+  "エレクトロドリーム(WiiU)": "Electrodrome",
+  "ワリオスノーマウンテン(WiiU)": "Mount Wario",
+  "スカイガーデン(WiiU)": "Cloudtop Cruise",
+  "ホネホネさばく(WiiU)": "Bone-Dry Dunes",
+  "クッパキャッスル(WiiU)": "Bowser's Castle",
+  "レインボーロード(WiiU)": "Rainbow Road",
+
+  "モーモーカントリー(Wii)": "Wii Moo Moo Meadows",
+  "マリオサーキット(GBA)": "GBA Mario Circuit",
+  "プクプクビーチ(DS)": "DS Cheep Cheep Beach",
+  "キノピオハイウェイ(N64)": "N64 Toad's Turnpike",
+  "カラカラさばく(GC)": "GCN Dry Dry Desert",
+  "ドーナツへいや３(SFC)": "SNES Donut Plains 3",
+  "ピーチサーキット(N64)": "N64 Royal Raceway",
+  "DKジャングル(3DS)": "3DS DK Jungle",
+  "ワリオスタジアム(DS)": "DS Wario Stadium",
+  "シャーベットランド(GC)": "GCN Sherbet Land",
+  "ミュージックパーク(3DS)": "3DS Music Park",
+  "ヨッシーバレー(N64)": "N64 Yoshi Valley",
+  "チクタクロック(DS)": "DS Tick-Tock Clock",
+  "パックンスライダー(3DS)": "3DS Piranha Plant Slide",
+  "グラグラかざん(Wii)": "Wii Grumble Volcano",
+  "レインボーロード(N64)": "N64 Rainbow Road",
+
+  "ヨッシーサーキット(GC)": "GCN Yoshi Circuit",
+  "エキサイトバイク(WiiU)": "Excitebike Arena",
+  "ドラゴンロード(WiiU)": "Dragon Driftway",
+  "ミュートシティ(WiiU)": "Mute City",
+  "ワリオこうざん(Wii)": "Wii Wario's Gold Mine",
+  "レインボーロード(SFC)": "SNES Rainbow Road",
+  "ツルツルツイスター(WiiU)": "Ice Ice Outpost",
+  "ハイラルサーキット(WiiU)": "Hyrule Circuit",
+
+  "ベビィパーク(GC)": "GCN Baby Park",
+  "チーズランド(GBA)": "GBA Cheese Land",
+  "ネイチャーロード(WiiU)": "Wild Woods",
+  "どうぶつの森(WiiU)": "Animal Crossing",
+  "ネオクッパシティ(3DS)": "3DS Neo Bowser City",
+  "リボンロード(GBA)": "GBA Ribbon Road",
+  "リンリンメトロ(WiiU)": "Super Bell Subway",
+  "ビッグブルー(WiiU)": "Big Blue",
+
+  "パリプロムナード(Tour)": "Paris Promenade",
+  "キノピオサーキット(3DS)": "3DS Toad Circuit",
+  "チョコマウンテン(N64)": "N64 Choco Mountain",
+  "ココナッツモール(Wii)": "Wii Coconut Mall",
+  "トーキョースクランブル(Tour)": "Tokyo Blur",
+  "キノコリッジウェイ(DS)": "DS Shroom Ridge",
+  "スカイガーデン(GBA)": "GBA Sky Garden",
+  "ニンニンドージョー(Switch)": "Ninja Hideaway",
+
+  "ニューヨークドリーム(Tour)": "New York Minute",
+  "マリオサーキット３(SFC)": "SNES Mario Circuit 3",
+  "カラカラさばく(N64)": "N64 Kalimari Desert",
+  "ワルイージピンボール(DS)": "DS Waluigi Pinball",
+  "シドニーサンシャイン(Tour)": "Sydney Sprint",
+  "スノーランド(GBA)": "GBA Snow Land",
+  "キノコキャニオン(Wii)": "Wii Mushroom Gorge",
+  "アイスビルディング(Switch)": "Sky-High Sundae",
+
+  "ロンドンアベニュー(Tour)": "London Loop",
+  "テレサレイク(GBA)": "GBA Boo Lake",
+  "ロックロックマウンテン(3DS)": "3DS Rock Rock Mountain",
+  "メイプルツリーハウス(Wii)": "Wii Maple Treeway",
+  "ベルリンシュトラーセ(Tour)": "Berlin Byways",
+  "ピーチガーデン(DS)": "DS Peach Gardens",
+  "メリーメリーマウンテン(Switch)": "Merry Mountain",
+  "レインボーロード(3DS)": "3DS Rainbow Road",
+
+  "アムステルダムブルーム(Tour)": "Amsterdam Drift",
+  "リバーサイドパーク(GBA)": "GBA Riverside Park",
+  "DKスノーボードクロス(Wii)": "Wii DK Summit",
+  "ヨッシーアイランド(Switch)": "Yoshi's Island",
+  "バンコクラッシュ(Tour)": "Bangkok Rush",
+  "マリオサーキット(DS)": "DS Mario Circuit",
+  "ワルイージスタジアム(GC)": "GCN Waluigi Stadium",
+  "シンガポールスプラッシュ(Tour)": "Singapore Speedway",
+
+  "アテネポリス(Tour)": "Athens Dash",
+  "デイジークルーザー(GC)": "GCN Daisy Cruiser",
+  "ムーンリッジ＆ハイウェイ(Wii)": "Wii Moonview Highway",
+  "シャボンロード(Tour)": "Squeaky Clean Sprint",
+  "ロサンゼルスコースト(Tour)": "Los Angeles Laps",
+  "サンセットこうや(GBA)": "GBA Sunset Wilds",
+  "ノコノコみさき(Wii)": "Wii Koopa Cape",
+  "バンクーバーバレー(Tour)": "Vancouver Velocity",
+
+  "ローマアバンティ(Tour)": "Rome Avanti",
+  "DKマウンテン(GC)": "GCN DK Mountain",
+  "デイジーサーキット(Wii)": "Wii Daisy Circuit",
+  "パックンしんでん(Switch)": "Piranha Plant Cove",
+  "マドリードグランデ(Tour)": "Madrid Drive",
+  "ロゼッタプラネット(3DS)": "3DS Rosalina's Ice World",
+  "クッパじょう３(SFC)": "SNES Bowser's Castle 3",
+  "レインボーロード(Wii)": "Wii Rainbow Road",
+
+  // ----------------------------------------
+  // MKWORLD
+  // ----------------------------------------
+  "マリオブラザーズサーキット": "Mario Bros. Circuit",
+  "トロフィーシティ": "Crown City",
+  "シュポポコースター": "Whistlestop Summit",
+  "DKうちゅうセンター": "DK Spaceport",
+  "サンサンさばく": "Desert Hills",
+  "ヘイホーカーニバル": "Shy Guy Bazaar",
+  "ワリオスタジアム": "Wario Stadium",
+  "キラーシップ": "Airship Fortress",
+  "DKスノーマウンテン": "DK Pass",
+  "ロゼッタてんもんだい": "Starview Peak",
+  "アイスビルディング": "Sky-High Sundae",
+  "バニラレイク": "SNES Vanilla Lake 1",
+  "ワリオシップ": "Wario Shipyard",
+  "ノコノコビーチ": "Koopa Troopa Beach",
+  "SFCノコノコビーチ": "SNES Koopa Beach 1",
+  "リバーサイドサファリ": "Faraway Oasis",
+  "ピーチスタジアム": "Peach Stadium",
+  "ピーチビーチ": "Peach Beach",
+  "ソルティータウン": "Salty Salty Speedway",
+  "ディノディノジャングル": "Dino Dino Jungle",
+  "ハテナしんでん": "Great ? Block Ruins",
+  "プクプクフォールズ": "Cheep Cheep Falls",
+  "ショーニューロード": "Dandelion Depths",
+  "おばけシネマ": "Boo Cinema",
+  "おばけぬま1": "SNES Ghost Valley 1",
+  "おばけぬま2": "SNES Ghost Valley 2",
+  "おばけぬま3": "SNES Ghost Valley 3",
+  "ホネホネツイスター": "Dry Bones Burnout",
+  "モーモーカントリー": "Moo Moo Meadows",
+  "チョコマウンテン": "Choco Mountain",
+  "チョコレーとう1": "SNES Choco Island 1",
+  "チョコレーとう2": "SNES Choco Island 2",
+  "キノピオファクトリー": "Toad's Factory",
+  "クッパキャッスル": "Bowser's Castle",
+  "どんぐりツリーハウス": "Acorn Heights",
+  "マリオサーキット": "Mario Circuit",
+  "SFCマリオサーキット1": "SNES Mario Circuit 1",
+  "SFCマリオサーキット2": "SNES Mario Circuit 2",
+  "SFCマリオサーキット3": "SNES Mario Circuit 3",
+  "レインボーロード": "Rainbow Road"
+};
+
+
+
+
 function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem('mkadp_stats_lang', lang);
@@ -391,6 +551,10 @@ const SYSTEM_ENCRYPTION_KEY = "MKADPLEMO";
 
 const SCORE_TABLES = {
   MK8DX: {
+    1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
+    7: 6,  8: 5,  9: 4, 10: 3, 11: 2, 12: 1
+  },
+  MKWORLD12P: {
     1: 15, 2: 12, 3: 10, 4: 9, 5: 8, 6: 7,
     7: 6,  8: 5,  9: 4, 10: 3, 11: 2, 12: 1
   },
@@ -428,6 +592,19 @@ const COURSE_MASTERS = {
     "ロサンゼルスコースト(Tour)", "サンセットこうや(GBA)", "ノコノコみさき(Wii)", "バンクーバーバレー(Tour)",
     "ローマアバンティ(Tour)", "DKマウンテン(GC)", "デイジーサーキット(Wii)", "パックンしんでん(Switch)",
     "マドリードグランデ(Tour)", "ロゼッタプラネット(3DS)", "クッパじょう３(SFC)", "レインボーロード(Wii)"
+  ],
+
+  MKWORLD12P: [
+    "マリオブラザーズサーキット", "トロフィーシティ", "シュポポコースター", "DKうちゅうセンター",
+    "サンサンさばく", "ヘイホーカーニバル", "ワリオスタジアム", "キラーシップ",
+    "DKスノーマウンテン", "ロゼッタてんもんだい", "アイスビルディング", "バニラレイク",
+    "ワリオシップ", "ノコノコビーチ", "SFCノコノコビーチ", "リバーサイドサファリ",
+    "ピーチスタジアム", "ピーチビーチ", "ソルティータウン", "ディノディノジャングル",
+    "ハテナしんでん", "プクプクフォールズ", "ショーニューロード", "おばけシネマ",
+    "おばけぬま1", "おばけぬま2", "おばけぬま3", "ホネホネツイスター",
+    "モーモーカントリー", "チョコマウンテン", "チョコレーとう1", "チョコレーとう2",
+    "キノピオファクトリー", "クッパキャッスル", "どんぐりツリーハウス", "マリオサーキット",
+    "SFCマリオサーキット1", "SFCマリオサーキット2", "SFCマリオサーキット3", "レインボーロード"
   ],
   MKWORLD: [
     "マリオブラザーズサーキット", "トロフィーシティ", "シュポポコースター", "DKうちゅうセンター",
@@ -670,22 +847,51 @@ function getScoreFromRank(gameType, rank) {
 // 3. データ取得・復号化
 // ==========================================
 
+// ==========================================
+// 3. データ取得・復号化（連番ファイル全取得対応版）
+// ==========================================
+
 async function fetchSingleGameData(targetGameType) {
-  const fileName = `${targetGameType.toLowerCase()}_records.json`;
-  const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
+  const lowerGame = targetGameType.toLowerCase();
+  let allRecords = [];
 
   try {
-    const res = await fetch(fileUrl, { cache: 'no-cache' });
-    if (!res.ok) return [];
-    const payload = await res.json();
-    if (!payload || !payload.data) return [];
+    let partIndex = 1;
+    let hasMore = true;
 
-    const decrypted = await decryptData(payload.data, SYSTEM_ENCRYPTION_KEY);
-    return decrypted.map(item => ({ ...item, game_type: item.game_type || targetGameType }));
+    // 1番から順にファイルが存在しなくなる（404等）まで自動で読み込む（最大20分割まで対応）
+    while (hasMore && partIndex <= 20) {
+      const fileSuffix = partIndex === 1 ? '' : `_${partIndex}`;
+      const fileName = `${lowerGame}${fileSuffix}_records.json`;
+      const fileUrl = `${GITHUB_BASE_URL}${fileName}`;
+
+      const res = await fetch(fileUrl, { cache: 'no-cache' });
+      if (!res.ok) {
+        // ファイルが存在しない場合は分割終了とみなす
+        hasMore = false;
+        break;
+      }
+
+      const payload = await res.json();
+      if (!payload || !payload.data) {
+        hasMore = false;
+        break;
+      }
+
+      // 暗号化データを復号
+      const decrypted = await decryptData(payload.data, SYSTEM_ENCRYPTION_KEY);
+      if (Array.isArray(decrypted)) {
+        const normalized = decrypted.map(item => ({ ...item, game_type: item.game_type || targetGameType }));
+        allRecords = allRecords.concat(normalized);
+      }
+
+      partIndex++;
+    }
   } catch (err) {
     console.error(`❌ [${targetGameType}] Fetch/Decrypt Error:`, err);
-    return [];
   }
+
+  return allRecords;
 }
 
 async function loadAndDecryptGameData(targetGameType) {
@@ -696,12 +902,16 @@ async function loadAndDecryptGameData(targetGameType) {
 
   try {
     if (targetGameType === 'ALL') {
-      const [mkworldData, mk8dxData] = await Promise.all([
-        fetchSingleGameData('MKWORLD').catch(() => []), // エラー時は空配列を返す
+      const [mkworldData, mkworld12pData, mk8dxData] = await Promise.all([
+        fetchSingleGameData('MKWORLD').catch(() => []),
+        fetchSingleGameData('MKWORLD12P').catch(() => []),
         fetchSingleGameData('MK8DX').catch(() => [])
       ]);
-      // 安全に配列結合（null/undefined対策）
-      activeRecordsCache = [...(Array.isArray(mkworldData) ? mkworldData : []), ...(Array.isArray(mk8dxData) ? mk8dxData : [])];
+      activeRecordsCache = [
+        ...(Array.isArray(mkworldData) ? mkworldData : []),
+        ...(Array.isArray(mkworld12pData) ? mkworld12pData : []),
+        ...(Array.isArray(mk8dxData) ? mk8dxData : [])
+      ];
     } else {
       const singleData = await fetchSingleGameData(targetGameType).catch(() => []);
       activeRecordsCache = Array.isArray(singleData) ? singleData : [];
@@ -855,7 +1065,7 @@ function computeDetailedCourseStats(records, filters) {
 // 5. ラウンジ Tier別 統計集計
 // ==========================================
 
-const LOUNGE_TIERS_ORDER = ["SQ", "X", "S", "A", "B", "BC", "C", "CD", "D", "DE", "E", "EF", "F", "FG", "G"];
+const LOUNGE_TIERS_ORDER = ["SQ", "X", "S", "A", "B", "BC", "C", "CD", "D", "DE", "E", "EF", "F", "FG", "G","Q"];
 
 function aggregateLoungeStatsByTier(rawRecords, filterTier = 'ALL') {
   if (!Array.isArray(rawRecords)) return {};
