@@ -4018,22 +4018,23 @@ let webhookList = [];
 
 
   
-function refreshAllAnalysisViews() {
-  try {
-    if (typeof updateStatsView === "function") updateStatsView();
-    if (typeof updateGrowthView === "function") updateGrowthView();
-    if (typeof updateRadarView === "function") updateRadarView();
-    if (typeof updateHeatmapView === "function") updateHeatmapView();
-    if (typeof updateRankingView === "function") updateRankingView();
-    if (typeof updateAICourseView === "function") updateAICourseView();
-    if (typeof update3DView === "function") update3DView();
-    if (typeof updateScatterView === "function") updateScatterView();
-    if (typeof updateLoungeSetView === "function") updateLoungeSetView();
-  } catch (e) {
-    console.error("View update error:", e);
-  }
+async function refreshAllAnalysisViews() {
+  console.log("すべての分析ビューを更新中...");
+  
+  // 安全に各ビューの更新関数を呼び出す
+  if (typeof updateStatsView === "function") await updateStatsView();
+  if (typeof updateHeatmapView === "function") await updateHeatmapView();
+  if (typeof updateAICourseView === "function") await updateAICourseView();
+  if (typeof updateGrowthView === "function") await updateGrowthView();
+  if (typeof update3DView === "function") await update3DView();
+  if (typeof updateScatterView === "function") await updateScatterView();
+  if (typeof updateLoungeSetView === "function") await updateLoungeSetView();
+  
+  console.log("すべての分析ビューの更新が完了しました。");
 }
 
+
+  
 // 要素が画面上に実際に表示されている（display が none ではない）か判定するヘルパー
 function isVisible(elementId) {
   const el = document.getElementById(elementId);
@@ -9688,12 +9689,6 @@ document.getElementById("overlayModeSelect").addEventListener("change", () => {
 });
 
 
-
-
-
-  
-
-let courseStatsSource = null;
 
 // ★ records は ADP IndexedDB から読み込んだ生データ
 function createCourseStatsSource(records) {
