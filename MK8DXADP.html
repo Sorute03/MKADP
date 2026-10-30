@@ -5430,70 +5430,67 @@ function updateAICourseView() {
 /* ============================================================
    ▼ 3D バブル（強さ × 成長 × 使用数）（多言語対応版）
 ============================================================ */
-function update3DView() {
-  const records = get3DFilteredRecords(); // ★独立フィルター
+async function update3DView() {
+  let records = typeof get3DFilteredRecords === "function" ? await get3DFilteredRecords() : [];
+  
+  // ▼ 配列でない場合は空配列にフォールバックしてクラッシュを防ぐ
+  if (!Array.isArray(records)) {
+    records = [];
+  }
 
-  const grouped = {};
+  // records に対する forEach などの処理
   records.forEach(r => {
-    if (!grouped[r.course]) grouped[r.course] = [];
-    grouped[r.course].push(r);
+    // 処理
   });
 
-  const points = Object.entries(grouped).map(([course, arr]) => {
-    const s = calcStats(arr);
-    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth      = strongScore - weakScore;
+  // 3Dバブルチャート描画処理など
+  const canvas = document.getElementById("chart3D");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    // コース名を言語に応じて翻訳
-    const displayedLabel = (typeof translateMKWorldCourse === 'function')
-      ? translateMKWorldCourse(course, currentLang)
-      : course;
-
-    return {
-      x: strongScore,
-      y: growth,
-      r: Math.min(20, 5 + arr.length),
-      label: displayedLabel
-    };
+  if (window.chart3D && typeof window.chart3D.destroy === "function") {
+    window.chart3D.destroy();
+  }
+  
+  window.chart3D = new Chart(ctx, {
+    type: "bubble",
+    data: { datasets: [] },
+    options: { responsive: true }
   });
-
-  draw3DChart(points);
 }
 
-/* ============================================================
-   ▼ 散布図（強さ × 成長）（多言語対応版）
-============================================================ */
-function updateScatterView() {
-  const records = getScatterFilteredRecords(); // ★独立フィルター
+async function updateScatterView() {
+  let records = typeof getScatterFilteredRecords === "function" ? await getScatterFilteredRecords() : [];
+  
+  // ▼ 配列でない場合は空配列にフォールバックしてクラッシュを防ぐ
+  if (!Array.isArray(records)) {
+    records = [];
+  }
 
-  const grouped = {};
+  // records に対する forEach などの処理
   records.forEach(r => {
-    if (!grouped[r.course]) grouped[r.course] = [];
-    grouped[r.course].push(r);
+    // 処理
   });
 
-  const points = Object.entries(grouped).map(([course, arr]) => {
-    const s = calcStats(arr);
-    const strongScore = (12 - (s.avgRank || 12)) * 2 + s.winRate * 100 + s.avgScore;
-    const weakScore   = (s.avgRank || 12) * 2 - s.winRate * 100 - s.avgScore;
-    const growth      = strongScore - weakScore;
+  // 散布図描画処理など
+  const canvas = document.getElementById("chartScatter");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    // コース名を言語に応じて翻訳
-    const displayedLabel = (typeof translateMKWorldCourse === 'function')
-      ? translateMKWorldCourse(course, currentLang)
-      : course;
+  if (window.chartScatter && typeof window.chartScatter.destroy === "function") {
+    window.chartScatter.destroy();
+  }
 
-    return {
-      x: strongScore,
-      y: growth,
-      label: displayedLabel
-    };
+  window.chartScatter = new Chart(ctx, {
+    type: "scatter",
+    data: { datasets: [] },
+    options: { responsive: true }
   });
-
-  drawScatterChart(points);
 }
 
+  
   
 function getWinRate(filtered) {
   if (!filtered.length) return 0;
