@@ -1139,17 +1139,17 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="raceHistoryList"></div>
 </div>
 
-<div style="margin-top:15px;">
+<div style="margin-top: 15px;">
   <label data-i18n="webhook_name_label">Webhook 名前</label><br>
   <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用"><br><br>
 
   <label data-i18n="webhook_url_label">Webhook URL</label><br>
   <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..."><br><br>
 
-  <!-- ▼ 追加したリアルタイム通知の設定 -->
-  <div class="setting-group" style="margin-top: 10px; margin-bottom: 15px;">
-    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-      <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
+  <!-- ▼ 見た目を整えたリアルタイム通知の設定 -->
+  <div class="setting-group" style="margin-top: 12px; margin-bottom: 15px;">
+    <label style="cursor: pointer; display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.4; user-select: none;">
+      <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)" style="margin-top: 2px; transform: scale(1.1); cursor: pointer;">
       <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
     </label>
   </div>
