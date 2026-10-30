@@ -1146,9 +1146,9 @@ document.addEventListener('DOMContentLoaded', () => {
   <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook URL</label>
   <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px;"><br>
 
-  <!-- ▼ リアルタイム通知の切り替えをボタン形式に変更 -->
-  <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 4px;">
-    <span style="font-size: 13px;">1コース入力ごとにリアルタイムで通知</span>
+  <!-- ▼ テキストとボタンを近くに配置したコンパクトなデザイン -->
+  <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+    <span>1コース入力ごとにリアルタイムで通知</span>
     <button id="toggleLiveWebhookBtn" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; color: #4caf50;">ON</button>
   </div>
   <!-- ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ -->
@@ -1398,13 +1398,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
     </div>
   </div>
-</div>
-
-<div class="setting-group" style="margin-top: 10px;">
-  <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-    <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
-    <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
-  </label>
 </div>
 
 
