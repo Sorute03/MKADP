@@ -10761,7 +10761,19 @@ function initFixedTimeSyncScheduler() {
 }
 
 
-
+function loadPlayerIdList() {
+  // プレイヤーIDリストの読み込み処理（保存データ等があればここに記述）
+  const saved = localStorage.getItem("mk_player_ids");
+  if (saved) {
+    try {
+      window.playerIdList = JSON.parse(saved);
+    } catch (e) {
+      window.playerIdList = [];
+    }
+  } else {
+    window.playerIdList = [];
+  }
+}
 
 
 
