@@ -1012,6 +1012,15 @@ document.addEventListener('DOMContentLoaded', () => {
   <label data-i18n="webhook_url_label">Webhook URL</label><br>
   <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..."><br><br>
 
+  <!-- ▼ 追加したリアルタイム通知の設定 -->
+  <div class="setting-group" style="margin-top: 10px; margin-bottom: 15px;">
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+      <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
+      <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
+    </label>
+  </div>
+  <!-- ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ -->
+
   <button onclick="addWebhook()" data-i18n="btn_add">追加</button>
   <div id="webhookListArea" style="margin-top:10px;"></div>
 </div>
@@ -1260,13 +1269,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
     </div>
   </div>
-</div>
-
-<div class="setting-group" style="margin-top: 10px;">
-  <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-    <input type="checkbox" id="toggle-live-webhook" onchange="toggleLiveWebhookSetting(this)">
-    <span>1コース入力ごとにリアルタイムでWebhookへ途中経過を通知する</span>
-  </label>
 </div>
 
   
