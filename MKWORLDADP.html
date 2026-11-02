@@ -10210,14 +10210,16 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ★ 背景URLが null / undefined / 数値でも絶対に落ちないようにする
-  if (!backgroundUrl || typeof backgroundUrl !== "string") {
-    backgroundUrl = null;
+  // ★ 1. backgroundUrl が渡っていない場合、state から直接拾うようにする
+  if (!backgroundUrl && state.adpCourseBackgroundImage) {
+    backgroundUrl = state.adpCourseBackgroundImage;
   }
 
+  // ★ 2. data:imageだけでなく blob: URL も許可するように修正する
   const isValidBg =
     backgroundUrl &&
-    backgroundUrl.startsWith("data:image");
+    typeof backgroundUrl === "string" &&
+    (backgroundUrl.startsWith("data:image") || backgroundUrl.startsWith("blob:"));
 
   if (isValidBg) {
     const bg = new Image();
@@ -10229,12 +10231,13 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
       await bg.decode();
       console.log("背景 decode 成功");
   
+      // ★ 3. 変数名を state.adpCourseBg... に合わせる
       ctx.filter =
-        `brightness(${Number(state.bgBrightness)}) ` +
-        `contrast(${Number(state.bgContrast)}) ` +
-        `blur(${Number(state.bgBlur)}px)`;
+        `brightness(${Number(state.adpCourseBgBrightness ?? 1)}) ` +
+        `contrast(${Number(state.adpCourseBgContrast ?? 1)}) ` +
+        `blur(${Number(state.adpCourseBgBlur ?? 0)}px)`;
   
-      ctx.globalAlpha = Number(state.bgOpacity);
+      ctx.globalAlpha = Number(state.adpCourseBgOpacity ?? 1);
   
       console.log("背景 drawImage 実行");
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
@@ -10253,6 +10256,8 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  // (以下、テキスト描画部分はそのまま)
 
 
   // ★ ここからテキスト描画（既存コード）
@@ -10309,7 +10314,7 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
 
 
 async function sendAdpCourseImageToDiscord() {
-  // 1. 現在選択されているWebhook URLを取得（プロジェクトの仕様に合わせてフォールバック対応）
+  // 1. 現在選択されているWebhook URLを取得
   let webhook = "";
   if (typeof getSelectedWebhookUrl === "function") {
     webhook = getSelectedWebhookUrl();
@@ -10320,6 +10325,12 @@ async function sendAdpCourseImageToDiscord() {
   if (!webhook) {
     alert("Webhook が選択されていません");
     return;
+  }
+
+  // ★ 補強: 送信直前に、最新の統計データと背景でキャンバスを確実に再描画しておく
+  if (typeof window.latestAdpCourseStats !== "undefined" && window.latestAdpCourseStats && typeof drawAdpCourseImage === "function") {
+    const bgUrl = state.adpCourseBackgroundImage || null;
+    await drawAdpCourseImage(window.latestAdpCourseStats, bgUrl);
   }
 
   // 2. キャンバス要素の取得と存在チェック
