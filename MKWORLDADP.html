@@ -9286,82 +9286,179 @@ async function getAdpOpfsDirectory() {
   return await root.getDirectoryHandle(ADP_OPFS_DIR, { create: true });
 }
 
+
+
+
+// ==========================================
+// 1. 簡易的な IndexedDB ストレージ（ローカル用フォールバック）
+// ==========================================
+// IndexedDB 接続オープン用ヘルパー
+// ==========================================
+// 1. 環境判定 & IndexedDB フォールバック機構
+// ==========================================
+function isLocalEnvironment() {
+  return window.location.protocol === "file:";
+}
+
+// ローカル用の IndexedDB データベースを開く
+function openAdpIdbFallback() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("MK_ADP_Local_Fallback_DB", 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("backgrounds")) {
+        db.createObjectStore("backgrounds", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function getSavedBackgroundsIDB() {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve) => {
+    const tx = db.transaction("backgrounds", "readonly");
+    const req = tx.objectStore("backgrounds").getAll();
+    req.onsuccess = () => {
+      const list = (req.result || []).map(r => ({
+        id: r.id,
+        dataUrl: URL.createObjectURL(r.file),
+        settings: r.settings || { brightness: 1, contrast: 1, opacity: 1, blur: 0 },
+        size: r.file.size
+      }));
+      resolve(list);
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+async function saveBackgroundToIDB(file, settings) {
+  const db = await openAdpIdbFallback();
+  const idName = `adp_bg_${Date.now()}`;
+  
+  // ファイルシステムのロックを回避するために一度ArrayBufferに変換
+  const arrayBuffer = await file.arrayBuffer();
+  const cleanBlob = new Blob([arrayBuffer], { type: file.type });
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").put({
+      id: idName,
+      file: cleanBlob,
+      settings: settings
+    });
+    req.onsuccess = () => resolve(idName);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function deleteBackgroundFromIDB(idName) {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").delete(idName);
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+
+// ==========================================
+// 2. 自動切り替え対応の統合関数（関数名はそのまま維持）
+// ==========================================
+
 async function getSavedAdpBackgroundsOPFS() {
+  // ローカル環境（file://）の場合は自動で IndexedDB を使う
+  if (isLocalEnvironment()) {
+    return await getSavedBackgroundsIDB();
+  }
+
+  // 本番環境等の場合は本来の OPFS を使用
   try {
     const dirHandle = await getAdpOpfsDirectory();
-    const ids = [];
-    
-    // 1. まずはディレクトリ内の名前（ID一覧）だけを安全に収集する
-    for await (const [idName, handle] of dirHandle.entries()) {
-      if (handle.kind === "directory") {
-        ids.push(idName);
-      }
-    }
-    
     const list = [];
+    const dirNames = [];
+    
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind === "directory") dirNames.push(name);
+    }
 
-    // 2. 収集したIDリストを元に、1件ずつ確実に安全に中身を取得する
-    for (const idName of ids) {
+    for (const idName of dirNames) {
       try {
         const bgDir = await dirHandle.getDirectoryHandle(idName);
-        
-        // 画像ファイルの取得
-        const imgFileHandle = await bgDir.getFileHandle("image.jpg");
-        const imgFile = await imgFileHandle.getFile();
+        const imgFile = await (await bgDir.getFileHandle("image.jpg")).getFile();
         const dataUrl = URL.createObjectURL(imgFile);
 
-        // メタデータの取得（失敗してもデフォルト値で継続）
         let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
         try {
-          const metaFileHandle = await bgDir.getFileHandle("meta.json");
-          const metaFile = await metaFileHandle.getFile();
+          const metaFile = await (await bgDir.getFileHandle("meta.json")).getFile();
           settings = JSON.parse(await metaFile.text());
-        } catch (e) {
-          // meta.json がなくても無視する
-        }
+        } catch (e) {}
 
         list.push({ id: idName, dataUrl, settings, size: imgFile.size });
-      } catch (err) {
-        console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
-      }
+      } catch (err) {}
     }
-    
     return list;
   } catch (err) {
-    console.error("[OPFS/ADP] 一覧取得失敗:", err);
-    return [];
+    console.warn("[OPFS] 利用不可のため IDB にフォールバックします:", err);
+    return await getSavedBackgroundsIDB();
   }
 }
 
 async function saveAdpBackgroundToOPFS(file, settings) {
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   const currentList = await getSavedAdpBackgroundsOPFS();
   if (currentList.length >= 5) {
     throw new Error("コース背景の保存上限（最大5枚）に達しています。不要な画像を削除してください。");
   }
 
-  const dirHandle = await getAdpOpfsDirectory();
-  const idName = `adp_bg_${Date.now()}`;
-  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
+  // ローカル環境（file://）の場合は自動で IndexedDB に保存
+  if (isLocalEnvironment()) {
+    return await saveBackgroundToIDB(file, settings);
+  }
 
-  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
-  const imgW = await imgHandle.createWritable();
-  await imgW.write(file);
-  await imgW.close();
+  // 本番環境等の場合は OPFS に保存
+  try {
+    const dirHandle = await getAdpOpfsDirectory();
+    const idName = `adp_bg_${Date.now()}`;
+    const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
 
-  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
-  const metaW = await metaHandle.createWritable();
-  await metaW.write(JSON.stringify(settings));
-  await metaW.close();
+    const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+    const imgW = await imgHandle.createWritable();
+    await imgW.write(file);
+    await imgW.close();
+
+    const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+    const metaW = await metaHandle.createWritable();
+    await metaW.write(JSON.stringify(settings));
+    await metaW.close();
+    
+    return idName;
+  } catch (err) {
+    console.warn("[OPFS] 保存失敗のため IDB にフォールバックします:", err);
+    return await saveBackgroundToIDB(file, settings);
+  }
 }
 
 async function deleteAdpBackgroundFromOPFS(idName) {
+  if (isLocalEnvironment()) {
+    await deleteBackgroundFromIDB(idName);
+    return;
+  }
+
   try {
     const dirHandle = await getAdpOpfsDirectory();
     await dirHandle.removeEntry(idName, { recursive: true });
   } catch (err) {
     console.error("[OPFS/ADP] 削除失敗:", err);
+    await deleteBackgroundFromIDB(idName); // 念のためIDB側も試す
   }
 }
+
+
+
 
 async function renderSavedAdpBackgrounds() {
   const container = document.getElementById("savedAdpBgListContainer");
@@ -9530,30 +9627,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 /* ============================================================
    ▼ 背景描画
    ============================================================ */
+/* ============================================================
+    ▼ コース統計用 背景描画関数
+   ============================================================ */
 async function drawBackground(ctx, w, h) {
-  if (!state.backgroundImage) {
+  // ★ state.adpCourseBackgroundImage を見るように修正
+  if (!state.adpCourseBackgroundImage) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
     return;
   }
 
   const bg = new Image();
-  bg.src = state.backgroundImage;
+  bg.src = state.adpCourseBackgroundImage; // ★ 修正
   await bg.decode();
 
+  // ★ state.adpCourseBg... を見るように修正
   ctx.filter = `
-    brightness(${state.bgBrightness})
-    contrast(${state.bgContrast})
-    blur(${state.bgBlur}px)
+    brightness(${state.adpCourseBgBrightness ?? 1})
+    contrast(${state.adpCourseBgContrast ?? 1})
+    blur(${state.adpCourseBgBlur ?? 0}px)
   `;
 
-  ctx.globalAlpha = state.bgOpacity;
+  ctx.globalAlpha = state.adpCourseBgOpacity ?? 1;
 
   ctx.drawImage(bg, 0, 0, w, h);
 
   ctx.filter = "none";
   ctx.globalAlpha = 1;
 }
+
 
 /* ============================================================
    ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
