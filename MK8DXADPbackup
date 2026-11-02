@@ -561,6 +561,10 @@ const i18nDict = {
     opt_tier_none: "合算しない",
     btn_edit: "編集",
     btn_delete: "削除",
+    modal_input_course_list: "📋 入力中のコース一覧",
+    msg_no_input_yet: "まだ入力されていません",
+    unit_items: "件",
+    stat_12race_avg: "12レース ave",
   },
   en: {
     app_title: "🏎️ MK8DX ADP - Match Tracker & Analytics Tool",
@@ -783,6 +787,10 @@ const i18nDict = {
     opt_tier_none: "Do not merge",
     btn_edit: "Edit",
     btn_delete: "Delete",
+    modal_input_course_list: "📋 Input Courses",
+    msg_no_input_yet: "No courses entered yet",
+    unit_items: "items",
+    stat_12race_avg: "12R Avg Score",
     }
   };
 
@@ -2493,7 +2501,42 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </select>
 </div>
 
-<!-- ▼ ランキング -->
+<!-- ▼ フィルターのすぐ下に配置する統計データの表示エリア（12レースave追加版） -->
+<div id="basicStatsContent" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+  
+  <!-- 総レース数カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_total_races">総レース数</div>
+    <div id="statTotalRaces" style="font-size: 22px; font-weight: bold; color: #212529;">0</div>
+  </div>
+
+  <!-- 平均順位カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_rank">平均順位</div>
+    <div id="statAvgRank" style="font-size: 22px; font-weight: bold; color: #007bff;">-</div>
+  </div>
+
+  <!-- 平均スコアカード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_score">平均スコア</div>
+    <div id="statAvgScore" style="font-size: 22px; font-weight: bold; color: #28a745;">-</div>
+  </div>
+
+  <!-- ★新設：12レース平均スコアカード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_12race_avg">12レース ave</div>
+    <div id="stat12RaceAvg" style="font-size: 22px; font-weight: bold; color: #6f42c1;">-</div>
+  </div>
+
+  <!-- 1位回数 / 勝率カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_win_rate">1位回数 / 勝率</div>
+    <div id="statWinRate" style="font-size: 22px; font-weight: bold; color: #ffc107;">-</div>
+  </div>
+
+</div>
+
+  
 <!-- ▼ ランキング -->
 <div class="section-block">
   <h3 data-i18n="ranking_title">コースランキング（得意・苦手）</h3>
@@ -10999,6 +11042,124 @@ async function updateGrowthView() {
   }
 } 
 
+
+function updateStatsView() {
+  const records = getFilteredStatsRecords(); // 絞り込み関数
+
+  const totalRaces = records.length;
+  if (totalRaces === 0) {
+    document.getElementById("statTotalRaces").innerText = "0";
+    document.getElementById("statAvgRank").innerText = "-";
+    document.getElementById("statAvgScore").innerText = "-";
+    document.getElementById("stat12RaceAvg").innerText = "-";
+    document.getElementById("statWinRate").innerText = "-";
+    return;
+  }
+
+  // 既存の計算
+  const sumRank = records.reduce((acc, r) => acc + (Number(r.rank) || 0), 0);
+  const avgRank = (sumRank / totalRaces).toFixed(2);
+
+  const sumScore = records.reduce((acc, r) => acc + (Number(r.score) || 0), 0);
+  const avgScore = (sumScore / totalRaces).toFixed(1);
+
+  const winCount = records.filter(r => Number(r.rank) === 1).length;
+  const winRate = ((winCount / totalRaces) * 100).toFixed(1);
+
+  // ▼ 12レースセットの平均スコア（totalScore12）を正確に計算するロジック
+  let avg12RaceScore = "-";
+  
+  // ラウンジモードかつ totalScore12 を持つレコードを抽出
+  const loungeRecords = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
+  
+  if (loungeRecords.length > 0) {
+    // timestamp ごとにグループ化（同じ12レースセットは同じ timestamp を持っているため）
+    const setsByTimestamp = {};
+    loungeRecords.forEach(r => {
+      if (!setsByTimestamp[r.timestamp]) {
+        setsByTimestamp[r.timestamp] = [];
+      }
+      setsByTimestamp[r.timestamp].push(r);
+    });
+
+    // セットごとの合計スコアを抽出（1セットにつき1つの totalScore12 を確実に取得）
+    const setTotals = [];
+    Object.values(setsByTimestamp).forEach(setRaces => {
+      const total12 = setRaces[0].totalScore12;
+      if (typeof total12 === 'number' && !isNaN(total12)) {
+        setTotals.push(total12);
+      }
+    });
+
+    // セットが存在すれば平均を計算
+    if (setTotals.length > 0) {
+      const sum12 = setTotals.reduce((acc, val) => acc + val, 0);
+      avg12RaceScore = (sum12 / setTotals.length).toFixed(1) + " pt";
+    }
+  }
+
+  // HTMLへ反映
+  document.getElementById("statTotalRaces").innerText = totalRaces;
+  document.getElementById("statAvgRank").innerText = `${avgRank}位`;
+  document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
+  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★正しく計算された12レース平均を反映
+  document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
+}
+
+// ▼ 基本統計タブのセレクトボックス条件に合わせてレコードを絞り込む関数
+function getFilteredStatsRecords() {
+  // 1. すべてのレコード（または現在保持している全レコード配列）を取得
+  let records = typeof allRecords !== 'undefined' ? allRecords : [];
+  if (!Array.isArray(records)) records = [];
+
+  // 2. 画面上のフィルター要素の値を取得
+  const modeEl = document.getElementById("statsMode");
+  const rangeSelectEl = document.getElementById("statsRangeSelect");
+  const rangeInputEl = document.getElementById("statsRangeInput");
+  const seasonEl = document.getElementById("statsSeason");
+  const tierEl = document.getElementById("statsTier");
+
+  const mode = modeEl ? modeEl.value : "ALL";
+  const rangeSelect = rangeSelectEl ? rangeSelectEl.value : "ALL";
+  const season = seasonEl ? seasonEl.value : "ALL";
+  const tier = tierEl ? tierEl.value : "ALL";
+
+  // 3. モードフィルター
+  if (mode !== "ALL") {
+    records = records.filter(r => r.mode === mode);
+  }
+
+  // 4. Season フィルター（ラウンジモード等の場合）
+  if (season !== "ALL") {
+    records = records.filter(r => r.season === season);
+  }
+
+  // 5. Tier フィルター（ラウンジモード等の場合）
+  if (tier !== "ALL") {
+    records = records.filter(r => r.tier === tier);
+  }
+
+  // 6. タイムスタンプ順（新しい順）にソートして「直近N件」を適用
+  // DB版のレコードは timestamp を持っている前提
+  records = [...records].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  if (rangeSelect !== "ALL") {
+    let limit = 0;
+    if (rangeSelect === "CUSTOM") {
+      limit = rangeInputEl ? Number(rangeInputEl.value) || 0 : 0;
+    } else {
+      limit = Number(rangeSelect) || 0;
+    }
+
+    if (limit > 0) {
+      records = records.slice(0, limit);
+    }
+  }
+
+  return records;
+}
+  
+  
 // ▼ 3Dバブルチャート用フィルター
 async function get3DFilteredRecords() {
   let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
