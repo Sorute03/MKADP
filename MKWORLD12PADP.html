@@ -5291,6 +5291,61 @@ function updateStatsView() {
   document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
 }      
 
+
+// ▼ 基本統計タブのセレクトボックス条件に合わせてレコードを絞り込む関数
+function getFilteredStatsRecords() {
+  // 1. すべてのレコード（または現在保持している全レコード配列）を取得
+  let records = typeof allRecords !== 'undefined' ? allRecords : [];
+  if (!Array.isArray(records)) records = [];
+
+  // 2. 画面上のフィルター要素の値を取得
+  const modeEl = document.getElementById("statsMode");
+  const rangeSelectEl = document.getElementById("statsRangeSelect");
+  const rangeInputEl = document.getElementById("statsRangeInput");
+  const seasonEl = document.getElementById("statsSeason");
+  const tierEl = document.getElementById("statsTier");
+
+  const mode = modeEl ? modeEl.value : "ALL";
+  const rangeSelect = rangeSelectEl ? rangeSelectEl.value : "ALL";
+  const season = seasonEl ? seasonEl.value : "ALL";
+  const tier = tierEl ? tierEl.value : "ALL";
+
+  // 3. モードフィルター
+  if (mode !== "ALL") {
+    records = records.filter(r => r.mode === mode);
+  }
+
+  // 4. Season フィルター（ラウンジモード等の場合）
+  if (season !== "ALL") {
+    records = records.filter(r => r.season === season);
+  }
+
+  // 5. Tier フィルター（ラウンジモード等の場合）
+  if (tier !== "ALL") {
+    records = records.filter(r => r.tier === tier);
+  }
+
+  // 6. タイムスタンプ順（新しい順）にソートして「直近N件」を適用
+  // DB版のレコードは timestamp を持っている前提
+  records = [...records].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  if (rangeSelect !== "ALL") {
+    let limit = 0;
+    if (rangeSelect === "CUSTOM") {
+      limit = rangeInputEl ? Number(rangeInputEl.value) || 0 : 0;
+    } else {
+      limit = Number(rangeSelect) || 0;
+    }
+
+    if (limit > 0) {
+      records = records.slice(0, limit);
+    }
+  }
+
+  return records;
+}
+  
+
 /* ============================================================
    ▼ ヒートマップ（コース × 指標）
    ※コース名を辞書や translateMKWorldCourse で多言語化している場合に対応
