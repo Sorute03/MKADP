@@ -9289,29 +9289,43 @@ async function getAdpOpfsDirectory() {
 async function getSavedAdpBackgroundsOPFS() {
   try {
     const dirHandle = await getAdpOpfsDirectory();
-    const list = [];
+    const ids = [];
     
+    // 1. まずはディレクトリ内の名前（ID一覧）だけを安全に収集する
     for await (const [idName, handle] of dirHandle.entries()) {
       if (handle.kind === "directory") {
-        const bgDir = handle;
-        try {
-          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
-          const imgFile = await imgFileHandle.getFile();
-          const dataUrl = URL.createObjectURL(imgFile);
-
-          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
-          try {
-            const metaFileHandle = await bgDir.getFileHandle("meta.json");
-            const metaFile = await metaFileHandle.getFile();
-            settings = JSON.parse(await metaFile.text());
-          } catch (e) {}
-
-          list.push({ id: idName, dataUrl, settings, size: imgFile.size });
-        } catch (err) {
-          console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
-        }
+        ids.push(idName);
       }
     }
+    
+    const list = [];
+
+    // 2. 収集したIDリストを元に、1件ずつ確実に安全に中身を取得する
+    for (const idName of ids) {
+      try {
+        const bgDir = await dirHandle.getDirectoryHandle(idName);
+        
+        // 画像ファイルの取得
+        const imgFileHandle = await bgDir.getFileHandle("image.jpg");
+        const imgFile = await imgFileHandle.getFile();
+        const dataUrl = URL.createObjectURL(imgFile);
+
+        // メタデータの取得（失敗してもデフォルト値で継続）
+        let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
+        try {
+          const metaFileHandle = await bgDir.getFileHandle("meta.json");
+          const metaFile = await metaFileHandle.getFile();
+          settings = JSON.parse(await metaFile.text());
+        } catch (e) {
+          // meta.json がなくても無視する
+        }
+
+        list.push({ id: idName, dataUrl, settings, size: imgFile.size });
+      } catch (err) {
+        console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
+      }
+    }
+    
     return list;
   } catch (err) {
     console.error("[OPFS/ADP] 一覧取得失敗:", err);
