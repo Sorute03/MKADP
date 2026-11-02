@@ -8584,27 +8584,45 @@ async function onLoadLoungeStats() {
   let stats;
 
   if (selectedSeason === "ALL") {
-    const latestSeason = 30; // 走査する最大シーズン上限
+    const maxSeasonCheck = 50; // 安全上限
     const htmlList = [];
+    let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
 
-    // シーズン1から上限までチェック（途中に休止シーズンがあってもループは止めずに最後まで走査）
-    for (let s = 1; s <= latestSeason; s++) {
+    for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
 
       try {
         const html = await fetchWorldHTML(url);
-        
-        // ★ 有効なプレイヤーデータ（テーブルやランキング、MMR情報）が含まれている場合のみ追加する
-        // ※これで休止シーズンや存在しない未来のシーズンを自動でキレイにスキップできます
+
+        // 有効なページか確認
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
+          
+          // 一度仮パースして内容を検証
+          const tempParsed = parseWorldHTML_Season2(html, s);
+          
+          // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
+          if (!tempParsed.history || tempParsed.history.length === 0) {
+            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            continue;
+          }
+
+          // データ内容のシグネチャを作成（通算勝敗数・履歴数・最終MMRなど）
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+
+          // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
+          if (lastParsedSignature && lastParsedSignature === currentSignature) {
+            console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
+            break;
+          }
+
+          // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
+          lastParsedSignature = currentSignature;
           console.log(`-> Season ${s} のデータを追加しました。`);
-        } else {
-          console.log(`-> Season ${s} はデータが存在しないか休止シーズンのためスキップします。`);
         }
       } catch (e) {
-        console.warn(`Season ${s} の取得に失敗しました。スキップします。`, e);
+        console.warn(`Season ${s} の取得エラー。スキップします。`, e);
       }
     }
 
@@ -8645,6 +8663,7 @@ async function onLoadLoungeStats() {
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
+  
 // ==========================================
 // 2. ラウンジタブのアクティブ化・イベント同期
 // ==========================================
