@@ -1543,11 +1543,37 @@ document.addEventListener('DOMContentLoaded', () => {
   z-index: 9999;
 ">＋ レース登録</button>
 
+
 <!-- ▼ レース登録モーダル -->
-<!-- ▼ レース登録モーダル（外側でモーダル本体と別枠履歴パネルを横並びにする） -->
 <div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box;">
 
-  <!-- 1. 【モーダル本体】元のコンパクトなサイズ（max-width: 520px） -->
+  <!-- 2. 【別枠パネル】入力中のコース一覧 -->
+  <div id="modalSideHistoryPanel" style="
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    width: 260px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+  ">
+    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
+        <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+      </div>
+    </div>
+    <!-- スクロールバーがすっきりと収まるように調整 -->
+    <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 12px; padding-right: 2px;">
+      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+    </div>
+  </div>
+
+  <!-- 1. 【モーダル本体】元のコンパクトなサイズ＆スクロール仕組み -->
   <div class="modal-inner" style="
     background:#fff;
     padding:24px;
@@ -1559,16 +1585,13 @@ document.addEventListener('DOMContentLoaded', () => {
     overflow-y: auto;
     overscroll-behavior: contain;
     position: relative;
+    box-sizing: border-box;
   ">
 
     <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
 
     <label data-i18n="lbl_mode">モード</label><br>
-    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
-      <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-      <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-      <option value="nora" data-i18n="opt_mode_nora">野良</option>
-    </select>
+    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
   
     <div id="modalTierBlock">
       <label data-i18n="lbl_tier">Tier</label><br>
@@ -1602,7 +1625,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ※ ラウンジは最大12レース（途中中断OK）
     </div>
 
-    <div id="modalRaceInputs" style="max-height: 350px; overflow-y: auto; padding-right: 4px;"></div>
+    <!-- レース入力部分：高さを制限せず、モーダル全体のスクロールに自然に組み込む形 -->
+    <div id="modalRaceInputs"></div>
 
     <div style="text-align:right; margin-top:20px; border-top: 1px solid #eee; padding-top: 15px;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
@@ -1623,27 +1647,6 @@ document.addEventListener('DOMContentLoaded', () => {
         font-weight:bold;
         cursor:pointer;
       ">保存</button>
-    </div>
-  </div>
-
-  <!-- 2. 【別枠パネル】モーダルの右側に同時表示される入力中のコース一覧 -->
-  <div id="modalSideHistoryPanel" style="
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 16px;
-    width: 260px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    box-sizing: border-box;
-  ">
-    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
-      <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
-    </div>
-    <div id="modalCourseHistoryArea" style="overflow-y: auto; max-height: 450px; font-size: 12px;">
-      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
     </div>
   </div>
 
@@ -1685,7 +1688,8 @@ openModalBtn.onclick = () => {
   updateModalMode();
   initGrowthSelectors();
   
-  // ▼ モーダルを開いた瞬間に右側のコース履歴を初期化・更新
+  // ▼ 履歴パネルの左右位置を適用＆リスト初期化
+  initHistoryPanelPosition();
   if (typeof updateModalCourseHistory === "function") {
     updateModalCourseHistory();
   }
@@ -2248,6 +2252,48 @@ function triggerLiveWebhookProgress() {
     }
   }
 }
+
+
+// ▼ 別枠パネルの左右位置を切り替える関数
+function toggleHistoryPanelPosition() {
+  const modalContainer = document.getElementById("raceModal");
+  if (!modalContainer) return;
+
+  const currentPos = localStorage.getItem("mk_history_panel_pos") || "right";
+  const newPos = currentPos === "right" ? "left" : "right";
+
+  localStorage.setItem("mk_history_panel_pos", newPos);
+  applyHistoryPanelPosition(newPos);
+}
+
+// ▼ 位置設定を適用するヘルパー関数
+function applyHistoryPanelPosition(pos) {
+  const modalContainer = document.getElementById("raceModal");
+  if (!modalContainer) return;
+
+  const historyPanel = document.getElementById("modalSideHistoryPanel");
+  const toggleBtn = document.getElementById("panelPosToggleBtn");
+
+  if (pos === "left") {
+    // 左側に配置（row-reverseにすると、HTML上の並び「パネル、モーダル」が逆になり、パネルが左、モーダルが右になる）
+    modalContainer.style.flexDirection = "row-reverse";
+    if (toggleBtn) toggleBtn.title = "現在の位置: 左側（クリックで右へ移動）";
+  } else {
+    // 右側に配置（デフォルト）
+    modalContainer.style.flexDirection = "row";
+    if (toggleBtn) toggleBtn.title = "現在の位置: 右側（クリックで左へ移動）";
+  }
+}
+
+// アプリ起動時やモーダルを開く際に保存された位置を適用する
+function initHistoryPanelPosition() {
+  const savedPos = localStorage.getItem("mk_history_panel_pos") || "right";
+  applyHistoryPanelPosition(savedPos);
+}
+
+
+
+  
 </script>
 
 
