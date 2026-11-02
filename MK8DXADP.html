@@ -9884,32 +9884,38 @@ function savePlayerIdList() {
   localStorage.setItem("mkadp_player_ids", JSON.stringify(playerIdList));
 }
 
+// ▼ 表示用関数（確実に文字色やスタイルを適用）
 function renderPlayerIdList() {
   const box = document.getElementById("playerIdListBox");
-  if (!box) return;
+  if (!box) {
+    console.warn("playerIdListBox が見つかりません");
+    return;
+  }
   
   box.innerHTML = "";
 
-  if (playerIdList.length === 0) {
-    box.innerHTML = "<span style='color: #aaa; font-size: 12px;'>登録されたプレイヤーはありません</span>";
+  if (!playerIdList || playerIdList.length === 0) {
+    box.innerHTML = "<div style='color: #aaa; font-size: 12px; padding: 4px;'>登録されたプレイヤーはありません</div>";
     return;
   }
 
   playerIdList.forEach((p, i) => {
     const div = document.createElement("div");
     div.textContent = `${p.name} (ID: ${p.id})`;
-    div.style.padding = "6px";
+    div.style.padding = "6px 10px";
     div.style.cursor = "pointer";
     div.style.borderRadius = "4px";
     div.style.marginBottom = "4px";
+    div.style.fontSize = "14px";
 
+    // 選択状態に応じた背景色と文字色を明示的に設定
     if (i === activePlayerIndex) {
       div.style.background = "#444";
-      div.style.color = "white";
+      div.style.color = "#ffffff";
       div.style.fontWeight = "bold";
     } else {
       div.style.background = "#222";
-      div.style.color = "#ccc";
+      div.style.color = "#ffffff"; // ← ここを明示的な白にすることで文字化け・同化を防ぐ
     }
 
     div.onclick = () => {
@@ -9921,6 +9927,12 @@ function renderPlayerIdList() {
   });
 }
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadPlayerIdList();   // 1. Storageから読み込む
+  renderPlayerIdList(); // 2. 画面に描画する
+});
+  
 /**
  * URLまたは入力文字列からラウンジのプレイヤーIDを抽出する関数
  */
