@@ -7769,6 +7769,22 @@ function aggregateWorldStats(leaderboard, htmlParsed) {
 }
 
 function convertStatsForImage(stats) {
+  const history = stats.mmrHistory || [];
+  // 直近10戦の履歴を取り出す
+  const last10 = history.slice(-10);
+
+  // 各履歴アイテムから delta（増減）を安全に取得して勝敗を判定
+  // ※もし history が数値の配列や別構造の場合は適宜プロパティ名を合わせてください
+  const winsLast10 = last10.filter(h => {
+    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
+    return delta > 0;
+  }).length;
+
+  const lossesLast10 = last10.filter(h => {
+    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
+    return delta < 0;
+  }).length;
+
   return {
     name: stats.name,
 
@@ -7782,14 +7798,15 @@ function convertStatsForImage(stats) {
       ? stats.wins / (stats.wins + stats.losses)
       : 0,
 
-    wins_last_10: stats.wins,
-    losses_last_10: stats.losses,
+    wins_last_10: winsLast10,     // ★ 正しく直近10戦の勝ち数に修正
+    losses_last_10: lossesLast10, // ★ 正しく直近10戦の負け数に修正
 
-    gain_loss_last_10: stats.mmrHistory?.length >= 10
-      ? stats.mmrHistory.at(-1) - stats.mmrHistory.at(-10)
+    gain_loss_last_10: history.length >= 10
+      ? (typeof history.at(-1) === 'object' ? (history.at(-1).mmr ?? history.at(-1)) : history.at(-1)) - 
+        (typeof history.at(-10) === 'object' ? (history.at(-10).mmr ?? history.at(-10)) : history.at(-10))
       : 0,
 
-    events_played: stats.eventsPlayed ?? 0,
+    events_played: stats.eventsPlayed ?? history.length,
     largest_gain: stats.largestGain ?? 0,
 
     mmr_rank: stats.rank,
@@ -7797,10 +7814,9 @@ function convertStatsForImage(stats) {
 
     ave_score: stats.ave ?? "-",
 
-    mmr_history: stats.mmrHistory ?? []
+    mmr_history: history
   };
 }
-
 
 let loungeMMRChartInstance = null;
 
@@ -8028,15 +8044,46 @@ async function onLoadLoungeStats() {
   let stats;
 
   if (selectedSeason === "ALL") {
-    const latestSeason = 30; // 必要に応じて自動取得等に拡張可能
+    const maxSeasonCheck = 30; // 安全上限
     const htmlList = [];
+    let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
 
-    for (let s = 1; s <= latestSeason; s++) {
+    for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
 
-      const html = await fetchWorldHTML(url);
-      htmlList.push({ html, season: s });
+      try {
+        const html = await fetchWorldHTML(url);
+
+        // 有効なページか確認
+        if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
+          
+          // 一度仮パースして内容を検証
+          const tempParsed = parseWorldHTML_Season2(html, s);
+          
+          // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
+          if (!tempParsed.history || tempParsed.history.length === 0) {
+            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            continue;
+          }
+
+          // データ内容のシグネチャを作成（通算勝敗数・履歴数・最終MMRなど）
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+
+          // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
+          if (lastParsedSignature && lastParsedSignature === currentSignature) {
+            console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
+            break;
+          }
+
+          // 正常な新しいシーズンデータとして保持
+          htmlList.push({ html, season: s });
+          lastParsedSignature = currentSignature;
+          console.log(`-> Season ${s} のデータを追加しました。`);
+        }
+      } catch (e) {
+        console.warn(`Season ${s} の取得エラー。スキップします。`, e);
+      }
     }
 
     stats = parseWorldHTML_ALL(htmlList);
@@ -8077,6 +8124,7 @@ async function onLoadLoungeStats() {
   window.latestLoungeStats = stats;
 }
 
+  
 // ==========================================
 // 2. ラウンジタブのアクティブ化・イベント同期
 // ==========================================
@@ -9065,6 +9113,17 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   await drawAdpCourseImage(stats, state.backgroundImage);
 };
 
+
+ // ▼ タブ切り替え時に呼ばれる runCourseStats 関数を定義
+function runCourseStats() {
+  // コース統計のビューを更新、または初期描画を行う処理
+  if (typeof updateCourseStatsView === "function") {
+    updateCourseStatsView();
+  } else if (typeof drawAdpCourseStatsTable === "function" && window.latestAdpCourseStats) {
+    drawAdpCourseStatsTable(window.latestAdpCourseStats);
+    drawAdpCourseStatsChart(window.latestAdpCourseStats);
+  }
+} 
 
 
 
