@@ -1544,13 +1544,15 @@ document.addEventListener('DOMContentLoaded', () => {
 ">＋ レース登録</button>
 
 <!-- ▼ レース登録モーダル -->
-<!-- ▼ レース登録モーダル（左右分割レイアウト） -->
-<div id="raceModal">
+<!-- ▼ レース登録モーダル（外側でモーダル本体と別枠履歴パネルを横並びにする） -->
+<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box;">
+
+  <!-- 1. 【モーダル本体】元のコンパクトなサイズ（max-width: 520px） -->
   <div class="modal-inner" style="
     background:#fff;
     padding:24px;
-    width: 95%;
-    max-width: 820px;
+    width: 100%;
+    max-width: 520px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     max-height: 90vh;
@@ -1561,68 +1563,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
 
-    <!-- ▼ 左右に並べるコンテナ -->
-    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-      
-      <!-- 【左側】 従来の登録フォームエリア -->
-      <div style="flex: 1; min-width: 280px;">
-        <label data-i18n="lbl_mode">モード</label><br>
-        <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
-          <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-          <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-          <option value="nora" data-i18n="opt_mode_nora">野良</option>
-        </select>
-      
-        <div id="modalTierBlock">
-          <label data-i18n="lbl_tier">Tier</label><br>
-          <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
-        </div>
-
-        <div id="modalSeasonBlock">
-          <label data-i18n="lbl_season">Season</label><br>
-          <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
-        </div>
-
-        <div id="modalRaceCountBlock">
-          <label data-i18n="modal_race_count">レース数</label><br>
-          <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
-            <option value="1">1レース</option>
-            <option value="2">2レース</option>
-            <option value="3">3レース</option>
-            <option value="4">4レース</option>
-            <option value="5">5レース</option>
-            <option value="6">6レース</option>
-            <option value="7">7レース</option>
-            <option value="8">8レース（大会）</option>
-            <option value="9">9レース</option>
-            <option value="10">10レース</option>
-            <option value="11">11レース</option>
-            <option value="12">12レース（大会）</option>
-          </select>
-        </div>
-
-        <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
-          ※ ラウンジは最大12レース（途中中断OK）
-        </div>
-
-        <div id="modalRaceInputs" style="max-height: 400px; overflow-y: auto; padding-right: 4px;"></div>
-      </div>
-
-     <!-- 【右側】 この模擬で走ったコース一覧（リアルタイム履歴） -->
-      <div style="width: 260px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; position: sticky; top: 0;">
-        <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-          <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
-          <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
-        </div>
-        <div id="modalCourseHistoryArea" style="overflow-y: auto; max-height: 380px; font-size: 12px;">
-          <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
-        </div>
-      </div>
-
+    <label data-i18n="lbl_mode">モード</label><br>
+    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
+      <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+      <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+      <option value="nora" data-i18n="opt_mode_nora">野良</option>
+    </select>
+  
+    <div id="modalTierBlock">
+      <label data-i18n="lbl_tier">Tier</label><br>
+      <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
     </div>
-    <!-- ▲ 左右分割ここまで ▲ -->
 
-    <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+    <div id="modalSeasonBlock">
+      <label data-i18n="lbl_season">Season</label><br>
+      <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
+    </div>
+
+    <div id="modalRaceCountBlock">
+      <label data-i18n="modal_race_count">レース数</label><br>
+      <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
+        <option value="1">1レース</option>
+        <option value="2">2レース</option>
+        <option value="3">3レース</option>
+        <option value="4">4レース</option>
+        <option value="5">5レース</option>
+        <option value="6">6レース</option>
+        <option value="7">7レース</option>
+        <option value="8">8レース（大会）</option>
+        <option value="9">9レース</option>
+        <option value="10">10レース</option>
+        <option value="11">11レース</option>
+        <option value="12">12レース（大会）</option>
+      </select>
+    </div>
+
+    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
+      ※ ラウンジは最大12レース（途中中断OK）
+    </div>
+
+    <div id="modalRaceInputs" style="max-height: 350px; overflow-y: auto; padding-right: 4px;"></div>
+
+    <div style="text-align:right; margin-top:20px; border-top: 1px solid #eee; padding-top: 15px;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
         margin-right:8px;
@@ -1643,6 +1625,28 @@ document.addEventListener('DOMContentLoaded', () => {
       ">保存</button>
     </div>
   </div>
+
+  <!-- 2. 【別枠パネル】モーダルの右側に同時表示される入力中のコース一覧 -->
+  <div id="modalSideHistoryPanel" style="
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    width: 260px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+  ">
+    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+      <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
+    </div>
+    <div id="modalCourseHistoryArea" style="overflow-y: auto; max-height: 450px; font-size: 12px;">
+      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ★★★ ここから全部の JS ★★★ -->
