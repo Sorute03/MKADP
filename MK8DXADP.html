@@ -9864,6 +9864,50 @@ function renderWebhookList() {
 
   
 
+let playerIdList = [];
+let activePlayerIndex = -1;
+
+// ▼ 起動時に読み込み
+function loadPlayerIdList() {
+  const raw = localStorage.getItem("mkadp_player_ids");
+  if (!raw) return;
+  try {
+    playerIdList = JSON.parse(raw);
+  } catch {
+    playerIdList = [];
+  }
+}
+
+// ▼ 保存
+function savePlayerIdList() {
+  localStorage.setItem("mkadp_player_ids", JSON.stringify(playerIdList));
+}
+
+// ▼ 表示
+function renderPlayerIdList() {
+  const box = document.getElementById("playerIdListBox");
+  box.innerHTML = "";
+
+  playerIdList.forEach((p, i) => {
+    const div = document.createElement("div");
+    div.textContent = `${p.name} (ID: ${p.id})`;
+    div.style.padding = "6px";
+    div.style.cursor = "pointer";
+
+    if (i === activePlayerIndex) {
+      div.style.background = "#444";
+      div.style.color = "white";
+    }
+
+    div.onclick = () => {
+      activePlayerIndex = i;
+      renderPlayerIdList();
+    };
+
+    box.appendChild(div);
+  });
+}
+
 // ▼ 追加
 document.getElementById("addPlayerIdBtn").onclick = () => {
   const name = document.getElementById("playerNameInput").value.trim();
