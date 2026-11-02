@@ -4911,19 +4911,19 @@ function updateGrowthView() {
 
 
  function updateStatsView() {
-  // 1. フィルター条件に合ったレコードを取得
-  const records = getFilteredStatsRecords(); // (お使いの絞り込み関数)
+  const records = getFilteredStatsRecords(); // 絞り込み関数
 
-  // 2. 統計の計算
   const totalRaces = records.length;
   if (totalRaces === 0) {
     document.getElementById("statTotalRaces").innerText = "0";
     document.getElementById("statAvgRank").innerText = "-";
     document.getElementById("statAvgScore").innerText = "-";
+    document.getElementById("stat12RaceAvg").innerText = "-";
     document.getElementById("statWinRate").innerText = "-";
     return;
   }
 
+  // 既存の計算
   const sumRank = records.reduce((acc, r) => acc + (Number(r.rank) || 0), 0);
   const avgRank = (sumRank / totalRaces).toFixed(2);
 
@@ -4933,84 +4933,44 @@ function updateGrowthView() {
   const winCount = records.filter(r => Number(r.rank) === 1).length;
   const winRate = ((winCount / totalRaces) * 100).toFixed(1);
 
-  // 3. HTMLへ反映
+  // ▼ 12レースセットの平均スコア（totalScore12）を正確に計算するロジック
+  let avg12RaceScore = "-";
+  
+  // ラウンジモードかつ totalScore12 を持つレコードを抽出
+  const loungeRecords = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
+  
+  if (loungeRecords.length > 0) {
+    // timestamp ごとにグループ化（同じ12レースセットは同じ timestamp を持っているため）
+    const setsByTimestamp = {};
+    loungeRecords.forEach(r => {
+      if (!setsByTimestamp[r.timestamp]) {
+        setsByTimestamp[r.timestamp] = [];
+      }
+      setsByTimestamp[r.timestamp].push(r);
+    });
+
+    // セットごとの合計スコアを抽出（1セットにつき1つの totalScore12 を確実に取得）
+    const setTotals = [];
+    Object.values(setsByTimestamp).forEach(setRaces => {
+      const total12 = setRaces[0].totalScore12;
+      if (typeof total12 === 'number' && !isNaN(total12)) {
+        setTotals.push(total12);
+      }
+    });
+
+    // セットが存在すれば平均を計算
+    if (setTotals.length > 0) {
+      const sum12 = setTotals.reduce((acc, val) => acc + val, 0);
+      avg12RaceScore = (sum12 / setTotals.length).toFixed(1) + " pt";
+    }
+  }
+
+  // HTMLへ反映
   document.getElementById("statTotalRaces").innerText = totalRaces;
   document.getElementById("statAvgRank").innerText = `${avgRank}位`;
   document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
+  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★正しく計算された12レース平均を反映
   document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
-} 
-
-
-function updateLoungeSetView() {
-  const records = getLoungeSetFilteredRecords();
-  const div = document.getElementById("loungeSetView");
-  if (!div) return;
-
-  const isEn = (currentLang === 'en');
-
-  // 言語に応じたラベル
-  const tPoints = isEn ? ' pts' : '点';
-  const tNoData = isEn ? 'No data available' : 'データなし';
-
-  const sets = {};
-  records.forEach(r => {
-    if (!r.totalScore12) return;
-    if (!sets[r.timestamp]) sets[r.timestamp] = r.totalScore12;
-  });
-
-  const html = Object.entries(sets)
-    .sort((a, b) => b[0] - a[0])
-    .map(([ts, score]) => {
-      // 英語環境なら 'en-US'、日本語環境なら 'ja-JP' の日時表記に自動切替
-      const date = new Date(Number(ts)).toLocaleString(isEn ? 'en-US' : 'ja-JP');
-      return `<p>${date}：${score}${tPoints}</p>`;
-    })
-    .join("");
-
-  div.innerHTML = html || `<p>${tNoData}</p>`;
-}
-  
-function drawWinRateChart(records) {
-  const canvas = document.getElementById("chartWinRate");
-  if (!canvas) return;  // ★ DOM が無ければ描画しない
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
-    window.chartWinRate.destroy();
-  }
-
-  const isEn = (currentLang === 'en');
-  const tLabel = isEn ? 'Win Rate (%)' : '勝率(%)';
-
-  if (!records.length) {
-    window.chartWinRate = new Chart(ctx, {
-      type: "bar",
-      data: { labels: [], datasets: [] }
-    });
-    return;
-  }
-
-  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
-  const labels = sorted.map((_,i)=>`#${i+1}`);
-  const winRates = sorted.map(r => (r.rank <= 3 ? 100 : 0));
-
-  window.chartWinRate = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: tLabel,
-        data: winRates,
-        backgroundColor: "rgba(54,162,235,0.6)"
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, max: 100 } }
-    }
-  });
 }
 
 function drawGrowthChart(labels, values) {
