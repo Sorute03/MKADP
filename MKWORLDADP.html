@@ -735,6 +735,9 @@ const i18nDict = {
     opt_tier_none: "合算しない",
     btn_edit: "編集",
     btn_delete: "削除",
+    modal_input_course_list: "📋 入力中のコース一覧",
+    msg_no_input_yet: "まだ入力されていません",
+    unit_items: "件",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -957,6 +960,9 @@ const i18nDict = {
     opt_tier_none: "Do not merge",
     btn_edit: "Edit",
     btn_delete: "Delete",
+    modal_input_course_list: "📋 Input Courses",
+    msg_no_input_yet: "No courses entered yet",
+    unit_items: "items",
     }
   };
 
@@ -1538,72 +1544,92 @@ document.addEventListener('DOMContentLoaded', () => {
 ">＋ レース登録</button>
 
 <!-- ▼ レース登録モーダル -->
+<!-- ▼ レース登録モーダル（左右分割レイアウト） -->
 <div id="raceModal">
   <div class="modal-inner" style="
     background:#fff;
     padding:24px;
     width: 95%;
-    max-width: 520px;
+    max-width: 820px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 90%;
+    max-height: 90vh;
     overflow-y: auto;
     overscroll-behavior: contain;
     position: relative;
-    padding-bottom: 90px;
   ">
 
-    <h3 data-i18n="modal_race_register">レース登録</h3>
+    <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
 
-   <label data-i18n="lbl_mode">モード</label><br>
-   <select id="modalMode" style="width:100%; margin-bottom:12px;">
-     <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-     <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-     <option value="nora" data-i18n="opt_mode_nora">野良</option>
-   </select>
-  
+    <!-- ▼ 左右に並べるコンテナ -->
+    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
       
+      <!-- 【左側】 従来の登録フォームエリア -->
+      <div style="flex: 1; min-width: 280px;">
+        <label data-i18n="lbl_mode">モード</label><br>
+        <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
+          <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+          <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+          <option value="nora" data-i18n="opt_mode_nora">野良</option>
+        </select>
+      
+        <div id="modalTierBlock">
+          <label data-i18n="lbl_tier">Tier</label><br>
+          <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
+        </div>
 
-    <div id="modalTierBlock">
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
+        <div id="modalSeasonBlock">
+          <label data-i18n="lbl_season">Season</label><br>
+          <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
+        </div>
+
+        <div id="modalRaceCountBlock">
+          <label data-i18n="modal_race_count">レース数</label><br>
+          <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
+            <option value="1">1レース</option>
+            <option value="2">2レース</option>
+            <option value="3">3レース</option>
+            <option value="4">4レース</option>
+            <option value="5">5レース</option>
+            <option value="6">6レース</option>
+            <option value="7">7レース</option>
+            <option value="8">8レース（大会）</option>
+            <option value="9">9レース</option>
+            <option value="10">10レース</option>
+            <option value="11">11レース</option>
+            <option value="12">12レース（大会）</option>
+          </select>
+        </div>
+
+        <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
+          ※ ラウンジは最大12レース（途中中断OK）
+        </div>
+
+        <div id="modalRaceInputs" style="max-height: 400px; overflow-y: auto; padding-right: 4px;"></div>
+      </div>
+
+     <!-- 【右側】 この模擬で走ったコース一覧（リアルタイム履歴） -->
+      <div style="width: 260px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; position: sticky; top: 0;">
+        <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+          <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+          <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
+        </div>
+        <div id="modalCourseHistoryArea" style="overflow-y: auto; max-height: 380px; font-size: 12px;">
+          <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+        </div>
+      </div>
+
     </div>
+    <!-- ▲ 左右分割ここまで ▲ -->
 
-    <div id="modalSeasonBlock">
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
-    </div>
-
-    <div id="modalRaceCountBlock">
-      <label data-i18n="modal_race_count">レース数</label><br>
-      <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
-        <option value="1">1レース</option>
-        <option value="2">2レース</option>
-        <option value="3">3レース</option>
-        <option value="4">4レース</option>
-        <option value="5">5レース</option>
-        <option value="6">6レース</option>
-        <option value="7">7レース</option>
-        <option value="8">8レース（大会）</option>
-        <option value="9">9レース</option>
-        <option value="10">10レース</option>
-        <option value="11">11レース</option>
-        <option value="12">12レース（大会）</option>
-      </select>
-    </div>
-
-    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555;">
-      ※ ラウンジは最大12レース（途中中断OK）
-    </div>
-
-    <div id="modalRaceInputs"></div>
-
-   <div style="text-align:right; margin-top:20px;">
+    <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
         margin-right:8px;
         background:#ccc;
+        border: none;
         border-radius:6px;
+        cursor:pointer;
       ">キャンセル</button>
     
       <button id="saveRaceBtn" data-i18n="btn_save" style="
@@ -1618,7 +1644,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
-
 
 <!-- ★★★ ここから全部の JS ★★★ -->
 <script>
@@ -1655,6 +1680,12 @@ openModalBtn.onclick = () => {
   initModalSelectors();
   updateModalMode();
   initGrowthSelectors();
+  
+  // ▼ モーダルを開いた瞬間に右側のコース履歴を初期化・更新
+  if (typeof updateModalCourseHistory === "function") {
+    updateModalCourseHistory();
+  }
+
   modal.classList.add("show");
 };
 
@@ -1742,6 +1773,58 @@ function renderRaceHistory(records) {
     btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
   });
 }
+
+function updateModalCourseHistory() {
+  const historyArea = document.getElementById("modalCourseHistoryArea");
+  const countSpan = document.getElementById("modalCurrentCount");
+  if (!historyArea) return;
+
+  const dict = typeof i18nDict !== 'undefined' && i18nDict[currentLang] ? i18nDict[currentLang] : (i18nDict['ja'] || {});
+  const unitItems = dict.unit_items || (currentLang === 'en' ? 'items' : '件');
+  const emptyMsg = dict.msg_no_input_yet || (currentLang === 'en' ? 'No courses entered yet' : 'まだ入力されていません');
+
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+  
+  let enteredCount = 0;
+  let html = "";
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    const rankEl = document.getElementById(`raceRank_${i}`);
+
+    if (rankEl && rankEl.value) {
+      enteredCount++;
+      const courseName = courseEl ? courseEl.value : `Race ${i}`;
+      
+      // コース名の多言語対応（関数が存在すれば適用）
+      const translatedCourse = typeof translateMKWorldCourse === "function" 
+        ? translateMKWorldCourse(courseName, typeof currentLang !== 'undefined' ? currentLang : 'ja') 
+        : courseName;
+      
+      const rankVal = rankEl.value;
+      const rankSuffix = dict.unit_rank || (currentLang === 'en' ? 'th' : '位');
+
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin-bottom: 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; border-left: 3px solid #007bff;">
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-weight: 500;" title="${translatedCourse}">
+            <span style="color: #666; font-size: 11px; margin-right: 4px;">#${i}</span> ${translatedCourse}
+          </span>
+          <span style="font-weight: bold; color: #007bff; font-size: 11px; background: #e7f1ff; padding: 2px 6px; border-radius: 4px;">${rankVal}${rankSuffix}</span>
+        </div>
+      `;
+    }
+  }
+
+  if (countSpan) countSpan.innerText = `${enteredCount}${unitItems}`;
+
+  if (enteredCount === 0) {
+    historyArea.innerHTML = `<div style="color: #888; text-align: center; padding: 30px 0;">${emptyMsg}</div>`;
+  } else {
+    historyArea.innerHTML = html;
+  }
+}
+
 </script>
 
 
@@ -2101,6 +2184,7 @@ function generateRaceInputs(count) {
         scoreInput.value = rankVal ? calcScore(rankVal) : "";
         saveNextCourse();
         triggerLiveWebhookProgress();
+        updateModalCourseHistory(); // ★ 順位変更時に右側のリストを即時更新
       };
     }
 
@@ -2111,13 +2195,16 @@ function generateRaceInputs(count) {
           sendLoungeOverlay(courseStatsSource);
         }
         triggerLiveWebhookProgress();
+        updateModalCourseHistory(); // ★ コース変更時に右側のリストを即時更新
       };
     }
   }
 
   saveNextCourse();
+  updateModalCourseHistory(); // ★ 入力欄生成時（モーダルを開いたとき）に初期状態を反映
 }
 
+  
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
  */
