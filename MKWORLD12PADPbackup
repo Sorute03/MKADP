@@ -502,6 +502,10 @@ const i18nDict = {
     opt_tier_none: "合算しない",
     btn_edit: "編集",
     btn_delete: "削除",
+    stat_12race_avg: "12レース ave",
+    modal_input_course_list: "📋 入力中のコース一覧",
+    msg_no_input_yet: "まだ入力されていません",
+    unit_items: "件",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -530,7 +534,9 @@ const i18nDict = {
     th_rank: "Rank",
     th_score: "Score",
     opt_select_course: "- Select Track -",
-
+    modal_input_course_list: "📋 Input Courses",
+    msg_no_input_yet: "No courses entered yet",
+    unit_items: "items",
     // Summary Cards
     card_total_score: "Total Score",
     card_avg_rank: "Avg Placement",
@@ -722,6 +728,7 @@ const i18nDict = {
     opt_tier_none: "Do not merge",
     btn_edit: "Edit",
     btn_delete: "Delete",
+    stat_12race_avg: "12R Avg Score",
     }
   };
 
@@ -2355,6 +2362,43 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
     <option value="ALL">ALL</option>
   </select>
 </div>
+
+<!-- ▼ フィルターのすぐ下に配置する統計データの表示エリア（12レースave追加版） -->
+<div id="basicStatsContent" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+  
+  <!-- 総レース数カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_total_races">総レース数</div>
+    <div id="statTotalRaces" style="font-size: 22px; font-weight: bold; color: #212529;">0</div>
+  </div>
+
+  <!-- 平均順位カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_rank">平均順位</div>
+    <div id="statAvgRank" style="font-size: 22px; font-weight: bold; color: #007bff;">-</div>
+  </div>
+
+  <!-- 平均スコアカード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_score">平均スコア</div>
+    <div id="statAvgScore" style="font-size: 22px; font-weight: bold; color: #28a745;">-</div>
+  </div>
+
+  <!-- ★新設：12レース平均スコアカード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_12race_avg">12レース ave</div>
+    <div id="stat12RaceAvg" style="font-size: 22px; font-weight: bold; color: #6f42c1;">-</div>
+  </div>
+
+  <!-- 1位回数 / 勝率カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_win_rate">1位回数 / 勝率</div>
+    <div id="statWinRate" style="font-size: 22px; font-weight: bold; color: #ffc107;">-</div>
+  </div>
+
+</div>
+
+  
 
 <!-- ▼ ランキング -->
 <div class="section-block">
@@ -5194,6 +5238,69 @@ function updateRadarView() {
 }
 
 
+
+function updateStatsView() {
+  const records = getFilteredStatsRecords(); // 絞り込み関数
+
+  const totalRaces = records.length;
+  if (totalRaces === 0) {
+    document.getElementById("statTotalRaces").innerText = "0";
+    document.getElementById("statAvgRank").innerText = "-";
+    document.getElementById("statAvgScore").innerText = "-";
+    document.getElementById("stat12RaceAvg").innerText = "-";
+    document.getElementById("statWinRate").innerText = "-";
+    return;
+  }
+
+  // 既存の計算
+  const sumRank = records.reduce((acc, r) => acc + (Number(r.rank) || 0), 0);
+  const avgRank = (sumRank / totalRaces).toFixed(2);
+
+  const sumScore = records.reduce((acc, r) => acc + (Number(r.score) || 0), 0);
+  const avgScore = (sumScore / totalRaces).toFixed(1);
+
+  const winCount = records.filter(r => Number(r.rank) === 1).length;
+  const winRate = ((winCount / totalRaces) * 100).toFixed(1);
+
+  // ▼ 12レースセットの平均スコア（totalScore12）を正確に計算するロジック
+  let avg12RaceScore = "-";
+  
+  // ラウンジモードかつ totalScore12 を持つレコードを抽出
+  const loungeRecords = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
+  
+  if (loungeRecords.length > 0) {
+    // timestamp ごとにグループ化（同じ12レースセットは同じ timestamp を持っているため）
+    const setsByTimestamp = {};
+    loungeRecords.forEach(r => {
+      if (!setsByTimestamp[r.timestamp]) {
+        setsByTimestamp[r.timestamp] = [];
+      }
+      setsByTimestamp[r.timestamp].push(r);
+    });
+
+    // セットごとの合計スコアを抽出（1セットにつき1つの totalScore12 を確実に取得）
+    const setTotals = [];
+    Object.values(setsByTimestamp).forEach(setRaces => {
+      const total12 = setRaces[0].totalScore12;
+      if (typeof total12 === 'number' && !isNaN(total12)) {
+        setTotals.push(total12);
+      }
+    });
+
+    // セットが存在すれば平均を計算
+    if (setTotals.length > 0) {
+      const sum12 = setTotals.reduce((acc, val) => acc + val, 0);
+      avg12RaceScore = (sum12 / setTotals.length).toFixed(1) + " pt";
+    }
+  }
+
+  // HTMLへ反映
+  document.getElementById("statTotalRaces").innerText = totalRaces;
+  document.getElementById("statAvgRank").innerText = `${avgRank}位`;
+  document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
+  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★正しく計算された12レース平均を反映
+  document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
+}
 
 /* ============================================================
    ▼ ヒートマップ（コース × 指標）
