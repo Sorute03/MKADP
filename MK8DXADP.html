@@ -2493,7 +2493,35 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   </select>
 </div>
 
-<!-- ▼ ランキング -->
+<!-- ▼ フィルターのすぐ下に配置する統計データの表示エリア -->
+<div id="basicStatsContent" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+  
+  <!-- 総レース数カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_total_races">総レース数</div>
+    <div id="statTotalRaces" style="font-size: 22px; font-weight: bold; color: #212529;">0</div>
+  </div>
+
+  <!-- 平均順位カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_rank">平均順位</div>
+    <div id="statAvgRank" style="font-size: 22px; font-weight: bold; color: #007bff;">-</div>
+  </div>
+
+  <!-- 平均スコアカード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_avg_score">平均スコア</div>
+    <div id="statAvgScore" style="font-size: 22px; font-weight: bold; color: #28a745;">-</div>
+  </div>
+
+  <!-- 1位回数 / 勝率カード -->
+  <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;" data-i18n="stat_win_rate">1位回数 / 勝率</div>
+    <div id="statWinRate" style="font-size: 22px; font-weight: bold; color: #ffc107;">-</div>
+  </div>
+
+</div>
+
 <!-- ▼ ランキング -->
 <div class="section-block">
   <h3 data-i18n="ranking_title">コースランキング（得意・苦手）</h3>
@@ -10999,6 +11027,38 @@ async function updateGrowthView() {
   }
 } 
 
+
+function updateStatsView() {
+  // 1. フィルター条件に合ったレコードを取得
+  const records = getFilteredStatsRecords(); // (お使いの絞り込み関数)
+
+  // 2. 統計の計算
+  const totalRaces = records.length;
+  if (totalRaces === 0) {
+    document.getElementById("statTotalRaces").innerText = "0";
+    document.getElementById("statAvgRank").innerText = "-";
+    document.getElementById("statAvgScore").innerText = "-";
+    document.getElementById("statWinRate").innerText = "-";
+    return;
+  }
+
+  const sumRank = records.reduce((acc, r) => acc + (Number(r.rank) || 0), 0);
+  const avgRank = (sumRank / totalRaces).toFixed(2);
+
+  const sumScore = records.reduce((acc, r) => acc + (Number(r.score) || 0), 0);
+  const avgScore = (sumScore / totalRaces).toFixed(1);
+
+  const winCount = records.filter(r => Number(r.rank) === 1).length;
+  const winRate = ((winCount / totalRaces) * 100).toFixed(1);
+
+  // 3. HTMLへ反映
+  document.getElementById("statTotalRaces").innerText = totalRaces;
+  document.getElementById("statAvgRank").innerText = `${avgRank}位`;
+  document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
+  document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
+}
+
+  
 // ▼ 3Dバブルチャート用フィルター
 async function get3DFilteredRecords() {
   let r = typeof getAllRecords === "function" ? await getAllRecords() : [...allRecords];
