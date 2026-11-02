@@ -8794,27 +8794,50 @@ function drawLoungeStats(data) {
   const seasonNum = selectedSeasonVal === "ALL" ? 2 : Number(selectedSeasonVal);
   const rankInfo = getRankInfo(details.mmr, seasonNum);
 
+  // ▼ 多言語テキストの定義
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  
+  const tTitle = isEn ? "Lounge Stats" : "ラウンジ戦績";
+  const tMmr = "MMR";
+  const tPeakMmr = isEn ? "Peak MMR" : "最高 MMR";
+  const tWins = isEn ? "Wins" : "勝利数";
+  const tLosses = isEn ? "Losses" : "敗北数";
+  const tRank = isEn ? "Rank" : "ランク";
+  const tCourseTableTitle = isEn ? "Course Statistics (ADP IndexedDB)" : "コース別戦績（ADP IndexedDB）";
+  const tColCourse = isEn ? "Track" : "コース";
+  const tColCount = isEn ? "Count" : "回数";
+  const tColAvgRank = isEn ? "Avg Placement" : "平均順位";
+  const tColAvgScore = isEn ? "Avg Score" : "平均得点";
+
   let html = `
-    <h3>${details.name} - Lounge Stats</h3>
-    <p>MMR: ${details.mmr}</p>
-    <p>Peak MMR: ${details.peak_mmr}</p>
-    <p>Wins: ${details.wins}</p>
-    <p>Losses: ${details.losses}</p>
-    <p>Rank: <span style="color:${rankInfo.color}; font-weight:bold;">${rankInfo.rank}</span></p>
+    <h3>${details.name} - ${tTitle}</h3>
+    <p>${tMmr}: ${details.mmr}</p>
+    <p>${tPeakMmr}: ${details.peak_mmr}</p>
+    <p>${tWins}: ${details.wins}</p>
+    <p>${tLosses}: ${details.losses}</p>
+    <p>${tRank}: <span style="color:${rankInfo.color}; font-weight:bold;">${rankInfo.rank}</span></p>
   `;
 
   if (courseStats && Array.isArray(courseStats)) {
-    html += "<h3>コース別戦績（ADP IndexedDB）</h3>";
-    html += "<table border='1' style='border-collapse:collapse;'>";
-    html += "<tr><th>コース</th><th>回数</th><th>平均順位</th><th>平均得点</th></tr>";
+    html += `<h3>${tCourseTableTitle}</h3>`;
+    html += "<table border='1' style='border-collapse:collapse; width:100%;'>";
+    html += `<tr><th>${tColCourse}</th><th>${tColCount}</th><th>${tColAvgRank}</th><th>${tColAvgScore}</th></tr>`;
 
     courseStats.forEach(c => {
+      // コース名の多言語変換（関数があれば適用）
+      const courseDisplayName = (typeof translateMKWorldCourse === 'function' && typeof currentLang !== 'undefined') 
+        ? translateMKWorldCourse(c.course, currentLang) 
+        : c.course;
+
+      const unitRank = isEn ? "" : "位";
+      const unitScore = isEn ? " pt" : "pt";
+
       html += `
         <tr>
-          <td>${c.course}</td>
-          <td>${c.count}</td>
-          <td>${c.avgRank}</td>
-          <td>${c.avgScore}</td>
+          <td>${courseDisplayName}</td>
+          <td style="text-align:center;">${c.count}</td>
+          <td style="text-align:center;">${c.avgRank}${unitRank}</td>
+          <td style="text-align:center;">${c.avgScore}${unitScore}</td>
         </tr>
       `;
     });
@@ -8825,33 +8848,51 @@ function drawLoungeStats(data) {
   box.innerHTML = html;
 }
 
+// ▼ Discord 画像送信ボタンの処理
 const sendLoungeDiscordBtn = document.getElementById("sendLoungeDiscordBtn");
 if (sendLoungeDiscordBtn) {
   sendLoungeDiscordBtn.onclick = async () => {
-    if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
-      return alert("Webhook が選択されていません");
+    let webhook = "";
+    if (typeof getSelectedWebhookUrl === "function") {
+      webhook = getSelectedWebhookUrl();
+    } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+      webhook = webhookList[activeWebhookIndex]?.url || "";
     }
 
-    const { url } = webhookList[activeWebhookIndex];
+    if (!webhook) {
+      return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
+    }
+
     const canvas = document.getElementById("loungeImageCanvas");
     if (!canvas) {
-      return alert("Canvas が見つかりません");
+      return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Canvas not found." : "Canvas が見つかりません");
     }
 
     const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    if (!blob) {
+      return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Failed to generate image." : "画像の生成に失敗しました");
+    }
 
     const form = new FormData();
     form.append("file", blob, "lounge_stats.png");
 
-    await fetch(url, {
-      method: "POST",
-      body: form
-    });
+    try {
+      const response = await fetch(webhook, {
+        method: "POST",
+        body: form
+      });
 
-    alert("画像を送信しました");
+      if (response.ok || response.status === 204) {
+        alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Image sent to Discord!" : "Discord に画像を送信しました！");
+      } else {
+        alert("Failed to send (Status: " + response.status + ")");
+      }
+    } catch (error) {
+      console.error("Webhook送信エラー:", error);
+      alert("Discordへの送信中にエラーが発生しました");
+    }
   };
 }
-
 
 
 
@@ -10049,68 +10090,62 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
 
 
 async function sendAdpCourseImageToDiscord() {
-  const canvas = document.getElementById("adpCourseImage");
-  const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+  // 1. 現在選択されているWebhook URLを取得（プロジェクトの仕様に合わせてフォールバック対応）
+  let webhook = "";
+  if (typeof getSelectedWebhookUrl === "function") {
+    webhook = getSelectedWebhookUrl();
+  } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+    webhook = webhookList[activeWebhookIndex]?.url || "";
+  }
 
-  const webhook = getSelectedWebhookUrl();
   if (!webhook) {
     alert("Webhook が選択されていません");
     return;
   }
 
-  const boundary = "----mkcBoundary" + new Date().getTime();
+  // 2. キャンバス要素の取得と存在チェック
+  const canvas = document.getElementById("adpCourseImage");
+  if (!canvas) {
+    alert("対象のキャンバスが見つかりません");
+    return;
+  }
 
-  const payload =
-    Utilities.newBlob(
-      base64,
-      "image/png",
-      "adp_course_stats.png"
-    );
+  // 3. キャンバスをBlob（画像データ）に変換
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) {
+    alert("画像の生成に失敗しました");
+    return;
+  }
 
-  const data = Utilities.newBlob(
-    "--" + boundary + "\r\n" +
-    "Content-Disposition: form-data; name=\"file\"; filename=\"adp_course_stats.png\"\r\n" +
-    "Content-Type: image/png\r\n\r\n"
-  ).getBytes()
-    .concat(payload.getBytes())
-    .concat(Utilities.newBlob("\r\n--" + boundary + "--").getBytes());
+  // 4. FormDataを作成して画像を添付
+  const form = new FormData();
+  form.append("file", blob, "adp_course_stats.png");
 
-  await fetch(webhook, {
-    method: "POST",
-    body: data,
-    headers: {
-      "Content-Type": "multipart/form-data; boundary=" + boundary
+  // 5. Discordへ送信
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      body: form
+    });
+
+    if (response.ok || response.status === 204) {
+      alert("Discord に画像を送信しました！");
+    } else {
+      alert("送信に失敗しました (ステータス: " + response.status + ")");
     }
-  });
-
-  alert("Discord に画像を送信しました！");
+  } catch (error) {
+    console.error("Webhook送信エラー:", error);
+    alert("Discordへの送信中にエラーが発生しました");
+  }
 }
 
-
-document.getElementById("sendAdpCourseImageBtn").onclick = async () => {
-  if (activeWebhookIndex === -1) {
-    return alert("Webhook が選択されていません");
-  }
-
-  const stats = window.latestAdpCourseStats;
-  if (!Array.isArray(stats)) {
-    return alert("まず『表示』を押して結果を生成してください");
-  }
-
-  const { url } = webhookList[activeWebhookIndex];
-
-  const canvas = document.getElementById("adpCourseImage");
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-
-  const form = new FormData();
-  form.append("file", blob, "course_stats.png");
-
-  await fetch(url, { method: "POST", body: form });
-
-  alert("画像を送信しました");
-};
-
-
+// ボタンへの紐付け
+const sendBtn = document.getElementById("sendAdpCourseImageBtn");
+if (sendBtn) {
+  sendBtn.onclick = async () => {
+    await sendAdpCourseImageToDiscord();
+  };
+}
 
   
 
