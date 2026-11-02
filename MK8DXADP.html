@@ -1419,46 +1419,73 @@ document.addEventListener('DOMContentLoaded', () => {
   z-index: 9999;
 ">＋ レース登録</button>
 
+
 <!-- ▼ レース登録モーダル -->
-<div id="raceModal">
+<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box;">
+
+  <!-- 2. 【別枠パネル】入力中のコース一覧 -->
+  <div id="modalSideHistoryPanel" style="
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    width: 260px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+  ">
+    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
+        <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+      </div>
+    </div>
+    <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 12px; padding-right: 2px;">
+      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+    </div>
+  </div>
+
+  <!-- 1. 【モーダル本体】元のコンパクトなサイズ＆スクロール仕組み -->
   <div class="modal-inner" style="
     background:#fff;
     padding:24px;
-    width: 95%;
+    width: 100%;
     max-width: 520px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 90%;
+    max-height: 90vh;
     overflow-y: auto;
     overscroll-behavior: contain;
     position: relative;
-    padding-bottom: 90px;
+    box-sizing: border-box;
   ">
 
-    <h3 data-i18n="modal_race_register">レース登録</h3>
+    <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
 
-   <label data-i18n="lbl_mode">モード</label><br>
-   <select id="modalMode" style="width:100%; margin-bottom:12px;">
-     <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-     <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-     <option value="nora" data-i18n="opt_mode_nora">野良</option>
-   </select>
+    <label data-i18n="lbl_mode">モード</label><br>
+    <!-- ▼ モードの選択肢を元通りに復活させました -->
+    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
+      <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+      <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+      <option value="nora" data-i18n="opt_mode_nora">野良</option>
+    </select>
   
-      
-
     <div id="modalTierBlock">
       <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="modalTier" style="width:100%; margin-bottom:12px;"></select>
+      <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
     </div>
 
     <div id="modalSeasonBlock">
       <label data-i18n="lbl_season">Season</label><br>
-      <select id="modalSeason" style="width:100%; margin-bottom:12px;"></select>
+      <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
     </div>
 
     <div id="modalRaceCountBlock">
       <label data-i18n="modal_race_count">レース数</label><br>
-      <select id="modalRaceCount" style="width:100%; margin-bottom:12px;">
+      <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
         <option value="1">1レース</option>
         <option value="2">2レース</option>
         <option value="3">3レース</option>
@@ -1474,18 +1501,20 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
     </div>
 
-    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555;">
+    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
       ※ ラウンジは最大12レース（途中中断OK）
     </div>
 
     <div id="modalRaceInputs"></div>
 
-   <div style="text-align:right; margin-top:20px;">
+    <div style="text-align:right; margin-top:20px; border-top: 1px solid #eee; padding-top: 15px;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
         margin-right:8px;
         background:#ccc;
+        border: none;
         border-radius:6px;
+        cursor:pointer;
       ">キャンセル</button>
     
       <button id="saveRaceBtn" data-i18n="btn_save" style="
@@ -1499,16 +1528,20 @@ document.addEventListener('DOMContentLoaded', () => {
       ">保存</button>
     </div>
   </div>
+
 </div>
 
+  
 
 <!-- ★★★ ここから全部の JS ★★★ -->
 <script>
 /* ▼ スコア計算 */
 function calcScore(rank) {
   const table = {
-    1: 15,  2: 12,  3: 10, 4: 9,  5: 8,  6: 7,
-    7: 6,   8: 5,   9: 4,  10: 3, 11: 2, 12: 1,
+    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
+    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
+    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
+    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
   };
   return table[rank] || 0;
 }
@@ -1535,6 +1568,13 @@ openModalBtn.onclick = () => {
   initModalSelectors();
   updateModalMode();
   initGrowthSelectors();
+  
+  // ▼ 履歴パネルの左右位置を適用＆リスト初期化
+  initHistoryPanelPosition();
+  if (typeof updateModalCourseHistory === "function") {
+    updateModalCourseHistory();
+  }
+
   modal.classList.add("show");
 };
 
@@ -1622,6 +1662,58 @@ function renderRaceHistory(records) {
     btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
   });
 }
+
+function updateModalCourseHistory() {
+  const historyArea = document.getElementById("modalCourseHistoryArea");
+  const countSpan = document.getElementById("modalCurrentCount");
+  if (!historyArea) return;
+
+  const dict = typeof i18nDict !== 'undefined' && i18nDict[currentLang] ? i18nDict[currentLang] : (i18nDict['ja'] || {});
+  const unitItems = dict.unit_items || (currentLang === 'en' ? 'items' : '件');
+  const emptyMsg = dict.msg_no_input_yet || (currentLang === 'en' ? 'No courses entered yet' : 'まだ入力されていません');
+
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+  
+  let enteredCount = 0;
+  let html = "";
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    const rankEl = document.getElementById(`raceRank_${i}`);
+
+    if (rankEl && rankEl.value) {
+      enteredCount++;
+      const courseName = courseEl ? courseEl.value : `Race ${i}`;
+      
+      // コース名の多言語対応（関数が存在すれば適用）
+      const translatedCourse = typeof translateMKWorldCourse === "function" 
+        ? translateMKWorldCourse(courseName, typeof currentLang !== 'undefined' ? currentLang : 'ja') 
+        : courseName;
+      
+      const rankVal = rankEl.value;
+      const rankSuffix = dict.unit_rank || (currentLang === 'en' ? 'th' : '位');
+
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin-bottom: 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; border-left: 3px solid #007bff;">
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-weight: 500;" title="${translatedCourse}">
+            <span style="color: #666; font-size: 11px; margin-right: 4px;">#${i}</span> ${translatedCourse}
+          </span>
+          <span style="font-weight: bold; color: #007bff; font-size: 11px; background: #e7f1ff; padding: 2px 6px; border-radius: 4px;">${rankVal}${rankSuffix}</span>
+        </div>
+      `;
+    }
+  }
+
+  if (countSpan) countSpan.innerText = `${enteredCount}${unitItems}`;
+
+  if (enteredCount === 0) {
+    historyArea.innerHTML = `<div style="color: #888; text-align: center; padding: 30px 0;">${emptyMsg}</div>`;
+  } else {
+    historyArea.innerHTML = html;
+  }
+}
+
 </script>
 
 
@@ -1906,8 +1998,6 @@ function updateModalMode() {
   }
 }
 
-// ▼ スクリプトの最上部に配置する
-let courseStatsSource = null;
 /* ============================================================
    ▼ レース入力欄生成（modalDraft 削除済み）
 ============================================================ */
@@ -1983,6 +2073,7 @@ function generateRaceInputs(count) {
         scoreInput.value = rankVal ? calcScore(rankVal) : "";
         saveNextCourse();
         triggerLiveWebhookProgress();
+        updateModalCourseHistory(); // ★ 順位変更時に右側のリストを即時更新
       };
     }
 
@@ -1993,13 +2084,16 @@ function generateRaceInputs(count) {
           sendLoungeOverlay(courseStatsSource);
         }
         triggerLiveWebhookProgress();
+        updateModalCourseHistory(); // ★ コース変更時に右側のリストを即時更新
       };
     }
   }
 
   saveNextCourse();
+  updateModalCourseHistory(); // ★ 入力欄生成時（モーダルを開いたとき）に初期状態を反映
 }
 
+  
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
  */
@@ -2039,6 +2133,48 @@ function triggerLiveWebhookProgress() {
     }
   }
 }
+
+
+// ▼ 別枠パネルの左右位置を切り替える関数
+function toggleHistoryPanelPosition() {
+  const modalContainer = document.getElementById("raceModal");
+  if (!modalContainer) return;
+
+  const currentPos = localStorage.getItem("mk_history_panel_pos") || "right";
+  const newPos = currentPos === "right" ? "left" : "right";
+
+  localStorage.setItem("mk_history_panel_pos", newPos);
+  applyHistoryPanelPosition(newPos);
+}
+
+// ▼ 位置設定を適用するヘルパー関数
+function applyHistoryPanelPosition(pos) {
+  const modalContainer = document.getElementById("raceModal");
+  if (!modalContainer) return;
+
+  const historyPanel = document.getElementById("modalSideHistoryPanel");
+  const toggleBtn = document.getElementById("panelPosToggleBtn");
+
+  if (pos === "left") {
+    // 左側に配置（row-reverseにすると、HTML上の並び「パネル、モーダル」が逆になり、パネルが左、モーダルが右になる）
+    modalContainer.style.flexDirection = "row-reverse";
+    if (toggleBtn) toggleBtn.title = "現在の位置: 左側（クリックで右へ移動）";
+  } else {
+    // 右側に配置（デフォルト）
+    modalContainer.style.flexDirection = "row";
+    if (toggleBtn) toggleBtn.title = "現在の位置: 右側（クリックで左へ移動）";
+  }
+}
+
+// アプリ起動時やモーダルを開く際に保存された位置を適用する
+function initHistoryPanelPosition() {
+  const savedPos = localStorage.getItem("mk_history_panel_pos") || "right";
+  applyHistoryPanelPosition(savedPos);
+}
+
+
+
+  
 </script>
 
 
@@ -2301,6 +2437,8 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
 };
 </script>
 
+
+  
 
 
   
