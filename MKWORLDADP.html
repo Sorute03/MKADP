@@ -4773,66 +4773,60 @@ function getScatterFilteredRecords() {
   return r;
 }
 
-async function updateStatsView() {
-  const records = await getStatsFilteredRecords();
-  if (!records) return;
+function updateStatsView() {
+  const records = getFilteredStatsRecords(); // (お使いの絞り込み関数)
 
-  const isEn = (currentLang === 'en');
+  const totalRaces = records.length;
+  if (totalRaces === 0) {
+    document.getElementById("statTotalRaces").innerText = "0";
+    document.getElementById("statAvgRank").innerText = "-";
+    document.getElementById("statAvgScore").innerText = "-";
+    document.getElementById("stat12RaceAvg").innerText = "-"; // ★追加
+    document.getElementById("statWinRate").innerText = "-";
+    return;
+  }
 
-  // 言語に応じたラベル
-  const tRaceCount    = isEn ? 'Total Races: ' : '対象レース数：';
-  const tWinRate      = isEn ? 'Win Rate: ' : '勝率：';
-  const tAvgRank      = isEn ? ' / Avg Rank: ' : ' / 平均順位：';
-  const tAvgScore     = isEn ? ' / Avg Score: ' : ' / 平均スコア：';
-  const tAvg12Score   = isEn ? 'Avg 12-Race Total Score: ' : '12レース平均合計スコア：';
-  const tRateChgLabel = isEn ? 'Rate Chg (Total/Avg): ' : 'レート増減(総計/平均)：';
-  const tPoints       = isEn ? ' pts' : '点';
+  // 既存の計算
+  const sumRank = records.reduce((acc, r) => acc + (Number(r.rank) || 0), 0);
+  const avgRank = (sumRank / totalRaces).toFixed(2);
 
-  const count = records.length;
-  const avgRank = count ? (records.reduce((a,b)=>a+b.rank,0) / count) : 0;
-  const avgScore = count ? (records.reduce((a,b)=>a+b.score,0) / count) : 0;
-  const winRate = count ? (records.filter(r => r.rank <= 3).length / count) : 0;
+  const sumScore = records.reduce((acc, r) => acc + (Number(r.score) || 0), 0);
+  const avgScore = (sumScore / totalRaces).toFixed(1);
 
-  // ▼ 野良モードのレート増減を集計
-  const noraRateRecords = records.filter(r => r.mode === 'nora' && r.rateChange != null);
-  const totalRateChg = noraRateRecords.reduce((sum, r) => sum + r.rateChange, 0);
-  const avgRateChg = noraRateRecords.length > 0 ? totalRateChg / noraRateRecords.length : 0;
+  const winCount = records.filter(r => Number(r.rank) === 1).length;
+  const winRate = ((winCount / totalRaces) * 100).toFixed(1);
+
+  // ▼ 新規：12レースセットの平均スコア（totalScore12）を計算
+  // 12レース完走しているレコード（または totalScore12 を持つレコード）のセットを抽出
+  // 重複を除外するために、タイムスタンプやセット単位でユニークな totalScore12 を集める
+  const loungeSetsWithTotal = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
   
-  // モードセレクトが "nora" に絞られている、または野良データが存在する場合に表示
-  const statsModeSelect = document.getElementById("statsMode");
-  const isOnlyNora = (statsModeSelect && statsModeSelect.value === "nora");
-  const hasRateData = isOnlyNora && noraRateRecords.length > 0;
-
-  const totalChgStr = totalRateChg > 0 ? `+${totalRateChg}` : totalRateChg;
-  const avgChgStr = avgRateChg > 0 ? `+${avgRateChg.toFixed(1)}` : avgRateChg.toFixed(1);
-
-  const basicStatsEl = document.getElementById("basicStats");
-  if (basicStatsEl) {
-    basicStatsEl.innerHTML = `
-      <p>${tRaceCount}${count}</p>
-      <p>${tWinRate}${(winRate*100).toFixed(1)}%${tAvgRank}${avgRank.toFixed(2)}${tAvgScore}${avgScore.toFixed(2)}</p>
-      ${hasRateData ? `
-      <p style="color: #0d6efd; font-weight: bold; margin-top: 4px;">
-        ${tRateChgLabel} ${totalChgStr} (${avgChgStr}/戦)
-      </p>` : ""}
-    `;
-  }
-
-  const avg12El = document.getElementById("avgTotalScore12Text");
-  if (avg12El) {
-    const lounge12 = records.filter(r => r.totalScore12);
-    if (lounge12.length) {
-      const avg12 = lounge12.reduce((a,b)=>a+b.totalScore12,0) / lounge12.length;
-      avg12El.innerText = `${tAvg12Score}${avg12.toFixed(1)}${tPoints}`;
-    } else {
-      avg12El.innerText = "";
+  // 同じ totalScore12 を持つレコードが12件あるため、一意なセット（または timestamp 単位）にまとめる
+  const uniqueSetsMap = {};
+  loungeSetsWithTotal.forEach(r => {
+    // timestamp またはロビー単位の識別子でグループ化（ここでは同じ totalScore12 を持つ最初のものか、セットごとの値を集計）
+    if (r.timestamp && r.totalScore12 != null) {
+      uniqueSetsMap[r.timestamp] = r.totalScore12;
     }
+  });
+
+  const totalScoresArray = Object.values(uniqueSetsMap);
+  let avg12RaceScore = "-";
+  if (totalScoresArray.length > 0) {
+    const sum12 = totalScoresArray.reduce((acc, val) => acc + val, 0);
+    avg12RaceScore = (sum12 / totalScoresArray.length).toFixed(1) + " pt";
   }
 
-  if (typeof drawWinRateChart === "function") drawWinRateChart(records);
-  if (typeof drawAvgRankChart === "function") drawAvgRankChart(records);
-  if (typeof drawAvgScoreChart === "function") drawAvgScoreChart(records);
+  // HTMLへ反映
+  document.getElementById("statTotalRaces").innerText = totalRaces;
+  document.getElementById("statAvgRank").innerText = `${avgRank}位`;
+  document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
+  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★反映
+  document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
 }
+
+
+  
 
 function updateGrowthView() {
   const records = getGrowthFilteredRecords();
