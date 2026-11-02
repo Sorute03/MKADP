@@ -4973,6 +4973,80 @@ function updateGrowthView() {
   document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
 }
 
+function updateLoungeSetView() {
+  const records = getLoungeSetFilteredRecords();
+  const div = document.getElementById("loungeSetView");
+  if (!div) return;
+
+  const isEn = (currentLang === 'en');
+
+  // 言語に応じたラベル
+  const tPoints = isEn ? ' pts' : '点';
+  const tNoData = isEn ? 'No data available' : 'データなし';
+
+  const sets = {};
+  records.forEach(r => {
+    if (!r.totalScore12) return;
+    if (!sets[r.timestamp]) sets[r.timestamp] = r.totalScore12;
+  });
+
+  const html = Object.entries(sets)
+    .sort((a, b) => b[0] - a[0])
+    .map(([ts, score]) => {
+      // 英語環境なら 'en-US'、日本語環境なら 'ja-JP' の日時表記に自動切替
+      const date = new Date(Number(ts)).toLocaleString(isEn ? 'en-US' : 'ja-JP');
+      return `<p>${date}：${score}${tPoints}</p>`;
+    })
+    .join("");
+
+  div.innerHTML = html || `<p>${tNoData}</p>`;
+}
+  
+function drawWinRateChart(records) {
+  const canvas = document.getElementById("chartWinRate");
+  if (!canvas) return;  // ★ DOM が無ければ描画しない
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  if (window.chartWinRate && typeof window.chartWinRate.destroy === "function") {
+    window.chartWinRate.destroy();
+  }
+
+  const isEn = (currentLang === 'en');
+  const tLabel = isEn ? 'Win Rate (%)' : '勝率(%)';
+
+  if (!records.length) {
+    window.chartWinRate = new Chart(ctx, {
+      type: "bar",
+      data: { labels: [], datasets: [] }
+    });
+    return;
+  }
+
+  const sorted = [...records].sort((a,b)=>a.timestamp - b.timestamp);
+  const labels = sorted.map((_,i)=>`#${i+1}`);
+  const winRates = sorted.map(r => (r.rank <= 3 ? 100 : 0));
+
+  window.chartWinRate = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: tLabel,
+        data: winRates,
+        backgroundColor: "rgba(54,162,235,0.6)"
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+
+  
+
 function drawGrowthChart(labels, values) {
   const canvas = document.getElementById("chartGrowth");
   if (!canvas) return;
