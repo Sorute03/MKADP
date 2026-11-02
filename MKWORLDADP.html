@@ -11718,7 +11718,95 @@ document.addEventListener('DOMContentLoaded', () => {
   initFixedTimeSyncScheduler();
 });
 
+// スクリプト自体が読み込まれているか確認するログ
+console.log("--- コース統計スクリプトが読み込まれました ---");
 
+document.addEventListener("DOMContentLoaded", () => {
+  const showBtn = document.getElementById("showAdpCourseStatsBtn");
+  
+  if (!showBtn) {
+    console.error("【致命的エラー】 #showAdpCourseStatsBtn がHTML内に見つかりません！");
+    return;
+  }
+  
+  console.log("【成功】 #showAdpCourseStatsBtn のイベント紐付けを行います");
+
+  showBtn.onclick = async () => {
+    console.log("▶「表示」ボタンがクリックされました！");
+
+    try {
+      const ids = [
+        "adpCourseSelect1",
+        "adpCourseSelect2",
+        "adpCourseSelect3",
+        "adpCourseSelect4",
+        "adpCourseSelect5"
+      ];
+
+      const selectedCourses = ids
+        .map(id => {
+          const el = document.getElementById(id);
+          return el ? el.value : "";
+        })
+        .filter(v => v && v !== "");
+
+      console.log("選択されたコース:", selectedCourses);
+
+      if (selectedCourses.length === 0) {
+        return alert("コースを少なくとも1つ選択してください");
+      }
+
+      if (typeof loadADPIndexedDBRecords !== "function") {
+        return alert("loadADPIndexedDBRecords 関数が定義されていません");
+      }
+
+      const records = await loadADPIndexedDBRecords();
+      console.log("IndexedDBレコード数:", records ? records.length : 0);
+
+      if (!records || records.length === 0) {
+        return alert("IndexedDBにレースデータが存在しません");
+      }
+
+      const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+      const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+      const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+      const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+      const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
+
+      const filtered = applyAndOrFilter(records, {
+        season: seasonVal,
+        tier: tierVal,
+        recent: recentVal,
+        courses: selectedCourses,
+        mode: modeVal
+      }, filterModeVal);
+
+      console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
+
+      if (!filtered || filtered.length === 0) {
+        return alert("条件に一致するレコードがありませんでした");
+      }
+
+      const stats = aggregateCourseStats(filtered);
+      console.log("集計データ:", stats);
+
+      if (typeof drawAdpCourseStatsTable === "function") drawAdpCourseStatsTable(stats);
+      if (typeof drawAdpCourseStatsChart === "function") drawAdpCourseStatsChart(stats);
+
+      if (typeof drawAdpCourseImage === "function") {
+        let bgUrl = typeof getSelectedAdpBackgroundUrl === "function" ? getSelectedAdpBackgroundUrl() : null;
+        await drawAdpCourseImage(stats, bgUrl);
+      }
+
+      window.latestAdpCourseStats = stats;
+      console.log("すべての表示処理が完了しました！");
+
+    } catch (err) {
+      console.error("「表示」ボタン処理中のエラー:", err);
+      alert("処理中にエラーが発生しました（コンソールを確認してください）");
+    }
+  };
+});
 </script>
 
 
