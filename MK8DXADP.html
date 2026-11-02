@@ -11044,14 +11044,14 @@ async function updateGrowthView() {
 
 
 function updateStatsView() {
-  const records = getFilteredStatsRecords(); // (お使いの絞り込み関数)
+  const records = getFilteredStatsRecords(); // 絞り込み関数
 
   const totalRaces = records.length;
   if (totalRaces === 0) {
     document.getElementById("statTotalRaces").innerText = "0";
     document.getElementById("statAvgRank").innerText = "-";
     document.getElementById("statAvgScore").innerText = "-";
-    document.getElementById("stat12RaceAvg").innerText = "-"; // ★追加
+    document.getElementById("stat12RaceAvg").innerText = "-";
     document.getElementById("statWinRate").innerText = "-";
     return;
   }
@@ -11066,32 +11066,43 @@ function updateStatsView() {
   const winCount = records.filter(r => Number(r.rank) === 1).length;
   const winRate = ((winCount / totalRaces) * 100).toFixed(1);
 
-  // ▼ 新規：12レースセットの平均スコア（totalScore12）を計算
-  // 12レース完走しているレコード（または totalScore12 を持つレコード）のセットを抽出
-  // 重複を除外するために、タイムスタンプやセット単位でユニークな totalScore12 を集める
-  const loungeSetsWithTotal = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
-  
-  // 同じ totalScore12 を持つレコードが12件あるため、一意なセット（または timestamp 単位）にまとめる
-  const uniqueSetsMap = {};
-  loungeSetsWithTotal.forEach(r => {
-    // timestamp またはロビー単位の識別子でグループ化（ここでは同じ totalScore12 を持つ最初のものか、セットごとの値を集計）
-    if (r.timestamp && r.totalScore12 != null) {
-      uniqueSetsMap[r.timestamp] = r.totalScore12;
-    }
-  });
-
-  const totalScoresArray = Object.values(uniqueSetsMap);
+  // ▼ 12レースセットの平均スコア（totalScore12）を正確に計算するロジック
   let avg12RaceScore = "-";
-  if (totalScoresArray.length > 0) {
-    const sum12 = totalScoresArray.reduce((acc, val) => acc + val, 0);
-    avg12RaceScore = (sum12 / totalScoresArray.length).toFixed(1) + " pt";
+  
+  // ラウンジモードかつ totalScore12 を持つレコードを抽出
+  const loungeRecords = records.filter(r => r.mode === 'lounge' && r.totalScore12 != null);
+  
+  if (loungeRecords.length > 0) {
+    // timestamp ごとにグループ化（同じ12レースセットは同じ timestamp を持っているため）
+    const setsByTimestamp = {};
+    loungeRecords.forEach(r => {
+      if (!setsByTimestamp[r.timestamp]) {
+        setsByTimestamp[r.timestamp] = [];
+      }
+      setsByTimestamp[r.timestamp].push(r);
+    });
+
+    // セットごとの合計スコアを抽出（1セットにつき1つの totalScore12 を確実に取得）
+    const setTotals = [];
+    Object.values(setsByTimestamp).forEach(setRaces => {
+      const total12 = setRaces[0].totalScore12;
+      if (typeof total12 === 'number' && !isNaN(total12)) {
+        setTotals.push(total12);
+      }
+    });
+
+    // セットが存在すれば平均を計算
+    if (setTotals.length > 0) {
+      const sum12 = setTotals.reduce((acc, val) => acc + val, 0);
+      avg12RaceScore = (sum12 / setTotals.length).toFixed(1) + " pt";
+    }
   }
 
   // HTMLへ反映
   document.getElementById("statTotalRaces").innerText = totalRaces;
   document.getElementById("statAvgRank").innerText = `${avgRank}位`;
   document.getElementById("statAvgScore").innerText = `${avgScore}pt`;
-  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★反映
+  document.getElementById("stat12RaceAvg").innerText = avg12RaceScore; // ★正しく計算された12レース平均を反映
   document.getElementById("statWinRate").innerText = `${winCount}回 (${winRate}%)`;
 }
 
