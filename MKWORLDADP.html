@@ -9916,22 +9916,36 @@ function applyAndOrFilter(records, filters, mode) {
 
 
 // ▼ コースセレクトボックスに候補を埋め込む関数（5つすべてに適用）
-function initAdpCourseSelects(courseList) {
-  const ids = ["adpCourseSelect1", "adpCourseSelect2", "adpCourseSelect3", "adpCourseSelect4", "adpCourseSelect5"];
-  
+// ▼ 5つのセレクトボックスすべてに courseList の内容を自動で埋め込む関数
+function initAdpCourseSelects() {
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
+
   ids.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
+
+    // 既にオプションが生成されている場合は二重追加を防ぐためクリア
     sel.innerHTML = '<option value="">-- コース選択 --</option>';
-    if (Array.isArray(courseList)) {
-      courseList.forEach(course => {
+
+    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
+      courseList.forEach(courseName => {
         const opt = document.createElement("option");
-        opt.value = course;
-        opt.textContent = course;
+        opt.value = courseName;
+        opt.textContent = courseName;
         sel.appendChild(opt);
       });
+    } else {
+      console.warn("courseList が定義されていないか、配列ではありません。");
     }
   });
+
+  console.log("ADPコースセレクトボックスの初期化が完了しました。");
 }
 
 
