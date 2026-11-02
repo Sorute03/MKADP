@@ -4144,8 +4144,7 @@ function activateCourseStatsTab() {
   chartCanvas.height = 300;
 
   // 表示ボタンの onclick をここで登録
-  document.getElementById("showAdpCourseStatsBtn").onclick = runCourseStats;
-
+  
   // もし前回の結果があれば再描画
   if (window.latestAdpCourseStats) {
     drawAdpCourseStatsChart(window.latestAdpCourseStats);
