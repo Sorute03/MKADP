@@ -8056,7 +8056,7 @@ async function onLoadLoungeStats() {
     const htmlList = [];
     let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
 
-    for (let s = 1; s <= maxSeasonCheck; s++) {
+    for (let s = 4; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
 
