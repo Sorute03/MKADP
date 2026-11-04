@@ -8835,68 +8835,266 @@ async function getAdpOpfsDirectory() {
   return await root.getDirectoryHandle(ADP_OPFS_DIR, { create: true });
 }
 
+// ============================================================
+// 1. ストレージ管理（本番: OPFS / ローカル(file://): IndexedDB 自動切り替え）
+// ============================================================
+
+function isLocalEnvironment() {
+  return window.location.protocol === "file:";
+}
+
+// ローカル用 IndexedDB の初期化
+function openAdpIdbFallback() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("MK_ADP_Local_Fallback_DB", 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("backgrounds")) {
+        db.createObjectStore("backgrounds", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function getSavedBackgroundsIDB() {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve) => {
+    const tx = db.transaction("backgrounds", "readonly");
+    const req = tx.objectStore("backgrounds").getAll();
+    req.onsuccess = () => {
+      const list = (req.result || []).map(r => ({
+        id: r.id,
+        dataUrl: URL.createObjectURL(r.file),
+        settings: r.settings || { brightness: 1, contrast: 1, opacity: 1, blur: 0 },
+        size: r.file.size
+      }));
+      resolve(list);
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+async function saveBackgroundToIDB(file, settings) {
+  const db = await openAdpIdbFallback();
+  const idName = `adp_bg_${Date.now()}`;
+  
+  const arrayBuffer = await file.arrayBuffer();
+  const cleanBlob = new Blob([arrayBuffer], { type: file.type });
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").put({
+      id: idName,
+      file: cleanBlob,
+      settings: settings
+    });
+    req.onsuccess = () => resolve(idName);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function deleteBackgroundFromIDB(idName) {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").delete(idName);
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function getAdpOpfsDirectory() {
+  const root = await navigator.storage.getDirectory();
+  return await root.getDirectoryHandle("adp_backgrounds_dir", { create: true });
+}
+
+// 統合された一覧取得関数
 async function getSavedAdpBackgroundsOPFS() {
+  if (isLocalEnvironment()) {
+    return await getSavedBackgroundsIDB();
+  }
+
   try {
     const dirHandle = await getAdpOpfsDirectory();
     const list = [];
+    const dirNames = [];
     
-    for await (const [idName, handle] of dirHandle.entries()) {
-      if (handle.kind === "directory") {
-        const bgDir = handle;
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind === "directory") dirNames.push(name);
+    }
+
+    for (const idName of dirNames) {
+      try {
+        const bgDir = await dirHandle.getDirectoryHandle(idName);
+        const imgFile = await (await bgDir.getFileHandle("image.jpg")).getFile();
+        const dataUrl = URL.createObjectURL(imgFile);
+
+        let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
         try {
-          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
-          const imgFile = await imgFileHandle.getFile();
-          const dataUrl = URL.createObjectURL(imgFile);
+          const metaFile = await (await bgDir.getFileHandle("meta.json")).getFile();
+          settings = JSON.parse(await metaFile.text());
+        } catch (e) {}
 
-          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
-          try {
-            const metaFileHandle = await bgDir.getFileHandle("meta.json");
-            const metaFile = await metaFileHandle.getFile();
-            settings = JSON.parse(await metaFile.text());
-          } catch (e) {}
-
-          list.push({ id: idName, dataUrl, settings, size: imgFile.size });
-        } catch (err) {
-          console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
-        }
-      }
+        list.push({ id: idName, dataUrl, settings, size: imgFile.size });
+      } catch (err) {}
     }
     return list;
   } catch (err) {
-    console.error("[OPFS/ADP] 一覧取得失敗:", err);
-    return [];
+    console.warn("[OPFS] 利用不可のため IDB にフォールバックします:", err);
+    return await getSavedBackgroundsIDB();
   }
 }
 
+// 統合された保存関数
 async function saveAdpBackgroundToOPFS(file, settings) {
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   const currentList = await getSavedAdpBackgroundsOPFS();
   if (currentList.length >= 5) {
     throw new Error("コース背景の保存上限（最大5枚）に達しています。不要な画像を削除してください。");
   }
 
-  const dirHandle = await getAdpOpfsDirectory();
-  const idName = `adp_bg_${Date.now()}`;
-  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
+  if (isLocalEnvironment()) {
+    return await saveBackgroundToIDB(file, settings);
+  }
 
-  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
-  const imgW = await imgHandle.createWritable();
-  await imgW.write(file);
-  await imgW.close();
+  try {
+    const dirHandle = await getAdpOpfsDirectory();
+    const idName = `adp_bg_${Date.now()}`;
+    const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
 
-  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
-  const metaW = await metaHandle.createWritable();
-  await metaW.write(JSON.stringify(settings));
-  await metaW.close();
+    const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+    const imgW = await imgHandle.createWritable();
+    await imgW.write(file);
+    await imgW.close();
+
+    const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+    const metaW = await metaHandle.createWritable();
+    await metaW.write(JSON.stringify(settings));
+    await metaW.close();
+    
+    return idName;
+  } catch (err) {
+    console.warn("[OPFS] 保存失敗のため IDB にフォールバックします:", err);
+    return await saveBackgroundToIDB(file, settings);
+  }
 }
 
+// 統合された削除関数
 async function deleteAdpBackgroundFromOPFS(idName) {
+  if (isLocalEnvironment()) {
+    await deleteBackgroundFromIDB(idName);
+    return;
+  }
+
   try {
     const dirHandle = await getAdpOpfsDirectory();
     await dirHandle.removeEntry(idName, { recursive: true });
   } catch (err) {
     console.error("[OPFS/ADP] 削除失敗:", err);
+    await deleteBackgroundFromIDB(idName);
   }
 }
+
+
+// ============================================================
+// 2. 描画・UI 関連処理
+// ============================================================
+
+async function drawAdpCourseImage(stats, backgroundUrl) {
+  const canvas = document.getElementById("adpCourseImage");
+  const ctx = canvas.getContext("2d");
+
+  if (!backgroundUrl && state.adpCourseBackgroundImage) {
+    backgroundUrl = state.adpCourseBackgroundImage;
+  }
+
+  // data:image および blob: URL の両方に対応
+  const isValidBg =
+    backgroundUrl &&
+    typeof backgroundUrl === "string" &&
+    (backgroundUrl.startsWith("data:image") || backgroundUrl.startsWith("blob:"));
+
+  if (isValidBg) {
+    const bg = new Image();
+    bg.src = backgroundUrl;
+  
+    try {
+      await bg.decode();
+  
+      // ステート変数名を adpCourseBg... に統一
+      ctx.filter =
+        `brightness(${Number(state.adpCourseBgBrightness ?? 1)}) ` +
+        `contrast(${Number(state.adpCourseBgContrast ?? 1)}) ` +
+        `blur(${Number(state.adpCourseBgBlur ?? 0)}px)`;
+  
+      ctx.globalAlpha = Number(state.adpCourseBgOpacity ?? 1);
+  
+      ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+  
+      ctx.filter = "none";
+      ctx.globalAlpha = 1;
+  
+    } catch (e) {
+      console.error("背景画像 decode に失敗:", e);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  
+  } else {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // 統計テキストの描画
+  ctx.fillStyle = "white";
+  ctx.font = "24px 'Noto Sans JP'";
+  ctx.textBaseline = "top";
+
+  let y = 40;
+  const x = 40;
+
+  ctx.fillText("ADP コース比較結果", x, y);
+  y += 50;
+
+  stats.forEach(s => {
+    ctx.fillText(`【${s.course}】`, x, y); y += 30;
+    ctx.fillText(`走行数: ${s.count}`, x + 20, y); y += 25;
+    ctx.fillText(`平均順位: ${s.avgRank.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x + 20, y); y += 25;
+    ctx.fillText(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`, x + 20, y); y += 25;
+    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x + 20, y); y += 40;
+
+    if (s.season && Object.keys(s.season).length > 0) {
+      ctx.fillText(`Season別:`, x + 20, y); y += 25;
+      Object.keys(s.season).forEach(se => {
+        const obj = s.season[se];
+        ctx.fillText(`${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`, x + 40, y);
+        y += 25;
+      });
+      y += 10;
+    }
+
+    if (s.tier && Object.keys(s.tier).length > 0) {
+      ctx.fillText(`Tier別:`, x + 20, y); y += 25;
+      Object.keys(s.tier).forEach(t => {
+        const obj = s.tier[t];
+        ctx.fillText(`${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`, x + 40, y);
+        y += 25;
+      });
+      y += 10;
+    }
+    y += 20;
+  });
+}
+
+
+// ============================================================
+// 3. 一覧リスト描画 & イベント紐付け
+// ============================================================
 
 async function renderSavedAdpBackgrounds() {
   const container = document.getElementById("savedAdpBgListContainer");
@@ -8906,7 +9104,7 @@ async function renderSavedAdpBackgrounds() {
   const backgrounds = await getSavedAdpBackgroundsOPFS();
 
   if (backgrounds.length === 0) {
-    container.innerHTML = "<span style='color: #aaa; font-size: 12px;'>保存された背景はありません（OPFS）</span>";
+    container.innerHTML = "<span style='color: #aaa; font-size: 12px;'>保存された背景はありません</span>";
     return;
   }
 
@@ -8939,7 +9137,7 @@ async function renderSavedAdpBackgrounds() {
       if (document.getElementById("adpCourseBgBlur")) document.getElementById("adpCourseBgBlur").value = bg.settings.blur;
 
       await renderSavedAdpBackgrounds();
-      await triggerAdpCanvasRedraw();
+      if (typeof triggerAdpCanvasRedraw === "function") await triggerAdpCanvasRedraw();
     };
 
     const delBtn = document.createElement("button");
@@ -8974,74 +9172,65 @@ async function renderSavedAdpBackgrounds() {
   });
 }
 
-// イベントリスナー紐付け
-const adpCourseBgLocalInput = document.getElementById("adpCourseBgLocalInput");
-if (adpCourseBgLocalInput) {
-  adpCourseBgLocalInput.onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      state.adpCourseBackgroundImage = reader.result;
-      state.activeAdpBgId = null;
-      await renderSavedAdpBackgrounds();
-      await triggerAdpCanvasRedraw();
-    };
-    reader.readAsDataURL(file);
-  };
-}
 
-// スライダー変更時リアルタイム連動
-const setupAdpSlider = (id, key) => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.oninput = async e => {
-      state[key] = Number(e.target.value);
-      await triggerAdpCanvasRedraw();
-    };
+// ============================================================
+// 4. Discord 送信機能（自動再描画保護付き）
+// ============================================================
+
+async function sendAdpCourseImageToDiscord() {
+  let webhook = "";
+  if (typeof getSelectedWebhookUrl === "function") {
+    webhook = getSelectedWebhookUrl();
+  } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+    webhook = webhookList[activeWebhookIndex]?.url || "";
   }
-};
 
-setupAdpSlider("adpCourseBgBrightness", "adpCourseBgBrightness");
-setupAdpSlider("adpCourseBgContrast", "adpCourseBgContrast");
-setupAdpSlider("adpCourseBgOpacity", "adpCourseBgOpacity");
-setupAdpSlider("adpCourseBgBlur", "adpCourseBgBlur");
+  if (!webhook) {
+    alert("Webhook が選択されていません");
+    return;
+  }
 
-let opfsAdpSelectedFile = null;
-const adpCourseBgOpfsInput = document.getElementById("adpCourseBgOpfsInput");
-if (adpCourseBgOpfsInput) {
-  adpCourseBgOpfsInput.onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    opfsAdpSelectedFile = file;
-  };
+  // 送信直前に最新データと背景で必ずキャンバスをリフレッシュ
+  if (typeof window.latestAdpCourseStats !== "undefined" && window.latestAdpCourseStats && typeof drawAdpCourseImage === "function") {
+    const bgUrl = state.adpCourseBackgroundImage || null;
+    await drawAdpCourseImage(window.latestAdpCourseStats, bgUrl);
+  }
+
+  const canvas = document.getElementById("adpCourseImage");
+  if (!canvas) {
+    alert("対象のキャンバスが見つかりません");
+    return;
+  }
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) {
+    alert("画像の生成に失敗しました");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("file", blob, "adp_course_stats.png");
+
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      body: form
+    });
+
+    if (response.ok || response.status === 204) {
+      alert("Discord に画像を送信しました！");
+    } else {
+      alert("送信に失敗しました (ステータス: " + response.status + ")");
+    }
+  } catch (error) {
+    console.error("Webhook送信エラー:", error);
+    alert("Discordへの送信中にエラーが発生しました");
+  }
 }
 
-const saveAdpBgToOpfsBtn = document.getElementById("saveAdpBgToOpfsBtn");
-if (saveAdpBgToOpfsBtn) {
-  saveAdpBgToOpfsBtn.onclick = async () => {
-    if (!opfsAdpSelectedFile) {
-      alert("保存する画像ファイルが選択されていません。");
-      return;
-    }
-    const currentSettings = {
-      brightness: Number(document.getElementById("adpCourseBgBrightness")?.value || 1),
-      contrast: Number(document.getElementById("adpCourseBgContrast")?.value || 1),
-      opacity: Number(document.getElementById("adpCourseBgOpacity")?.value || 1),
-      blur: Number(document.getElementById("adpCourseBgBlur")?.value || 0)
-    };
 
-    try {
-      await saveAdpBackgroundToOPFS(opfsAdpSelectedFile, currentSettings);
-      alert("コース統計の背景と設定をOPFSに保存しました！");
-      opfsAdpSelectedFile = null;
-      adpCourseBgOpfsInput.value = "";
-      await renderSavedAdpBackgrounds();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-}
+
+
 
 // 即時反映ボタン
 const updateAdpCourseBgBtn = document.getElementById("updateAdpCourseBgBtn");
@@ -10051,8 +10240,23 @@ function loadPlayerIdList() {
 }
 
 // ▼ 保存
+let playerIdList = [];
+let activePlayerIndex = -1;
+
+// ▼ 起動時に読み込み
+function loadPlayerIdList() {
+  const raw = localStorage.getItem("mk8dxadp_player_ids");
+  if (!raw) return;
+  try {
+    playerIdList = JSON.parse(raw);
+  } catch {
+    playerIdList = [];
+  }
+}
+
+// ▼ 保存
 function savePlayerIdList() {
-  localStorage.setItem("mkadp_player_ids", JSON.stringify(playerIdList));
+  localStorage.setItem("mk8dxadp_player_ids", JSON.stringify(playerIdList));
 }
 
 // ▼ 表示
@@ -10168,12 +10372,6 @@ loadPlayerIdList();
 renderPlayerIdList();
 
 
-async function loadRecordsFromIndexedDB() {
-  const records = await readRecords(); // ← あなたの既存処理
-
-  // ★ これが絶対必要
-  createCourseStatsSource(records);
-}
 
 
 
