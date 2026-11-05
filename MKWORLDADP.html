@@ -8561,6 +8561,9 @@ function buildMKCUrl(playerId, season) {
 // ==========================================
 // 1. ラウンジデータ読み込み（ONLOAD）
 // ==========================================
+// ==========================================
+// 1. ラウンジデータ読み込み（シーズン最低値4対応・堅牢版）
+// ==========================================
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
@@ -8580,6 +8583,7 @@ async function onLoadLoungeStats() {
     const htmlList = [];
     let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
 
+    
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
@@ -8593,25 +8597,30 @@ async function onLoadLoungeStats() {
           // 一度仮パースして内容を検証
           const tempParsed = parseWorldHTML_Season2(html, s);
           
-          // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
-          if (!tempParsed.history || tempParsed.history.length === 0) {
-            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
-            continue;
-          }
-
           // データ内容のシグネチャを作成（通算勝敗数・履歴数・最終MMRなど）
-          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
+          // ★ 1. 【重要】履歴チェックより先に「直前のシーズンと全く同じ内容（リダイレクト）」か判定
+          // 存在しない未来シーズンを叩いたとき、Lounge側が最新シーズンへリダイレクトして同じデータを返すためここで即終了
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
             console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
             break;
+          }
+
+          // ★ 2. 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへスキップ
+          if (!tempParsed.history || tempParsed.history.length === 0) {
+            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            continue;
           }
 
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
           lastParsedSignature = currentSignature;
           console.log(`-> Season ${s} のデータを追加しました。`);
+        } else {
+          // 404などのページが見つからない場合は存在しないシーズンとみなして終了
+          console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
+          break;
         }
       } catch (e) {
         console.warn(`Season ${s} の取得エラー。スキップします。`, e);
