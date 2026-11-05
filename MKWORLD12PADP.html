@@ -8142,7 +8142,7 @@ async function onLoadLoungeStats() {
   let stats;
 
   if (selectedSeason === "ALL") {
-    const maxSeasonCheck = 30; // 安全上限
+    const maxSeasonCheck = 50; // 安全上限
     const htmlList = [];
     let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
 
@@ -8156,28 +8156,36 @@ async function onLoadLoungeStats() {
         // 有効なページか確認
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
-          // 一度仮パースして内容を検証
           const tempParsed = parseWorldHTML_Season2(html, s);
           
-          // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
-          if (!tempParsed.history || tempParsed.history.length === 0) {
-            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
-            continue;
+          // ★ 追加の安全ガード: 取得したデータ内のシーズン情報が、現在ループしているシーズン（s）より先のもの（リダイレクトによる最新データの混入）であれば即終了
+          if (tempParsed.season && Number(tempParsed.season) > s) {
+            console.log(`-> 取得したデータが未来のシーズン (${tempParsed.season}) を指しているため、ALL取得を終了します。`);
+            break;
           }
 
-          // データ内容のシグネチャを作成（通算勝敗数・履歴数・最終MMRなど）
-          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+          // データ内容のシグネチャを作成
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
+          // 直前のシーズンと全く同じ内容（リダイレクト）判定
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
             console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
             break;
+          }
+
+          // 試合データが1件もない（休止中など）場合はスキップ
+          if (!tempParsed.history || tempParsed.history.length === 0) {
+            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            continue;
           }
 
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
           lastParsedSignature = currentSignature;
           console.log(`-> Season ${s} のデータを追加しました。`);
+        } else {
+          console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
+          break;
         }
       } catch (e) {
         console.warn(`Season ${s} の取得エラー。スキップします。`, e);
