@@ -8104,18 +8104,26 @@ function getRankInfo(mmr, season) {
 
 
 function buildMKCUrl(playerId, season) {
-
-  // ★ Season1 は p を付けない
+  // ★ Season1 は p を付けない仕様を維持
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
   }
 
-  // ★ Season2 以降は p を自動決定（MKADP は 24 が標準）
-  const p = 24;
+  // ★ UIのモード選択要素（例: id="loungeGameModeSelect" や selector）から 12 か 24 を動的に判定
+  // （もし要素IDが異なる場合は、お使いのHTMLのセレクトボックスのidに合わせて調整してください）
+  let p = 24; // デフォルト
+  const modeSelect = document.getElementById("loungeModeSelect") || document.getElementById("filter-game") || document.getElementById("gameModeSelect");
+  
+  if (modeSelect) {
+    const val = modeSelect.value;
+    // 「12P」や「12」が含まれていれば p=12 に設定
+    if (val.includes("12")) {
+      p = 12;
+    }
+  }
 
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
-
 // ==========================================
 // 1. ラウンジデータ読み込み（ONLOAD）
 // ==========================================
