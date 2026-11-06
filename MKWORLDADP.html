@@ -8589,10 +8589,17 @@ async function onLoadLoungeStats() {
 
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
+  
+  // ▼ 現在のモード判定（UIのセレクトボックス等から12Pモードかどうかを取得する想定）
+  // ※お使いのコードのモード判定変数名に合わせて調整してください（例: document.getElementById("loungeModeSelect")?.value === "12" など）
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const currentMode = modeSelect ? modeSelect.value : "24"; // 例として "12" か "24"
+  const is12PAll = (selectedSeason === "ALL" && currentMode === "12");
 
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("selectedSeason:", selectedSeason);
+  console.log("is12PAll:", is12PAll);
 
   let stats;
 
@@ -8601,6 +8608,25 @@ async function onLoadLoungeStats() {
     const htmlList = [];
     let lastParsedSignature = null;
     let lastValidSeasonData = null;
+
+    // ==========================================
+    // ▼ 【12PのALL時のみ】プレイヤーの「現在の最新デフォルトページ」を事前に取得
+    // ==========================================
+    let defaultLatestSignature = null;
+    if (is12PAll) {
+      try {
+        const defaultUrl = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?p=12`;
+        const defaultHtml = await fetchWorldHTML(defaultUrl);
+        if (defaultHtml) {
+          const defaultParsed = parseWorldHTML_Season2(defaultHtml, 999);
+          defaultLatestSignature = `${defaultParsed.currentMMR}_${defaultParsed.wins}_${defaultParsed.losses}_${defaultParsed.history ? defaultParsed.history.length : 0}`;
+          console.log("12P用 デフォルト最新シグネチャ取得完了:", defaultLatestSignature);
+        }
+      } catch (e) {
+        console.warn("12P用デフォルト最新ページの取得スキップ", e);
+      }
+    }
+    // ==========================================
 
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
@@ -8611,29 +8637,19 @@ async function onLoadLoungeStats() {
 
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, "text/html");
-
-          // ==========================================
-          // ▼ 【決定版ガード】Canonical URL によるフォールバック検知
-          // ==========================================
-          // 存在しないシーズンにアクセスしてサーバーがデフォルトページにフォールバックさせた場合、
-          // canonical にはパラメータのないベースURLが設定されるため、ここでリクエストしたシーズンとの不一致を即座に見抜く。
-          const canonicalLink = doc.querySelector("link[rel='canonical']");
-          if (canonicalLink) {
-            const canonicalHref = canonicalLink.getAttribute("href");
-            // Season 2以上を要求したのに、canonical に 'season={s}' が含まれていない場合はフォールバックと判定して終了
-            if (s > 1 && (!canonicalHref || !canonicalHref.includes(`season=${s}`))) {
-              console.log(`-> 要求した Season ${s} ですが、Canonical URL [${canonicalHref}] がベースURLにフォールバックしているため、ALL取得を終了します。`);
-              break;
-            }
-          }
-          // ==========================================
-
           const tempParsed = parseWorldHTML_Season2(html, s);
 
           // 基本的なシグネチャを作成
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
+
+          // ==========================================
+          // ▼ 【12PのALL時のみ発動】最新デフォルトページと一致したら終了
+          // ==========================================
+          if (is12PAll && defaultLatestSignature && defaultLatestSignature === currentSignature) {
+            console.log(`-> [12P ALL] Season ${s} のデータは現在の最新デフォルトページと一致したため、ALL取得を終了します。`);
+            break;
+          }
+          // ==========================================
 
           // ① 直前とシグネチャが完全一致する場合のガード
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
