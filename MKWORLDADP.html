@@ -8561,9 +8561,6 @@ function buildMKCUrl(playerId, season) {
 // ==========================================
 // 1. ラウンジデータ読み込み（ONLOAD）
 // ==========================================
-// ==========================================
-// 1. ラウンジデータ読み込み（シーズン最低値4対応・堅牢版）
-// ==========================================
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
@@ -8581,34 +8578,20 @@ async function onLoadLoungeStats() {
   if (selectedSeason === "ALL") {
     const maxSeasonCheck = 50; // 安全上限
     const htmlList = [];
-    let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
+    let lastParsedSignature = null;
+    let lastValidSeasonData = null; // 直前に正常取得したパース結果を保持
 
-    for (let s = 1; s <= maxSeasonCheck; s++) {
+    // ★ シーズンの最低値 4 からスタート
+    for (let s = 4; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
 
       try {
         const html = await fetchWorldHTML(url);
 
-        // 有効なページか確認
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
           const tempParsed = parseWorldHTML_Season2(html, s);
-          
-          // ★ 追加の安全ガード: 取得したデータ内のシーズン情報が、現在ループしているシーズン（s）より先のもの（リダイレクトによる最新データの混入）であれば即終了
-          if (tempParsed.season && Number(tempParsed.season) > s) {
-            console.log(`-> 取得したデータが未来のシーズン (${tempParsed.season}) を指しているため、ALL取得を終了します。`);
-            break;
-          }
-
-          // データ内容のシグネチャを作成
-          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
-
-          // 直前のシーズンと全く同じ内容（リダイレクト）判定
-          if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
-            break;
-          }
 
           // 試合データが1件もない（休止中など）場合はスキップ
           if (!tempParsed.history || tempParsed.history.length === 0) {
@@ -8616,9 +8599,31 @@ async function onLoadLoungeStats() {
             continue;
           }
 
+          // 基本的なシグネチャ（MMR・勝敗数・履歴数）を作成
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+
+          // ① 直前のシーズンとデータが完全に一致している場合（リダイレクト検知）
+          if (lastParsedSignature && lastParsedSignature === currentSignature) {
+            console.log(`-> Season ${s} は直前と同じデータ（リダイレクト/使い回し）と判定されたため、ここで確実にALL取得を終了します。`);
+            break;
+          }
+
+          // ② より厳密なチェック：直前のシーズンと履歴の配列内容が1件残らず完全に一致している場合
+          if (lastValidSeasonData && lastValidSeasonData.history.length === tempParsed.history.length) {
+            const isSameHistory = lastValidSeasonData.history.every((val, idx) => {
+              const curVal = tempParsed.history[idx];
+              return JSON.stringify(val) === JSON.stringify(curVal);
+            });
+            if (isSameHistory) {
+              console.log(`-> Season ${s} は前シーズンと完全に同一の履歴内容のため、ここでALL取得を終了します。`);
+              break;
+            }
+          }
+
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
           lastParsedSignature = currentSignature;
+          lastValidSeasonData = tempParsed; // 今回のデータを保存
           console.log(`-> Season ${s} のデータを追加しました。`);
         } else {
           console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
@@ -8666,6 +8671,7 @@ async function onLoadLoungeStats() {
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
+  
   
 // ==========================================
 // 2. ラウンジタブのアクティブ化・イベント同期
