@@ -8585,7 +8585,7 @@ async function onLoadLoungeStats() {
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
-  console.log("=== Lounge Debug ===" );
+  console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("selectedSeason:", selectedSeason);
 
@@ -8596,7 +8596,6 @@ async function onLoadLoungeStats() {
     const htmlList = [];
     let lastParsedSignature = null;
     let lastValidSeasonData = null;
-    let defaultPageSignature = null; // ★ 24Pのデフォルトページ（フォールバック）を検知するための変数
 
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
@@ -8607,23 +8606,33 @@ async function onLoadLoungeStats() {
 
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
+          // ==========================================
+          // ▼ 【決定版ガード】返ってきたページの実際のシーズンを検証
+          // ==========================================
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          
+          // ページ内のシーズン選択セレクトボックスから、現在アクティブなシーズンを取得
+          const seasonSelect = doc.querySelector("#loungeSeasonSelect, select[name='season'], select.form-select");
+          if (seasonSelect) {
+            const activeSeason = seasonSelect.value;
+            if (activeSeason && !isNaN(activeSeason) && Number(activeSeason) !== s) {
+              console.log(`-> 要求した Season ${s} ですが、ページの実際のアクティブシーズンが Season ${activeSeason} のため（フォールバック検知）、ALL取得を終了します。`);
+              break;
+            }
+          }
+          // ==========================================
+
           const tempParsed = parseWorldHTML_Season2(html, s);
 
           // 基本的なシグネチャを作成
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // ==========================================
-          // ▼ 【決定版ガード】24Pデフォルトページ（フォールバック）の混入検知
-          // ==========================================
-          // 存在しないシーズンを叩いたとき、MKC側が常に「最新（24P）のデフォルトページ」を返す仕様のため、
-          // もしループの途中で「直前と同じデータ」または「最初の有効データ以降に全く同じ内容が連続して返ってきた場合」は
-          // それがフォールバック先のデフォルトページであるとみなして即座に終了する。
-          
+          // ① 【最優先】リダイレクト検知（直前とシグネチャが完全に一致）
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は直前と同じデータ（24Pデフォルトページへのリダイレクト）と判定されたため、ALL取得を終了します。`);
+            console.log(`-> Season ${s} は直前と同じデータ（リダイレクト/使い回し）と判定されたため、ALL取得を終了します。`);
             break;
           }
-          // ==========================================
 
           // ② 同一履歴チェック（直前と履歴配列の中身が1件残らず完全に一致）
           if (lastValidSeasonData && lastValidSeasonData.history && tempParsed.history) {
