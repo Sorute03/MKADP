@@ -8612,12 +8612,21 @@ async function onLoadLoungeStats() {
           
           const tempParsed = parseWorldHTML_Season2(html, s);
 
+          // ==========================================
+          // ▼ 【追加の安全ガード】フォールバック・存在しないシーズンの混入検知
+          // ==========================================
+          // もし返ってきたパース結果に season プロパティがあり、今要求したシーズン `s` と異なる場合は
+          // 存在しないシーズンへのアクセスによるリダイレクト（フォールバック）とみなして即座に終了する
+          if (tempParsed.season !== undefined && tempParsed.season !== null) {
+            if (Number(tempParsed.season) !== s) {
+              console.log(`-> 要求した Season ${s} ですが、返ってきたデータが Season ${tempParsed.season} のため、フォールバックと判定してALL取得を終了します。`);
+              break;
+            }
+          }
+          // ==========================================
+
           // 基本的なシグネチャを作成
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
-
-          // ==========================================
-          // ▼ ご要望の判定順序ルール
-          // ==========================================
 
           // ① 【最優先】リダイレクト検知（直前とシグネチャが完全に一致）
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
@@ -8718,8 +8727,6 @@ async function onLoadLoungeStats() {
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
-
-
 
 function convertStatsForImage(stats) {
   const history = stats.mmrHistory || [];
