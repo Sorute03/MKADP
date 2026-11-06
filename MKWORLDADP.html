@@ -8253,6 +8253,10 @@ async function drawLoungeImage(stats) {
     ctx.lineWidth = 2;
     ctx.strokeRect(gx, gy, gw, gh);
 
+    // ★ 描画開始時に現在のモードを変数にキャプチャしておく
+    const modeSelect = document.getElementById("loungeModeSelect");
+    const currentIs12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
+
     const ratings = history.map(item => (typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item));
     let minMMR = Math.min(...ratings);
     let maxMMR = Math.max(...ratings);
@@ -8285,7 +8289,8 @@ async function drawLoungeImage(stats) {
       const p1 = points[i + 1];
 
       const avgMmr = (p0.mmr + p1.mmr) / 2;
-      const rankInfo = getRankInfo(avgMmr, p0.season);
+      // ★ getRankInfo に currentIs12P を渡す
+      const rankInfo = getRankInfo(avgMmr, p0.season, currentIs12P);
 
       ctx.strokeStyle = rankInfo.color;
       ctx.beginPath();
@@ -8302,85 +8307,7 @@ async function drawLoungeImage(stats) {
     ctx.fillText(titleText, gx, gy - 10);
   }
 }
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await renderSavedBackgrounds();
-});
-
   
-  
-function aggregateWorldStats(leaderboard, htmlParsed) {
-
-  const name = htmlParsed.name || "Unknown";
-  const mmr = leaderboard?.mmr ?? htmlParsed.currentMMR ?? 0;
-  const peak_mmr = leaderboard?.peak_mmr ?? htmlParsed.peakMMR ?? 0;
-
-  const mmr_history = htmlParsed.history || [];
-
-  return {
-    name,
-    mmr,
-    peak_mmr,
-
-    wins: leaderboard?.wins ?? 0,
-    losses: leaderboard?.losses ?? 0,
-
-    mmr_rank: leaderboard?.mmr_rank ?? "-",
-    peak_mmr_rank: leaderboard?.peak_mmr_rank ?? "-",
-
-    mmr_history
-  };
-}
-
-function convertStatsForImage(stats) {
-  const history = stats.mmrHistory || [];
-  // 直近10戦の履歴を取り出す
-  const last10 = history.slice(-10);
-
-  // 各履歴アイテムから delta（増減）を安全に取得して勝敗を判定
-  // ※もし history が数値の配列や別構造の場合は適宜プロパティ名を合わせてください
-  const winsLast10 = last10.filter(h => {
-    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
-    return delta > 0;
-  }).length;
-
-  const lossesLast10 = last10.filter(h => {
-    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
-    return delta < 0;
-  }).length;
-
-  return {
-    name: stats.name,
-
-    mmr: stats.currentMMR,
-    peak_mmr: stats.peakMMR,
-
-    wins: stats.wins,
-    losses: stats.losses,
-
-    win_rate: stats.wins + stats.losses > 0
-      ? stats.wins / (stats.wins + stats.losses)
-      : 0,
-
-    wins_last_10: winsLast10,     // ★ 正しく直近10戦の勝ち数に修正
-    losses_last_10: lossesLast10, // ★ 正しく直近10戦の負け数に修正
-
-    gain_loss_last_10: history.length >= 10
-      ? (typeof history.at(-1) === 'object' ? (history.at(-1).mmr ?? history.at(-1)) : history.at(-1)) - 
-        (typeof history.at(-10) === 'object' ? (history.at(-10).mmr ?? history.at(-10)) : history.at(-10))
-      : 0,
-
-    events_played: stats.eventsPlayed ?? history.length,
-    largest_gain: stats.largestGain ?? 0,
-
-    mmr_rank: stats.rank,
-    peak_mmr_rank: stats.rank,
-
-    ave_score: stats.ave ?? "-",
-
-    mmr_history: history
-  };
-}
 
 let loungeMMRChartInstance = null;
 
@@ -8395,6 +8322,10 @@ function drawLoungeMMRChart(stats) {
   if (window.loungeMMRChartInstance && typeof window.loungeMMRChartInstance.destroy === "function") {
     window.loungeMMRChartInstance.destroy();
   }
+
+  // ★ 描画開始の瞬間に「現在のモード」を確実に変数にキャプチャしておく（これが最大のポイント！）
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const currentIs12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
 
   // ★ Season1 / Season2 / ALL すべて mmrHistory を使う
   const history = stats.mmrHistory || [];
@@ -8418,10 +8349,9 @@ function drawLoungeMMRChart(stats) {
     labelText = isEn ? `MMR Progression (Season ${selectedSeasonVal})` : `MMR推移（Season ${selectedSeasonVal})`;
   }
 
- // 各履歴データのシーズンとMMR値を抽出
+  // 各履歴データのシーズンとMMR値を抽出
   const seasons = history.map(item => {
     if (typeof item === 'object' && item !== null) {
-      // item.season があればそれを数値として利用、なければ選択中のセレクトボックスをみる
       if (item.season !== undefined && item.season !== null) {
         return Number(item.season);
       }
@@ -8450,22 +8380,22 @@ function drawLoungeMMRChart(stats) {
         pointHoverBorderColor: "transparent",     // ホバー時の枠線も透明化
         pointBorderWidth: 0,                      // 枠線幅0
         
-        // ホバー時に表示される丸の色をその時のレート色に合わせる
+        // ホバー時に表示される丸の色をその時のレート色に合わせる（currentIs12P を渡す）
         pointBackgroundColor: ctx => {
           const idx = ctx.dataIndex;
           if (idx === undefined) return "#fff";
           const mmr = mmrValues[idx];
           const seasonNum = seasons[idx];
-          return getRankInfo(mmr, seasonNum).color;
+          return getRankInfo(mmr, seasonNum, currentIs12P).color;
         },
 
-        // ★ 線自体の色をその区間のレートに応じたランク色に設定
+        // ★ 線自体の色をその区間のレートに応じたランク色に設定（currentIs12P を渡す）
         segment: {
           borderColor: ctx => {
             const idx = ctx.p0DataIndex;
             const avgMmr = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
             const seasonNum = seasons[idx] ?? 1;
-            return getRankInfo(avgMmr, seasonNum).color;
+            return getRankInfo(avgMmr, seasonNum, currentIs12P).color;
           }
         }
       }]
@@ -8480,7 +8410,8 @@ function drawLoungeMMRChart(stats) {
               const idx = ctx.dataIndex;
               const mmr = ctx.raw;
               const seasonNum = seasons[idx];
-              const rankInfo = getRankInfo(mmr, seasonNum);
+              // ★ ツールチップ表示時も currentIs12P を渡す
+              const rankInfo = getRankInfo(mmr, seasonNum, currentIs12P);
               const rankText = isEn ? `Rank: ${rankInfo.rank}` : `ランク: ${rankInfo.rank}`;
               const mmrText = isEn ? `MMR: ${mmr}` : `MMR: ${mmr}`;
               return `${mmrText} (${rankText})`;
@@ -8496,6 +8427,15 @@ function drawLoungeMMRChart(stats) {
   });
 }
 
+
+
+ // 現在の12Pモードかどうかを安全に判定するヘルパー
+function getCurrentIs12P() {
+  const modeSelect = document.getElementById("loungeModeSelect");
+  if (!modeSelect) return false;
+  const val = modeSelect.value || "";
+  return val.includes("12") || val.toLowerCase().includes("12p");
+} 
   
 /******************************************************
  * ランク情報（多言語対応版）
@@ -8586,43 +8526,38 @@ function getRankInfoV2(mmr) {
 // -----------------------------------------
 // 統合されたランク判定関数
 // -----------------------------------------
-function getRankInfo(mmr, season) {
+function getRankInfo(mmr, season, forcedMode = null) {
   const s = Number(season) || 0;
 
-  // UIの loungeModeSelect から 12P かどうかを判定
-  const modeSelect = document.getElementById("loungeModeSelect");
-  const is12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
+  // 引数でモードが渡されていれば優先、なければDOMから取得
+  let is12P = false;
+  if (forcedMode !== null) {
+    is12P = (String(forcedMode).includes("12") || String(forcedMode).toLowerCase().includes("12p"));
+  } else {
+    is12P = getCurrentIs12P();
+  }
 
-  // -----------------------------------------
-  // Season 1以下は 12P/24P 分離前の共通 V1
-  // -----------------------------------------
+  // Season 1以下は共通 V1
   if (s <= 1) {
     return getRankInfoV1(mmr);
   }
 
-  // -----------------------------------------
-  // 12P と 24P でバージョン切り替わりシーズンがズレる場合に対応
-  // -----------------------------------------
+  // 12P / 24P のバージョン判定
   if (is12P) {
-    // --- 【12P モード側のバージョン判定】 ---
     if (s === 2) {
       return getRankInfo12PV2(mmr);
-    } else if (s === 3) {
-      return getRankInfo12PV3(mmr);
     } else {
-      // Season 4以降（必要に応じて V4 や V5 の分岐を追加可能）
       return getRankInfo12PV3(mmr);
     }
   } else {
-    // --- 【24P モード側のバージョン判定】 ---
     if (s <= 2) {
       return getRankInfo24PV2(mmr);
     } else {
-      // Season 3以降
       return getRankInfo24PV3 ? getRankInfo24PV3(mmr) : getRankInfo24PV2(mmr);
     }
   }
 }
+  
   
 function buildMKCUrl(playerId, season) {
   if (season == 1) {
