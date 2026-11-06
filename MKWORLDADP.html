@@ -8577,10 +8577,6 @@ function buildMKCUrl(playerId, season) {
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
   
-// ==========================================
-// 1. ラウンジデータ読み込み（ONLOAD）
-// ==========================================
-
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
@@ -8589,7 +8585,7 @@ async function onLoadLoungeStats() {
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
-  console.log("=== Lounge Debug ===");
+  console.log("=== Lounge Debug ===" );
   console.log("playerId:", playerId);
   console.log("selectedSeason:", selectedSeason);
 
@@ -8600,6 +8596,7 @@ async function onLoadLoungeStats() {
     const htmlList = [];
     let lastParsedSignature = null;
     let lastValidSeasonData = null;
+    let defaultPageSignature = null; // ★ 24Pのデフォルトページ（フォールバック）を検知するための変数
 
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
@@ -8612,27 +8609,21 @@ async function onLoadLoungeStats() {
           
           const tempParsed = parseWorldHTML_Season2(html, s);
 
-          // ==========================================
-          // ▼ 【追加の安全ガード】フォールバック・存在しないシーズンの混入検知
-          // ==========================================
-          // もし返ってきたパース結果に season プロパティがあり、今要求したシーズン `s` と異なる場合は
-          // 存在しないシーズンへのアクセスによるリダイレクト（フォールバック）とみなして即座に終了する
-          if (tempParsed.season !== undefined && tempParsed.season !== null) {
-            if (Number(tempParsed.season) !== s) {
-              console.log(`-> 要求した Season ${s} ですが、返ってきたデータが Season ${tempParsed.season} のため、フォールバックと判定してALL取得を終了します。`);
-              break;
-            }
-          }
-          // ==========================================
-
           // 基本的なシグネチャを作成
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // ① 【最優先】リダイレクト検知（直前とシグネチャが完全に一致）
+          // ==========================================
+          // ▼ 【決定版ガード】24Pデフォルトページ（フォールバック）の混入検知
+          // ==========================================
+          // 存在しないシーズンを叩いたとき、MKC側が常に「最新（24P）のデフォルトページ」を返す仕様のため、
+          // もしループの途中で「直前と同じデータ」または「最初の有効データ以降に全く同じ内容が連続して返ってきた場合」は
+          // それがフォールバック先のデフォルトページであるとみなして即座に終了する。
+          
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は直前と同じデータ（リダイレクト/使い回し）と判定されたため、ALL取得を終了します。`);
+            console.log(`-> Season ${s} は直前と同じデータ（24Pデフォルトページへのリダイレクト）と判定されたため、ALL取得を終了します。`);
             break;
           }
+          // ==========================================
 
           // ② 同一履歴チェック（直前と履歴配列の中身が1件残らず完全に一致）
           if (lastValidSeasonData && lastValidSeasonData.history && tempParsed.history) {
@@ -8652,8 +8643,6 @@ async function onLoadLoungeStats() {
             console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
             continue;
           }
-
-          // ==========================================
 
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s, parsed: tempParsed });
@@ -8727,6 +8716,7 @@ async function onLoadLoungeStats() {
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
+  
 
 function convertStatsForImage(stats) {
   const history = stats.mmrHistory || [];
