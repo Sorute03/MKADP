@@ -1224,24 +1224,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 
-<!-- ▼ Overlay multi-user 設定 -->
-<!-- ▼ Overlay multi-user 設定 -->
-<div style="margin-top:20px; padding:10px; border:1px solid #666;">
-  <h3 data-i18n="overlay_user_title">Overlay ユーザー登録</h3>
 
-  <div style="margin-bottom:10px;">
-    <input id="overlayUserInput" data-i18n-placeholder="placeholder_username" placeholder="ユーザー名を入力" style="width:200px;">
-    <button onclick="registerOverlayUser()" data-i18n="btn_register">登録</button>
-  </div>
-
-  <div style="margin-bottom:10px;">
-    <label data-i18n="overlay_target_label">送信先ユーザー：</label>
-    <select id="overlayUserSelect"></select>
-  </div>
-
-  <!-- ▼ JSON 埋め込み領域 -->
-  <div id="overlayJsonContainer"></div>
-</div>
 
 <!-- ▼ レース一覧タブ（重複を1つに統合） -->
 <div id="historyTab" class="tabContent" style="display:none;">
@@ -4409,7 +4392,7 @@ function activateCourseStatsTab() {
   chartCanvas.height = 300;
 
   // 表示ボタンの onclick をここで登録
-  document.getElementById("showAdpCourseStatsBtn").onclick = runCourseStats;
+
 
   // もし前回の結果があれば再描画
   if (window.latestAdpCourseStats) {
@@ -8554,20 +8537,32 @@ function getRankInfo(mmr, season) {
 
 
 function buildMKCUrl(playerId, season) {
-
-  // ★ Season1 は p を付けない
+  // ★ Season1 は p を付けない仕様を維持
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
   }
 
-  // ★ Season2 以降は p を自動決定（MKADP は 24 が標準）
-  const p = 24;
+  // ★ UIのモード選択要素（例: id="loungeGameModeSelect" や selector）から 12 か 24 を動的に判定
+  // （もし要素IDが異なる場合は、お使いのHTMLのセレクトボックスのidに合わせて調整してください）
+  let p = 24; // デフォルト
+  const modeSelect = document.getElementById("loungeModeSelect") || document.getElementById("filter-game") || document.getElementById("gameModeSelect");
+  
+  if (modeSelect) {
+    const val = modeSelect.value;
+    // 「12P」や「12」が含まれていれば p=12 に設定
+    if (val.includes("12")) {
+      p = 12;
+    }
+  }
 
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
 
 // ==========================================
 // 1. ラウンジデータ読み込み（ONLOAD）
+// ==========================================
+// ==========================================
+// 1. ラウンジデータ読み込み（シーズン最低値4対応・堅牢版）
 // ==========================================
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
@@ -8598,28 +8593,36 @@ async function onLoadLoungeStats() {
         // 有効なページか確認
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
-          // 一度仮パースして内容を検証
           const tempParsed = parseWorldHTML_Season2(html, s);
           
-          // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
-          if (!tempParsed.history || tempParsed.history.length === 0) {
-            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
-            continue;
+          // ★ 追加の安全ガード: 取得したデータ内のシーズン情報が、現在ループしているシーズン（s）より先のもの（リダイレクトによる最新データの混入）であれば即終了
+          if (tempParsed.season && Number(tempParsed.season) > s) {
+            console.log(`-> 取得したデータが未来のシーズン (${tempParsed.season}) を指しているため、ALL取得を終了します。`);
+            break;
           }
 
-          // データ内容のシグネチャを作成（通算勝敗数・履歴数・最終MMRなど）
-          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+          // データ内容のシグネチャを作成
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
+          // 直前のシーズンと全く同じ内容（リダイレクト）判定
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
             console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
             break;
+          }
+
+          // 試合データが1件もない（休止中など）場合はスキップ
+          if (!tempParsed.history || tempParsed.history.length === 0) {
+            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            continue;
           }
 
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
           lastParsedSignature = currentSignature;
           console.log(`-> Season ${s} のデータを追加しました。`);
+        } else {
+          console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
+          break;
         }
       } catch (e) {
         console.warn(`Season ${s} の取得エラー。スキップします。`, e);
@@ -9286,68 +9289,179 @@ async function getAdpOpfsDirectory() {
   return await root.getDirectoryHandle(ADP_OPFS_DIR, { create: true });
 }
 
+
+
+
+// ==========================================
+// 1. 簡易的な IndexedDB ストレージ（ローカル用フォールバック）
+// ==========================================
+// IndexedDB 接続オープン用ヘルパー
+// ==========================================
+// 1. 環境判定 & IndexedDB フォールバック機構
+// ==========================================
+function isLocalEnvironment() {
+  return window.location.protocol === "file:";
+}
+
+// ローカル用の IndexedDB データベースを開く
+function openAdpIdbFallback() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("MK_ADP_Local_Fallback_DB", 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("backgrounds")) {
+        db.createObjectStore("backgrounds", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function getSavedBackgroundsIDB() {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve) => {
+    const tx = db.transaction("backgrounds", "readonly");
+    const req = tx.objectStore("backgrounds").getAll();
+    req.onsuccess = () => {
+      const list = (req.result || []).map(r => ({
+        id: r.id,
+        dataUrl: URL.createObjectURL(r.file),
+        settings: r.settings || { brightness: 1, contrast: 1, opacity: 1, blur: 0 },
+        size: r.file.size
+      }));
+      resolve(list);
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+async function saveBackgroundToIDB(file, settings) {
+  const db = await openAdpIdbFallback();
+  const idName = `adp_bg_${Date.now()}`;
+  
+  // ファイルシステムのロックを回避するために一度ArrayBufferに変換
+  const arrayBuffer = await file.arrayBuffer();
+  const cleanBlob = new Blob([arrayBuffer], { type: file.type });
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").put({
+      id: idName,
+      file: cleanBlob,
+      settings: settings
+    });
+    req.onsuccess = () => resolve(idName);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function deleteBackgroundFromIDB(idName) {
+  const db = await openAdpIdbFallback();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("backgrounds", "readwrite");
+    const req = tx.objectStore("backgrounds").delete(idName);
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+
+// ==========================================
+// 2. 自動切り替え対応の統合関数（関数名はそのまま維持）
+// ==========================================
+
 async function getSavedAdpBackgroundsOPFS() {
+  // ローカル環境（file://）の場合は自動で IndexedDB を使う
+  if (isLocalEnvironment()) {
+    return await getSavedBackgroundsIDB();
+  }
+
+  // 本番環境等の場合は本来の OPFS を使用
   try {
     const dirHandle = await getAdpOpfsDirectory();
     const list = [];
+    const dirNames = [];
     
-    for await (const [idName, handle] of dirHandle.entries()) {
-      if (handle.kind === "directory") {
-        const bgDir = handle;
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind === "directory") dirNames.push(name);
+    }
+
+    for (const idName of dirNames) {
+      try {
+        const bgDir = await dirHandle.getDirectoryHandle(idName);
+        const imgFile = await (await bgDir.getFileHandle("image.jpg")).getFile();
+        const dataUrl = URL.createObjectURL(imgFile);
+
+        let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
         try {
-          const imgFileHandle = await bgDir.getFileHandle("image.jpg");
-          const imgFile = await imgFileHandle.getFile();
-          const dataUrl = URL.createObjectURL(imgFile);
+          const metaFile = await (await bgDir.getFileHandle("meta.json")).getFile();
+          settings = JSON.parse(await metaFile.text());
+        } catch (e) {}
 
-          let settings = { brightness: 1, contrast: 1, opacity: 1, blur: 0 };
-          try {
-            const metaFileHandle = await bgDir.getFileHandle("meta.json");
-            const metaFile = await metaFileHandle.getFile();
-            settings = JSON.parse(await metaFile.text());
-          } catch (e) {}
-
-          list.push({ id: idName, dataUrl, settings, size: imgFile.size });
-        } catch (err) {
-          console.warn(`[OPFS/ADP] 読み込み失敗: ${idName}`, err);
-        }
-      }
+        list.push({ id: idName, dataUrl, settings, size: imgFile.size });
+      } catch (err) {}
     }
     return list;
   } catch (err) {
-    console.error("[OPFS/ADP] 一覧取得失敗:", err);
-    return [];
+    console.warn("[OPFS] 利用不可のため IDB にフォールバックします:", err);
+    return await getSavedBackgroundsIDB();
   }
 }
 
 async function saveAdpBackgroundToOPFS(file, settings) {
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   const currentList = await getSavedAdpBackgroundsOPFS();
   if (currentList.length >= 5) {
     throw new Error("コース背景の保存上限（最大5枚）に達しています。不要な画像を削除してください。");
   }
 
-  const dirHandle = await getAdpOpfsDirectory();
-  const idName = `adp_bg_${Date.now()}`;
-  const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
+  // ローカル環境（file://）の場合は自動で IndexedDB に保存
+  if (isLocalEnvironment()) {
+    return await saveBackgroundToIDB(file, settings);
+  }
 
-  const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
-  const imgW = await imgHandle.createWritable();
-  await imgW.write(file);
-  await imgW.close();
+  // 本番環境等の場合は OPFS に保存
+  try {
+    const dirHandle = await getAdpOpfsDirectory();
+    const idName = `adp_bg_${Date.now()}`;
+    const bgDir = await dirHandle.getDirectoryHandle(idName, { create: true });
 
-  const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
-  const metaW = await metaHandle.createWritable();
-  await metaW.write(JSON.stringify(settings));
-  await metaW.close();
+    const imgHandle = await bgDir.getFileHandle("image.jpg", { create: true });
+    const imgW = await imgHandle.createWritable();
+    await imgW.write(file);
+    await imgW.close();
+
+    const metaHandle = await bgDir.getFileHandle("meta.json", { create: true });
+    const metaW = await metaHandle.createWritable();
+    await metaW.write(JSON.stringify(settings));
+    await metaW.close();
+    
+    return idName;
+  } catch (err) {
+    console.warn("[OPFS] 保存失敗のため IDB にフォールバックします:", err);
+    return await saveBackgroundToIDB(file, settings);
+  }
 }
 
 async function deleteAdpBackgroundFromOPFS(idName) {
+  if (isLocalEnvironment()) {
+    await deleteBackgroundFromIDB(idName);
+    return;
+  }
+
   try {
     const dirHandle = await getAdpOpfsDirectory();
     await dirHandle.removeEntry(idName, { recursive: true });
   } catch (err) {
     console.error("[OPFS/ADP] 削除失敗:", err);
+    await deleteBackgroundFromIDB(idName); // 念のためIDB側も試す
   }
 }
+
+
+
 
 async function renderSavedAdpBackgrounds() {
   const container = document.getElementById("savedAdpBgListContainer");
@@ -9516,30 +9630,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 /* ============================================================
    ▼ 背景描画
    ============================================================ */
+/* ============================================================
+    ▼ コース統計用 背景描画関数
+   ============================================================ */
 async function drawBackground(ctx, w, h) {
-  if (!state.backgroundImage) {
+  // ★ state.adpCourseBackgroundImage を見るように修正
+  if (!state.adpCourseBackgroundImage) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
     return;
   }
 
   const bg = new Image();
-  bg.src = state.backgroundImage;
+  bg.src = state.adpCourseBackgroundImage; // ★ 修正
   await bg.decode();
 
+  // ★ state.adpCourseBg... を見るように修正
   ctx.filter = `
-    brightness(${state.bgBrightness})
-    contrast(${state.bgContrast})
-    blur(${state.bgBlur}px)
+    brightness(${state.adpCourseBgBrightness ?? 1})
+    contrast(${state.adpCourseBgContrast ?? 1})
+    blur(${state.adpCourseBgBlur ?? 0}px)
   `;
 
-  ctx.globalAlpha = state.bgOpacity;
+  ctx.globalAlpha = state.adpCourseBgOpacity ?? 1;
 
   ctx.drawImage(bg, 0, 0, w, h);
 
   ctx.filter = "none";
   ctx.globalAlpha = 1;
 }
+
 
 /* ============================================================
    ▼ 最終画像生成（背景 → プレイヤー情報 → MMR グラフ）
@@ -9613,8 +9733,6 @@ function initAdpCourseSelects() {
 
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-
-  // 5つのセレクトから選択されたコースを取得
   const ids = [
     "adpCourseSelect1",
     "adpCourseSelect2",
@@ -9624,33 +9742,61 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   ];
 
   const selectedCourses = ids
-    .map(id => document.getElementById(id).value)
+    .map(id => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    })
     .filter(v => v && v !== "");
 
   if (selectedCourses.length === 0) {
-    return alert("コースを選択してください");
+    return alert("少なくとも1つコースを選択してください");
+  }
+
+  if (typeof loadADPIndexedDBRecords !== "function") {
+    return alert("loadADPIndexedDBRecords 関数が定義されていません");
   }
 
   const records = await loadADPIndexedDBRecords();
+  if (!records || records.length === 0) {
+    return alert("IndexedDB にレコードが存在しません");
+  }
+
+  const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+  const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+  const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+  const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+  const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
 
   const filtered = applyAndOrFilter(records, {
-    season: adpSeasonSelect.value,
-    tier: adpTierSelect.value,
-    recent: adpRecentSelect.value,
+    season: seasonVal,
+    tier: tierVal,
+    recent: recentVal,
     courses: selectedCourses,
-    mode: adpModeSelect.value
-  }, adpFilterModeSelect.value);
+    mode: modeVal
+  }, filterModeVal);
+
+  if (!filtered || filtered.length === 0) {
+    return alert("条件に一致するレコードがありませんでした");
+  }
 
   const stats = aggregateCourseStats(filtered);
 
+  // 1. テーブル・チャートの描画
   drawAdpCourseStatsTable(stats);
   drawAdpCourseStatsChart(stats);
 
+  // 2. キャンバス画像の描画（★ここを追加することで、画像送信ボタンを押したときに最新画像が必ず用意される）
+  if (typeof drawAdpCourseImage === "function") {
+    let bgUrl = null;
+    if (typeof getSelectedAdpBackgroundUrl === "function") {
+      bgUrl = getSelectedAdpBackgroundUrl();
+    }
+    await drawAdpCourseImage(stats, bgUrl);
+  }
+
   window.latestAdpCourseStats = stats;
-
-  await drawAdpCourseImage(stats, state.backgroundImage);
+  console.log("コース別statsの表示および画像生成が完了しました:", stats);
 };
-
 
 
 
@@ -9705,10 +9851,9 @@ function generateAdpCourseStatsText(stats) {
 
   
 
-  
 function drawAdpCourseStatsTable(stats) {
   let html = `
-    <table border="1" cellpadding="4">
+    <table border="1" cellpadding="4" style="border-collapse: collapse; color: #fff; width: 100%;">
       <tr>
         <th>コース</th>
         <th>レース数</th>
@@ -9737,21 +9882,22 @@ function drawAdpCourseStatsTable(stats) {
   });
 
   html += `</table>`;
-  document.getElementById("adpCourseStatsResult").innerHTML = html;
+  const resultEl = document.getElementById("adpCourseStatsResult");
+  if (resultEl) resultEl.innerHTML = html;
 }
 
 
 let chartAdpCourseStats = null;
 
 function drawAdpCourseStatsChart(stats) {
-  const ctx = document.getElementById("adpCourseStatsChart").getContext("2d");
+  const canvas = document.getElementById("adpCourseStatsChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
 
-  // ★ 既存チャートを安全に破棄
   if (chartAdpCourseStats && typeof chartAdpCourseStats.destroy === "function") {
     chartAdpCourseStats.destroy();
   }
 
-  // ★ 新しいチャートを作成
   chartAdpCourseStats = new Chart(ctx, {
     type: "bar",
     data: {
@@ -9788,27 +9934,10 @@ function drawAdpCourseStatsChart(stats) {
 }
 
 
-function filterAdpRecords(records, filters) {
-  return records.filter(r => {
-
-    // season
-    if (filters.season && r.season !== filters.season) return false;
-
-    // tier
-    if (filters.tier && r.tier !== filters.tier) return false;
-
-    // course（複数）
-    if (filters.courses && filters.courses.length > 0) {
-      if (!filters.courses.includes(r.course)) return false;
-    }
-
-    return true;
-  });
-}
-
 function applyRecentFilter(records, N) {
-  if (!N || N <= 0) return records;
-  return records.slice(-N);
+  if (!N || N === "ALL" || N <= 0) return records;
+  const num = Number(N);
+  return records.slice(-num);
 }
 
 
@@ -9825,30 +9954,24 @@ function aggregateCourseStats(records) {
   for (const course in grouped) {
     const rs = grouped[course];
     const count = rs.length;
+    if (count === 0) continue;
 
     const ranks = rs.map(r => r.rank).sort((a, b) => a - b);
-    const scores = rs.map(r => r.score);
+    const scores = rs.map(r => r.score || 0);
 
-    // ★中央値
     const mid = Math.floor(ranks.length / 2);
     const medianRank =
       ranks.length % 2 === 0
         ? (ranks[mid - 1] + ranks[mid]) / 2
         : ranks[mid];
 
-    // ★標準偏差
     const avgRank = ranks.reduce((a, b) => a + b, 0) / count;
     const rankStdDev = Math.sqrt(
       ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / count
     );
 
-    // ★トップ3率
     const top3Rate = rs.filter(r => r.rank <= 3).length / count;
-
-    // ★平均ポイント
     const avgPoints = scores.reduce((a, b) => a + b, 0) / count;
-
-    // 既存項目（必要なら追加）
     const winRate = rs.filter(r => r.rank === 1).length / count;
 
     stats.push({
@@ -9866,77 +9989,77 @@ function aggregateCourseStats(records) {
   return stats;
 }
 
+
 function applyAndOrFilter(records, filters, mode) {
+  // 直近N件フィルターを先に適用
+  let targetRecords = applyRecentFilter(records, filters.recent);
 
-  // AND モード
   if (mode === "AND") {
-    return records.filter(r => {
-
+    return targetRecords.filter(r => {
       if (filters.season && filters.season !== "ALL" && r.season !== filters.season) return false;
       if (filters.tier && filters.tier !== "ALL" && r.tier !== filters.tier) return false;
-
       if (filters.courses && filters.courses.length > 0 && !filters.courses.includes(r.course)) return false;
-
       if (filters.mode && filters.mode !== "ALL" && r.mode !== filters.mode) return false;
-
-      if (filters.recent && filters.recent !== "ALL") {
-        // recent は apply 前に records を切る方が正しいが簡易対応
-      }
-
       return true;
     });
   }
 
   // OR モード
   if (mode === "OR") {
-    return records.filter(r => {
-      return (
-        (filters.season && filters.season !== "ALL" && r.season === filters.season) ||
-        (filters.tier && filters.tier !== "ALL" && r.tier === filters.tier) ||
-        (filters.courses && filters.courses.includes(r.course)) ||
-        (filters.mode && filters.mode !== "ALL" && r.mode === filters.mode)
-      );
+    return targetRecords.filter(r => {
+      const matchCourse = filters.courses && filters.courses.length > 0 ? filters.courses.includes(r.course) : true;
+      const matchSeason = filters.season && filters.season !== "ALL" ? r.season === filters.season : false;
+      const matchTier = filters.tier && filters.tier !== "ALL" ? r.tier === filters.tier : false;
+      const matchMode = filters.mode && filters.mode !== "ALL" ? r.mode === filters.mode : false;
+
+      // コース指定が一致していることが大前提で、他の条件のいずれかに引っかかるか
+      return matchCourse && (matchSeason || matchTier || matchMode || (!filters.season && !filters.tier && !filters.mode));
     });
   }
 
-  return records;
+  return targetRecords;
 }
 
 
+// ▼ コースセレクトボックスに候補を埋め込む関数（5つすべてに適用）
+// ▼ 5つのセレクトボックスすべてに courseList の内容を自動で埋め込む関数
+function initAdpCourseSelects() {
+  const ids = [
+    "adpCourseSelect1",
+    "adpCourseSelect2",
+    "adpCourseSelect3",
+    "adpCourseSelect4",
+    "adpCourseSelect5"
+  ];
 
-async function getFilteredAdpCourseStats(filters) {
-  let records = await loadADPIndexedDBRecords();
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
 
-  // AND / OR フィルター
-  records = applyAndOrFilter(records, filters, filters.mode);
+    // 既にオプションが生成されている場合は二重追加を防ぐためクリア
+    sel.innerHTML = '<option value="">-- コース選択 --</option>';
 
-  // 直近 N 件
-  records = applyRecentFilter(records, filters.recent);
-
-  // 集計
-  const stats = aggregateCourseStats(records);
-
-  // 最大 5 コースに制限
-  return stats.slice(0, 5);
-}
-
-function initAdpCourseSelect() {
-  const sel = document.getElementById("adpCourseSelect");
-
-  courseList.forEach(course => {
-    const opt = document.createElement("option");
-    opt.value = course;
-    opt.textContent = course;
-    sel.appendChild(opt);
+    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
+      courseList.forEach(courseName => {
+        const opt = document.createElement("option");
+        opt.value = courseName;
+        opt.textContent = courseName;
+        sel.appendChild(opt);
+      });
+    } else {
+      console.warn("courseList が定義されていないか、配列ではありません。");
+    }
   });
+
+  console.log("ADPコースセレクトボックスの初期化が完了しました。");
 }
 
 
 function getSelectedWebhookUrl() {
-  if (activeWebhookIndex === -1) return null;
+  if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) return null;
+  if (typeof webhookList === 'undefined' || !webhookList[activeWebhookIndex]) return null;
   return webhookList[activeWebhookIndex].url;
 }
-
 
 
 function buildAdpCourseStatsMessage(stats) {
@@ -9947,105 +10070,159 @@ function buildAdpCourseStatsMessage(stats) {
     lines.push(
       `\n【${s.course}】\n` +
       `走行数: ${s.count}\n` +
-      `平均順位: ${s.avgRank}\n` +
-      `中央値: ${s.medianRank}\n` +
-      `勝率(3位以内): ${s.winRate}%\n` +
-      `平均得点: ${s.avgScore}\n`
+      `平均順位: ${s.avgRank.toFixed(2)}\n` +
+      `中央値: ${s.medianRank.toFixed(2)}\n` +
+      `勝率(1位): ${(s.winRate * 100).toFixed(1)}%\n` +
+      `平均ポイント: ${s.avgPoints.toFixed(2)}\n`
     );
   });
 
   return lines.join("\n");
 }
 
-async function sendAdpCourseStatsToDiscord(stats) {
-  const webhook = getSelectedWebhookUrl();
-  if (!webhook) {
-    alert("Webhook が選択されていません");
-    return;
-  }
 
-  const message = buildAdpCourseStatsMessage(stats);
-
-  const payload = {
-    content: message
-  };
-
-  await fetch(webhook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  alert("Discord に送信しました！");
-}
-
+// ==========================================
+// ボタンイベントの紐付け
+// ==========================================
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
+  try {
+    console.log("「表示」ボタンが押されました");
 
-  const selectedCourses = ids
-    .map(id => document.getElementById(id).value)
-    .filter(v => v && v !== "");
+    const ids = [
+      "adpCourseSelect1",
+      "adpCourseSelect2",
+      "adpCourseSelect3",
+      "adpCourseSelect4",
+      "adpCourseSelect5"
+    ];
 
-  if (selectedCourses.length === 0) {
-    return alert("コースを選択してください");
+    // 選択されたコースを収集
+    const selectedCourses = ids
+      .map(id => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+      })
+      .filter(v => v && v !== "");
+
+    console.log("選択されたコース:", selectedCourses);
+
+    if (selectedCourses.length === 0) {
+      return alert("コースを少なくとも1つ選択してください");
+    }
+
+    // レコードの読み込み
+    if (typeof loadADPIndexedDBRecords !== "function") {
+      console.error("loadADPIndexedDBRecords 関数が定義されていません");
+      return alert("データ読み込み関数が見つかりません");
+    }
+
+    const records = await loadADPIndexedDBRecords();
+    console.log("IndexedDBから取得したレコード数:", records ? records.length : 0);
+
+    if (!records || records.length === 0) {
+      return alert("IndexedDBにレースデータが存在しません");
+    }
+
+    // ★ document.getElementById を使って確実に各フィルターの値を取得する
+    const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+    const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+    const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+    const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+    const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
+
+    console.log("適用フィルター:", { seasonVal, tierVal, recentVal, modeVal, filterModeVal });
+
+    // フィルター適用
+    const filtered = applyAndOrFilter(records, {
+      season: seasonVal,
+      tier: tierVal,
+      recent: recentVal,
+      courses: selectedCourses,
+      mode: modeVal
+    }, filterModeVal);
+
+    console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
+
+    if (!filtered || filtered.length === 0) {
+      return alert("条件に一致するレースデータがありませんでした");
+    }
+
+    // 統計集計
+    const stats = aggregateCourseStats(filtered);
+    console.log("集計されたstats:", stats);
+
+    // テーブルとグラフの描画
+    if (typeof drawAdpCourseStatsTable === "function") {
+      drawAdpCourseStatsTable(stats);
+    } else {
+      console.warn("drawAdpCourseStatsTable 関数がありません");
+    }
+
+    if (typeof drawAdpCourseStatsChart === "function") {
+      drawAdpCourseStatsChart(stats);
+    } else {
+      console.warn("drawAdpCourseStatsChart 関数がありません");
+    }
+
+    // グローバルに保存（Discord送信用）
+    window.latestAdpCourseStats = stats;
+    console.log("コース統計の表示が正常に完了しました！");
+
+  } catch (err) {
+    console.error("「表示」ボタン処理中にエラーが発生しました:", err);
+    alert("処理中にエラーが発生しました。F12のコンソールをご確認ください。");
   }
-
-  const records = await loadADPIndexedDBRecords();
-
-  const filtered = applyAndOrFilter(records, {
-    season: adpSeasonSelect.value,
-    tier: adpTierSelect.value,
-    recent: adpRecentSelect.value,
-    courses: selectedCourses,
-    mode: adpModeSelect.value
-  }, adpFilterModeSelect.value);
-
-  const stats = aggregateCourseStats(filtered);
-
-  drawAdpCourseStatsTable(stats);
-  drawAdpCourseStatsChart(stats);
-
-  window.latestAdpCourseStats = stats;
 };
-
-
+  
 document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
-  if (activeWebhookIndex === -1) {
+  if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
     return alert("Webhook が選択されていません");
   }
 
-  const { url } = webhookList[activeWebhookIndex];
-  const text = generateAdpCourseStatsText(window.latestAdpCourseStats);
+  if (!window.latestAdpCourseStats || window.latestAdpCourseStats.length === 0) {
+    return alert("先に「表示」ボタンを押して統計データを生成してください");
+  }
 
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: text })
-  });
+  const webhook = getSelectedWebhookUrl();
+  if (!webhook) {
+    return alert("有効なWebhook URLが見つかりません");
+  }
 
-  alert("送信しました");
+  const text = buildAdpCourseStatsMessage(window.latestAdpCourseStats);
+
+  try {
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text })
+    });
+
+    if (res.ok || res.status === 204) {
+      alert("Discordにテキストを送信しました！");
+    } else {
+      alert("送信に失敗しました (ステータス: " + res.status + ")");
+    }
+  } catch (err) {
+    console.error("Webhook送信エラー:", err);
+    alert("送信中にエラーが発生しました");
+  }
 };
-
 
 
 async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ★ 背景URLが null / undefined / 数値でも絶対に落ちないようにする
-  if (!backgroundUrl || typeof backgroundUrl !== "string") {
-    backgroundUrl = null;
+  // ★ 1. backgroundUrl が渡っていない場合、state から直接拾うようにする
+  if (!backgroundUrl && state.adpCourseBackgroundImage) {
+    backgroundUrl = state.adpCourseBackgroundImage;
   }
 
+  // ★ 2. data:imageだけでなく blob: URL も許可するように修正する
   const isValidBg =
     backgroundUrl &&
-    backgroundUrl.startsWith("data:image");
+    typeof backgroundUrl === "string" &&
+    (backgroundUrl.startsWith("data:image") || backgroundUrl.startsWith("blob:"));
 
   if (isValidBg) {
     const bg = new Image();
@@ -10057,12 +10234,13 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
       await bg.decode();
       console.log("背景 decode 成功");
   
+      // ★ 3. 変数名を state.adpCourseBg... に合わせる
       ctx.filter =
-        `brightness(${Number(state.bgBrightness)}) ` +
-        `contrast(${Number(state.bgContrast)}) ` +
-        `blur(${Number(state.bgBlur)}px)`;
+        `brightness(${Number(state.adpCourseBgBrightness ?? 1)}) ` +
+        `contrast(${Number(state.adpCourseBgContrast ?? 1)}) ` +
+        `blur(${Number(state.adpCourseBgBlur ?? 0)}px)`;
   
-      ctx.globalAlpha = Number(state.bgOpacity);
+      ctx.globalAlpha = Number(state.adpCourseBgOpacity ?? 1);
   
       console.log("背景 drawImage 実行");
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
@@ -10081,6 +10259,8 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  // (以下、テキスト描画部分はそのまま)
 
 
   // ★ ここからテキスト描画（既存コード）
@@ -10137,7 +10317,7 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
 
 
 async function sendAdpCourseImageToDiscord() {
-  // 1. 現在選択されているWebhook URLを取得（プロジェクトの仕様に合わせてフォールバック対応）
+  // 1. 現在選択されているWebhook URLを取得
   let webhook = "";
   if (typeof getSelectedWebhookUrl === "function") {
     webhook = getSelectedWebhookUrl();
@@ -10148,6 +10328,12 @@ async function sendAdpCourseImageToDiscord() {
   if (!webhook) {
     alert("Webhook が選択されていません");
     return;
+  }
+
+  // ★ 補強: 送信直前に、最新の統計データと背景でキャンバスを確実に再描画しておく
+  if (typeof window.latestAdpCourseStats !== "undefined" && window.latestAdpCourseStats && typeof drawAdpCourseImage === "function") {
+    const bgUrl = state.adpCourseBackgroundImage || null;
+    await drawAdpCourseImage(window.latestAdpCourseStats, bgUrl);
   }
 
   // 2. キャンバス要素の取得と存在チェック
@@ -11649,7 +11835,95 @@ document.addEventListener('DOMContentLoaded', () => {
   initFixedTimeSyncScheduler();
 });
 
+// スクリプト自体が読み込まれているか確認するログ
+console.log("--- コース統計スクリプトが読み込まれました ---");
 
+document.addEventListener("DOMContentLoaded", () => {
+  const showBtn = document.getElementById("showAdpCourseStatsBtn");
+  
+  if (!showBtn) {
+    console.error("【致命的エラー】 #showAdpCourseStatsBtn がHTML内に見つかりません！");
+    return;
+  }
+  
+  console.log("【成功】 #showAdpCourseStatsBtn のイベント紐付けを行います");
+
+  showBtn.onclick = async () => {
+    console.log("▶「表示」ボタンがクリックされました！");
+
+    try {
+      const ids = [
+        "adpCourseSelect1",
+        "adpCourseSelect2",
+        "adpCourseSelect3",
+        "adpCourseSelect4",
+        "adpCourseSelect5"
+      ];
+
+      const selectedCourses = ids
+        .map(id => {
+          const el = document.getElementById(id);
+          return el ? el.value : "";
+        })
+        .filter(v => v && v !== "");
+
+      console.log("選択されたコース:", selectedCourses);
+
+      if (selectedCourses.length === 0) {
+        return alert("コースを少なくとも1つ選択してください");
+      }
+
+      if (typeof loadADPIndexedDBRecords !== "function") {
+        return alert("loadADPIndexedDBRecords 関数が定義されていません");
+      }
+
+      const records = await loadADPIndexedDBRecords();
+      console.log("IndexedDBレコード数:", records ? records.length : 0);
+
+      if (!records || records.length === 0) {
+        return alert("IndexedDBにレースデータが存在しません");
+      }
+
+      const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+      const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+      const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+      const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+      const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
+
+      const filtered = applyAndOrFilter(records, {
+        season: seasonVal,
+        tier: tierVal,
+        recent: recentVal,
+        courses: selectedCourses,
+        mode: modeVal
+      }, filterModeVal);
+
+      console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
+
+      if (!filtered || filtered.length === 0) {
+        return alert("条件に一致するレコードがありませんでした");
+      }
+
+      const stats = aggregateCourseStats(filtered);
+      console.log("集計データ:", stats);
+
+      if (typeof drawAdpCourseStatsTable === "function") drawAdpCourseStatsTable(stats);
+      if (typeof drawAdpCourseStatsChart === "function") drawAdpCourseStatsChart(stats);
+
+      if (typeof drawAdpCourseImage === "function") {
+        let bgUrl = typeof getSelectedAdpBackgroundUrl === "function" ? getSelectedAdpBackgroundUrl() : null;
+        await drawAdpCourseImage(stats, bgUrl);
+      }
+
+      window.latestAdpCourseStats = stats;
+      console.log("すべての表示処理が完了しました！");
+
+    } catch (err) {
+      console.error("「表示」ボタン処理中のエラー:", err);
+      alert("処理中にエラーが発生しました（コンソールを確認してください）");
+    }
+  };
+});
 </script>
 
 
