@@ -8501,6 +8501,11 @@ function drawLoungeMMRChart(stats) {
 /******************************************************
  * ランク情報（多言語対応版）
  ******************************************************/
+// ==========================================
+// ランク情報（V1共通 ＆ V2モード別分岐 多言語対応版）
+// ==========================================
+
+// Season 1 用（12P / 24P 共通の V1 基準）
 function getRankInfoV1(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
@@ -8516,7 +8521,10 @@ function getRankInfoV1(mmr) {
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
-function getRankInfoV2(mmr) {
+// -----------------------------------------
+// V2 基準
+// -----------------------------------------
+function getRankInfo24PV2(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
@@ -8531,24 +8539,90 @@ function getRankInfoV2(mmr) {
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
+function getRankInfo12PV2(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 14500) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 13500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 12000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 10500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 9000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 7500)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+// -----------------------------------------
+// V3 基準（必要に応じて 24P用や今後の関数も追加可能）
+// -----------------------------------------
+function getRankInfo24PV3(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  // 必要であれば24P用のV3しきい値を記述（なければ V2 と同じにする等）
+  return getRankInfo24PV2(mmr); 
+}
+
+function getRankInfo12PV3(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 15000) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 14000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 12500) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 11000) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 9500)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+// 互換性維持のためのエイリアス
+function getRankInfoV2(mmr) {
+  return getRankInfo24PV2(mmr);
+}
+
+// -----------------------------------------
+// 統合されたランク判定関数（V3やシーズン/モード別のズレに対応）
+// -----------------------------------------
 function getRankInfo(mmr, season) {
-  return Number(season) >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+  const seasonNum = Number(season) || 1;
+
+  // ★ Season 1 (V1) は 12P/24P 分離前なので共通の V1 を返す
+  if (seasonNum === 1) {
+    return getRankInfoV1(mmr);
+  }
+
+  // UIの loungeModeSelect から 12P かどうかを判定
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const is12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
+
+  // ★ シーズン番号やモードに応じて V2 か V3 かを決定
+  // 例: シーズン〇以降を V3 としたい場合はここで条件分岐を追加できます
+  let isV3 = false;
+  if (seasonNum >= 6) { // 例としてシーズン6以降をV3とする場合
+    isV3 = true;
+  }
+
+  if (isV3) {
+    return is12P ? getRankInfo12PV3(mmr) : getRankInfo24PV3(mmr);
+  } else {
+    return is12P ? getRankInfo12PV2(mmr) : getRankInfo24PV2(mmr);
+  }
 }
 
 
 function buildMKCUrl(playerId, season) {
-  // Season 1 は p を付けない仕様を維持
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
   }
 
   let p = 24; // デフォルト
-
-  // ★ loungeModeSelect 要素から 12P かどうかを直接判定
   const modeSelect = document.getElementById("loungeModeSelect");
   if (modeSelect) {
     const val = modeSelect.value;
-    // 選択されている値に "12" が含まれている、または "12p" の場合は p=12 に設定
+    // 12P が選ばれている場合は確実に p=12 を設定
     if (val.includes("12") || val.toLowerCase().includes("12p")) {
       p = 12;
     }
@@ -8556,7 +8630,7 @@ function buildMKCUrl(playerId, season) {
 
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
-
+  
 // ==========================================
 // 1. ラウンジデータ読み込み（ONLOAD）
 // ==========================================
@@ -8581,7 +8655,6 @@ async function onLoadLoungeStats() {
     let lastParsedSignature = null;
     let lastValidSeasonData = null;
 
-    // ★ シーズンの最低値 4 からスタート
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
