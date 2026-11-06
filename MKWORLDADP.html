@@ -8607,11 +8607,10 @@ function getRankInfo(mmr, season) {
     // --- 【12P モード側のバージョン判定】 ---
     if (s === 2) {
       return getRankInfo12PV2(mmr);
-    } else {
-      // Season 3以降 (必要に応じて s === 3 なら V3、s >= 4 なら V4... のように拡張可能)
-    if (s === 3) {
+    } else if (s === 3) {
       return getRankInfo12PV3(mmr);
-    } else {  
+    } else {
+      // Season 4以降（必要に応じて V4 や V5 の分岐を追加可能）
       return getRankInfo12PV3(mmr);
     }
   } else {
@@ -8619,13 +8618,11 @@ function getRankInfo(mmr, season) {
     if (s <= 2) {
       return getRankInfo24PV2(mmr);
     } else {
-      // Season 3以降 (必要に応じて 24P側のV3関数等に切り替え可能)
+      // Season 3以降
       return getRankInfo24PV3 ? getRankInfo24PV3(mmr) : getRankInfo24PV2(mmr);
     }
   }
 }
-
-
   
 function buildMKCUrl(playerId, season) {
   if (season == 1) {
