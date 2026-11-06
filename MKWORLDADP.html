@@ -8537,20 +8537,19 @@ function getRankInfo(mmr, season) {
 
 
 function buildMKCUrl(playerId, season) {
-  // ★ Season1 は p を付けない仕様を維持
+  // Season 1 は p を付けない仕様を維持
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
   }
 
-  // ★ UIのモード選択要素（例: id="loungeGameModeSelect" や selector）から 12 か 24 を動的に判定
-  // （もし要素IDが異なる場合は、お使いのHTMLのセレクトボックスのidに合わせて調整してください）
   let p = 24; // デフォルト
-  const modeSelect = document.getElementById("loungeModeSelect") || document.getElementById("filter-game") || document.getElementById("gameModeSelect");
-  
+
+  // ★ loungeModeSelect 要素から 12P かどうかを直接判定
+  const modeSelect = document.getElementById("loungeModeSelect");
   if (modeSelect) {
     const val = modeSelect.value;
-    // 「12P」や「12」が含まれていれば p=12 に設定
-    if (val.includes("12")) {
+    // 選択されている値に "12" が含まれている、または "12p" の場合は p=12 に設定
+    if (val.includes("12") || val.toLowerCase().includes("12p")) {
       p = 12;
     }
   }
@@ -8577,13 +8576,13 @@ async function onLoadLoungeStats() {
   let stats;
 
   if (selectedSeason === "ALL") {
-    const maxSeasonCheck = 50; // 安全上限
+    const maxSeasonCheck = 50;
     const htmlList = [];
     let lastParsedSignature = null;
     let lastValidSeasonData = null;
 
     // ★ シーズンの最低値 4 からスタート
-    for (let s = 1; s <= maxSeasonCheck; s++) {
+    for (let s = 4; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
       console.log("Fetching Season", s, "URL:", url);
 
@@ -8594,37 +8593,48 @@ async function onLoadLoungeStats() {
           
           const tempParsed = parseWorldHTML_Season2(html, s);
 
-          // 試合データが1件もない場合はスキップ
+          // 基本的なシグネチャを作成
+          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
+
+          // ==========================================
+          // ▼ ご要望の判定順序ルール
+          // ==========================================
+
+          // ① 【最優先】リダイレクト検知（直前とシグネチャが完全に一致）
+          if (lastParsedSignature && lastParsedSignature === currentSignature) {
+            console.log(`-> Season ${s} は直前と同じデータ（リダイレクト/使い回し）と判定されたため、ALL取得を終了します。`);
+            break;
+          }
+
+          // ② 同一履歴チェック（直前と履歴配列の中身が1件残らず完全に一致）
+          if (lastValidSeasonData && lastValidSeasonData.history && tempParsed.history) {
+            if (lastValidSeasonData.history.length === tempParsed.history.length) {
+              const isSameHistory = lastValidSeasonData.history.every((val, idx) => {
+                return JSON.stringify(val) === JSON.stringify(tempParsed.history[idx]);
+              });
+              if (isSameHistory) {
+                console.log(`-> Season ${s} は前シーズンと完全に同一の履歴内容のため、ALL取得を終了します。`);
+                break;
+              }
+            }
+          }
+
+          // ③ 休止・データなしスキップ（試合履歴が0件の場合）
           if (!tempParsed.history || tempParsed.history.length === 0) {
             console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
             continue;
           }
 
-          const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history.length}`;
+          // ==========================================
 
-          // リダイレクト検知による終了
-          if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は直前と同じデータ（リダイレクト/使い回し）と判定されたため終了します。`);
-            break;
-          }
-
-          if (lastValidSeasonData && lastValidSeasonData.history.length === tempParsed.history.length) {
-            const isSameHistory = lastValidSeasonData.history.every((val, idx) => {
-              const curVal = tempParsed.history[idx];
-              return JSON.stringify(val) === JSON.stringify(curVal);
-            });
-            if (isSameHistory) {
-              console.log(`-> Season ${s} は前シーズンと完全に同一の履歴内容のため終了します。`);
-              break;
-            }
-          }
-
-          htmlList.push({ html, season: s });
+          // 正常な新しいシーズンデータとして保持
+          htmlList.push({ html, season: s, parsed: tempParsed });
           lastParsedSignature = currentSignature;
           lastValidSeasonData = tempParsed;
           console.log(`-> Season ${s} のデータを追加しました。`);
+
         } else {
-          console.log(`-> Season ${s} はページが見つからないため終了します。`);
+          console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
           break;
         }
       } catch (e) {
@@ -8642,21 +8652,27 @@ async function onLoadLoungeStats() {
     stats = parseWorldHTML(html, selectedSeason);
   }
 
-  // ★ 【安全ガード】もし stats.mmrHistory が空っぽの場合、各データの history を結合して強制生成する
+  // ★ MMR履歴空エラーのフォールバック救済
   if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
-    console.warn("⚠️ stats.mmrHistory が空のため、フォールバックで再構築します。");
-    let combinedHistory = [];
-    if (stats.seasons && Array.isArray(stats.seasons)) {
-      stats.seasons.forEach(seasonObj => {
-        if (seasonObj.history && Array.isArray(seasonObj.history)) {
-          combinedHistory = combinedHistory.concat(seasonObj.history);
-        }
-      });
+    if (stats.history && stats.history.length > 0) {
+      stats.mmrHistory = stats.history;
+    } else {
+      let combinedHistory = [];
+      if (stats.seasons && Array.isArray(stats.seasons)) {
+        stats.seasons.forEach(sObj => {
+          const h = sObj.history || sObj.parsed?.history || [];
+          combinedHistory = combinedHistory.concat(h);
+        });
+      }
+      stats.mmrHistory = combinedHistory;
     }
-    stats.mmrHistory = combinedHistory;
   }
 
-  console.log("stats:", stats);
+  console.log("Final stats:", stats);
+
+  if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
+    console.warn("⚠️ 有効なMMR履歴が見つかりませんでした。");
+  }
 
   // ▼ 表示用 stats
   drawLoungeStats({
