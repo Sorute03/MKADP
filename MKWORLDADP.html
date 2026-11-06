@@ -8497,7 +8497,6 @@ function drawLoungeMMRChart(stats) {
 }
 
   
-
 /******************************************************
  * ランク情報（多言語対応版）
  ******************************************************/
@@ -8555,11 +8554,11 @@ function getRankInfo12PV2(mmr) {
 }
 
 // -----------------------------------------
-// V3 基準（必要に応じて 24P用や今後の関数も追加可能）
+// V3 基準
 // -----------------------------------------
 function getRankInfo24PV3(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  // 必要であれば24P用のV3しきい値を記述（なければ V2 と同じにする等）
+  // 必要であれば24P用のV3しきい値を記述（なければV2等にフォールバック）
   return getRankInfo24PV2(mmr); 
 }
 
@@ -8571,6 +8570,7 @@ function getRankInfo12PV3(mmr) {
   if (mmr >= 12500) return { rank: "Diamond", color: "#99E6FF" };
   if (mmr >= 11000) return { rank: "Ruby", color: "#cc0033" };
   if (mmr >= 9500)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  for (let i=0; i<0; i++); // dummy
   if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
   if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
   if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
@@ -8584,35 +8584,49 @@ function getRankInfoV2(mmr) {
 }
 
 // -----------------------------------------
-// 統合されたランク判定関数（V3やシーズン/モード別のズレに対応）
+// 統合されたランク判定関数
 // -----------------------------------------
 function getRankInfo(mmr, season) {
-  const seasonNum = Number(season) || 1;
-
-  // ★ Season 1 (V1) は 12P/24P 分離前なので共通の V1 を返す
-  if (seasonNum === 1) {
-    return getRankInfoV1(mmr);
-  }
+  const s = Number(season) || 0;
 
   // UIの loungeModeSelect から 12P かどうかを判定
   const modeSelect = document.getElementById("loungeModeSelect");
   const is12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
 
-  // ★ シーズン番号やモードに応じて V2 か V3 かを決定
-  // 例: シーズン〇以降を V3 としたい場合はここで条件分岐を追加できます
-  let isV3 = false;
-  if (seasonNum >= 6) { // 例としてシーズン6以降をV3とする場合
-    isV3 = true;
+  // -----------------------------------------
+  // Season 1以下は 12P/24P 分離前の共通 V1
+  // -----------------------------------------
+  if (s <= 1) {
+    return getRankInfoV1(mmr);
   }
 
-  if (isV3) {
-    return is12P ? getRankInfo12PV3(mmr) : getRankInfo24PV3(mmr);
+  // -----------------------------------------
+  // 12P と 24P でバージョン切り替わりシーズンがズレる場合に対応
+  // -----------------------------------------
+  if (is12P) {
+    // --- 【12P モード側のバージョン判定】 ---
+    if (s === 2) {
+      return getRankInfo12PV2(mmr);
+    } else {
+      // Season 3以降 (必要に応じて s === 3 なら V3、s >= 4 なら V4... のように拡張可能)
+    if (s === 3) {
+      return getRankInfo12PV3(mmr);
+    } else {  
+      return getRankInfo12PV3(mmr);
+    }
   } else {
-    return is12P ? getRankInfo12PV2(mmr) : getRankInfo24PV2(mmr);
+    // --- 【24P モード側のバージョン判定】 ---
+    if (s <= 2) {
+      return getRankInfo24PV2(mmr);
+    } else {
+      // Season 3以降 (必要に応じて 24P側のV3関数等に切り替え可能)
+      return getRankInfo24PV3 ? getRankInfo24PV3(mmr) : getRankInfo24PV2(mmr);
+    }
   }
 }
 
 
+  
 function buildMKCUrl(playerId, season) {
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
@@ -9057,39 +9071,7 @@ if (sendLoungeDiscordBtn) {
 /******************************************************
  * ランク情報
  ******************************************************/
-function getRankInfoV1(mmr) {
-  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
-  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
-  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
-  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
-  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
-  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
-  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
-  return { rank: "Iron", color: "#7A6F5A" };
-}
 
-function getRankInfoV2(mmr) {
-  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
-  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
-  if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
-  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
-  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
-  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
-  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
-  return { rank: "Iron", color: "#7A6F5A" };
-}
-
-function getRankInfo(mmr, season) {
-  // season が "ALL" の場合、または数値化できない場合はデフォルトで V2（あるいは必要に応じたバージョン）を適用
-  // 基本的には個別の試合データ側が持つ season 番号が渡される想定ですが、念のためフォールバックを入れます
-  const seasonNum = (season === "ALL" || season === undefined || season === null) ? 2 : Number(season);
-
-  return seasonNum >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
-}
 
 async function loadADPIndexedDBRecords() {
   try {
