@@ -1459,15 +1459,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
 <!-- ▼ コースメモタブ本体 -->
 <div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
   <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
 
   <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-    <!-- 左側：コース選択リスト -->
-    <div style="width: 280px;">
+    <!-- 左側：コース選択リスト（全コース表示） -->
+    <div style="width: 320px;">
       <label data-i18n="lbl_select_course">コース選択</label><br>
-      <select id="memoCourseSelect" size="15" style="width: 100%; height: 420px; padding: 6px; font-size: 14px; box-sizing: border-box;">
+      <select id="memoCourseSelect" size="18" style="width: 100%; height: 480px; padding: 6px; font-size: 13px; box-sizing: border-box;">
         <!-- JSで動的に挿入されます -->
       </select>
     </div>
@@ -1475,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- 右側：メモ編集領域 -->
     <div style="flex: 1; min-width: 320px;">
       <h3 id="selectedCourseTitle" style="margin-top:0; color: #ffca28;">コースを選択してください</h3>
-      <textarea id="courseMemoTextarea" style="width: 100%; height: 370px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、ライン取り、アイテム保持の意識などを記述..."></textarea>
+      <textarea id="courseMemoTextarea" style="width: 100%; height: 430px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、ライン取り、アイテム保持の意識などを記述..."></textarea>
       <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
         <button id="saveCourseMemoBtn" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" data-i18n="btn_save_memo">メモを保存</button>
         <span id="memoSaveStatus" style="color: #4caf50; display: none; font-size: 14px;" data-i18n="msg_saved">保存しました！</span>
@@ -12083,17 +12084,258 @@ document.addEventListener("DOMContentLoaded", () => {
 // ▼ コースメモデータ（localStorageから読み込み、なければ空オブジェクト）
 let courseMemoData = JSON.parse(localStorage.getItem("mk_course_memos") || "{}");
 
+// 💡 ご提示いただいた全コースリストをそのまま使用
+const courseList = [
+  "マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "バニラレイク",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "SFCノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "おばけぬま1",
+  "おばけぬま2",
+  "おばけぬま3",	
+  "ホネホネツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "チョコレーとう1",
+  "チョコレーとう2",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+  "SFCマリオサーキット1",
+  "SFCマリオサーキット2",
+  "SFCマリオサーキット3",
+  "レインボーロード",
+  // 遷移データ等
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "マリオブラザーズサーキット→シュポポコースター",
+  "マリオブラザーズサーキット→サンサンさばく",
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "マリオブラザーズサーキット→キノピオファクトリー",
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
+  "トロフィーシティ→ピーチスタジアム",
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
+  "ピーチスタジアム→レインボーロード"
+];
 
-
-// 起動時の初期化
+// 初期化
 document.addEventListener("DOMContentLoaded", () => {
   initCourseMemoTab();
-  setupModalMemoSync();
 });
 
-/**
- * コースメモタブの初期化
- */
 function initCourseMemoTab() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
@@ -12102,30 +12344,30 @@ function initCourseMemoTab() {
 
   if (!selectEl) return;
 
-  // セレクトボックスにコース一覧を挿入
+  // セレクトボックスに全コースを挿入
   selectEl.innerHTML = "";
-  COURSE_LIST.forEach(course => {
+  courseList.forEach(course => {
     const opt = document.createElement("option");
     opt.value = course;
     opt.textContent = course;
     selectEl.appendChild(opt);
   });
 
-  // リスト選択時のイベント
+  // 選択変更時の読み込み
   selectEl.onchange = () => {
     const selectedCourse = selectEl.value;
     titleEl.textContent = selectedCourse;
     textareaEl.value = courseMemoData[selectedCourse] || "";
   };
 
-  // 初期選択として最初のコースを表示
-  if (COURSE_LIST.length > 0) {
-    selectEl.value = COURSE_LIST[0];
-    titleEl.textContent = COURSE_LIST[0];
-    textareaEl.value = courseMemoData[COURSE_LIST[0]] || "";
+  // 初期選択
+  if (courseList.length > 0) {
+    selectEl.value = courseList[0];
+    titleEl.textContent = courseList[0];
+    textareaEl.value = courseMemoData[courseList[0]] || "";
   }
 
-  // 「メモを保存」ボタンの処理
+  // 保存処理
   saveBtn.onclick = () => {
     const selectedCourse = selectEl.value;
     if (!selectedCourse) return alert("コースを選択してください");
@@ -12133,7 +12375,6 @@ function initCourseMemoTab() {
     courseMemoData[selectedCourse] = textareaEl.value;
     localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
 
-    // 保存成功のフィードバック表示
     const statusEl = document.getElementById("memoSaveStatus");
     if (statusEl) {
       statusEl.style.display = "inline";
@@ -12141,52 +12382,7 @@ function initCourseMemoTab() {
     }
   };
 }
-
-/**
- * レース登録モーダルとメモの同期処理
- */
-function setupModalMemoSync() {
-  // モーダル内のコース選択セレクトボックス（既存の要素IDに合わせて調整してください）
-  const raceCourseSelect = document.getElementById("raceCourseSelect") || document.getElementById("modalCourseSelect");
-  const modalMemoTextarea = document.getElementById("modalCourseMemoTextarea");
-  const modalCourseName = document.getElementById("modalCourseName");
-  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
-
-  if (!modalMemoTextarea) return;
-
-  // モーダル側のコース選択が変更されたとき（またはモーダルが開かれた時）に呼び出す関数
-  window.updateModalCourseMemo = function(courseName) {
-    if (modalCourseName) modalCourseName.textContent = courseName || "コース未選択";
-    if (modalMemoTextarea) modalMemoTextarea.value = courseMemoData[courseName] || "";
-  };
-
-  // もしモーダル内にコース選択プルダウンがある場合は連動させる
-  if (raceCourseSelect) {
-    raceCourseSelect.addEventListener("change", () => {
-      window.updateModalCourseMemo(raceCourseSelect.value);
-    });
-  }
-
-  // モーダル内からの「簡易保存」ボタン処理
-  if (saveModalMemoBtn) {
-    saveModalMemoBtn.onclick = () => {
-      // 選択中のコース名を取得（プルダウンまたは表示要素から）
-      const course = raceCourseSelect ? raceCourseSelect.value : (modalCourseName ? modalCourseName.textContent : "");
-      if (!course || course === "コース未選択") return alert("コースが選択されていません");
-
-      courseMemoData[course] = modalMemoTextarea.value;
-      localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
-
-      // メモタブ側が開いていた場合に備えてテキストエリアを同期
-      const mainSelect = document.getElementById("memoCourseSelect");
-      if (mainSelect && mainSelect.value === course) {
-        document.getElementById("courseMemoTextarea").value = modalMemoTextarea.value;
-      }
-
-      alert("コースメモを更新しました");
-    };
-  }
-}
+  
 </script>
 
 
