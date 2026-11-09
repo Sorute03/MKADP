@@ -751,6 +751,9 @@ const i18nDict = {
     msg_saved: "保存しました！",
     modal_memo_title: "📌 コースメモ",
     btn_quick_save: "簡易保存",
+    lbl_memo_category: "対象カテゴリ:",
+    opt_category_other: "大会・ラウンジ",
+    opt_category_nora: "野良",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -989,6 +992,9 @@ const i18nDict = {
     msg_saved: "Saved!",
     modal_memo_title: "📌 Course Note",
     btn_quick_save: "Quick Save",
+    lbl_memo_category: "Category:",
+    opt_category_other: "Tournament / Lounge",
+    opt_category_nora: "Worldwide / Regional (Nora)",
     }
   };
 
@@ -1464,11 +1470,20 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
   <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
 
+  <!-- ▼ 【追加】野良 vs 大会・ラウンジの切替セレクトボックス -->
+  <div style="margin-bottom: 15px;">
+    <label data-i18n="lbl_memo_category" style="font-weight: bold; margin-right: 8px;">対象カテゴリ:</label>
+    <select id="memoCategorySelect" style="padding: 6px 10px; font-size: 14px; width: 220px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+      <option value="other" data-i18n="opt_category_other">大会・ラウンジ</option>
+      <option value="nora" data-i18n="opt_category_nora">野良</option>
+    </select>
+  </div>
+
   <div style="display: flex; gap: 20px; flex-wrap: wrap;">
     <!-- 左側：コース選択リスト（全コース表示） -->
     <div style="width: 320px;">
       <label data-i18n="lbl_select_course">コース選択</label><br>
-      <select id="memoCourseSelect" size="18" style="width: 100%; height: 480px; padding: 6px; font-size: 13px; box-sizing: border-box;">
+      <select id="memoCourseSelect" size="18" style="width: 100%; height: 480px; padding: 6px; font-size: 13px; box-sizing: border-box; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;">
         <!-- JSで動的に挿入されます -->
       </select>
     </div>
@@ -2489,15 +2504,21 @@ saveRaceBtn.onclick = async () => {
 /**
  * 現在フォーカスされている（または選択された）コースのメモをモーダル内に読み込む
  */
+/**
+ * モーダルのモードに連動して、野良かそれ以外のメモを自動で読み込む
+ */
 async function loadMemoForActiveModalCourse() {
   const memoTextarea = document.getElementById("modalCourseMemoTextarea");
   const courseNameSpan = document.getElementById("modalActiveCourseName");
   if (!memoTextarea) return;
 
-  // 1番上のレース、あるいは現在入力中の最初のコースを取得
+  // 1. 現在のモーダル上のモードを取得してカテゴリ（nora / other）を判定
+  const rawMode = modalMode ? modalMode.value : "lounge";
+  const category = getMemoCategory(rawMode);
+
+  // 2. 現在入力中の最初のコースを取得
   let activeCourse = null;
-  const mode = modalMode.value;
-  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+  const count = rawMode === "lounge" ? 12 : Number(modalRaceCount.value || 1);
 
   for (let i = 1; i <= count; i++) {
     const courseEl = document.getElementById(`raceCourse_${i}`);
@@ -2507,22 +2528,62 @@ async function loadMemoForActiveModalCourse() {
     }
   }
 
-  // もし個別のレースでまだ選択されていなければ、1レース目のセレクトの初期値を使う
   if (!activeCourse) {
     const firstCourseEl = document.getElementById(`raceCourse_1`);
     if (firstCourseEl) activeCourse = firstCourseEl.value;
   }
 
+  const categoryLabel = (category === "nora") ? "野良" : "大会/ラウンジ";
+
   if (activeCourse) {
-    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} ]`;
-    // IndexedDBから非同期でメモを取得して表示
-    const memo = await loadCourseMemo(activeCourse);
+    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} (${categoryLabel}) ]`;
+    
+    // カテゴリ別にIndexedDBからメモを取得
+    const memo = await loadCourseMemo(category, activeCourse);
     memoTextarea.value = memo || "";
   } else {
     if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
     memoTextarea.value = "";
   }
 }
+
+// モーダル内の「クイック保存」ボタンの連動
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\((.*?)\)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const rawMode = modalMode ? modalMode.value : "lounge";
+      const category = getMemoCategory(rawMode);
+
+      // 正しいカテゴリ（nora または other）でIndexedDBに保存
+      const success = await saveCourseMemo(category, targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse} (${category === 'nora' ? '野良' : '大会/ラウンジ'})」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+
+  // モードセレクト（modalMode）が変更されたときにも対応するメモを自動で切り替え読込
+  if (typeof modalMode !== 'undefined' && modalMode) {
+    modalMode.addEventListener("change", () => {
+      loadMemoForActiveModalCourse();
+    });
+  }
+});
 
 // モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
 // ※ 既存の openModalBtn.onclick の中に以下を追加してください
@@ -12467,13 +12528,32 @@ function openCourseMemoDB() {
 /**
  * 指定したコースのメモをIndexedDBから取得
  */
-async function loadCourseMemo(courseName) {
+/**
+ * モーダルのモード（lounge, tournament, nora）から、メモ用の2分類キー（nora または other）を判定する
+ */
+function getMemoCategory(mode) {
+  return (mode === "nora") ? "nora" : "other";
+}
+
+/**
+ * 指定したカテゴリー（nora / other）とコース名のキーを生成
+ */
+function getMemoStorageKey(category, courseName) {
+  return `${category}_${courseName}`;
+}
+
+/**
+ * コースメモをIndexedDBから取得する
+ */
+async function loadCourseMemo(category, courseName) {
   try {
     const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+    
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(MK_MEMO_STORE_NAME, "readonly");
       const store = transaction.objectStore(MK_MEMO_STORE_NAME);
-      const request = store.get(courseName);
+      const request = store.get(storageKey);
 
       request.onsuccess = () => resolve(request.result || "");
       request.onerror = () => reject(request.error);
@@ -12485,15 +12565,17 @@ async function loadCourseMemo(courseName) {
 }
 
 /**
- * 指定したコースのメモをIndexedDBに保存
+ * コースメモをIndexedDBに保存する
  */
-async function saveCourseMemo(courseName, memoText) {
+async function saveCourseMemo(category, courseName, memoText) {
   try {
     const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
       const store = transaction.objectStore(MK_MEMO_STORE_NAME);
-      const request = store.put(memoText, courseName);
+      const request = store.put(memoText, storageKey);
 
       request.onsuccess = () => resolve(true);
       request.onerror = () => reject(request.error);
@@ -12520,18 +12602,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 /**
  * コースメモタブの初期化（IndexedDB対応版）
  */
-async function initCourseMemoTabIndexedDB() {
+function initCourseMemoTabIndexedDB() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
   const titleEl = document.getElementById("selectedCourseTitle");
   const saveBtn = document.getElementById("saveCourseMemoBtn");
+  const memoCategorySelect = document.getElementById("memoCategorySelect"); // カテゴリ選択
 
   if (!selectEl) return;
 
-  // すでに定義されている courseList を利用（なければ安全な空配列）
   const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
 
-  // セレクトボックスにコース一覧を挿入
+  // コース一覧の挿入
   selectEl.innerHTML = "";
   targetCourseList.forEach(course => {
     const opt = document.createElement("option");
@@ -12540,33 +12622,44 @@ async function initCourseMemoTabIndexedDB() {
     selectEl.appendChild(opt);
   });
 
-  // リスト選択時のイベント（非同期でIndexedDBから読み込み）
-  selectEl.onchange = async () => {
+  // 現在選択されているカテゴリを取得（nora または other）
+  const getCurrentCategory = () => memoCategorySelect ? memoCategorySelect.value : "other";
+
+  // メモをロードしてテキストエリアに反映
+  const loadAndShowMemo = async () => {
     const selectedCourse = selectEl.value;
-    titleEl.textContent = selectedCourse;
+    const currentCategory = getCurrentCategory();
+    if (!selectedCourse) return;
+
+    const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
+    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
     textareaEl.value = "読み込み中...";
     
-    const memo = await loadCourseMemo(selectedCourse);
-    if (selectEl.value === selectedCourse) {
+    const memo = await loadCourseMemo(currentCategory, selectedCourse);
+    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory) {
       textareaEl.value = memo;
     }
   };
 
-  // 初期選択として最初のコースのメモを読み込み
-  if (targetCourseList.length > 0) {
-    const firstCourse = targetCourseList[0];
-    selectEl.value = firstCourse;
-    titleEl.textContent = firstCourse;
-    textareaEl.value = await loadCourseMemo(firstCourse);
+  selectEl.onchange = loadAndShowMemo;
+  if (memoCategorySelect) {
+    memoCategorySelect.onchange = loadAndShowMemo;
   }
 
-  // 「メモを保存」ボタンの処理（非同期でIndexedDBに保存）
+  // 初期選択
+  if (targetCourseList.length > 0) {
+    selectEl.value = targetCourseList[0];
+    loadAndShowMemo();
+  }
+
+  // 保存ボタン
   if (saveBtn) {
     saveBtn.onclick = async () => {
       const selectedCourse = selectEl.value;
+      const currentCategory = getCurrentCategory();
       if (!selectedCourse) return alert("コースを選択してください");
 
-      const success = await saveCourseMemo(selectedCourse, textareaEl.value);
+      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl.value);
       if (success) {
         const statusEl = document.getElementById("memoSaveStatus");
         if (statusEl) {
