@@ -1608,6 +1608,20 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 
+  
+  <!-- ▼ 【追加】レース登録モーダル内のコースメモ連動エリア -->
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 13px; font-weight: bold; color: #495057;" data-i18n="modal_memo_title">📌 選択中コースのメモ</span>
+        <span id="modalActiveCourseName" style="font-size: 12px; font-weight: bold; color: #007bff;">（コース未選択）</span>
+      </div>
+      <textarea id="modalCourseMemoTextarea" style="width: 100%; height: 90px; padding: 6px; font-size: 12px; box-sizing: border-box; background: #fff; color: #333; border: 1px solid #ced4da; border-radius: 4px; resize: vertical;" placeholder="このコースの戦略や意識メモ..."></textarea>
+      <div style="text-align: right; margin-top: 4px;">
+        <button id="saveModalMemoBtn" type="button" style="padding: 3px 10px; font-size: 11px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="btn_quick_save">メモをクイック保存</button>
+      </div>
+    </div>
+    <!-- ▲ ここまで追加 -->
+
   <!-- 1. 【モーダル本体】元のコンパクトなサイズ＆スクロール仕組み -->
   <div class="modal-inner" style="
     background:#fff;
@@ -2245,14 +2259,23 @@ function generateRaceInputs(count) {
         }
         triggerLiveWebhookProgress();
         updateModalCourseHistory(); // ★ コース変更時に右側のリストを即時更新
+
+        // ★ コースメモ連動：コースが変更されたら、そのコースのメモをモーダル内エリアに自動読み込み
+        if (typeof loadMemoForActiveModalCourse === "function") {
+          loadMemoForActiveModalCourse();
+        }
       };
     }
   }
 
   saveNextCourse();
   updateModalCourseHistory(); // ★ 入力欄生成時（モーダルを開いたとき）に初期状態を反映
-}
 
+  // ★ モーダルを開いたときにも最初のコースのメモを自動読み込み
+  if (typeof loadMemoForActiveModalCourse === "function") {
+    loadMemoForActiveModalCourse();
+  }
+}
   
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
@@ -2460,6 +2483,82 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+
+
+
+/**
+ * 現在フォーカスされている（または選択された）コースのメモをモーダル内に読み込む
+ */
+async function loadMemoForActiveModalCourse() {
+  const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+  const courseNameSpan = document.getElementById("modalActiveCourseName");
+  if (!memoTextarea) return;
+
+  // 1番上のレース、あるいは現在入力中の最初のコースを取得
+  let activeCourse = null;
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    if (courseEl && courseEl.value) {
+      activeCourse = courseEl.value;
+      break;
+    }
+  }
+
+  // もし個別のレースでまだ選択されていなければ、1レース目のセレクトの初期値を使う
+  if (!activeCourse) {
+    const firstCourseEl = document.getElementById(`raceCourse_1`);
+    if (firstCourseEl) activeCourse = firstCourseEl.value;
+  }
+
+  if (activeCourse) {
+    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} ]`;
+    // IndexedDBから非同期でメモを取得して表示
+    const memo = await loadCourseMemo(activeCourse);
+    memoTextarea.value = memo || "";
+  } else {
+    if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
+    memoTextarea.value = "";
+  }
+}
+
+// モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
+// ※ 既存の openModalBtn.onclick の中に以下を追加してください
+/*
+  await loadMemoForActiveModalCourse();
+*/
+
+// モーダル内の「クイック保存」ボタンのイベント設定
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      // テキストからコース名を抽出（例: "[ マリオカートスタジアム ]" → "マリオカートスタジアム"）
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const success = await saveCourseMemo(targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse}」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+});
+
+  
 </script>
 
 
