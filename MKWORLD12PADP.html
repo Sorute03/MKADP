@@ -6823,6 +6823,457 @@ window.addEventListener("load", async () => {
   generateOBSOverlay();
 });
 
+  
+
+function extractPlayerIdFromUrl(url) {
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
+}
+
+function extractSeasonFromUrl(url) {
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
+}
+
+
+function extractPlayerIdFromUrl(url) {
+  const u = new URL(url);
+  const parts = u.pathname.split("/");
+  return parts[parts.length - 1];
+}
+
+function extractSeasonFromUrl(url) {
+  const u = new URL(url);
+  return u.searchParams.get("season") || "ALL";
+}
+
+
+
+async function fetchWorldData(playerId, season = "ALL") {
+
+  const proxy = "https://script.google.com/macros/s/AKfycby091fiIrHZ_iWKOgRm0bEh6zs6aJOf-Lm2KjqoOspOB776JsrmUpUmkDwdyiY-O4a4/exec";
+
+  const detailsUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}`;
+  const historyUrl = `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/history`;
+
+  const seasonUrl = season !== "ALL"
+    ? `${proxy}?url=https://mkcentral.com/api/world/player/${playerId}/season/${season}`
+    : null;
+
+  const [detailsRes, historyRes] = await Promise.all([
+    fetch(detailsUrl),
+    fetch(historyUrl)
+  ]);
+
+  const details = await detailsRes.json();
+  const history = await historyRes.json();
+
+  let seasonData = null;
+  if (seasonUrl) {
+    const seasonRes = await fetch(seasonUrl);
+    seasonData = await seasonRes.json();
+  }
+
+  return { details, history, seasonData };
+}
+
+function buildPlayerDetailsUrl(playerId, season, mode) {
+  return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${mode}`;
+}
+
+function buildLeaderboardUrl(playerId, season) {
+  return `https://lounge.mkcentral.com/api/player/leaderboard?playerId=${playerId}&season=${season}&game=mkworld24p`;
+}
+
+
+async function fetchWorldHTML(targetUrl) {
+  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
+
+  const encoded = encodeURIComponent(targetUrl);
+  const res = await fetch(`${proxy}?url=${encoded}`);
+
+  return await res.text();
+}
+
+
+async function fetchWorldLeaderboard(targetUrl) {
+  const proxy = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
+
+  const encoded = encodeURIComponent(targetUrl);
+  const res = await fetch(`${proxy}?url=${encoded}`);
+
+  const txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch { return null; }
+}
+
+
+function parseWorldHTML_Season1(html) {
+  const result = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",          // 順位
+    tier: "",          // Iron / Bronze / Silver / Gold / Platinum / Diamond / Master
+    wins: 0,
+    losses: 0,
+    ave: 0,            // Average Score
+    aveNoSQ: 0,        // Average Score (No SQ)
+    aveLast10: 0,      // Average Score (Last 10)
+    partnerAve: 0,     // Partner Average Score
+    partnerAveNoSQ: 0, // Partner Average Score (No SQ)
+    history: [],
+    mmrHistory: [],
+    eventsPlayed: 0
+  };
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // ① 名前 + 段位
+  const nameEl = doc.querySelector("h1, h2");
+  if (nameEl) {
+    const txt = nameEl.textContent.trim();
+    const parts = txt.split("-");
+    result.name = parts[0].trim();
+    result.tier = parts[1]?.trim() || "";
+  }
+
+  // ② Country
+  const countryDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Country");
+  if (countryDt) {
+    const dd = countryDt.nextElementSibling;
+    if (dd) result.country = dd.textContent.trim();
+  }
+
+  // ③ Rank
+  const rankDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt) {
+    const dd = rankDt.nextElementSibling;
+    if (dd) result.rank = dd.textContent.trim();
+  }
+
+  // ④ Current MMR
+  const mmrDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt) {
+    const dd = mmrDt.nextElementSibling;
+    if (dd) {
+      result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
+    }
+  }
+
+  // ⑤ Peak MMR
+  const peakDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt) {
+    const dd = peakDt.nextElementSibling;
+    if (dd) {
+      result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
+    }
+  }
+
+  // ⑥ Win-Loss
+  const wlDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlDt) {
+    const dd = wlDt.nextElementSibling;
+    if (dd) {
+      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
+      if (match) {
+        result.wins = Number(match[1]);
+        result.losses = Number(match[2]);
+      }
+    }
+  }
+
+  // ⑦ Average Score
+  const aveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt) {
+    const dd = aveDt.nextElementSibling;
+    if (dd) result.ave = Number(dd.textContent);
+  }
+
+  // ⑧ Average Score (No SQ)
+  const aveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt) {
+    const dd = aveNoSQDt.nextElementSibling;
+    if (dd) result.aveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑨ Average Score (Last 10)
+  const aveLast10Dt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt) {
+    const dd = aveLast10Dt.nextElementSibling;
+    if (dd) result.aveLast10 = Number(dd.textContent);
+  }
+
+  // ⑩ Partner Average Score
+  const partnerAveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt) {
+    const dd = partnerAveDt.nextElementSibling;
+    if (dd) result.partnerAve = Number(dd.textContent);
+  }
+
+  // ⑪ Partner Average Score (No SQ)
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt) {
+    const dd = partnerAveNoSQDt.nextElementSibling;
+    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑫ 試合履歴（HTML上は最新→古い順で並んでいるため配列取得後に反転）
+  const tempHistory = [];
+  const rows = doc.querySelectorAll("table tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("td");
+    if (cols.length < 4) return;
+
+    const event = cols[0].textContent.trim();
+    const date = cols[1].textContent.trim();
+    const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
+    const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
+
+    tempHistory.push({ event, date, delta, mmr, season: 1 });
+  });
+
+  // ★ 上から取得した「最新→古い」を「古い→最新（時系列順）」に反転
+  tempHistory.reverse();
+
+  result.history = tempHistory;
+  result.mmrHistory = tempHistory.map(item => item.mmr);
+  result.eventsPlayed = result.history.length;
+
+  return result;
+}
+
+function parseWorldHTML_Season2(html, seasonNum = 2) {
+  const result = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",          // 順位
+    tier: "",          // Silver / Gold / Platinum など
+    wins: 0,
+    losses: 0,
+    ave: 0,            // Average Score
+    aveNoSQ: 0,        // Average Score (No SQ)
+    aveLast10: 0,      // Average Score (Last 10)
+    partnerAve: 0,     // Partner Average Score
+    partnerAveNoSQ: 0, // Partner Average Score (No SQ)
+    history: [],
+    mmrHistory: [],
+    eventsPlayed: 0
+  };
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // ① 名前 + 段位
+  const nameEl = doc.querySelector("h1");
+  if (nameEl) {
+    const txt = nameEl.textContent.trim();
+    const parts = txt.split("-");
+    result.name = parts[0].trim();
+    result.tier = parts[1]?.trim() || "";
+  }
+
+  // ② Country
+  const countryDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Country");
+  if (countryDt) {
+    const dd = countryDt.nextElementSibling;
+    if (dd) result.country = dd.textContent.trim();
+  }
+
+  // ③ Rank
+  const rankDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Rank");
+  if (rankDt) {
+    const dd = rankDt.nextElementSibling;
+    if (dd) result.rank = dd.textContent.trim();
+  }
+
+  // ④ Current MMR
+  const mmrDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "MMR");
+  if (mmrDt) {
+    const dd = mmrDt.nextElementSibling;
+    if (dd) result.currentMMR = Number(dd.textContent.replace(/\D+/g, ""));
+  }
+
+  // ⑤ Peak MMR
+  const peakDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Peak MMR");
+  if (peakDt) {
+    const dd = peakDt.nextElementSibling;
+    if (dd) result.peakMMR = Number(dd.textContent.replace(/\D+/g, ""));
+  }
+
+  // ⑥ Win-Loss
+  const wlDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.includes("Win - Loss"));
+  if (wlDt) {
+    const dd = wlDt.nextElementSibling;
+    if (dd) {
+      const match = dd.textContent.match(/(\d+)\s*-\s*(\d+)/);
+      if (match) {
+        result.wins = Number(match[1]);
+        result.losses = Number(match[2]);
+      }
+    }
+  }
+
+  // ⑦ Average Score
+  const aveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score");
+  if (aveDt) {
+    const dd = aveDt.nextElementSibling;
+    if (dd) result.ave = Number(dd.textContent);
+  }
+
+  // ⑧ Average Score (No SQ)
+  const aveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (No SQ)");
+  if (aveNoSQDt) {
+    const dd = aveNoSQDt.nextElementSibling;
+    if (dd) result.aveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑨ Average Score (Last 10)
+  const aveLast10Dt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Average Score (Last 10)");
+  if (aveLast10Dt) {
+    const dd = aveLast10Dt.nextElementSibling;
+    if (dd) result.aveLast10 = Number(dd.textContent);
+  }
+
+  // ⑩ Partner Average Score
+  const partnerAveDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score");
+  if (partnerAveDt) {
+    const dd = partnerAveDt.nextElementSibling;
+    if (dd) result.partnerAve = Number(dd.textContent);
+  }
+
+  // ⑪ Partner Average Score (No SQ)
+  const partnerAveNoSQDt = [...doc.querySelectorAll("dt")]
+    .find(dt => dt.textContent.trim() === "Partner Average Score (No SQ)");
+  if (partnerAveNoSQDt) {
+    const dd = partnerAveNoSQDt.nextElementSibling;
+    if (dd) result.partnerAveNoSQ = Number(dd.textContent);
+  }
+
+  // ⑫ 試合履歴（HTML上は最新→古い順で並んでいるため配列取得後に反転）
+  const tempHistory = [];
+  const rows = doc.querySelectorAll("table.table-dark tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("td");
+    if (cols.length < 4) return;
+
+    const event = cols[0].textContent.trim();
+    const date = cols[1].textContent.trim();
+    const delta = Number(cols[2].textContent.replace(/[^\d-]/g, ""));
+    const mmr = Number(cols[3].textContent.replace(/\D+/g, ""));
+
+    tempHistory.push({ event, date, delta, mmr, season: Number(seasonNum) });
+  });
+
+  // ★ 上から取得した「最新→古い」を「古い→最新（時系列順）」に反転
+  tempHistory.reverse();
+
+  result.history = tempHistory;
+  result.mmrHistory = tempHistory.map(item => item.mmr);
+  result.eventsPlayed = result.history.length;
+
+  return result;
+}
+
+function parseWorldHTML(html, season) {
+  if (season == 1) return parseWorldHTML_Season1(html);
+  return parseWorldHTML_Season2(html, season);
+}
+
+function parseWorldHTML_ALL(htmlList) {
+  const merged = {
+    name: "Unknown",
+    tier: "",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "",
+    wins: 0,
+    losses: 0,
+
+    ave: 0,
+    aveNoSQ: 0,
+    aveLast10: 0,
+    partnerAve: 0,
+    partnerAveNoSQ: 0,
+
+    history: [],
+    mmrHistory: []
+  };
+
+  // シーズン順（S1 -> S2 -> S3 ...）にループして結合
+  htmlList.forEach(({ html, season }) => {
+    const parsed =
+      season == 1
+        ? parseWorldHTML_Season1(html)
+        : parseWorldHTML_Season2(html, season);
+
+    parsed.mmrHistory = parsed.mmrHistory || [];
+    parsed.history = parsed.history || [];
+
+    merged.name = parsed.name;
+    merged.tier = parsed.tier || merged.tier;
+    merged.country = parsed.country;
+    merged.currentMMR = parsed.currentMMR;
+
+    merged.peakMMR = Math.max(merged.peakMMR, parsed.peakMMR);
+    merged.rank = parsed.rank;
+
+    merged.wins += parsed.wins;
+    merged.losses += parsed.losses;
+
+    if (parsed.ave > 0) merged.ave += parsed.ave;
+    if (parsed.aveNoSQ > 0) merged.aveNoSQ += parsed.aveNoSQ;
+    if (parsed.aveLast10 > 0) merged.aveLast10 += parsed.aveLast10;
+    if (parsed.partnerAve > 0) merged.partnerAve += parsed.partnerAve;
+    if (parsed.partnerAveNoSQ > 0) merged.partnerAveNoSQ += parsed.partnerAveNoSQ;
+
+    // 各シーズン内ですでに時系列順（古い→最新）になっているものを順番に追記
+    merged.history.push(...parsed.history);
+    merged.mmrHistory.push(...parsed.mmrHistory);
+  });
+
+  const seasonCount = htmlList.length || 1;
+
+  if (merged.ave > 0) merged.ave /= seasonCount;
+  if (merged.aveNoSQ > 0) merged.aveNoSQ /= seasonCount;
+  if (merged.aveLast10 > 0) merged.aveLast10 /= seasonCount;
+  if (merged.partnerAve > 0) merged.partnerAve /= seasonCount;
+  if (merged.partnerAveNoSQ > 0) merged.partnerAveNoSQ /= seasonCount;
+
+  merged.eventsPlayed = merged.history.length;
+
+  return merged;
+}
+
+
+
+  
+  
 function extractPlayerIdFromUrl(url) {
   const u = new URL(url);
   const parts = u.pathname.split("/");
@@ -7819,6 +8270,10 @@ async function drawLoungeImage(stats) {
     ctx.lineWidth = 2;
     ctx.strokeRect(gx, gy, gw, gh);
 
+    // ★ 描画開始時に現在のモードを変数にキャプチャしておく
+    const modeSelect = document.getElementById("loungeModeSelect");
+    const currentIs12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
+
     const ratings = history.map(item => (typeof item === 'object' && item !== null ? (item.mmr ?? item.score ?? 0) : item));
     let minMMR = Math.min(...ratings);
     let maxMMR = Math.max(...ratings);
@@ -7851,7 +8306,8 @@ async function drawLoungeImage(stats) {
       const p1 = points[i + 1];
 
       const avgMmr = (p0.mmr + p1.mmr) / 2;
-      const rankInfo = getRankInfo(avgMmr, p0.season);
+      // ★ getRankInfo に currentIs12P を渡す
+      const rankInfo = getRankInfo(avgMmr, p0.season, currentIs12P);
 
       ctx.strokeStyle = rankInfo.color;
       ctx.beginPath();
@@ -7868,86 +8324,7 @@ async function drawLoungeImage(stats) {
     ctx.fillText(titleText, gx, gy - 10);
   }
 }
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await renderSavedBackgrounds();
-});
-
   
-  
-function aggregateWorldStats(leaderboard, htmlParsed) {
-
-  const name = htmlParsed.name || "Unknown";
-  const mmr = leaderboard?.mmr ?? htmlParsed.currentMMR ?? 0;
-  const peak_mmr = leaderboard?.peak_mmr ?? htmlParsed.peakMMR ?? 0;
-
-  const mmr_history = htmlParsed.history || [];
-
-  return {
-    name,
-    mmr,
-    peak_mmr,
-
-    wins: leaderboard?.wins ?? 0,
-    losses: leaderboard?.losses ?? 0,
-
-    mmr_rank: leaderboard?.mmr_rank ?? "-",
-    peak_mmr_rank: leaderboard?.peak_mmr_rank ?? "-",
-
-    mmr_history
-  };
-}
-
-function convertStatsForImage(stats) {
-  const history = stats.mmrHistory || [];
-  // 直近10戦の履歴を取り出す
-  const last10 = history.slice(-10);
-
-  // 各履歴アイテムから delta（増減）を安全に取得して勝敗を判定
-  // ※もし history が数値の配列や別構造の場合は適宜プロパティ名を合わせてください
-  const winsLast10 = last10.filter(h => {
-    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
-    return delta > 0;
-  }).length;
-
-  const lossesLast10 = last10.filter(h => {
-    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
-    return delta < 0;
-  }).length;
-
-  return {
-    name: stats.name,
-
-    mmr: stats.currentMMR,
-    peak_mmr: stats.peakMMR,
-
-    wins: stats.wins,
-    losses: stats.losses,
-
-    win_rate: stats.wins + stats.losses > 0
-      ? stats.wins / (stats.wins + stats.losses)
-      : 0,
-
-    wins_last_10: winsLast10,     // ★ 正しく直近10戦の勝ち数に修正
-    losses_last_10: lossesLast10, // ★ 正しく直近10戦の負け数に修正
-
-    gain_loss_last_10: history.length >= 10
-      ? (typeof history.at(-1) === 'object' ? (history.at(-1).mmr ?? history.at(-1)) : history.at(-1)) - 
-        (typeof history.at(-10) === 'object' ? (history.at(-10).mmr ?? history.at(-10)) : history.at(-10))
-      : 0,
-
-    events_played: stats.eventsPlayed ?? history.length,
-    largest_gain: stats.largestGain ?? 0,
-
-    mmr_rank: stats.rank,
-    peak_mmr_rank: stats.rank,
-
-    ave_score: stats.ave ?? "-",
-
-    mmr_history: history
-  };
-}
-
 
 let loungeMMRChartInstance = null;
 
@@ -7962,6 +8339,10 @@ function drawLoungeMMRChart(stats) {
   if (window.loungeMMRChartInstance && typeof window.loungeMMRChartInstance.destroy === "function") {
     window.loungeMMRChartInstance.destroy();
   }
+
+  // ★ 描画開始の瞬間に「現在のモード」を確実に変数にキャプチャしておく（これが最大のポイント！）
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const currentIs12P = modeSelect ? (modeSelect.value.includes("12") || modeSelect.value.toLowerCase().includes("12p")) : false;
 
   // ★ Season1 / Season2 / ALL すべて mmrHistory を使う
   const history = stats.mmrHistory || [];
@@ -7985,10 +8366,9 @@ function drawLoungeMMRChart(stats) {
     labelText = isEn ? `MMR Progression (Season ${selectedSeasonVal})` : `MMR推移（Season ${selectedSeasonVal})`;
   }
 
- // 各履歴データのシーズンとMMR値を抽出
+  // 各履歴データのシーズンとMMR値を抽出
   const seasons = history.map(item => {
     if (typeof item === 'object' && item !== null) {
-      // item.season があればそれを数値として利用、なければ選択中のセレクトボックスをみる
       if (item.season !== undefined && item.season !== null) {
         return Number(item.season);
       }
@@ -8017,22 +8397,22 @@ function drawLoungeMMRChart(stats) {
         pointHoverBorderColor: "transparent",     // ホバー時の枠線も透明化
         pointBorderWidth: 0,                      // 枠線幅0
         
-        // ホバー時に表示される丸の色をその時のレート色に合わせる
+        // ホバー時に表示される丸の色をその時のレート色に合わせる（currentIs12P を渡す）
         pointBackgroundColor: ctx => {
           const idx = ctx.dataIndex;
           if (idx === undefined) return "#fff";
           const mmr = mmrValues[idx];
           const seasonNum = seasons[idx];
-          return getRankInfo(mmr, seasonNum).color;
+          return getRankInfo(mmr, seasonNum, currentIs12P).color;
         },
 
-        // ★ 線自体の色をその区間のレートに応じたランク色に設定
+        // ★ 線自体の色をその区間のレートに応じたランク色に設定（currentIs12P を渡す）
         segment: {
           borderColor: ctx => {
             const idx = ctx.p0DataIndex;
             const avgMmr = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
             const seasonNum = seasons[idx] ?? 1;
-            return getRankInfo(avgMmr, seasonNum).color;
+            return getRankInfo(avgMmr, seasonNum, currentIs12P).color;
           }
         }
       }]
@@ -8047,7 +8427,8 @@ function drawLoungeMMRChart(stats) {
               const idx = ctx.dataIndex;
               const mmr = ctx.raw;
               const seasonNum = seasons[idx];
-              const rankInfo = getRankInfo(mmr, seasonNum);
+              // ★ ツールチップ表示時も currentIs12P を渡す
+              const rankInfo = getRankInfo(mmr, seasonNum, currentIs12P);
               const rankText = isEn ? `Rank: ${rankInfo.rank}` : `ランク: ${rankInfo.rank}`;
               const mmrText = isEn ? `MMR: ${mmr}` : `MMR: ${mmr}`;
               return `${mmrText} (${rankText})`;
@@ -8063,11 +8444,24 @@ function drawLoungeMMRChart(stats) {
   });
 }
 
-  
 
+
+ // 現在の12Pモードかどうかを安全に判定するヘルパー
+function getCurrentIs12P() {
+  const modeSelect = document.getElementById("loungeModeSelect");
+  if (!modeSelect) return false;
+  const val = modeSelect.value || "";
+  return val.includes("12") || val.toLowerCase().includes("12p");
+} 
+  
 /******************************************************
  * ランク情報（多言語対応版）
  ******************************************************/
+// ==========================================
+// ランク情報（V1共通 ＆ V2モード別分岐 多言語対応版）
+// ==========================================
+
+// Season 1 用（12P / 24P 共通の V1 基準）
 function getRankInfoV1(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
@@ -8083,7 +8477,10 @@ function getRankInfoV1(mmr) {
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
-function getRankInfoV2(mmr) {
+// -----------------------------------------
+// V2 基準
+// -----------------------------------------
+function getRankInfo24PV2(mmr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
@@ -8098,35 +8495,105 @@ function getRankInfoV2(mmr) {
   return { rank: "Iron", color: "#7A6F5A" };
 }
 
-function getRankInfo(mmr, season) {
-  return Number(season) >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
+function getRankInfo12PV2(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 14500) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 13500) return { rank: "Master", color: "#000000" };
+  if (mmr >= 12000) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 10500) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 9000)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 7500)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
 }
 
+// -----------------------------------------
+// V3 基準
+// -----------------------------------------
+function getRankInfo24PV3(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  // 必要であれば24P用のV3しきい値を記述（なければV2等にフォールバック）
+  return getRankInfo24PV2(mmr); 
+}
 
+function getRankInfo12PV3(mmr) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+  if (mmr >= 15000) return { rank: "Grandmaster", color: "#4B0000" };
+  if (mmr >= 14000) return { rank: "Master", color: "#000000" };
+  if (mmr >= 12500) return { rank: "Diamond", color: "#99E6FF" };
+  if (mmr >= 11000) return { rank: "Ruby", color: "#cc0033" };
+  if (mmr >= 9500)  return { rank: "Sapphire", color: "#0033cc" };
+  if (mmr >= 8000)  for (let i=0; i<0; i++); // dummy
+  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
+  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
+  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
+  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
+  return { rank: "Iron", color: "#7A6F5A" };
+}
+
+// 互換性維持のためのエイリアス
+function getRankInfoV2(mmr) {
+  return getRankInfo24PV2(mmr);
+}
+
+// -----------------------------------------
+// 統合されたランク判定関数
+// -----------------------------------------
+function getRankInfo(mmr, season, forcedMode = null) {
+  const s = Number(season) || 0;
+
+  // 引数でモードが渡されていれば優先、なければDOMから取得
+  let is12P = false;
+  if (forcedMode !== null) {
+    is12P = (String(forcedMode).includes("12") || String(forcedMode).toLowerCase().includes("12p"));
+  } else {
+    is12P = getCurrentIs12P();
+  }
+
+  // Season 1以下は共通 V1
+  if (s <= 1) {
+    return getRankInfoV1(mmr);
+  }
+
+  // 12P / 24P のバージョン判定
+  if (is12P) {
+    if (s === 2) {
+      return getRankInfo12PV2(mmr);
+    } else {
+      return getRankInfo12PV3(mmr);
+    }
+  } else {
+    if (s <= 2) {
+      return getRankInfo24PV2(mmr);
+    } else {
+      return getRankInfo24PV3 ? getRankInfo24PV3(mmr) : getRankInfo24PV2(mmr);
+    }
+  }
+}
+  
+  
 function buildMKCUrl(playerId, season) {
-  // ★ Season1 は p を付けない仕様を維持
   if (season == 1) {
     return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=1`;
   }
 
-  // ★ UIのモード選択要素（例: id="loungeGameModeSelect" や selector）から 12 か 24 を動的に判定
-  // （もし要素IDが異なる場合は、お使いのHTMLのセレクトボックスのidに合わせて調整してください）
   let p = 24; // デフォルト
-  const modeSelect = document.getElementById("loungeModeSelect") || document.getElementById("filter-game") || document.getElementById("gameModeSelect");
-  
+  const modeSelect = document.getElementById("loungeModeSelect");
   if (modeSelect) {
     const val = modeSelect.value;
-    // 「12P」や「12」が含まれていれば p=12 に設定
-    if (val.includes("12")) {
+    // 12P が選ばれている場合は確実に p=12 を設定
+    if (val.includes("12") || val.toLowerCase().includes("12p")) {
       p = 12;
     }
   }
 
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
-// ==========================================
-// 1. ラウンジデータ読み込み（ONLOAD）
-// ==========================================
+  
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
@@ -8142,9 +8609,10 @@ async function onLoadLoungeStats() {
   let stats;
 
   if (selectedSeason === "ALL") {
-    const maxSeasonCheck = 50; // 安全上限
+    const maxSeasonCheck = 50;
     const htmlList = [];
-    let lastParsedSignature = null; // 直前取得データの識別用シグネチャ
+    let lastParsedSignature = null;
+    let lastValidSeasonData = null;
 
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
@@ -8153,36 +8621,56 @@ async function onLoadLoungeStats() {
       try {
         const html = await fetchWorldHTML(url);
 
-        // 有効なページか確認
         if (html && !html.includes("Page Not Found") && (html.includes("table") || html.includes("rank") || html.includes("MMR"))) {
           
           const tempParsed = parseWorldHTML_Season2(html, s);
-          
-          // ★ 追加の安全ガード: 取得したデータ内のシーズン情報が、現在ループしているシーズン（s）より先のもの（リダイレクトによる最新データの混入）であれば即終了
-          if (tempParsed.season && Number(tempParsed.season) > s) {
-            console.log(`-> 取得したデータが未来のシーズン (${tempParsed.season}) を指しているため、ALL取得を終了します。`);
-            break;
-          }
 
-          // データ内容のシグネチャを作成
+          // シグネチャの作成（MMR、勝利数、敗北数、履歴件数）
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
-          // 直前のシーズンと全く同じ内容（リダイレクト）判定
+          // ==========================================
+          // ▼ 【2回連続一致検知】2回同じデータが届いたら誤混入データを消して終了
+          // ==========================================
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
+            console.log(`-> Season ${s} で2回連続の同一データ（フォールバック）を検知しました。`);
+            
+            // 💡 1回目で誤って追加してしまったデータ（例: 24Pにリダイレクトされた最初のシーズン）を取り除く
+            if (htmlList.length > 0) {
+              const removed = htmlList.pop();
+              console.log(`-> 誤混入した Season ${removed.season} のデータを削除しました。`);
+            }
+            
+            console.log(`-> 正しい有効シーズンまでで ALL 取得を終了します。`);
             break;
           }
+          // ==========================================
 
-          // 試合データが1件もない（休止中など）場合はスキップ
+          // 同一履歴の完全チェック（1件残らず一致する場合）
+          if (lastValidSeasonData && lastValidSeasonData.history && tempParsed.history) {
+            if (lastValidSeasonData.history.length === tempParsed.history.length && tempParsed.history.length > 0) {
+              const isSameHistory = lastValidSeasonData.history.every((val, idx) => {
+                return JSON.stringify(val) === JSON.stringify(tempParsed.history[idx]);
+              });
+              if (isSameHistory) {
+                console.log(`-> Season ${s} は前シーズンと完全に同一履歴のため、直前データを削除して終了します。`);
+                if (htmlList.length > 0) htmlList.pop();
+                break;
+              }
+            }
+          }
+
+          // 休止・データなしスキップ（試合履歴が0件の場合）
           if (!tempParsed.history || tempParsed.history.length === 0) {
             console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
             continue;
           }
 
           // 正常な新しいシーズンデータとして保持
-          htmlList.push({ html, season: s });
+          htmlList.push({ html, season: s, parsed: tempParsed });
           lastParsedSignature = currentSignature;
+          lastValidSeasonData = tempParsed;
           console.log(`-> Season ${s} のデータを追加しました。`);
+
         } else {
           console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
           break;
@@ -8202,7 +8690,27 @@ async function onLoadLoungeStats() {
     stats = parseWorldHTML(html, selectedSeason);
   }
 
-  console.log("stats:", stats);
+  // ★ MMR履歴空エラーのフォールバック救済
+  if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
+    if (stats.history && stats.history.length > 0) {
+      stats.mmrHistory = stats.history;
+    } else {
+      let combinedHistory = [];
+      if (stats.seasons && Array.isArray(stats.seasons)) {
+        stats.seasons.forEach(sObj => {
+          const h = sObj.history || sObj.parsed?.history || [];
+          combinedHistory = combinedHistory.concat(h);
+        });
+      }
+      stats.mmrHistory = combinedHistory;
+    }
+  }
+
+  console.log("Final stats:", stats);
+
+  if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
+    console.warn("⚠️ 有効なMMR履歴が見つかりませんでした。");
+  }
 
   // ▼ 表示用 stats
   drawLoungeStats({
@@ -8228,6 +8736,48 @@ async function onLoadLoungeStats() {
 
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
+}
+  
+  
+
+function convertStatsForImage(stats) {
+  const history = stats.mmrHistory || [];
+  // 直近10戦の履歴を取り出す
+  const last10 = history.slice(-10);
+
+  // 各履歴アイテムから delta（増減）を安全に取得して勝敗を判定
+  const winsLast10 = last10.filter(h => {
+    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
+    return delta > 0;
+  }).length;
+
+  const lossesLast10 = last10.filter(h => {
+    const delta = typeof h === 'object' && h !== null ? (h.delta ?? 0) : 0;
+    return delta < 0;
+  }).length;
+
+  return {
+    name: stats.name,
+    mmr: stats.currentMMR,
+    peak_mmr: stats.peakMMR,
+    wins: stats.wins,
+    losses: stats.losses,
+    win_rate: stats.wins + stats.losses > 0
+      ? stats.wins / (stats.wins + stats.losses)
+      : 0,
+    wins_last_10: winsLast10,
+    losses_last_10: lossesLast10,
+    gain_loss_last_10: history.length >= 10
+      ? (typeof history.at(-1) === 'object' ? (history.at(-1).mmr ?? history.at(-1)) : history.at(-1)) - 
+        (typeof history.at(-10) === 'object' ? (history.at(-10).mmr ?? history.at(-10)) : history.at(-10))
+      : 0,
+    events_played: stats.eventsPlayed ?? history.length,
+    largest_gain: stats.largestGain ?? 0,
+    mmr_rank: stats.rank,
+    peak_mmr_rank: stats.rank,
+    ave_score: stats.ave ?? "-",
+    mmr_history: history
+  };
 }
   
 // ==========================================
@@ -8507,45 +9057,41 @@ if (sendLoungeDiscordBtn) {
   };
 }
 
+// ==========================================
+// 3. ADP フィルター & API ヘルパー
+// ==========================================
+function initAdpTierSelect() {
+  const sel = document.getElementById("adpTierSelect");
+  if (sel && typeof loungeTiers !== 'undefined') {
+    sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
+}
+if (document.getElementById("adpTierSelect")) initAdpTierSelect();
 
+function updateAdpFilterByMode() {
+  const adpModeSelect = document.getElementById("adpModeSelect");
+  if (!adpModeSelect) return;
 
-/******************************************************
- * ランク情報
- ******************************************************/
-function getRankInfoV1(mmr) {
-  if (mmr >= 13500) return { rank: "Grand Master", color: "#4B0000" };
-  if (mmr >= 12500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 11000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 9500)  return { rank: "Ruby", color: "#cc0033" };
-  if (mmr >= 8000)  return { rank: "Sapphire", color: "#0033cc" };
-  if (mmr >= 6500)  return { rank: "Platinum", color: "#0099CC" };
-  if (mmr >= 5000)  return { rank: "Gold", color: "#ffcc00" };
-  if (mmr >= 3500)  return { rank: "Silver", color: "#cccccc" };
-  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
-  return { rank: "Iron", color: "#7A6F5A" };
+  const mode = adpModeSelect.value;
+  const seasonSel = document.getElementById("adpSeasonSelect");
+  const tierSel   = document.getElementById("adpTierSelect");
+
+  if (mode === "lounge") {
+    if (seasonSel) seasonSel.disabled = false;
+    if (tierSel) tierSel.disabled = false;
+  } else {
+    if (seasonSel) { seasonSel.value = "ALL"; seasonSel.disabled = true; }
+    if (tierSel) { tierSel.value = "ALL"; tierSel.disabled = true; }
+  }
 }
 
-function getRankInfoV2(mmr) {
-  if (mmr >= 15500) return { rank: "Grandmaster", color: "#4B0000" };
-  if (mmr >= 14500) return { rank: "Master", color: "#000000" };
-  if (mmr >= 13000) return { rank: "Diamond", color: "#99E6FF" };
-  if (mmr >= 11500) return { rank: "Ruby", color: "#cc0033" };
-  if (mmr >= 10000) return { rank: "Sapphire", color: "#0033cc" };
-  if (mmr >= 8000)  return { rank: "Platinum", color: "#0099CC" };
-  if (mmr >= 6000)  return { rank: "Gold", color: "#ffcc00" };
-  if (mmr >= 4000)  return { rank: "Silver", color: "#cccccc" };
-  if (mmr >= 2000)  return { rank: "Bronze", color: "#cc6600" };
-  return { rank: "Iron", color: "#7A6F5A" };
+const adpModeSelectEl = document.getElementById("adpModeSelect");
+if (adpModeSelectEl) {
+  adpModeSelectEl.addEventListener("change", updateAdpFilterByMode);
+  updateAdpFilterByMode();
 }
 
-function getRankInfo(mmr, season) {
-  // season が "ALL" の場合、または数値化できない場合はデフォルトで V2（あるいは必要に応じたバージョン）を適用
-  // 基本的には個別の試合データ側が持つ season 番号が渡される想定ですが、念のためフォールバックを入れます
-  const seasonNum = (season === "ALL" || season === undefined || season === null) ? 2 : Number(season);
-
-  return seasonNum >= 2 ? getRankInfoV2(mmr) : getRankInfoV1(mmr);
-}
-
+  
 async function loadADPIndexedDBRecords() {
   try {
     const db = await new Promise((resolve, reject) => {
