@@ -9057,39 +9057,7 @@ if (sendLoungeDiscordBtn) {
   };
 }
 
-// ==========================================
-// 3. ADP フィルター & API ヘルパー
-// ==========================================
-function initAdpTierSelect() {
-  const sel = document.getElementById("adpTierSelect");
-  if (sel && typeof loungeTiers !== 'undefined') {
-    sel.innerHTML = loungeTiers.map(t => `<option value="${t}">${t}</option>`).join("");
-  }
-}
-if (document.getElementById("adpTierSelect")) initAdpTierSelect();
 
-function updateAdpFilterByMode() {
-  const adpModeSelect = document.getElementById("adpModeSelect");
-  if (!adpModeSelect) return;
-
-  const mode = adpModeSelect.value;
-  const seasonSel = document.getElementById("adpSeasonSelect");
-  const tierSel   = document.getElementById("adpTierSelect");
-
-  if (mode === "lounge") {
-    if (seasonSel) seasonSel.disabled = false;
-    if (tierSel) tierSel.disabled = false;
-  } else {
-    if (seasonSel) { seasonSel.value = "ALL"; seasonSel.disabled = true; }
-    if (tierSel) { tierSel.value = "ALL"; tierSel.disabled = true; }
-  }
-}
-
-const adpModeSelectEl = document.getElementById("adpModeSelect");
-if (adpModeSelectEl) {
-  adpModeSelectEl.addEventListener("change", updateAdpFilterByMode);
-  updateAdpFilterByMode();
-}
 
   
 async function loadADPIndexedDBRecords() {
