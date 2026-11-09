@@ -738,6 +738,12 @@ const i18nDict = {
     modal_input_course_list: "📋 入力中のコース一覧",
     msg_no_input_yet: "まだ入力されていません",
     unit_items: "件",
+    lounge_stats_title: "Lounge Stats Viewer",
+    player_manage_title: "プレイヤーID管理",
+    label_name: "名前",
+    placeholder_name: "プレイヤー名（空欄で自動補完）",
+    label_player_id: "プレイヤーID または Lounge URL",
+    placeholder_player_id: "例: 44622 または https://lounge.mkcentral.com/...",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -963,6 +969,12 @@ const i18nDict = {
     modal_input_course_list: "📋 Input Courses",
     msg_no_input_yet: "No courses entered yet",
     unit_items: "items",
+    lounge_stats_title: "Lounge Stats Viewer",
+    player_manage_title: "Player ID Management",
+    label_name: "Name",
+    placeholder_name: "Player Name (Auto-fill if blank)",
+    label_player_id: "Player ID or Lounge URL",
+    placeholder_player_id: "e.g., 44622 or https://lounge.mkcentral.com/...",
     }
   };
 
@@ -1264,10 +1276,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <h3 data-i18n="player_manage_title">プレイヤーID管理</h3>
   <label data-i18n="label_name">名前</label><br>
-  <input id="playerNameInput" placeholder="" style="width:200px; padding:6px;"><br><br>
+  <input id="playerNameInput" placeholder="プレイヤー名（空欄で自動補完）" style="width:300px; padding:6px;"><br><br>
   
-  <label data-i18n="label_player_id">プレイヤーID</label><br>
-  <input id="playerIdInput" placeholder="" style="width:200px; padding:6px;"><br><br>
+  <label data-i18n="label_player_id">プレイヤーID または Lounge URL</label><br>
+  <input id="playerIdInput" placeholder="例: 44622 または https://lounge.mkcentral.com/..." style="width:350px; padding:6px;"><br><br>
   
   <button id="addPlayerIdBtn" data-i18n="btn_add_player">追加</button>
   <button id="deletePlayerIdBtn" data-i18n="btn_delete_player">削除</button>
@@ -1339,8 +1351,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="loungeBgBlur" min="0" max="20" step="1" value="0"><br><br>
   
   <button id="updateLoungeBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
-  </div>
-
+</div>
   
 <!-- ▼ コース統計・比較タブ -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
@@ -10718,27 +10729,8 @@ function renderPlayerIdList() {
   });
 }
 
-// ▼ 追加
-document.getElementById("addPlayerIdBtn").onclick = () => {
-  const name = document.getElementById("playerNameInput").value.trim();
-  const rawId = document.getElementById("playerIdInput").value.trim();
-
-  if (!name || !rawId) return alert("名前とIDを入力してください");
-
-  // URLの場合はIDを抽出し、それ以外（通常のID入力など）はそのまま返す
-  const id = extractLoungePlayerId(rawId);
-
-  playerIdList.push({ name, id });
-  savePlayerIdList();
-  renderPlayerIdList();
-
-  // 登録後に入力欄をクリア
-  document.getElementById("playerIdInput").value = "";
-};
-
 /**
  * URLまたは入力文字列からラウンジのプレイヤーIDを抽出する関数
- * （URLでなければそのまま元の文字列を返します）
  */
 function extractLoungePlayerId(inputStr) {
   if (!inputStr) return "";
@@ -10756,10 +10748,44 @@ function extractLoungePlayerId(inputStr) {
     return generalMatch[1];
   }
 
-  // 3. URLではない場合はそのまま返す（これまで通りの動作）
+  // 3. URLではない場合はそのまま返す（ID文字列直接入力など）
   return trimmed;
 }
 
+// ▼ プレイヤーID追加ボタンの処理
+document.getElementById("addPlayerIdBtn").onclick = () => {
+  const nameInput = document.getElementById("playerNameInput");
+  const idInput = document.getElementById("playerIdInput");
+
+  const rawName = nameInput.value.trim();
+  const rawId = idInput.value.trim();
+
+  if (!rawId) {
+    return alert("プレイヤーIDまたはURLを入力してください");
+  }
+
+  // URLの場合はIDを抽出し、それ以外はそのまま取得
+  const id = extractLoungePlayerId(rawId);
+
+  // 名前が空の場合は仮名（Player_ID）を割り当てる
+  const name = rawName || `Player_${id}`;
+
+  // 重複登録のチェック
+  if (playerIdList.some(p => p.id === id)) {
+    return alert("このプレイヤーIDはすでに登録されています");
+  }
+
+  // リストに追加して保存・再描画
+  playerIdList.push({ name, id });
+  savePlayerIdList();
+  renderPlayerIdList();
+
+  // 登録後に入力欄を両方クリア
+  nameInput.value = "";
+  idInput.value = "";
+};
+
+  
 // ▼ 削除
 document.getElementById("deletePlayerIdBtn").onclick = () => {
   if (activePlayerIndex === -1) return alert("削除するプレイヤーが選択されていません");
