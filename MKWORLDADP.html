@@ -754,6 +754,8 @@ const i18nDict = {
     lbl_memo_category: "対象カテゴリ:",
     opt_category_other: "大会・ラウンジ",
     opt_category_nora: "野良",
+    label_modal_memo_setting: "📌 モーダル内コースメモ表示",
+    label_show_memo: "表示する",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -995,6 +997,8 @@ const i18nDict = {
     lbl_memo_category: "Category:",
     opt_category_other: "Tournament / Lounge",
     opt_category_nora: "Worldwide / Regional (Nora)",
+    label_modal_memo_setting: "📌 Course Note in Modal",
+    label_show_memo: "Show",
     }
   };
 
@@ -1625,7 +1629,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   
   <!-- ▼ 【追加】レース登録モーダル内のコースメモ連動エリア -->
-    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+    <!-- ▼ コースメモ表示エリア全体をラップ（id="modalMemoWrapper" を付与） -->
+    <div id="modalMemoWrapper" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
         <span style="font-size: 13px; font-weight: bold; color: #495057;" data-i18n="modal_memo_title">📌 選択中コースのメモ</span>
         <span id="modalActiveCourseName" style="font-size: 12px; font-weight: bold; color: #007bff;">（コース未選択）</span>
@@ -1634,6 +1639,14 @@ document.addEventListener('DOMContentLoaded', () => {
       <div style="text-align: right; margin-top: 4px;">
         <button id="saveModalMemoBtn" type="button" style="padding: 3px 10px; font-size: 11px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="btn_quick_save">メモをクイック保存</button>
       </div>
+    </div>
+
+    <!-- ▼ 【追加】モーダル内のコースメモ表示切替スイッチ -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #f1f3f5; padding: 6px 10px; border-radius: 6px;">
+      <span style="font-size: 12px; font-weight: bold; color: #495057;" data-i18n="label_modal_memo_setting">📌 モーダル内コースメモ表示</span>
+      <label style="cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+        <input type="checkbox" id="modalMemoToggle" checked style="cursor: pointer;"> 表示する
+      </label>
     </div>
     <!-- ▲ ここまで追加 -->
 
@@ -2371,7 +2384,44 @@ function initHistoryPanelPosition() {
 }
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const memoWrapper = document.getElementById("modalMemoWrapper");
 
+  if (memoToggle && memoWrapper) {
+    // 1. 保存されている設定を読み込み（デフォルトは true / 表示）
+    const savedSetting = localStorage.getItem("mk_modal_memo_visible");
+    const isVisible = savedSetting === null ? true : (savedSetting === "true");
+
+    memoToggle.checked = isVisible;
+    memoWrapper.style.display = isVisible ? "block" : "none";
+
+    // 2. チェックボックス変更時の処理
+    memoToggle.onchange = () => {
+      const checked = memoToggle.checked;
+      memoWrapper.style.display = checked ? "block" : "none";
+      localStorage.setItem("mk_modal_memo_visible", checked);
+
+      // 表示に切り替えたときは、現在のコースのメモを即座に読み込む
+      if (checked && typeof loadMemoForActiveModalCourse === "function") {
+        loadMemoForActiveModalCourse();
+      }
+    };
+  }
+});
+
+// 3. loadMemoForActiveModalCourse 内でも「非表示設定のときは処理をスキップ」するようにガードを入れる
+const originalLoadMemoForActiveModalCourse = window.loadMemoForActiveModalCourse;
+window.loadMemoForActiveModalCourse = async function() {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  // チェックが入っていない（非表示設定）の場合は何もしない
+  if (memoToggle && !memoToggle.checked) return;
+
+  // 元の処理を実行
+  if (typeof originalLoadMemoForActiveModalCourse === "function") {
+    await originalLoadMemoForActiveModalCourse();
+  }
+};
   
 </script>
 
