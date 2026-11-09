@@ -12333,17 +12333,20 @@ const activeCourseList = (typeof courseList !== 'undefined') ? courseList : [
 
 
 
-// DBの基本設定
-const DB_NAME = "MKCourseMemoDB";
-const STORE_NAME = "memos";
-const DB_VERSION = 1;
+// ▼ 変数の重複衝突を防ぐため、コースメモ専用のユニークな定数名に変更
+const MK_MEMO_DB_NAME = "MKCourseMemoDB";
+const MK_MEMO_STORE_NAME = "memos";
+const MK_MEMO_DB_VERSION = 1;
+
+// コースメモデータ（localStorageのバックアップ等が必要な場合はここから移行）
+let courseMemoData = {};
 
 /**
- * IndexedDBの接続を開く関数
+ * コースメモ専用 IndexedDB の接続を開く
  */
 function openCourseMemoDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(MK_MEMO_DB_NAME, MK_MEMO_DB_VERSION);
     
     request.onerror = (event) => {
       console.error("IndexedDB open error:", event.target.error);
@@ -12354,25 +12357,24 @@ function openCourseMemoDB() {
       resolve(event.target.result);
     };
     
-    // 初回作成時やバージョンアップ時にストアを作成
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      if (!db.objectStoreNames.contains(MK_MEMO_STORE_NAME)) {
+        db.createObjectStore(MK_MEMO_STORE_NAME);
       }
     };
   });
 }
 
 /**
- * 指定したコースのメモをIndexedDBから取得する
+ * 指定したコースのメモをIndexedDBから取得
  */
 async function loadCourseMemo(courseName) {
   try {
     const db = await openCourseMemoDB();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, "readonly");
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
       const request = store.get(courseName);
 
       request.onsuccess = () => resolve(request.result || "");
@@ -12385,14 +12387,14 @@ async function loadCourseMemo(courseName) {
 }
 
 /**
- * 指定したコースのメモをIndexedDBに保存する
+ * 指定したコースのメモをIndexedDBに保存
  */
 async function saveCourseMemo(courseName, memoText) {
   try {
     const db = await openCourseMemoDB();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, "readwrite");
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
       const request = store.put(memoText, courseName);
 
       request.onsuccess = () => resolve(true);
@@ -12404,13 +12406,22 @@ async function saveCourseMemo(courseName, memoText) {
   }
 }
 
-
-  
-// 初期化時の修正例
+// 起動時の初期化
 document.addEventListener("DOMContentLoaded", async () => {
+  // ▼ refreshAllAnalysisViews が未定義の場合のエラーを安全にガード
+  if (typeof refreshAllAnalysisViews === 'undefined') {
+    window.refreshAllAnalysisViews = function() {
+      console.warn("refreshAllAnalysisViews は定義されていません");
+    };
+  }
+
+  // コースメモタブの初期化を実行
   await initCourseMemoTabIndexedDB();
 });
 
+/**
+ * コースメモタブの初期化（IndexedDB対応版）
+ */
 async function initCourseMemoTabIndexedDB() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
@@ -12419,51 +12430,56 @@ async function initCourseMemoTabIndexedDB() {
 
   if (!selectEl) return;
 
-  // コース一覧の挿入
+  // すでに定義されている courseList を利用（なければ安全な空配列）
+  const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
+
+  // セレクトボックスにコース一覧を挿入
   selectEl.innerHTML = "";
-  courseList.forEach(course => {
+  targetCourseList.forEach(course => {
     const opt = document.createElement("option");
     opt.value = course;
     opt.textContent = course;
     selectEl.appendChild(opt);
   });
 
-  // リスト選択時のイベント（非同期でIndexedDBから読み込む）
+  // リスト選択時のイベント（非同期でIndexedDBから読み込み）
   selectEl.onchange = async () => {
     const selectedCourse = selectEl.value;
     titleEl.textContent = selectedCourse;
-    textareaEl.value = "...読み込み中...";
+    textareaEl.value = "読み込み中...";
     
     const memo = await loadCourseMemo(selectedCourse);
-    if (selectEl.value === selectedCourse) { // 選択が変わっていなければ反映
+    if (selectEl.value === selectedCourse) {
       textareaEl.value = memo;
     }
   };
 
-  // 初期選択コースのメモを読み込み
-  if (courseList.length > 0) {
-    const firstCourse = courseList[0];
+  // 初期選択として最初のコースのメモを読み込み
+  if (targetCourseList.length > 0) {
+    const firstCourse = targetCourseList[0];
     selectEl.value = firstCourse;
     titleEl.textContent = firstCourse;
     textareaEl.value = await loadCourseMemo(firstCourse);
   }
 
-  // 保存ボタンの処理（非同期でIndexedDBに保存）
-  saveBtn.onclick = async () => {
-    const selectedCourse = selectEl.value;
-    if (!selectedCourse) return alert("コースを選択してください");
+  // 「メモを保存」ボタンの処理（非同期でIndexedDBに保存）
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      const selectedCourse = selectEl.value;
+      if (!selectedCourse) return alert("コースを選択してください");
 
-    const success = await saveCourseMemo(selectedCourse, textareaEl.value);
-    if (success) {
-      const statusEl = document.getElementById("memoSaveStatus");
-      if (statusEl) {
-        statusEl.style.display = "inline";
-        setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+      const success = await saveCourseMemo(selectedCourse, textareaEl.value);
+      if (success) {
+        const statusEl = document.getElementById("memoSaveStatus");
+        if (statusEl) {
+          statusEl.style.display = "inline";
+          setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+        }
+      } else {
+        alert("メモの保存に失敗しました");
       }
-    } else {
-      alert("保存に失敗しました");
-    }
-  };
+    };
+  }
 }
   
 </script>
