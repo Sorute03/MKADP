@@ -12081,8 +12081,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-// ▼ コースメモデータ（localStorageから読み込み、なければ空オブジェクト）
-let courseMemoData = JSON.parse(localStorage.getItem("mk_course_memos") || "{}");
+
 
 // 💡 ご提示いただいた全コースリストをそのまま使用
 const activeCourseList = (typeof courseList !== 'undefined') ? courseList : [
