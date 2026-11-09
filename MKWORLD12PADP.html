@@ -8602,9 +8602,16 @@ async function onLoadLoungeStats() {
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
+  // モードの取得（12Pか24Pかを判定）
+  // ※お使いのHTMLのモード選択エレメントに合わせて適宜ID等を調整してください
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const currentMode = modeSelect ? modeSelect.value : "24"; 
+  const is12PAll = (selectedSeason === "ALL" && String(currentMode) === "12");
+
   console.log("=== Lounge Debug ===");
   console.log("playerId:", playerId);
   console.log("selectedSeason:", selectedSeason);
+  console.log("is12PAll:", is12PAll);
 
   let stats;
 
@@ -8629,18 +8636,24 @@ async function onLoadLoungeStats() {
           const currentSignature = `${tempParsed.currentMMR}_${tempParsed.wins}_${tempParsed.losses}_${tempParsed.history ? tempParsed.history.length : 0}`;
 
           // ==========================================
-          // ▼ 【2回連続一致検知】2回同じデータが届いたら誤混入データを消して終了
+          // ▼ 重複・フォールバック検知ガード
           // ==========================================
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} で2回連続の同一データ（フォールバック）を検知しました。`);
+            console.log(`-> Season ${s} で重複データ（フォールバック）を検知しました。`);
             
-            // 💡 1回目で誤って追加してしまったデータ（例: 24Pにリダイレクトされた最初のシーズン）を取り除く
-            if (htmlList.length > 0) {
-              const removed = htmlList.pop();
-              console.log(`-> 誤混入した Season ${removed.season} のデータを削除しました。`);
+            if (is12PAll) {
+              // 【12PモードのALL時】
+              // 24Pデフォルトページが1回分誤混入しているため、直前データを pop して終了
+              if (htmlList.length > 0) {
+                const removed = htmlList.pop();
+                console.log(`-> [12P ALL] 誤混入した Season ${removed.season} のデータを削除しました。`);
+              }
+            } else {
+              // 【24Pなどその他のモード時】
+              // 直前データ（Season 3など）は正しい有効データなので pop せず、単に追加せずにそのままループ終了
+              console.log(`-> [通常 ALL] 追加せずにそのままループを終了します。`);
             }
-            
-            console.log(`-> 正しい有効シーズンまでで ALL 取得を終了します。`);
+
             break;
           }
           // ==========================================
@@ -8652,8 +8665,10 @@ async function onLoadLoungeStats() {
                 return JSON.stringify(val) === JSON.stringify(tempParsed.history[idx]);
               });
               if (isSameHistory) {
-                console.log(`-> Season ${s} は前シーズンと完全に同一履歴のため、直前データを削除して終了します。`);
-                if (htmlList.length > 0) htmlList.pop();
+                console.log(`-> Season ${s} は前シーズンと完全に同一履歴のため終了します。`);
+                if (is12PAll && htmlList.length > 0) {
+                  htmlList.pop();
+                }
                 break;
               }
             }
