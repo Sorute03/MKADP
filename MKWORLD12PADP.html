@@ -10755,19 +10755,7 @@ function getTierColor(tier) {
   return "#00aaff"; // fallback
 }
 
-let playerIdList = [];
-let activePlayerIndex = -1;
 
-// ▼ 起動時に読み込み
-function loadPlayerIdList() {
-  const raw = localStorage.getItem("mkadp_player_ids");
-  if (!raw) return;
-  try {
-    playerIdList = JSON.parse(raw);
-  } catch {
-    playerIdList = [];
-  }
-}
 
 // ▼ 保存
 let playerIdList = [];
