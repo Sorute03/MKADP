@@ -744,6 +744,13 @@ const i18nDict = {
     placeholder_name: "プレイヤー名（空欄で自動補完）",
     label_player_id: "プレイヤーID または Lounge URL",
     placeholder_player_id: "例: 44622 または https://lounge.mkcentral.com/...",
+    tab_course_memo: "コースメモ",
+    course_memo_title: "コース戦略・意識メモ",
+    lbl_select_course: "コース選択",
+    btn_save_memo: "メモを保存",
+    msg_saved: "保存しました！",
+    modal_memo_title: "📌 コースメモ",
+    btn_quick_save: "簡易保存",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -975,6 +982,13 @@ const i18nDict = {
     placeholder_name: "Player Name (Auto-fill if blank)",
     label_player_id: "Player ID or Lounge URL",
     placeholder_player_id: "e.g., 44622 or https://lounge.mkcentral.com/...",
+    tab_course_memo: "Course Notes",
+    course_memo_title: "Course Strategy & Notes",
+    lbl_select_course: "Select Course",
+    btn_save_memo: "Save Note",
+    msg_saved: "Saved!",
+    modal_memo_title: "📌 Course Note",
+    btn_quick_save: "Quick Save",
     }
   };
 
@@ -1233,8 +1247,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <button class="tabBtn" data-tab="historyTab" data-i18n="tab_history">レース一覧</button>
   <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
+  <button class="tabBtn" data-tab="courseMemoTab" data-i18n="tab_course_memo">コースメモ</button>
 </div>
-
 
 
 
@@ -1439,6 +1453,33 @@ document.addEventListener('DOMContentLoaded', () => {
       <button id="showAdpCourseStatsBtn" data-i18n="btn_show">表示</button>
       <button id="sendAdpCourseStatsBtn" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
       <button id="sendAdpCourseImageBtn" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ▼ コースメモタブ本体 -->
+<div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
+  <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <!-- 左側：コース選択リスト -->
+    <div style="width: 280px;">
+      <label data-i18n="lbl_select_course">コース選択</label><br>
+      <select id="memoCourseSelect" size="15" style="width: 100%; height: 420px; padding: 6px; font-size: 14px; box-sizing: border-box;">
+        <!-- JSで動的に挿入されます -->
+      </select>
+    </div>
+
+    <!-- 右側：メモ編集領域 -->
+    <div style="flex: 1; min-width: 320px;">
+      <h3 id="selectedCourseTitle" style="margin-top:0; color: #ffca28;">コースを選択してください</h3>
+      <textarea id="courseMemoTextarea" style="width: 100%; height: 370px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、ライン取り、アイテム保持の意識などを記述..."></textarea>
+      <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+        <button id="saveCourseMemoBtn" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" data-i18n="btn_save_memo">メモを保存</button>
+        <span id="memoSaveStatus" style="color: #4caf50; display: none; font-size: 14px;" data-i18n="msg_saved">保存しました！</span>
+      </div>
     </div>
   </div>
 </div>
@@ -12035,6 +12076,117 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 });
+
+
+
+
+// ▼ コースメモデータ（localStorageから読み込み、なければ空オブジェクト）
+let courseMemoData = JSON.parse(localStorage.getItem("mk_course_memos") || "{}");
+
+
+
+// 起動時の初期化
+document.addEventListener("DOMContentLoaded", () => {
+  initCourseMemoTab();
+  setupModalMemoSync();
+});
+
+/**
+ * コースメモタブの初期化
+ */
+function initCourseMemoTab() {
+  const selectEl = document.getElementById("memoCourseSelect");
+  const textareaEl = document.getElementById("courseMemoTextarea");
+  const titleEl = document.getElementById("selectedCourseTitle");
+  const saveBtn = document.getElementById("saveCourseMemoBtn");
+
+  if (!selectEl) return;
+
+  // セレクトボックスにコース一覧を挿入
+  selectEl.innerHTML = "";
+  COURSE_LIST.forEach(course => {
+    const opt = document.createElement("option");
+    opt.value = course;
+    opt.textContent = course;
+    selectEl.appendChild(opt);
+  });
+
+  // リスト選択時のイベント
+  selectEl.onchange = () => {
+    const selectedCourse = selectEl.value;
+    titleEl.textContent = selectedCourse;
+    textareaEl.value = courseMemoData[selectedCourse] || "";
+  };
+
+  // 初期選択として最初のコースを表示
+  if (COURSE_LIST.length > 0) {
+    selectEl.value = COURSE_LIST[0];
+    titleEl.textContent = COURSE_LIST[0];
+    textareaEl.value = courseMemoData[COURSE_LIST[0]] || "";
+  }
+
+  // 「メモを保存」ボタンの処理
+  saveBtn.onclick = () => {
+    const selectedCourse = selectEl.value;
+    if (!selectedCourse) return alert("コースを選択してください");
+
+    courseMemoData[selectedCourse] = textareaEl.value;
+    localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
+
+    // 保存成功のフィードバック表示
+    const statusEl = document.getElementById("memoSaveStatus");
+    if (statusEl) {
+      statusEl.style.display = "inline";
+      setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+    }
+  };
+}
+
+/**
+ * レース登録モーダルとメモの同期処理
+ */
+function setupModalMemoSync() {
+  // モーダル内のコース選択セレクトボックス（既存の要素IDに合わせて調整してください）
+  const raceCourseSelect = document.getElementById("raceCourseSelect") || document.getElementById("modalCourseSelect");
+  const modalMemoTextarea = document.getElementById("modalCourseMemoTextarea");
+  const modalCourseName = document.getElementById("modalCourseName");
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+
+  if (!modalMemoTextarea) return;
+
+  // モーダル側のコース選択が変更されたとき（またはモーダルが開かれた時）に呼び出す関数
+  window.updateModalCourseMemo = function(courseName) {
+    if (modalCourseName) modalCourseName.textContent = courseName || "コース未選択";
+    if (modalMemoTextarea) modalMemoTextarea.value = courseMemoData[courseName] || "";
+  };
+
+  // もしモーダル内にコース選択プルダウンがある場合は連動させる
+  if (raceCourseSelect) {
+    raceCourseSelect.addEventListener("change", () => {
+      window.updateModalCourseMemo(raceCourseSelect.value);
+    });
+  }
+
+  // モーダル内からの「簡易保存」ボタン処理
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = () => {
+      // 選択中のコース名を取得（プルダウンまたは表示要素から）
+      const course = raceCourseSelect ? raceCourseSelect.value : (modalCourseName ? modalCourseName.textContent : "");
+      if (!course || course === "コース未選択") return alert("コースが選択されていません");
+
+      courseMemoData[course] = modalMemoTextarea.value;
+      localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
+
+      // メモタブ側が開いていた場合に備えてテキストエリアを同期
+      const mainSelect = document.getElementById("memoCourseSelect");
+      if (mainSelect && mainSelect.value === course) {
+        document.getElementById("courseMemoTextarea").value = modalMemoTextarea.value;
+      }
+
+      alert("コースメモを更新しました");
+    };
+  }
+}
 </script>
 
 
