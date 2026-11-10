@@ -13130,17 +13130,29 @@ function setStatus(target, message, isPositive) {
   }
 }
 
+// チーム戦の複数人形式（カンマ区切りなど）にも対応したプレイヤーリストパーサー
 function parseHeaderInputList(input) {
   let result = [];
   let linesArr = input.split(/\r?\n/);
+  let globalIndex = 1;
+
   for (const line of linesArr) {
+    // 例: `1.` Vespa mandarinia, ..q (8421 MMR) または `2.` Jx.Frozen, Dua Lipa (8131 MMR)
     let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
     if (match) {
-      result.push({
-        index: Number(match[1]),
-        name: match[2].replace(/\\/g, "").trim(),
-        mmr: Number(match[3])
-      });
+      let namesPart = match[2].replace(/\\/g, "").trim();
+      let mmrVal = Number(match[3]);
+
+      // カンマなどで区切られた複数のプレイヤー名に分割（例: "Jx.Frozen", "Dua Lipa"）
+      let names = namesPart.split(',').map(n => n.trim()).filter(n => n.length > 0);
+
+      for (const name of names) {
+        result.push({
+          index: globalIndex++,
+          name: name,
+          mmr: mmrVal
+        });
+      }
     }
   }
   return result;
@@ -13148,12 +13160,9 @@ function parseHeaderInputList(input) {
 
 function parseHeaderInput(input) {
   let nameMmrMap = new Map();
-  let linesArr = input.split(/\r?\n/);
-  for (const line of linesArr) {
-    let nameTest = line.match(/^\s*`?\d+\.`?\s*(.+?)\s*\((\d+) MMR\)\s*$/);
-    if (nameTest) {
-      nameMmrMap.set(nameTest[1].replace(/\\/g, "").trim(), Number(nameTest[2]));
-    }
+  let list = parseHeaderInputList(input);
+  for (const item of list) {
+    nameMmrMap.set(item.name, item.mmr);
   }
   return nameMmrMap;
 }
