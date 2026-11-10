@@ -1643,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <button id="copyButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
       </div>
 
-      <!-- ▼ Webhook 管理パネル（ご提示いただいたデザインを組み込み） -->
+      <!-- ▼ Webhook 管理パネル -->
       <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #27272a;">
         <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: #e4e4e7;">Webhook 名前</label>
         <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 4px; font-size: 0.85rem;"><br><br>
@@ -1662,9 +1662,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- 登録されたWebhookのリスト表示エリア -->
         <div id="webhookListArea" style="margin-top: 12px;"></div>
 
-        <!-- 一括結果をサクッと送信するメインボタン -->
+        <!-- 一括結果を送信するメインボタン（IDを sendMmrDiscordBtn に統一） -->
         <div style="margin-top: 15px;">
-          <button id="sendWebhookButton" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をWebhookで送信</button>
+          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をWebhookで送信</button>
         </div>
       </div>
       <!-- ▲▲▲ Webhook管理パネルここまで ▲▲▲ -->
@@ -12840,8 +12840,11 @@ function initCourseMemoTabIndexedDB() {
 
 
 
-
   
+// ==========================================
+// MMR Matrix 計算 & UIコントローラー
+// ==========================================
+
 document.addEventListener('DOMContentLoaded', () => {
   const mogiHeaderInput = document.getElementById('mogiHeaderInput');
   const playerSelect = document.getElementById('playerSelect');
@@ -12853,211 +12856,81 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyButton = document.getElementById('copyButton');
   const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
   const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
+  const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn'); // 追加
 
-  // Webhook関連の要素取得
-  const webhookNameInput = document.getElementById('webhookNameInput');
-  const webhookUrlInput = document.getElementById('webhookUrlInput');
-  const toggleLiveWebhookBtn = document.getElementById('toggleLiveWebhookBtn');
-  const webhookListArea = document.getElementById('webhookListArea');
-  const sendWebhookButton = document.getElementById('sendWebhookButton'); // HTML側にある送信ボタン
-
-  if (!mogiHeaderInput) return; // タブ要素が存在しない場合の安全ガード
+  if (!mogiHeaderInput) return;
 
   let parsedHeaderList = [];
-  
-  // 複数Webhook管理用の配列（LocalStorageから復元）
-  let webhooks = JSON.parse(localStorage.getItem('mk_webhooks') || '[]');
-  let isLiveWebhookEnabled = JSON.parse(localStorage.getItem('mk_live_webhook_enabled') ?? 'true');
 
-  // 初期状態の反映
-  updateLiveWebhookButtonUI();
-  renderWebhookList();
-
-  // ライブ通知ボタンの状態管理 (グローバル関数としてHTMLのonclickに対応)
-  window.toggleLiveWebhook = function() {
-    isLiveWebhookEnabled = !isLiveWebhookEnabled;
-    localStorage.setItem('mk_live_webhook_enabled', JSON.stringify(isLiveWebhookEnabled));
-    updateLiveWebhookButtonUI();
-  };
-
-  function updateLiveWebhookButtonUI() {
-    if (toggleLiveWebhookBtn) {
-      if (isLiveWebhookEnabled) {
-        toggleLiveWebhookBtn.textContent = "ON";
-        toggleLiveWebhookBtn.style.color = "#4caf50";
-        toggleLiveWebhookBtn.style.borderColor = "#4caf50";
-      } else {
-        toggleLiveWebhookBtn.textContent = "OFF";
-        toggleLiveWebhookBtn.style.color = "#f44336";
-        toggleLiveWebhookBtn.style.borderColor = "#f44336";
-      }
-    }
-  }
-
-  // Webhookの追加処理 (HTMLのonclick="addWebhook()"に対応)
-  window.addWebhook = function() {
-    const name = webhookNameInput ? webhookNameInput.value.trim() : "";
-    const url = webhookUrlInput ? webhookUrlInput.value.trim() : "";
-
-    if (!url) {
-      alert("Webhook URLを入力してください。");
-      return;
-    }
-
-    webhooks.push({
-      id: Date.now().toString(),
-      name: name || "無題のWebhook",
-      url: url
-    });
-
-    saveAndRenderWebhooks();
-
-    // 入力欄をクリア
-    if (webhookNameInput) webhookNameInput.value = "";
-    if (webhookUrlInput) webhookUrlInput.value = "";
-  };
-
-  // Webhookの削除処理
-  window.deleteWebhook = function(id) {
-    webhooks = webhooks.filter(wh => wh.id !== id);
-    saveAndRenderWebhooks();
-  };
-
-  function saveAndRenderWebhooks() {
-    localStorage.setItem('mk_webhooks', JSON.stringify(webhooks));
-    renderWebhookList();
-  }
-
-  // 登録済みWebhook一覧の描画
-  function renderWebhookList() {
-    if (!webhookListArea) return;
-    if (webhooks.length === 0) {
-      webhookListArea.innerHTML = `<p style="font-size: 0.85rem; color: #a1a1aa;">登録されているWebhookはありません。</p>`;
-      return;
-    }
-
-    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-    webhooks.forEach(wh => {
-      html += `
-        <div style="display: flex; justify-content: space-between; align-items: center; background-color: #17171c; border: 1px solid #27272a; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
-          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
-            <strong style="color: #e4e4e7;">${escapeHtml(wh.name)}</strong>
-            <span style="color: #a1a1aa; margin-left: 8px; font-size: 0.75rem;">${escapeHtml(wh.url)}</span>
-          </div>
-          <div style="display: flex; gap: 6px; flex-shrink: 0;">
-            <button onclick="sendToSpecificWebhook('${wh.id}')" style="background-color: #6366f1; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">送信</button>
-            <button onclick="deleteWebhook('${wh.id}')" style="background-color: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">削除</button>
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-    webhookListArea.innerHTML = html;
-  }
-
-  // 特定のWebhookへ結果を送信する関数
-  window.sendToSpecificWebhook = async function(id) {
-    if (!mmrTableOutput || mmrTableOutput.value === "") {
-      alert("送信する計算結果がありません。先に Calculate を実行してください。");
-      return;
-    }
-
-    const targetWh = webhooks.find(wh => wh.id === id);
-    if (!targetWh) {
-      alert("指定されたWebhookが見つかりません。");
-      return;
-    }
-
-    await postToWebhook(targetWh.url, targetWh.name);
-  };
-
-  // 従来の「一括送信ボタン」が押されたときの処理（リストの先頭、または入力欄のURLを使用）
-  if (sendWebhookButton) {
-    sendWebhookButton.addEventListener('click', async () => {
-      if (!mmrTableOutput || mmrTableOutput.value === "") {
-        alert("送信する計算結果がありません。先に Calculate を実行してください。");
-        return;
+  // ▼ MMR計算結果 Discord送信ボタンの処理（DOMContentLoaded内に安全に配置）
+  if (sendMmrDiscordBtn) {
+    sendMmrDiscordBtn.onclick = async () => {
+      // 1. 画像送信側と全く同じ仕組みでWebhook URLを取得
+      let webhook = "";
+      if (typeof getSelectedWebhookUrl === "function") {
+        webhook = getSelectedWebhookUrl();
+      } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+        webhook = webhookList[activeWebhookIndex]?.url || "";
       }
 
-      // 1. 入力欄に直接URLが入力されていればそれを優先
-      let urlToUse = webhookUrlInput ? webhookUrlInput.value.trim() : "";
-      let nameToUse = webhookNameInput ? webhookNameInput.value.trim() : "直接入力Webhook";
-
-      // 2. 入力欄が空で、保存済みリストにWebhookがあれば先頭のものを利用
-      if (!urlToUse && webhooks.length > 0) {
-        urlToUse = webhooks[0].url;
-        nameToUse = webhooks[0].name;
+      if (!webhook) {
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
       }
 
-      if (!urlToUse) {
-        alert("Webhook URLが入力されていないか、登録されていません。");
-        return;
+      // 2. 送信対象の計算結果テキストを取得
+      if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No calculation result to send. Please calculate first." : "送信する計算結果がありません。先に Calculate を実行してください。");
       }
 
-      await postToWebhook(urlToUse, nameToUse);
-    });
-  }
+      // 3. テキスト送信用のJSONペイロードを構築
+      const payload = {
+        content: mmrTableOutput.value
+      };
 
-  // 実際のPOSTリクエスト送信処理
-  async function postToWebhook(url, webhookName) {
-    const payload = {
-      content: mmrTableOutput.value
+      try {
+        sendMmrDiscordBtn.disabled = true;
+        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Sending..." : "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Calculation results sent to Discord!" : "Discord に計算結果を送信しました！");
+        } else {
+          alert("Failed to send (Status: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMmrDiscordBtn.disabled = false;
+        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send to Discord" : "Webhookで送信";
+      }
     };
-
-    try {
-      if (sendWebhookButton) {
-        sendWebhookButton.disabled = true;
-        sendWebhookButton.textContent = "送信中...";
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok || response.status === 204) {
-        alert(`「${webhookName}」へ結果を送信しました！`);
-      } else {
-        const errText = await response.text();
-        alert(`送信に失敗しました (ステータス: ${response.status})\n${errText}`);
-      }
-    } catch (error) {
-      console.error('Webhook送信エラー:', error);
-      alert(`ネットワークエラー等により送信できませんでした。\n${error.message || error}`);
-    } finally {
-      if (sendWebhookButton) {
-        sendWebhookButton.disabled = false;
-        sendWebhookButton.textContent = "Webhookで送信";
-      }
-    }
   }
 
-  // 簡易HTMLエスケープ
-  function escapeHtml(str) {
-    return str.replace(/[&'`"<>]/g, function(match) {
-      return {
-        '&': '&amp;',
-        '': '&#x27;',
-        '`': '&#x60;',
-        '"': '&quot;',
-        '<': '&lt;',
-        '>': '&gt;'
-      }[match];
+  // --- 従来の計算・解析ロジック ---
+  if (calculateButton) {
+    calculateButton.addEventListener('click', () => {
+      let processTextResult = processText(mogiHeaderInput.value, scoreboardInput.value);
+      if (!processTextResult.ok) {
+        mmrTableOutput.value = "エラー: 入力データを確認してください。";
+        return;
+      }
+      mmrTableOutput.value = getMmrChangeSummaryText(processTextResult.playersInfo);
     });
   }
 
-  // --- 以下、既存のロジック（変更なし） ---
-  function setStatus(target, message, isPositive) {
-    if (!target) return;
-    target.textContent = message;
-    if (isPositive) {
-      target.classList.remove("error");
-    } else {
-      target.classList.add("error");
-    }
+  if (copyButton) {
+    copyButton.addEventListener('click', async () => {
+      if (mmrTableOutput.value === "") return;
+      await navigator.clipboard.writeText(mmrTableOutput.value);
+    });
   }
 
   mogiHeaderInput.addEventListener('input', () => {
@@ -13165,24 +13038,6 @@ document.addEventListener('DOMContentLoaded', () => {
     matrixResultOutput.value = text;
   });
 
-  if (calculateButton) {
-    calculateButton.addEventListener('click', () => {
-      let processTextResult = processText(mogiHeaderInput.value, scoreboardInput.value);
-      if (!processTextResult.ok) {
-        mmrTableOutput.value = "エラー: 入力データを確認してください。";
-        return;
-      }
-      mmrTableOutput.value = getMmrChangeSummaryText(processTextResult.playersInfo);
-    });
-  }
-
-  if (copyButton) {
-    copyButton.addEventListener('click', async () => {
-      if (mmrTableOutput.value === "") return;
-      await navigator.clipboard.writeText(mmrTableOutput.value);
-    });
-  }
-
   document.querySelectorAll('.clear-overlay').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
@@ -13194,121 +13049,132 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-
-  function parseHeaderInputList(input) {
-    let result = [];
-    let linesArr = input.split(/\r?\n/);
-    for (const line of linesArr) {
-      let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
-      if (match) {
-        result.push({
-          index: Number(match[1]),
-          name: match[2].replace(/\\/g, "").trim(),
-          mmr: Number(match[3])
-        });
-      }
-    }
-    return result;
-  }
-
-  function parseHeaderInput(input) {
-    let nameMmrMap = new Map();
-    let list = parseHeaderInputList(input);
-    for (const item of list) nameMmrMap.set(item.name, item.mmr);
-    return nameMmrMap;
-  }
-
-  function parseScoreboardInput(input) {
-    let nameScoreMap = new Map();
-    let linesArr = input.split(/\r?\n/);
-    for (const line of linesArr) {
-      let scoreTest = line.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
-      if (scoreTest) {
-        let score = Number(scoreTest[2]);
-        if (scoreTest.length >= 5 && scoreTest[4]) score += Number(scoreTest[4]);
-        nameScoreMap.set(scoreTest[1].replace(/\\/g, "").trim(), score);
-      }
-    }
-    return nameScoreMap;
-  }
-
-  function calculateMmrAdjustment(mmrA, mmrB, decision) {
-    const cap = 30;
-    const baseline = 10;
-    const scaling_factor = 9500;
-    const logistic_base = 11;
-
-    y = 0; // fallback safety
-    if (decision === 0) {
-      return Math.sign(mmrB - mmrA) * (cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.abs(mmrB - mmrA) / scaling_factor)) - cap / 3);
-    } else {
-      return Math.sign(decision) * cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.sign(decision) * (mmrB - mmrA) / scaling_factor));
-    }
-  }
-
-  function processText(a, b) {
-    let nameMmrMap = parseHeaderInput(a);
-    let nameScoreMap = parseScoreboardInput(b);
-    let playersInfo = [];
-    let mismatchedNames = [];
-
-    if (nameMmrMap.size !== 24 || nameScoreMap.size !== 24) return {ok: false};
-
-    for (const [name] of nameScoreMap) {
-      if (!nameMmrMap.has(name)) mismatchedNames.push(name);
-    }
-    if (mismatchedNames.length > 0) return {ok: false};
-
-    for (const [name1, mmr1] of nameMmrMap) {
-      let player = {name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 1};
-      player.score = nameScoreMap.get(player.name);
-      for (const [name2, mmr2] of nameMmrMap) {
-        const decision = Math.sign(player.score - nameScoreMap.get(name2));
-        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, mmr2, decision);
-      }
-      player.mmrChange = Math.round(player.mmrChange);
-      player.mmrAfter = Math.max(player.mmrBefore + player.mmrChange, 0);
-      player.mmrChange = player.mmrAfter - player.mmrBefore;
-      playersInfo.push(player);
-    }
-
-    playersInfo.sort((a, b) => b.score - a.score || a.mmrBefore - b.mmrBefore);
-    playersInfo.forEach((p, index) => { p.place = index + 1; });
-
-    return {ok: true, playersInfo: playersInfo};
-  }
-
-  function getMmrChangeSummaryText(playersInfo) {
-    let longestNameLength = 0;
-    let longestMmrBeforeLength = 0;
-    let longestMmrAfterLength = 0;
-    let longestMmurDeltaLength = 0;
-    let mmrDeltaTextMap = new Map();
-
-    for (const player of playersInfo) {
-      if (player.name.length > longestNameLength) longestNameLength = player.name.length;
-      if (String(player.mmrBefore).length > longestMmrBeforeLength) longestMmrBeforeLength = String(player.mmrBefore).length;
-      if (String(player.mmrAfter).length > longestMmrAfterLength) longestMmrAfterLength = String(player.mmrAfter).length;
-      let mmrDeltaText = (player.mmrChange > 0 ? "+" : "") + player.mmrChange;
-      if (mmrDeltaText.length > longestMmurDeltaLength) longestMmurDeltaLength = mmrDeltaText.length;
-      mmrDeltaTextMap.set(player.name, mmrDeltaText);
-    }
-    
-    let mmrAdjustmentText = "```Expected MMR Changes (unofficial)";
-    for (const player of playersInfo) {
-      let mmrDeltaText = mmrDeltaTextMap.get(player.name);
-      mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
-          " ".repeat(longestMmrBeforeLength - String(player.mmrBefore).length) + player.mmrBefore + " --> " +
-          " ".repeat(longestMmrAfterLength - String(player.mmrAfter).length) + player.mmrAfter + " (" +
-          " ".repeat(longestMmurDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
-    }
-
-    mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
-    return mmrAdjustmentText;
-  }
 });
 
+// 補助関数群
+function setStatus(target, message, isPositive) {
+  if (!target) return;
+  target.textContent = message;
+  if (isPositive) {
+    target.classList.remove("error");
+  } else {
+    target.classList.add("error");
+  }
+}
+
+function parseHeaderInputList(input) {
+  let result = [];
+  let linesArr = input.split(/\r?\n/);
+  for (const line of linesArr) {
+    let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
+    if (match) {
+      result.push({
+        index: Number(match[1]),
+        name: match[2].replace(/\\/g, "").trim(),
+        mmr: Number(match[3])
+      });
+    }
+  }
+  return result;
+}
+
+function parseHeaderInput(input) {
+  let nameMmrMap = new Map();
+  let list = parseHeaderInputList(input);
+  for (const item of list) nameMmrMap.set(item.name, item.mmr);
+  return nameMmrMap;
+}
+
+function parseScoreboardInput(input) {
+  let nameScoreMap = new Map();
+  let linesArr = input.split(/\r?\n/);
+  for (const line of linesArr) {
+    let scoreTest = line.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
+    if (scoreTest) {
+      let score = Number(scoreTest[2]);
+      if (scoreTest.length >= 5 && scoreTest[4]) score += Number(scoreTest[4]);
+      nameScoreMap.set(scoreTest[1].replace(/\\/g, "").trim(), score);
+    }
+  }
+  return nameScoreMap;
+}
+
+function calculateMmrAdjustment(mmrA, mmrB, decision) {
+  const cap = 30;
+  const baseline = 10;
+  const scaling_factor = 9500;
+  const logistic_base = 11;
+
+  if (decision === 0) {
+    return Math.sign(mmrB - mmrA) * (cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.abs(mmrB - mmrA) / scaling_factor)) - cap / 3);
+  } else {
+    return Math.sign(decision) * cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.sign(decision) * (mmrB - mmrA) / scaling_factor));
+  }
+}
+
+function processText(a, b) {
+  let nameMmrMap = parseHeaderInput(a);
+  let nameScoreMap = parseScoreboardInput(b);
+  let playersInfo = [];
+  let mismatchedNames = [];
+
+  if (nameMmrMap.size !== 24 || nameScoreMap.size !== 24) return {ok: false};
+
+  for (const [name] of nameScoreMap) {
+    if (!nameMmrMap.has(name)) mismatchedNames.push(name);
+  }
+  if (mismatchedNames.length > 0) return {ok: false};
+
+  for (const [name1, mmr1] of nameMmrMap) {
+    let player = {name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 1};
+    player.score = nameScoreMap.get(player.name);
+    for (const [name2, mmr2] of nameMmrMap) {
+      const decision = Math.sign(player.score - nameScoreMap.get(name2));
+      player.mmrChange += calculateMmrAdjustment(player.mmrBefore, mmr2, decision);
+    }
+    player.mmrChange = Math.round(player.mmrChange);
+    player.mmrAfter = Math.max(player.mmrBefore + player.mmrChange, 0);
+    player.mmrChange = player.mmrAfter - player.mmrBefore;
+    playersInfo.push(player);
+  }
+
+  playersInfo.sort((a, b) => b.score - a.score || a.mmrBefore - b.mmrBefore);
+  playersInfo.forEach((p, index) => { p.place = index + 1; });
+
+  return {ok: true, playersInfo: playersInfo};
+}
+
+function getMmrChangeSummaryText(playersInfo) {
+  let longestNameLength = 0;
+  let longestMmrBeforeLength = 0;
+  let longestMmrAfterLength = 0;
+  let longestMmrDeltaLength = 0;
+  let mmrDeltaTextMap = new Map();
+
+  for (const player of playersInfo) {
+    if (player.name.length > longestNameLength) longestNameLength = player.name.length;
+    if (String(player.mmrBefore).length > longestMmrBeforeLength) longestMmrBeforeLength = String(player.mmrBefore).length;
+    if (String(player.mmrAfter).length > longestMmrAfterLength) longestMmrAfterLength = String(player.mmrAfter).length;
+    let mmrDeltaText = (player.mmrChange > 0 ? "+" : "") + player.mmrChange;
+    if (mmrDeltaText.length > longestMmrDeltaLength) longestMmrDeltaLength = mmrDeltaText.length;
+    mmrDeltaTextMap.set(player.name, mmrDeltaText);
+  }
   
+  let mmrAdjustmentText = "```Expected MMR Changes (unofficial)";
+  for (const player of playersInfo) {
+    let mmrDeltaText = mmrDeltaTextMap.get(player.name);
+    mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
+        " ".repeat(longestMmrBeforeLength - String(player.mmrBefore).length) + player.mmrBefore + " --> " +
+        " ".repeat(longestMmrAfterLength - String(player.mmrAfter).length) + player.mmrAfter + " (" +
+        " ".repeat(longestMmrDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
+  }
+
+  mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
+  return mmrAdjustmentText;
+}
+
+
+
   
 </script>
 
