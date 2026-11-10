@@ -12838,7 +12838,7 @@ function initCourseMemoTabIndexedDB() {
 
   
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（各自のMMR個別変動計算対応版）
+// MMR Matrix 計算 & UIコントローラー（各自の保有MMR & 変動後目安完全対応版）
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13013,12 +13013,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (config.teamSize > 1) {
       for (let teamId = 1; teamId <= config.totalTeams; teamId++) {
         let teamMembers = headerList.filter(item => item.teamId === teamId);
-        let memberNames = teamMembers.map(m => m.name).join(' & ');
+        let memberNames = teamMembers.map(m => `${m.name} (${m.mmr})`).join(' & ');
         let avgMmr = teamMembers.length > 0 ? Math.round(teamMembers.reduce((sum, m) => sum + m.mmr, 0) / teamMembers.length) : 0;
 
         let opt = document.createElement('option');
         opt.value = `team_${teamId}`;
-        opt.textContent = `Team ${teamId}: ${memberNames} (平均 ${avgMmr} MMR)`;
+        opt.textContent = `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
         playerSelect.appendChild(opt);
       }
     } else {
@@ -13064,13 +13064,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let fullOutputText = "";
 
-    // 各メンバーごとの保有MMRを基準に独立した早見表を算出
+    // チームメンバー個別の保有MMRに基づいてそれぞれの早見表を算出
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
       const targetMmr = targetItem.mmr;
       const targetTeamId = targetItem.teamId;
 
-      // 自チーム以外の他チーム全員のMMRリストを取得して昇順ソート
       let opponentMmrs = [];
       headerList.forEach(item => {
         if (item.teamId !== targetTeamId) {
@@ -13099,7 +13098,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let realisticMaxChange = 0;
         let realisticMinChange = 0;
 
-        // 各対戦相手(oppMmr)に対して、ターゲットの保有MMR(targetMmr)を基準に変動量を計算
         for (let i = 0; i < totalOpponents; i++) {
           const oppMmr = opponentMmrs[i];
 
@@ -13122,6 +13120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
+        // 各自の保有MMR(targetMmr)に対して計算された変動量を適用
         const finalMaxMmr = Math.max(targetMmr + valMax, 0);
         const finalMinMmr = Math.max(targetMmr + valMin, 0);
 
