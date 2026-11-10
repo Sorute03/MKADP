@@ -1253,6 +1253,41 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
+
+
+<!-- ▼ コースメモタブ本体 -->
+<div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
+  <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
+
+  <!-- ▼ 【追加】野良 vs 大会・ラウンジの切替セレクトボックス -->
+  <div style="margin-bottom: 15px;">
+    <label data-i18n="lbl_memo_category" style="font-weight: bold; margin-right: 8px;">対象カテゴリ:</label>
+    <select id="memoCategorySelect" style="padding: 6px 10px; font-size: 14px; width: 220px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+      <option value="other" data-i18n="opt_category_other">大会・ラウンジ</option>
+    </select>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <!-- 左側：コース選択リスト（全コース表示） -->
+    <div style="width: 320px;">
+      <label data-i18n="lbl_select_course">コース選択</label><br>
+      <select id="memoCourseSelect" size="18" style="width: 100%; height: 480px; padding: 6px; font-size: 13px; box-sizing: border-box; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;">
+        <!-- JSで動的に挿入されます -->
+      </select>
+    </div>
+
+    <!-- 右側：メモ編集領域 -->
+    <div style="flex: 1; min-width: 320px;">
+      <h3 id="selectedCourseTitle" style="margin-top:0; color: #ffca28;">コースを選択してください</h3>
+      <textarea id="courseMemoTextarea" style="width: 100%; height: 430px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、立ち回りの意識、アイテム回しの意識などを記述..."></textarea>
+      <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+        <button id="saveCourseMemoBtn" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" data-i18n="btn_save_memo">メモを保存</button>
+        <span id="memoSaveStatus" style="color: #4caf50; display: none; font-size: 14px;" data-i18n="msg_saved">保存しました！</span>
+      </div>
+    </div>
+  </div>
+</div>
+
   
 <!-- ▼ オーバーレイ設定 -->
 <h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
@@ -1278,6 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <select id="overlayModeSelect" style="width:200px;">
     <option value="ALL" data-i18n="opt_all">ALL</option>
     <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+    <option value="nora" data-i18n="mode_nora">野良</option>
     <option value="tournament" data-i18n="mode_tournament">大会</option>
   </select>
 
@@ -1326,7 +1362,9 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-  
+
+
+
 
   
 <button id="openModalBtn" data-i18n="btn_race_register" style="
@@ -1346,98 +1384,140 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <!-- ▼ レース登録モーダル -->
-<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box;">
+<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box; overflow-y: auto;">
 
-  <!-- 2. 【別枠パネル】入力中のコース一覧 -->
+  <!-- 2. 【別枠サイドパネル】入力中のコース一覧 ＆ コースメモ統合版（縦長を拡張） -->
   <div id="modalSideHistoryPanel" style="
     background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
-    padding: 16px;
-    width: 260px;
-    max-height: 85vh;
+    padding: 14px;
+    width: 280px;
+    max-height: 94vh;
+    height: 94vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     box-sizing: border-box;
+    flex-shrink: 0;
+    gap: 10px;
   ">
-    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
-        <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+    <!-- ① 上部：入力中のコース一覧 -->
+    <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+      <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 5px; border-radius: 8px; font-size: 10px;">0件</span>
+          <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 5px; font-size: 10px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+        </div>
+      </div>
+      <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 11px; padding-right: 2px;">
+        <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 20px 0;">まだ入力されていません</div>
       </div>
     </div>
-    <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 12px; padding-right: 2px;">
-      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+
+    <!-- ② 下部：サイドパネル版コースメモエリア（高さを拡張） -->
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; flex-shrink: 0;">
+      
+      <!-- ▼ 開閉する対象（テキストエリアとタイトル部分） -->
+      <div id="modalMemoWrapper">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; border-bottom: 1px solid #eee; padding-bottom: 2px;">
+          <span style="font-size: 11px; font-weight: bold; color: #495057;" data-i18n="modal_memo_title">📌 選択中コースメモ</span>
+          <span id="modalActiveCourseName" style="font-size: 10px; font-weight: bold; color: #007bff; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="コース未選択">（未選択）</span>
+        </div>
+        <textarea id="modalCourseMemoTextarea" style="width: 100%; height: 110px; padding: 6px; font-size: 11px; box-sizing: border-box; background: #fff; color: #333; border: 1px solid #ced4da; border-radius: 4px; resize: vertical;" placeholder="このコースの戦略や意識メモ..."></textarea>
+      </div>
+
+      <!-- ▼ 常に表示される切り替えスイッチ＆クイック保存ボタンのバー -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-top: 1px solid #eee; padding-top: 6px;">
+        <label style="cursor: pointer; font-size: 11px; color: #555; display: flex; align-items: center; gap: 3px; user-select: none;">
+          <input type="checkbox" id="modalMemoToggle" checked style="cursor: pointer; margin: 0;">
+          <span data-i18n="label_modal_memo_setting">メモを表示</span>
+        </label>
+        <button id="saveModalMemoBtn" type="button" style="padding: 3px 8px; font-size: 10px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="btn_quick_save">クイック保存</button>
+      </div>
+
     </div>
   </div>
 
-  <!-- 1. 【モーダル本体】元のコンパクトなサイズ＆スクロール仕組み -->
+  <!-- 1. 【モーダル本体】（縦の長さを 94vh に拡張） -->
   <div class="modal-inner" style="
-    background:#fff;
-    padding:24px;
+    background: #fff;
+    padding: 22px 24px;
     width: 100%;
     max-width: 520px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 90vh;
+    max-height: 94vh;
+    height: 94vh;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overscroll-behavior: contain;
     position: relative;
     box-sizing: border-box;
+    flex-shrink: 0;
   ">
 
-    <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
-
-    <label data-i18n="lbl_mode">モード</label><br>
-    <!-- ▼ モードの選択肢を元通りに復活させました -->
-    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
-      <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-      <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-    </select>
-  
-    <div id="modalTierBlock">
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
+    <!-- ヘッダー -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; flex-shrink: 0;">
+      <h3 data-i18n="modal_race_register" style="margin: 0; font-size: 16px;">レース登録</h3>
     </div>
 
-    <div id="modalSeasonBlock">
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
-    </div>
-
-    <div id="modalRaceCountBlock">
-      <label data-i18n="modal_race_count">レース数</label><br>
-      <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
-        <option value="1">1レース</option>
-        <option value="2">2レース</option>
-        <option value="3">3レース</option>
-        <option value="4">4レース</option>
-        <option value="5">5レース</option>
-        <option value="6">6レース</option>
-        <option value="7">7レース</option>
-        <option value="8">8レース（大会）</option>
-        <option value="9">9レース</option>
-        <option value="10">10レース</option>
-        <option value="11">11レース</option>
-        <option value="12">12レース（大会）</option>
+    <!-- スクロール可能な入力フォーム領域 -->
+    <div style="flex-grow: 1; overflow-y: auto; padding-right: 4px;">
+      <!-- モード選択 -->
+      <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_mode">モード</label>
+      <select id="modalMode" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;">
+        <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+        <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+        <option value="nora" data-i18n="opt_mode_nora">野良</option>
       </select>
+    
+      <div id="modalTierBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_tier">Tier</label>
+        <select id="modalTier" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;"></select>
+      </div>
+
+      <div id="modalSeasonBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_season">Season</label>
+        <select id="modalSeason" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;"></select>
+      </div>
+
+      <div id="modalRaceCountBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="modal_race_count">レース数</label>
+        <select id="modalRaceCount" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;">
+          <option value="1">1レース</option>
+          <option value="2">2レース</option>
+          <option value="3">3レース</option>
+          <option value="4">4レース</option>
+          <option value="5">5レース</option>
+          <option value="6">6レース</option>
+          <option value="7">7レース</option>
+          <option value="8">8レース（大会）</option>
+          <option value="9">9レース</option>
+          <option value="10">10レース</option>
+          <option value="11">11レース</option>
+          <option value="12">12レース（大会）</option>
+        </select>
+      </div>
+
+      <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:10px; color:#555; font-size: 11px;">
+        ※ ラウンジは最大12レース（途中中断OK）
+      </div>
+
+      <div id="modalRaceInputs"></div>
     </div>
 
-    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
-      ※ ラウンジは最大12レース（途中中断OK）
-    </div>
-
-    <div id="modalRaceInputs"></div>
-
-    <div style="text-align:right; margin-top:20px; border-top: 1px solid #eee; padding-top: 15px;">
+    <!-- フッター（ボタン固定領域） -->
+    <div style="text-align:right; margin-top:12px; border-top: 1px solid #eee; padding-top: 10px; flex-shrink: 0;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
-        margin-right:8px;
+        margin-right:6px;
         background:#ccc;
         border: none;
         border-radius:6px;
+        font-size: 13px;
         cursor:pointer;
       ">キャンセル</button>
     
@@ -1447,6 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color:#fff;
         border:none;
         border-radius:6px;
+        font-size: 13px;
         font-weight:bold;
         cursor:pointer;
       ">保存</button>
@@ -1833,6 +1914,124 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+
+
+
+
+
+async function loadMemoForActiveModalCourse() {
+  const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+  const courseNameSpan = document.getElementById("modalActiveCourseName");
+  if (!memoTextarea) return;
+
+  // 1. 現在のモーダル上のモードを取得してカテゴリ（nora / other）を判定
+  const rawMode = modalMode ? modalMode.value : "lounge";
+  const category = getMemoCategory(rawMode);
+
+  // 2. 現在入力中の最初のコースを取得
+  let activeCourse = null;
+  const count = rawMode === "lounge" ? 12 : Number(modalRaceCount.value || 1);
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    if (courseEl && courseEl.value) {
+      activeCourse = courseEl.value;
+      break;
+    }
+  }
+
+  if (!activeCourse) {
+    const firstCourseEl = document.getElementById(`raceCourse_1`);
+    if (firstCourseEl) activeCourse = firstCourseEl.value;
+  }
+
+  const categoryLabel = (category === "nora") ? "野良" : "大会/ラウンジ";
+
+  if (activeCourse) {
+    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} (${categoryLabel}) ]`;
+    
+    // カテゴリ別にIndexedDBからメモを取得
+    const memo = await loadCourseMemo(category, activeCourse);
+    memoTextarea.value = memo || "";
+  } else {
+    if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
+    memoTextarea.value = "";
+  }
+}
+
+// モーダル内の「クイック保存」ボタンの連動
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\((.*?)\)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const rawMode = modalMode ? modalMode.value : "lounge";
+      const category = getMemoCategory(rawMode);
+
+      // 正しいカテゴリ（nora または other）でIndexedDBに保存
+      const success = await saveCourseMemo(category, targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse} (${category === 'nora' ? '野良' : '大会/ラウンジ'})」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+
+  // モードセレクト（modalMode）が変更されたときにも対応するメモを自動で切り替え読込
+  if (typeof modalMode !== 'undefined' && modalMode) {
+    modalMode.addEventListener("change", () => {
+      loadMemoForActiveModalCourse();
+    });
+  }
+});
+
+// モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
+// ※ 既存の openModalBtn.onclick の中に以下を追加してください
+/*
+  await loadMemoForActiveModalCourse();
+*/
+
+// モーダル内の「クイック保存」ボタンのイベント設定
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      // テキストからコース名を抽出（例: "[ マリオカートスタジアム ]" → "マリオカートスタジアム"）
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const success = await saveCourseMemo(targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse}」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+});
+
+  
   
 </script>
 
@@ -1973,7 +2172,7 @@ function generateRaceInputs(count) {
         <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
           <option value="">-- 選択してください --</option>
-          ${Array.from({length: 12}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
         <label>${tScore}</label><br>
@@ -2007,14 +2206,24 @@ function generateRaceInputs(count) {
         }
         triggerLiveWebhookProgress();
         updateModalCourseHistory(); // ★ コース変更時に右側のリストを即時更新
+
+        // ★ コースメモ連動：コースが変更されたら、そのコースのメモをモーダル内エリアに自動読み込み
+        if (typeof loadMemoForActiveModalCourse === "function") {
+          loadMemoForActiveModalCourse();
+        }
       };
     }
   }
 
   saveNextCourse();
   updateModalCourseHistory(); // ★ 入力欄生成時（モーダルを開いたとき）に初期状態を反映
-}
 
+  // ★ モーダルを開いたときにも最初のコースのメモを自動読み込み
+  if (typeof loadMemoForActiveModalCourse === "function") {
+    loadMemoForActiveModalCourse();
+  }
+}
+  
   
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
@@ -12080,6 +12289,439 @@ document.addEventListener('DOMContentLoaded', () => {
   initFixedTimeSyncScheduler();
 });
 
+
+
+
+
+ // 💡 ご提示いただいた全コースリストをそのまま使用
+const activeCourseList = (typeof courseList !== 'undefined') ? courseList : [
+  "マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "バニラレイク",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "SFCノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "おばけぬま1",
+  "おばけぬま2",
+  "おばけぬま3",	
+  "ホネホネツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "チョコレーとう1",
+  "チョコレーとう2",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+  "SFCマリオサーキット1",
+  "SFCマリオサーキット2",
+  "SFCマリオサーキット3",
+  "レインボーロード",
+  // 遷移データ等
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "マリオブラザーズサーキット→シュポポコースター",
+  "マリオブラザーズサーキット→サンサンさばく",
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "マリオブラザーズサーキット→キノピオファクトリー",
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
+  "トロフィーシティ→ピーチスタジアム",
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
+  "ピーチスタジアム→レインボーロード"
+];
+
+
+
+// ▼ 変数の重複衝突を防ぐため、コースメモ専用のユニークな定数名に変更
+const MK_MEMO_DB_NAME = "MKCourseMemoDB";
+const MK_MEMO_STORE_NAME = "memos";
+const MK_MEMO_DB_VERSION = 1;
+
+// コースメモデータ（localStorageのバックアップ等が必要な場合はここから移行）
+let courseMemoData = {};
+
+/**
+ * コースメモ専用 IndexedDB の接続を開く
+ */
+function openCourseMemoDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(MK_MEMO_DB_NAME, MK_MEMO_DB_VERSION);
+    
+    request.onerror = (event) => {
+      console.error("IndexedDB open error:", event.target.error);
+      reject(event.target.error);
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(MK_MEMO_STORE_NAME)) {
+        db.createObjectStore(MK_MEMO_STORE_NAME);
+      }
+    };
+  });
+}
+
+/**
+ * 指定したコースのメモをIndexedDBから取得
+ */
+/**
+ * モーダルのモード（lounge, tournament, nora）から、メモ用の2分類キー（nora または other）を判定する
+ */
+function getMemoCategory(mode) {
+  return (mode === "nora") ? "nora" : "other";
+}
+
+/**
+ * 指定したカテゴリー（nora / other）とコース名のキーを生成
+ */
+function getMemoStorageKey(category, courseName) {
+  return `${category}_${courseName}`;
+}
+
+/**
+ * コースメモをIndexedDBから取得する
+ */
+async function loadCourseMemo(category, courseName) {
+  try {
+    const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
+      const request = store.get(storageKey);
+
+      request.onsuccess = () => resolve(request.result || "");
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("メモの読み込みに失敗しました:", e);
+    return "";
+  }
+}
+
+/**
+ * コースメモをIndexedDBに保存する
+ */
+async function saveCourseMemo(category, courseName, memoText) {
+  try {
+    const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
+      const request = store.put(memoText, storageKey);
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("メモの保存に失敗しました:", e);
+    return false;
+  }
+}
+
+// 起動時の初期化
+document.addEventListener("DOMContentLoaded", async () => {
+  // ▼ refreshAllAnalysisViews が未定義の場合のエラーを安全にガード
+  if (typeof refreshAllAnalysisViews === 'undefined') {
+    window.refreshAllAnalysisViews = function() {
+      console.warn("refreshAllAnalysisViews は定義されていません");
+    };
+  }
+
+  // コースメモタブの初期化を実行
+  await initCourseMemoTabIndexedDB();
+});
+
+/**
+ * コースメモタブの初期化（IndexedDB対応版）
+ */
+function initCourseMemoTabIndexedDB() {
+  const selectEl = document.getElementById("memoCourseSelect");
+  const textareaEl = document.getElementById("courseMemoTextarea");
+  const titleEl = document.getElementById("selectedCourseTitle");
+  const saveBtn = document.getElementById("saveCourseMemoBtn");
+  const memoCategorySelect = document.getElementById("memoCategorySelect"); // カテゴリ選択
+
+  if (!selectEl) return;
+
+  const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
+
+  // コース一覧の挿入
+  selectEl.innerHTML = "";
+  targetCourseList.forEach(course => {
+    const opt = document.createElement("option");
+    opt.value = course;
+    opt.textContent = course;
+    selectEl.appendChild(opt);
+  });
+
+  // 現在選択されているカテゴリを取得（nora または other）
+  const getCurrentCategory = () => memoCategorySelect ? memoCategorySelect.value : "other";
+
+  // メモをロードしてテキストエリアに反映
+  const loadAndShowMemo = async () => {
+    const selectedCourse = selectEl.value;
+    const currentCategory = getCurrentCategory();
+    if (!selectedCourse) return;
+
+    const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
+    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
+    textareaEl.value = "読み込み中...";
+    
+    const memo = await loadCourseMemo(currentCategory, selectedCourse);
+    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory) {
+      textareaEl.value = memo;
+    }
+  };
+
+  selectEl.onchange = loadAndShowMemo;
+  if (memoCategorySelect) {
+    memoCategorySelect.onchange = loadAndShowMemo;
+  }
+
+  // 初期選択
+  if (targetCourseList.length > 0) {
+    selectEl.value = targetCourseList[0];
+    loadAndShowMemo();
+  }
+
+  // 保存ボタン
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      const selectedCourse = selectEl.value;
+      const currentCategory = getCurrentCategory();
+      if (!selectedCourse) return alert("コースを選択してください");
+
+      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl.value);
+      if (success) {
+        const statusEl = document.getElementById("memoSaveStatus");
+        if (statusEl) {
+          statusEl.style.display = "inline";
+          setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+        }
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+} 
 
 </script>
 
