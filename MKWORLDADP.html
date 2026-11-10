@@ -12838,7 +12838,7 @@ function initCourseMemoTabIndexedDB() {
 
   
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（チーム数・24人固定最適化版）
+// MMR Matrix 計算 & UIコントローラー（各自のMMR個別変動計算対応版）
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12859,7 +12859,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!mogiHeaderInput) return;
 
-  // 24人固定に合わせた正しいチーム数設定
   const FORMAT_SETTINGS = {
     'ffa':   { teamSize: 1,  totalTeams: 24, label: 'FFA (24人 個人戦)' },
     '2v2':   { teamSize: 2,  totalTeams: 12, label: '2v2 (12チーム)' },
@@ -13065,11 +13064,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let fullOutputText = "";
 
+    // 各メンバーごとの保有MMRを基準に独立した早見表を算出
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
       const targetMmr = targetItem.mmr;
       const targetTeamId = targetItem.teamId;
 
+      // 自チーム以外の他チーム全員のMMRリストを取得して昇順ソート
       let opponentMmrs = [];
       headerList.forEach(item => {
         if (item.teamId !== targetTeamId) {
@@ -13098,6 +13099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let realisticMaxChange = 0;
         let realisticMinChange = 0;
 
+        // 各対戦相手(oppMmr)に対して、ターゲットの保有MMR(targetMmr)を基準に変動量を計算
         for (let i = 0; i < totalOpponents; i++) {
           const oppMmr = opponentMmrs[i];
 
@@ -13352,7 +13354,6 @@ function getMmrChangeSummaryText(playersInfo) {
   mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
   return mmrAdjustmentText;
 }
-
   
   
   
