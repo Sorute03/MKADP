@@ -12836,9 +12836,8 @@ function initCourseMemoTabIndexedDB() {
 
 
 
-  
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（個人戦とチーム戦の計算方式切り替え対応版）
+// MMR Matrix 計算 & UIコントローラー（チーム戦・各自のMMR基準変動完全対応版）
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12859,7 +12858,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!mogiHeaderInput) return;
 
-  // 公式ドキュメントに基づく各フォーマットの定数 (C, D, P) とチーム設定
   const FORMAT_SETTINGS = {
     'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500, label: 'FFA (24人 個人戦)' },
     '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500, label: '2v2 (12チーム)' },
@@ -12932,7 +12930,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームまたはプレイヤーを選択してください。");
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームを選択してください。");
       }
 
       const payload = {
@@ -13063,7 +13061,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (targetMembers.length === 0) return;
 
-    // チーム戦の場合の他チーム平均MMR算出用
     let teamAvgMmrs = new Map();
     if (config.teamSize > 1) {
       for (let tId = 1; tId <= config.totalTeams; tId++) {
@@ -13084,14 +13081,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let opponentMmrs = [];
       if (config.teamSize > 1) {
-        // チーム戦：他チームの平均MMR一覧
+        // チーム戦：他チームの平均MMRを対戦相手リストとして取得
         for (let tId = 1; tId <= config.totalTeams; tId++) {
           if (tId !== targetTeamId) {
             opponentMmrs.push(teamAvgMmrs.get(tId));
           }
         }
       } else {
-        // 個人戦(FFA)：自分以外の全員の個別MMR一覧（今までの方法）
+        // 個人戦(FFA)：自分以外の全員の個別MMR
         headerList.forEach(item => {
           if (item.name !== selectedName) {
             opponentMmrs.push(item.mmr);
@@ -13103,7 +13100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
 
-      fullOutputText += `=== 【${config.teamSize > 1 ? 'Team ' + targetTeamId + ' / ' : ''}${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+      fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
       fullOutputText += `順位        | 予想変動レンジ            | 変動後MMR目安\n`;
       fullOutputText += `----------------------------------------------------------\n`;
 
@@ -13120,6 +13117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < totalOpponents; i++) {
           const oppMmr = opponentMmrs[i];
 
+          // 各対戦相手(oppMmr)との勝敗判定を行い、自分の保有MMR(targetMmr)を基準に変動量を計算
           if (i >= losingCount) {
             realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
           } else {
@@ -13139,6 +13137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
+        // 各自の保有MMR(targetMmr)に対して算出された変動量を加算
         const finalMaxMmr = Math.max(targetMmr + valMax, 0);
         const finalMinMmr = Math.max(targetMmr + valMin, 0);
 
@@ -13329,7 +13328,6 @@ function processText(a, b, format = 'ffa') {
     const team1Score = teamScoreMap.get(team1);
 
     if (config.teamSize > 1) {
-      // チーム戦の計算：他チームの平均MMRおよびチームスコアと比較
       for (let tId = 1; tId <= config.totalTeams; tId++) {
         if (tId === team1) continue;
 
@@ -13341,7 +13339,6 @@ function processText(a, b, format = 'ffa') {
         player.mmrChange += calculateMmrAdjustment(player.mmrBefore, opponentAvgMmr, decision, config);
       }
     } else {
-      // 個人戦(FFA)の計算：従来通りの完全個別1対1比較（今までの方法）
       for (const item2 of headerList) {
         if (item1.name === item2.name) continue;
         const decision = Math.sign(player.score - nameScoreMap.get(item2.name));
