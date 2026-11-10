@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="mogiHeaderStatusBar" class="statusBar" style="font-size: 0.85rem; margin-top: 8px; min-height: 1.2em;"></div>
     </div>
 
-    <!-- 2. 全順位変動一覧表示パネル -->
+    <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信ボタン -->
     <div style="background-color: #1e1e24; border: 1px solid #27272a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
       <label for="playerSelect" style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
       <select id="playerSelect" disabled style="width: 100%; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-size: 0.9rem; margin-bottom: 12px;">
@@ -1618,11 +1618,16 @@ document.addEventListener('DOMContentLoaded', () => {
         id="matrixResultOutput"
         readonly
         placeholder="自分を選択すると、1位〜24位を取った場合の変動幅一覧がここに自動で出力されます。"
-        style="width: 100%; height: 320px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; white-space: pre; resize: vertical;"
+        style="width: 100%; height: 280px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; white-space: pre; resize: vertical;"
       ></textarea>
+
+      <!-- 予測早見表の送信ボタン -->
+      <div style="margin-top: 12px;">
+        <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">予測早見表をDiscordに送信</button>
+      </div>
     </div>
 
-    <!-- 3. 通常の全体一括出力 ＆ Webhook管理 -->
+    <!-- 3. 通常の全体一括出力 -->
     <div style="background-color: #1e1e24; border: 1px solid #27272a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
       <label style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
       <textarea
@@ -1637,37 +1642,12 @@ document.addEventListener('DOMContentLoaded', () => {
         style="width: 100%; height: 180px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
       ></textarea>
       
-      <!-- 計算・コピーボタン -->
-      <div style="display: flex; gap: 12px; margin-top: 12px;">
-        <button id="calculateButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Calculate (全員分)</button>
+      <!-- 計算・コピー・Discord送信ボタン -->
+      <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+        <button id="calculateButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Calculate (全員分)</button>
         <button id="copyButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
+        <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をDiscordに送信</button>
       </div>
-
-      <!-- ▼ Webhook 管理パネル -->
-      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #27272a;">
-        <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: #e4e4e7;">Webhook 名前</label>
-        <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 4px; font-size: 0.85rem;"><br><br>
-
-        <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: #e4e4e7;">Webhook URL</label>
-        <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 4px; font-size: 0.85rem;"><br>
-
-        <!-- リアルタイム通知ON/OFF -->
-        <div style="margin-top: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #a1a1aa;">
-          <span>1コース入力ごとにリアルタイムで通知</span>
-          <button id="toggleLiveWebhookBtn" type="button" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; background: #17171c; color: #4caf50; border: 1px solid #4caf50; border-radius: 4px;">ON</button>
-        </div>
-
-        <button type="button" onclick="addWebhook()" data-i18n="btn_add" style="padding: 6px 14px; cursor: pointer; background-color: #6366f1; color: white; border: none; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">追加</button>
-        
-        <!-- 登録されたWebhookのリスト表示エリア -->
-        <div id="webhookListArea" style="margin-top: 12px;"></div>
-
-        <!-- 一括結果を送信するメインボタン（IDを sendMmrDiscordBtn に統一） -->
-        <div style="margin-top: 15px;">
-          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をWebhookで送信</button>
-        </div>
-      </div>
-      <!-- ▲▲▲ Webhook管理パネルここまで ▲▲▲ -->
 
       <div id="mmrTableStatusBar" class="statusBar" style="font-size: 0.85rem; margin-top: 8px; min-height: 1.2em;"></div>
     </div>
@@ -12856,36 +12836,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyButton = document.getElementById('copyButton');
   const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
   const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
-  const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn'); // 追加
+  
+  const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn');       // 3の確定結果送信ボタン
+  const sendMatrixDiscordBtn = document.getElementById('sendMatrixDiscordBtn'); // 2の予測早見表送信ボタン
 
   if (!mogiHeaderInput) return;
 
   let parsedHeaderList = [];
 
-  // ▼ MMR計算結果 Discord送信ボタンの処理（DOMContentLoaded内に安全に配置）
+  // 共通のWebhook URL取得ヘルパー（既存の管理機能と連携）
+  function getActiveWebhookUrl() {
+    let webhook = "";
+    if (typeof getSelectedWebhookUrl === "function") {
+      webhook = getSelectedWebhookUrl();
+    } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+      webhook = webhookList[activeWebhookIndex]?.url || "";
+    }
+    return webhook;
+  }
+
+  // ▼ 3. 従来のスコアボード一括計算結果（確定値）のDiscord送信
   if (sendMmrDiscordBtn) {
     sendMmrDiscordBtn.onclick = async () => {
-      // 1. 画像送信側と全く同じ仕組みでWebhook URLを取得
-      let webhook = "";
-      if (typeof getSelectedWebhookUrl === "function") {
-        webhook = getSelectedWebhookUrl();
-      } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
-        webhook = webhookList[activeWebhookIndex]?.url || "";
-      }
-
+      const webhook = getActiveWebhookUrl();
       if (!webhook) {
         return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
       }
 
-      // 2. 送信対象の計算結果テキストを取得
       if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
         return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No calculation result to send. Please calculate first." : "送信する計算結果がありません。先に Calculate を実行してください。");
       }
 
-      // 3. テキスト送信用のJSONペイロードを構築
-      const payload = {
-        content: mmrTableOutput.value
-      };
+      const payload = { content: mmrTableOutput.value };
 
       try {
         sendMmrDiscordBtn.disabled = true;
@@ -12893,9 +12875,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const response = await fetch(webhook, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
@@ -12909,7 +12889,48 @@ document.addEventListener('DOMContentLoaded', () => {
         alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
       } finally {
         sendMmrDiscordBtn.disabled = false;
-        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send to Discord" : "Webhookで送信";
+        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send to Discord" : "計算結果をDiscordに送信";
+      }
+    };
+  }
+
+  // ▼ 2. 全順位変動一覧（予測早見表）のDiscord送信
+  if (sendMatrixDiscordBtn) {
+    sendMatrixDiscordBtn.onclick = async () => {
+      const webhook = getActiveWebhookUrl();
+      if (!webhook) {
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
+      }
+
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a player first." : "送信する早見表がありません。先に自分の名前を選択してください。");
+      }
+
+      const payload = {
+        content: "```\n" + matrixResultOutput.value + "\n```"
+      };
+
+      try {
+        sendMatrixDiscordBtn.disabled = true;
+        sendMatrixDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Sending..." : "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Matrix result sent to Discord!" : "Discord に予測早見表を送信しました！");
+        } else {
+          alert("Failed to send (Status: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMatrixDiscordBtn.disabled = false;
+        sendMatrixDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send Matrix to Discord" : "予測早見表をDiscordに送信";
       }
     };
   }
@@ -13173,8 +13194,7 @@ function getMmrChangeSummaryText(playersInfo) {
   return mmrAdjustmentText;
 }
 
-
-
+  
   
 </script>
 
