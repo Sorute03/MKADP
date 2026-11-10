@@ -756,6 +756,8 @@ const i18nDict = {
     opt_category_nora: "野良",
     label_modal_memo_setting: "📌 モーダル内コースメモ表示",
     label_show_memo: "表示する",
+    tab_mmr_matrix: "MMR Matrix計算",
+    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator"
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -999,6 +1001,8 @@ const i18nDict = {
     opt_category_nora: "Worldwide / Regional (Nora)",
     label_modal_memo_setting: "📌 Course Note in Modal",
     label_show_memo: "Show",
+    tab_mmr_matrix: "MMR Matrix",
+    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator"
     }
   };
 
@@ -1252,12 +1256,13 @@ document.addEventListener('DOMContentLoaded', () => {
   </p>
 </div>
 
-<div id="tabs" style="margin-bottom:20px;">
+<div id="tabs" style="margin-bottom:20px; display: flex; flex-wrap: wrap; gap: 6px;">
   <button class="tabBtn active" data-tab="analysisTab" data-i18n="tab_analysis">分析</button>
   <button class="tabBtn" data-tab="historyTab" data-i18n="tab_history">レース一覧</button>
   <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
   <button class="tabBtn" data-tab="courseMemoTab" data-i18n="tab_course_memo">コースメモ</button>
+  <button class="tabBtn" data-tab="mmrMatrixTab" data-i18n="tab_mmr_matrix">MMR Matrix計算</button>
 </div>
 
 
@@ -1580,6 +1585,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+
+
+<!-- ▼ MMR Matrix 計算タブ本体 -->
+<div id="mmrMatrixTab" class="tabContent" style="display:none; padding:20px;">
+  <h2 style="margin-bottom: 20px; font-size: 1.5rem;" data-i18n="mmr_matrix_title">MK Lounge 24-player MMR Matrix Calculator</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
+    <!-- 1. Room Header Input -->
+    <div style="background-color: #1e1e24; border: 1px solid #27272a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+      <label style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
+      <div style="position: relative; flex-grow: 1;">
+        <textarea
+          id="mogiHeaderInput"
+          placeholder="`Room 1 - Player List`&#10;`1.` YamiX (12325 MMR)&#10;`2.` raisins (12076 MMR)..."
+          style="width: 100%; height: 180px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
+        ></textarea>
+        <button type="button" class="clear-overlay" data-target="mogiHeaderInput" style="position: absolute; top: 8px; right: 12px; background: none; border: none; color: #a1a1aa; font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <div id="mogiHeaderStatusBar" class="statusBar" style="font-size: 0.85rem; margin-top: 8px; min-height: 1.2em;"></div>
+    </div>
+
+    <!-- 2. 全順位変動一覧表示パネル -->
+    <div style="background-color: #1e1e24; border: 1px solid #27272a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+      <label for="playerSelect" style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
+      <select id="playerSelect" disabled style="width: 100%; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-size: 0.9rem; margin-bottom: 12px;">
+        <option value="">(先に上のプレイヤーリストを入力してください)</option>
+      </select>
+
+      <textarea
+        id="matrixResultOutput"
+        readonly
+        placeholder="自分を選択すると、1位〜24位を取った場合の変動幅一覧がここに自動で出力されます。"
+        style="width: 100%; height: 320px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; white-space: pre; resize: vertical;"
+      ></textarea>
+    </div>
+
+    <!-- 3. 通常の全体一括出力 ＆ Webhook管理 -->
+    <div style="background-color: #1e1e24; border: 1px solid #27272a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+      <label style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
+      <textarea
+        id="scoreboardInput"
+        placeholder="!submit 1 Q&#10;YamiX 119..."
+        style="width: 100%; height: 100px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; margin-bottom: 10px; resize: vertical;"
+      ></textarea>
+      <textarea
+        id="mmrTableOutput"
+        placeholder="スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。"
+        readonly
+        style="width: 100%; height: 180px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
+      ></textarea>
+      
+      <!-- 計算・コピーボタン -->
+      <div style="display: flex; gap: 12px; margin-top: 12px;">
+        <button id="calculateButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Calculate (全員分)</button>
+        <button id="copyButton" style="padding: 10px 20px; font-weight: 600; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
+      </div>
+
+      <!-- ▼ Webhook 管理パネル（ご提示いただいたデザインを組み込み） -->
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #27272a;">
+        <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: #e4e4e7;">Webhook 名前</label>
+        <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 4px; font-size: 0.85rem;"><br><br>
+
+        <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: #e4e4e7;">Webhook URL</label>
+        <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #17171c; color: #e4e4e7; border: 1px solid #27272a; border-radius: 4px; font-size: 0.85rem;"><br>
+
+        <!-- リアルタイム通知ON/OFF -->
+        <div style="margin-top: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #a1a1aa;">
+          <span>1コース入力ごとにリアルタイムで通知</span>
+          <button id="toggleLiveWebhookBtn" type="button" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; background: #17171c; color: #4caf50; border: 1px solid #4caf50; border-radius: 4px;">ON</button>
+        </div>
+
+        <button type="button" onclick="addWebhook()" data-i18n="btn_add" style="padding: 6px 14px; cursor: pointer; background-color: #6366f1; color: white; border: none; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">追加</button>
+        
+        <!-- 登録されたWebhookのリスト表示エリア -->
+        <div id="webhookListArea" style="margin-top: 12px;"></div>
+
+        <!-- 一括結果をサクッと送信するメインボタン -->
+        <div style="margin-top: 15px;">
+          <button id="sendWebhookButton" type="button" style="padding: 10px 20px; font-weight: 600; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をWebhookで送信</button>
+        </div>
+      </div>
+      <!-- ▲▲▲ Webhook管理パネルここまで ▲▲▲ -->
+
+      <div id="mmrTableStatusBar" class="statusBar" style="font-size: 0.85rem; margin-top: 8px; min-height: 1.2em;"></div>
+    </div>
+  </div>
+</div>
+
+
+
+  
 
 
   
@@ -12740,6 +12837,478 @@ function initCourseMemoTabIndexedDB() {
     };
   }
 }
+
+
+
+
+  
+document.addEventListener('DOMContentLoaded', () => {
+  const mogiHeaderInput = document.getElementById('mogiHeaderInput');
+  const playerSelect = document.getElementById('playerSelect');
+  const matrixResultOutput = document.getElementById('matrixResultOutput');
+
+  const scoreboardInput = document.getElementById('scoreboardInput');
+  const mmrTableOutput = document.getElementById('mmrTableOutput');
+  const calculateButton = document.getElementById('calculateButton');
+  const copyButton = document.getElementById('copyButton');
+  const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
+  const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
+
+  // Webhook関連の要素取得
+  const webhookNameInput = document.getElementById('webhookNameInput');
+  const webhookUrlInput = document.getElementById('webhookUrlInput');
+  const toggleLiveWebhookBtn = document.getElementById('toggleLiveWebhookBtn');
+  const webhookListArea = document.getElementById('webhookListArea');
+  const sendWebhookButton = document.getElementById('sendWebhookButton'); // HTML側にある送信ボタン
+
+  if (!mogiHeaderInput) return; // タブ要素が存在しない場合の安全ガード
+
+  let parsedHeaderList = [];
+  
+  // 複数Webhook管理用の配列（LocalStorageから復元）
+  let webhooks = JSON.parse(localStorage.getItem('mk_webhooks') || '[]');
+  let isLiveWebhookEnabled = JSON.parse(localStorage.getItem('mk_live_webhook_enabled') ?? 'true');
+
+  // 初期状態の反映
+  updateLiveWebhookButtonUI();
+  renderWebhookList();
+
+  // ライブ通知ボタンの状態管理 (グローバル関数としてHTMLのonclickに対応)
+  window.toggleLiveWebhook = function() {
+    isLiveWebhookEnabled = !isLiveWebhookEnabled;
+    localStorage.setItem('mk_live_webhook_enabled', JSON.stringify(isLiveWebhookEnabled));
+    updateLiveWebhookButtonUI();
+  };
+
+  function updateLiveWebhookButtonUI() {
+    if (toggleLiveWebhookBtn) {
+      if (isLiveWebhookEnabled) {
+        toggleLiveWebhookBtn.textContent = "ON";
+        toggleLiveWebhookBtn.style.color = "#4caf50";
+        toggleLiveWebhookBtn.style.borderColor = "#4caf50";
+      } else {
+        toggleLiveWebhookBtn.textContent = "OFF";
+        toggleLiveWebhookBtn.style.color = "#f44336";
+        toggleLiveWebhookBtn.style.borderColor = "#f44336";
+      }
+    }
+  }
+
+  // Webhookの追加処理 (HTMLのonclick="addWebhook()"に対応)
+  window.addWebhook = function() {
+    const name = webhookNameInput ? webhookNameInput.value.trim() : "";
+    const url = webhookUrlInput ? webhookUrlInput.value.trim() : "";
+
+    if (!url) {
+      alert("Webhook URLを入力してください。");
+      return;
+    }
+
+    webhooks.push({
+      id: Date.now().toString(),
+      name: name || "無題のWebhook",
+      url: url
+    });
+
+    saveAndRenderWebhooks();
+
+    // 入力欄をクリア
+    if (webhookNameInput) webhookNameInput.value = "";
+    if (webhookUrlInput) webhookUrlInput.value = "";
+  };
+
+  // Webhookの削除処理
+  window.deleteWebhook = function(id) {
+    webhooks = webhooks.filter(wh => wh.id !== id);
+    saveAndRenderWebhooks();
+  };
+
+  function saveAndRenderWebhooks() {
+    localStorage.setItem('mk_webhooks', JSON.stringify(webhooks));
+    renderWebhookList();
+  }
+
+  // 登録済みWebhook一覧の描画
+  function renderWebhookList() {
+    if (!webhookListArea) return;
+    if (webhooks.length === 0) {
+      webhookListArea.innerHTML = `<p style="font-size: 0.85rem; color: #a1a1aa;">登録されているWebhookはありません。</p>`;
+      return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+    webhooks.forEach(wh => {
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: #17171c; border: 1px solid #27272a; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
+            <strong style="color: #e4e4e7;">${escapeHtml(wh.name)}</strong>
+            <span style="color: #a1a1aa; margin-left: 8px; font-size: 0.75rem;">${escapeHtml(wh.url)}</span>
+          </div>
+          <div style="display: flex; gap: 6px; flex-shrink: 0;">
+            <button onclick="sendToSpecificWebhook('${wh.id}')" style="background-color: #6366f1; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">送信</button>
+            <button onclick="deleteWebhook('${wh.id}')" style="background-color: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">削除</button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    webhookListArea.innerHTML = html;
+  }
+
+  // 特定のWebhookへ結果を送信する関数
+  window.sendToSpecificWebhook = async function(id) {
+    if (!mmrTableOutput || mmrTableOutput.value === "") {
+      alert("送信する計算結果がありません。先に Calculate を実行してください。");
+      return;
+    }
+
+    const targetWh = webhooks.find(wh => wh.id === id);
+    if (!targetWh) {
+      alert("指定されたWebhookが見つかりません。");
+      return;
+    }
+
+    await postToWebhook(targetWh.url, targetWh.name);
+  };
+
+  // 従来の「一括送信ボタン」が押されたときの処理（リストの先頭、または入力欄のURLを使用）
+  if (sendWebhookButton) {
+    sendWebhookButton.addEventListener('click', async () => {
+      if (!mmrTableOutput || mmrTableOutput.value === "") {
+        alert("送信する計算結果がありません。先に Calculate を実行してください。");
+        return;
+      }
+
+      // 1. 入力欄に直接URLが入力されていればそれを優先
+      let urlToUse = webhookUrlInput ? webhookUrlInput.value.trim() : "";
+      let nameToUse = webhookNameInput ? webhookNameInput.value.trim() : "直接入力Webhook";
+
+      // 2. 入力欄が空で、保存済みリストにWebhookがあれば先頭のものを利用
+      if (!urlToUse && webhooks.length > 0) {
+        urlToUse = webhooks[0].url;
+        nameToUse = webhooks[0].name;
+      }
+
+      if (!urlToUse) {
+        alert("Webhook URLが入力されていないか、登録されていません。");
+        return;
+      }
+
+      await postToWebhook(urlToUse, nameToUse);
+    });
+  }
+
+  // 実際のPOSTリクエスト送信処理
+  async function postToWebhook(url, webhookName) {
+    const payload = {
+      content: mmrTableOutput.value
+    };
+
+    try {
+      if (sendWebhookButton) {
+        sendWebhookButton.disabled = true;
+        sendWebhookButton.textContent = "送信中...";
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok || response.status === 204) {
+        alert(`「${webhookName}」へ結果を送信しました！`);
+      } else {
+        const errText = await response.text();
+        alert(`送信に失敗しました (ステータス: ${response.status})\n${errText}`);
+      }
+    } catch (error) {
+      console.error('Webhook送信エラー:', error);
+      alert(`ネットワークエラー等により送信できませんでした。\n${error.message || error}`);
+    } finally {
+      if (sendWebhookButton) {
+        sendWebhookButton.disabled = false;
+        sendWebhookButton.textContent = "Webhookで送信";
+      }
+    }
+  }
+
+  // 簡易HTMLエスケープ
+  function escapeHtml(str) {
+    return str.replace(/[&'`"<>]/g, function(match) {
+      return {
+        '&': '&amp;',
+        '': '&#x27;',
+        '`': '&#x60;',
+        '"': '&quot;',
+        '<': '&lt;',
+        '>': '&gt;'
+      }[match];
+    });
+  }
+
+  // --- 以下、既存のロジック（変更なし） ---
+  function setStatus(target, message, isPositive) {
+    if (!target) return;
+    target.textContent = message;
+    if (isPositive) {
+      target.classList.remove("error");
+    } else {
+      target.classList.add("error");
+    }
+  }
+
+  mogiHeaderInput.addEventListener('input', () => {
+    setStatus(mogiHeaderStatusBar, "", true);
+    updatePlayerDropdown();
+  });
+
+  function updatePlayerDropdown() {
+    parsedHeaderList = parseHeaderInputList(mogiHeaderInput.value);
+    playerSelect.innerHTML = "";
+    
+    if (parsedHeaderList.length === 0) {
+      let opt = document.createElement('option');
+      opt.value = "";
+      opt.textContent = "(プレイヤーリストが読み込まれていません)";
+      playerSelect.appendChild(opt);
+      playerSelect.disabled = true;
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    let defaultOpt = document.createElement('option');
+    defaultOpt.value = "";
+    defaultOpt.textContent = "-- 自分の名前を選択してください --";
+    playerSelect.appendChild(defaultOpt);
+
+    parsedHeaderList.forEach(item => {
+      let opt = document.createElement('option');
+      opt.value = item.name;
+      opt.textContent = `${item.index}. ${item.name} (${item.mmr} MMR)`;
+      playerSelect.appendChild(opt);
+    });
+
+    playerSelect.disabled = false;
+  }
+
+  playerSelect.addEventListener('change', () => {
+    const selectedName = playerSelect.value;
+    if (!selectedName) {
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    const nameMmrMap = parseHeaderInput(mogiHeaderInput.value);
+    if (nameMmrMap.size !== 24) {
+      matrixResultOutput.value = "エラー: プレイヤーリストが24人分正しく読み込めていません。";
+      return;
+    }
+
+    const targetMmr = nameMmrMap.get(selectedName);
+    const targetItem = parsedHeaderList.find(p => p.name === selectedName);
+
+    let sortedOpponents = Array.from(nameMmrMap.entries())
+      .filter(([name]) => name !== selectedName)
+      .map(([_, mmr]) => mmr)
+      .sort((a, b) => a - b);
+
+    let text = `=== 【${targetItem.index}番: ${selectedName} (${targetMmr} MMR)】 全順位変動早見表 ===\n`;
+    text += `順位  | 予想変動レンジ            | 変動後MMR目安\n`;
+    text += `----------------------------------------------------------\n`;
+
+    for (let place = 1; place <= 24; place++) {
+      let winsCount = 24 - place;
+      let lossesCount = place - 1;
+
+      let realisticMaxChange = 0;
+      let realisticMinChange = 0;
+
+      for (let i = 0; i < 23; i++) {
+        const oppMmr = sortedOpponents[i];
+
+        if (i >= lossesCount) {
+          realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1);
+        } else {
+          realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, -1);
+        }
+
+        if (i < winsCount) {
+          realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, 1);
+        } else {
+          realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, -1);
+        }
+      }
+
+      let valMax = Math.round(Math.max(realisticMaxChange, realisticMinChange));
+      let valMin = Math.round(Math.min(realisticMaxChange, realisticMinChange));
+
+      const maxText = (valMax > 0 ? "+" : "") + valMax;
+      const minText = (valMin > 0 ? "+" : "") + valMin;
+
+      const finalMaxMmr = Math.max(targetMmr + valMax, 0);
+      const finalMinMmr = Math.max(targetMmr + valMin, 0);
+
+      const placeStr = String(place).padStart(2, ' ') + "位";
+      const rangeStr = (valMin === valMax) 
+        ? `${maxText.padStart(5, ' ')} MMR` 
+        : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
+      const afterMmrStr = (finalMinMmr === finalMaxMmr)
+        ? `${finalMaxMmr}`
+        : `${finalMinMmr} ～ ${finalMaxMmr}`;
+
+      text += `${placeStr} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+    }
+
+    matrixResultOutput.value = text;
+  });
+
+  if (calculateButton) {
+    calculateButton.addEventListener('click', () => {
+      let processTextResult = processText(mogiHeaderInput.value, scoreboardInput.value);
+      if (!processTextResult.ok) {
+        mmrTableOutput.value = "エラー: 入力データを確認してください。";
+        return;
+      }
+      mmrTableOutput.value = getMmrChangeSummaryText(processTextResult.playersInfo);
+    });
+  }
+
+  if (copyButton) {
+    copyButton.addEventListener('click', async () => {
+      if (mmrTableOutput.value === "") return;
+      await navigator.clipboard.writeText(mmrTableOutput.value);
+    });
+  }
+
+  document.querySelectorAll('.clear-overlay').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const textarea = document.getElementById(targetId);
+      if (textarea) {
+        textarea.value = '';
+        textarea.focus();
+        if (targetId === 'mogiHeaderInput') updatePlayerDropdown();
+      }
+    });
+  });
+
+  function parseHeaderInputList(input) {
+    let result = [];
+    let linesArr = input.split(/\r?\n/);
+    for (const line of linesArr) {
+      let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
+      if (match) {
+        result.push({
+          index: Number(match[1]),
+          name: match[2].replace(/\\/g, "").trim(),
+          mmr: Number(match[3])
+        });
+      }
+    }
+    return result;
+  }
+
+  function parseHeaderInput(input) {
+    let nameMmrMap = new Map();
+    let list = parseHeaderInputList(input);
+    for (const item of list) nameMmrMap.set(item.name, item.mmr);
+    return nameMmrMap;
+  }
+
+  function parseScoreboardInput(input) {
+    let nameScoreMap = new Map();
+    let linesArr = input.split(/\r?\n/);
+    for (const line of linesArr) {
+      let scoreTest = line.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
+      if (scoreTest) {
+        let score = Number(scoreTest[2]);
+        if (scoreTest.length >= 5 && scoreTest[4]) score += Number(scoreTest[4]);
+        nameScoreMap.set(scoreTest[1].replace(/\\/g, "").trim(), score);
+      }
+    }
+    return nameScoreMap;
+  }
+
+  function calculateMmrAdjustment(mmrA, mmrB, decision) {
+    const cap = 30;
+    const baseline = 10;
+    const scaling_factor = 9500;
+    const logistic_base = 11;
+
+    y = 0; // fallback safety
+    if (decision === 0) {
+      return Math.sign(mmrB - mmrA) * (cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.abs(mmrB - mmrA) / scaling_factor)) - cap / 3);
+    } else {
+      return Math.sign(decision) * cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.sign(decision) * (mmrB - mmrA) / scaling_factor));
+    }
+  }
+
+  function processText(a, b) {
+    let nameMmrMap = parseHeaderInput(a);
+    let nameScoreMap = parseScoreboardInput(b);
+    let playersInfo = [];
+    let mismatchedNames = [];
+
+    if (nameMmrMap.size !== 24 || nameScoreMap.size !== 24) return {ok: false};
+
+    for (const [name] of nameScoreMap) {
+      if (!nameMmrMap.has(name)) mismatchedNames.push(name);
+    }
+    if (mismatchedNames.length > 0) return {ok: false};
+
+    for (const [name1, mmr1] of nameMmrMap) {
+      let player = {name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 1};
+      player.score = nameScoreMap.get(player.name);
+      for (const [name2, mmr2] of nameMmrMap) {
+        const decision = Math.sign(player.score - nameScoreMap.get(name2));
+        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, mmr2, decision);
+      }
+      player.mmrChange = Math.round(player.mmrChange);
+      player.mmrAfter = Math.max(player.mmrBefore + player.mmrChange, 0);
+      player.mmrChange = player.mmrAfter - player.mmrBefore;
+      playersInfo.push(player);
+    }
+
+    playersInfo.sort((a, b) => b.score - a.score || a.mmrBefore - b.mmrBefore);
+    playersInfo.forEach((p, index) => { p.place = index + 1; });
+
+    return {ok: true, playersInfo: playersInfo};
+  }
+
+  function getMmrChangeSummaryText(playersInfo) {
+    let longestNameLength = 0;
+    let longestMmrBeforeLength = 0;
+    let longestMmrAfterLength = 0;
+    let longestMmurDeltaLength = 0;
+    let mmrDeltaTextMap = new Map();
+
+    for (const player of playersInfo) {
+      if (player.name.length > longestNameLength) longestNameLength = player.name.length;
+      if (String(player.mmrBefore).length > longestMmrBeforeLength) longestMmrBeforeLength = String(player.mmrBefore).length;
+      if (String(player.mmrAfter).length > longestMmrAfterLength) longestMmrAfterLength = String(player.mmrAfter).length;
+      let mmrDeltaText = (player.mmrChange > 0 ? "+" : "") + player.mmrChange;
+      if (mmrDeltaText.length > longestMmurDeltaLength) longestMmurDeltaLength = mmrDeltaText.length;
+      mmrDeltaTextMap.set(player.name, mmrDeltaText);
+    }
+    
+    let mmrAdjustmentText = "```Expected MMR Changes (unofficial)";
+    for (const player of playersInfo) {
+      let mmrDeltaText = mmrDeltaTextMap.get(player.name);
+      mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
+          " ".repeat(longestMmrBeforeLength - String(player.mmrBefore).length) + player.mmrBefore + " --> " +
+          " ".repeat(longestMmrAfterLength - String(player.mmrAfter).length) + player.mmrAfter + " (" +
+          " ".repeat(longestMmurDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
+    }
+
+    mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
+    return mmrAdjustmentText;
+  }
+});
+
+  
   
 </script>
 
