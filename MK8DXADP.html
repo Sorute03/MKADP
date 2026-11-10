@@ -1627,10 +1627,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ▼ スコア計算 */
 function calcScore(rank) {
   const table = {
-    1: 15,  2: 12,  3: 10, 4: 9,  5: 9,  6: 8,
-    7: 8,   8: 7,   9: 7,  10: 6, 11: 6, 12: 6,
-    13: 5, 14: 5, 15: 5, 16: 4, 17: 4, 18: 4,
-    19: 3, 20: 3, 21: 3, 22: 2, 23: 2, 24: 1
+    1: 15,  2: 12,  3: 10, 4: 9,  5: 8,  6: 7,
+    7: 6,   8: 5,   9: 4,  10: 3, 11: 2, 12: 1,
   };
   return table[rank] || 0;
 }
@@ -2140,7 +2138,7 @@ function generateRaceInputs(count) {
         <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
           <option value="">-- 選択してください --</option>
-          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+          ${Array.from({length: 12}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
         <label>${tScore}</label><br>
