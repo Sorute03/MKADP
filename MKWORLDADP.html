@@ -12835,9 +12835,8 @@ function initCourseMemoTabIndexedDB() {
 }
 
 
-
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（チーム戦・各自のMMR基準変動完全対応版）
+// MMR Matrix 計算 & UIコントローラー（チーム戦：変動後目安非表示対応版）
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13073,6 +13072,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let fullOutputText = "";
+    const isTeamMode = (config.teamSize > 1);
 
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
@@ -13080,15 +13080,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetTeamId = targetItem.teamId;
 
       let opponentMmrs = [];
-      if (config.teamSize > 1) {
-        // チーム戦：他チームの平均MMRを対戦相手リストとして取得
+      if (isTeamMode) {
         for (let tId = 1; tId <= config.totalTeams; tId++) {
           if (tId !== targetTeamId) {
             opponentMmrs.push(teamAvgMmrs.get(tId));
           }
         }
       } else {
-        // 個人戦(FFA)：自分以外の全員の個別MMR
         headerList.forEach(item => {
           if (item.name !== selectedName) {
             opponentMmrs.push(item.mmr);
@@ -13100,16 +13098,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
 
-      fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-      fullOutputText += `順位        | 予想変動レンジ            | 変動後MMR目安\n`;
-      fullOutputText += `----------------------------------------------------------\n`;
+      // ヘッダーおよびカラム構成の切り替え（チーム戦のときは変動後目安を表示しない）
+      if (isTeamMode) {
+        fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+        fullOutputText += `チーム順位 | 予想変動レンジ\n`;
+        fullOutputText += `----------------------------------------\n`;
+      } else {
+        fullOutputText += `=== 【${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+        fullOutputText += `順位        | 予想変動レンジ            | 変動後MMR目安\n`;
+        fullOutputText += `----------------------------------------------------------\n`;
+      }
 
       const numTeams = config.totalTeams;
       const totalOpponents = opponentMmrs.length;
 
       for (let place = 1; place <= numTeams; place++) {
-        let winningCount = config.teamSize > 1 ? (numTeams - place) : (24 - place);
-        let losingCount = config.teamSize > 1 ? (place - 1) : (place - 1);
+        let winningCount = isTeamMode ? (numTeams - place) : (24 - place);
+        let losingCount = isTeamMode ? (place - 1) : (place - 1);
 
         let realisticMaxChange = 0;
         let realisticMinChange = 0;
@@ -13117,7 +13122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < totalOpponents; i++) {
           const oppMmr = opponentMmrs[i];
 
-          // 各対戦相手(oppMmr)との勝敗判定を行い、自分の保有MMR(targetMmr)を基準に変動量を計算
           if (i >= losingCount) {
             realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
           } else {
@@ -13137,19 +13141,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
-        // 各自の保有MMR(targetMmr)に対して算出された変動量を加算
-        const finalMaxMmr = Math.max(targetMmr + valMax, 0);
-        const finalMinMmr = Math.max(targetMmr + valMin, 0);
-
         const placeStr = String(place).padStart(2, ' ') + "位";
         const rangeStr = (valMin === valMax) 
           ? `${maxText.padStart(5, ' ')} MMR` 
           : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
-        const afterMmrStr = (finalMinMmr === finalMaxMmr)
-          ? `${finalMaxMmr}`
-          : `${finalMinMmr} ～ ${finalMaxMmr}`;
 
-        fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+        if (isTeamMode) {
+          fullOutputText += `${placeStr}        | ${rangeStr}\n`;
+        } else {
+          const finalMaxMmr = Math.max(targetMmr + valMax, 0);
+          const finalMinMmr = Math.max(targetMmr + valMin, 0);
+          const afterMmrStr = (finalMinMmr === finalMaxMmr) ? `${finalMaxMmr}` : `${finalMinMmr} ～ ${finalMaxMmr}`;
+          fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+        }
       }
     });
 
