@@ -12838,7 +12838,7 @@ function initCourseMemoTabIndexedDB() {
 
   
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（各自の保有MMR & 変動後目安完全対応版）
+// MMR Matrix 計算 & UIコントローラー（個人戦とチーム戦の計算方式切り替え対応版）
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12859,14 +12859,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!mogiHeaderInput) return;
 
+  // 公式ドキュメントに基づく各フォーマットの定数 (C, D, P) とチーム設定
   const FORMAT_SETTINGS = {
-    'ffa':   { teamSize: 1,  totalTeams: 24, label: 'FFA (24人 個人戦)' },
-    '2v2':   { teamSize: 2,  totalTeams: 12, label: '2v2 (12チーム)' },
-    '3v3':   { teamSize: 3,  totalTeams: 8,  label: '3v3 (8チーム)' },
-    '4v4':   { teamSize: 4,  totalTeams: 6,  label: '4v4 (6チーム)' },
-    '6v6':   { teamSize: 6,  totalTeams: 4,  label: '6v6 (4チーム)' },
-    '8v8':   { teamSize: 8,  totalTeams: 3,  label: '8v8 (3チーム)' },
-    '12v12': { teamSize: 12, totalTeams: 2,  label: '12v12 (2チーム)' }
+    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500, label: 'FFA (24人 個人戦)' },
+    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500, label: '2v2 (12チーム)' },
+    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100, label: '3v3 (8チーム)' },
+    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800, label: '4v4 (6チーム)' },
+    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650, label: '6v6 (4チーム)' },
+    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550, label: '8v8 (3チーム)' },
+    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500, label: '12v12 (2チーム)' }
   };
 
   function getActiveWebhookUrl() {
@@ -12931,7 +12932,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームを選択してください。");
+        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームまたはプレイヤーを選択してください。");
       }
 
       const payload = {
@@ -13062,38 +13063,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (targetMembers.length === 0) return;
 
+    // チーム戦の場合の他チーム平均MMR算出用
+    let teamAvgMmrs = new Map();
+    if (config.teamSize > 1) {
+      for (let tId = 1; tId <= config.totalTeams; tId++) {
+        let members = headerList.filter(m => m.teamId === tId);
+        if (members.length > 0) {
+          let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+          teamAvgMmrs.set(tId, avg);
+        }
+      }
+    }
+
     let fullOutputText = "";
 
-    // チームメンバー個別の保有MMRに基づいてそれぞれの早見表を算出
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
       const targetMmr = targetItem.mmr;
       const targetTeamId = targetItem.teamId;
 
       let opponentMmrs = [];
-      headerList.forEach(item => {
-        if (item.teamId !== targetTeamId) {
-          opponentMmrs.push(item.mmr);
+      if (config.teamSize > 1) {
+        // チーム戦：他チームの平均MMR一覧
+        for (let tId = 1; tId <= config.totalTeams; tId++) {
+          if (tId !== targetTeamId) {
+            opponentMmrs.push(teamAvgMmrs.get(tId));
+          }
         }
-      });
+      } else {
+        // 個人戦(FFA)：自分以外の全員の個別MMR一覧（今までの方法）
+        headerList.forEach(item => {
+          if (item.name !== selectedName) {
+            opponentMmrs.push(item.mmr);
+          }
+        });
+      }
 
       opponentMmrs.sort((a, b) => a - b);
 
       if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
 
-      fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-      fullOutputText += `チーム順位 | 予想変動レンジ            | 変動後MMR目安\n`;
+      fullOutputText += `=== 【${config.teamSize > 1 ? 'Team ' + targetTeamId + ' / ' : ''}${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+      fullOutputText += `順位        | 予想変動レンジ            | 変動後MMR目安\n`;
       fullOutputText += `----------------------------------------------------------\n`;
 
       const numTeams = config.totalTeams;
       const totalOpponents = opponentMmrs.length;
 
       for (let place = 1; place <= numTeams; place++) {
-        let winningTeamsCount = numTeams - place;
-        let losingTeamsCount = place - 1;
-
-        let winsCount = winningTeamsCount * config.teamSize;
-        let lossesCount = losingTeamsCount * config.teamSize;
+        let winningCount = config.teamSize > 1 ? (numTeams - place) : (24 - place);
+        let losingCount = config.teamSize > 1 ? (place - 1) : (place - 1);
 
         let realisticMaxChange = 0;
         let realisticMinChange = 0;
@@ -13101,16 +13120,16 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < totalOpponents; i++) {
           const oppMmr = opponentMmrs[i];
 
-          if (i >= lossesCount) {
-            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1);
+          if (i >= losingCount) {
+            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
           } else {
-            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, -1);
+            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, -1, config);
           }
 
-          if (i < winsCount) {
-            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, 1);
+          if (i < winningCount) {
+            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
           } else {
-            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, -1);
+            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, -1, config);
           }
         }
 
@@ -13120,7 +13139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
-        // 各自の保有MMR(targetMmr)に対して計算された変動量を適用
         const finalMaxMmr = Math.max(targetMmr + valMax, 0);
         const finalMinMmr = Math.max(targetMmr + valMin, 0);
 
@@ -13132,7 +13150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ? `${finalMaxMmr}`
           : `${finalMinMmr} ～ ${finalMaxMmr}`;
 
-        fullOutputText += `${placeStr}        | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+        fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
       }
     });
 
@@ -13244,10 +13262,10 @@ function parseScoreboardInput(input) {
   return nameScoreMap;
 }
 
-function calculateMmrAdjustment(mmrA, mmrB, decision) {
-  const cap = 30;
-  const baseline = 10;
-  const scaling_factor = 9500;
+function calculateMmrAdjustment(mmrA, mmrB, decision, config) {
+  const cap = config.C;
+  const baseline = config.D;
+  const scaling_factor = config.P;
   const logistic_base = 11;
 
   if (decision === 0) {
@@ -13258,6 +13276,17 @@ function calculateMmrAdjustment(mmrA, mmrB, decision) {
 }
 
 function processText(a, b, format = 'ffa') {
+  const FORMAT_SETTINGS = {
+    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500 },
+    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500 },
+    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100 },
+    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800 },
+    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650 },
+    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550 },
+    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500 }
+  };
+  const config = FORMAT_SETTINGS[format] || FORMAT_SETTINGS['ffa'];
+
   let headerList = parseHeaderInputList(a);
   let nameMmrMap = parseHeaderInput(a);
   let nameScoreMap = parseScoreboardInput(b);
@@ -13271,19 +13300,25 @@ function processText(a, b, format = 'ffa') {
   }
   if (mismatchedNames.length > 0) return {ok: false};
 
-  const teamSizes = { 'ffa': 1, '2v2': 2, '3v3': 3, '4v4': 4, '6v6': 6, '8v8': 8, '12v12': 12 };
-  const teamSize = teamSizes[format] || 1;
-
   let playerTeamMap = new Map();
   let teamScoreMap = new Map();
+  let teamAvgMmrMap = new Map();
 
   headerList.forEach((item) => {
     playerTeamMap.set(item.name, item.teamId);
-    
     const score = nameScoreMap.get(item.name) || 0;
-    const currentTeamScore = teamScoreMap.get(item.teamId) || 0;
-    teamScoreMap.set(item.teamId, currentTeamScore + score);
+    teamScoreMap.set(item.teamId, (teamScoreMap.get(item.teamId) || 0) + score);
   });
+
+  if (config.teamSize > 1) {
+    for (let tId = 1; tId <= config.totalTeams; tId++) {
+      let members = headerList.filter(m => m.teamId === tId);
+      if (members.length > 0) {
+        let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+        teamAvgMmrMap.set(tId, avg);
+      }
+    }
+  }
 
   for (const item1 of headerList) {
     const name1 = item1.name;
@@ -13293,23 +13328,26 @@ function processText(a, b, format = 'ffa') {
     const team1 = playerTeamMap.get(name1);
     const team1Score = teamScoreMap.get(team1);
 
-    for (const item2 of headerList) {
-      const name2 = item2.name;
-      const mmr2 = item2.mmr;
-      const team2 = playerTeamMap.get(name2);
-      
-      if (team1 === team2) continue;
+    if (config.teamSize > 1) {
+      // チーム戦の計算：他チームの平均MMRおよびチームスコアと比較
+      for (let tId = 1; tId <= config.totalTeams; tId++) {
+        if (tId === team1) continue;
 
-      let decision = 0;
-      if (teamSize > 1) {
-        const team2Score = teamScoreMap.get(team2);
-        decision = Math.sign(team1Score - team2Score);
-      } else {
-        decision = Math.sign(player.score - nameScoreMap.get(name2));
+        let team2Score = teamScoreMap.get(tId);
+        let decision = Math.sign(team1Score - team2Score);
+        let opponentAvgMmr = teamAvgMmrMap.get(tId);
+
+        player.place += (decision === -1 ? 1 : 0);
+        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, opponentAvgMmr, decision, config);
       }
-
-      player.place += (decision === -1 ? 1 : 0);
-      player.mmrChange += calculateMmrAdjustment(player.mmrBefore, mmr2, decision);
+    } else {
+      // 個人戦(FFA)の計算：従来通りの完全個別1対1比較（今までの方法）
+      for (const item2 of headerList) {
+        if (item1.name === item2.name) continue;
+        const decision = Math.sign(player.score - nameScoreMap.get(item2.name));
+        player.place += (decision === -1 ? 1 : 0);
+        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, item2.mmr, decision, config);
+      }
     }
 
     player.mmrChange = Math.round(player.mmrChange);
@@ -13353,6 +13391,7 @@ function getMmrChangeSummaryText(playersInfo) {
   mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
   return mmrAdjustmentText;
 }
+
   
   
   
