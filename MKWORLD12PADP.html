@@ -1914,124 +1914,6 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
-
-
-
-
-
-async function loadMemoForActiveModalCourse() {
-  const memoTextarea = document.getElementById("modalCourseMemoTextarea");
-  const courseNameSpan = document.getElementById("modalActiveCourseName");
-  if (!memoTextarea) return;
-
-  // 1. 現在のモーダル上のモードを取得してカテゴリ（nora / other）を判定
-  const rawMode = modalMode ? modalMode.value : "lounge";
-  const category = getMemoCategory(rawMode);
-
-  // 2. 現在入力中の最初のコースを取得
-  let activeCourse = null;
-  const count = rawMode === "lounge" ? 12 : Number(modalRaceCount.value || 1);
-
-  for (let i = 1; i <= count; i++) {
-    const courseEl = document.getElementById(`raceCourse_${i}`);
-    if (courseEl && courseEl.value) {
-      activeCourse = courseEl.value;
-      break;
-    }
-  }
-
-  if (!activeCourse) {
-    const firstCourseEl = document.getElementById(`raceCourse_1`);
-    if (firstCourseEl) activeCourse = firstCourseEl.value;
-  }
-
-  const categoryLabel = (category === "nora") ? "野良" : "大会/ラウンジ";
-
-  if (activeCourse) {
-    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} (${categoryLabel}) ]`;
-    
-    // カテゴリ別にIndexedDBからメモを取得
-    const memo = await loadCourseMemo(category, activeCourse);
-    memoTextarea.value = memo || "";
-  } else {
-    if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
-    memoTextarea.value = "";
-  }
-}
-
-// モーダル内の「クイック保存」ボタンの連動
-document.addEventListener("DOMContentLoaded", () => {
-  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
-  if (saveModalMemoBtn) {
-    saveModalMemoBtn.onclick = async () => {
-      const courseNameSpan = document.getElementById("modalActiveCourseName");
-      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
-      
-      if (!courseNameSpan || !memoTextarea) return;
-      
-      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\((.*?)\)\s*\]/);
-      if (!match || !match[1]) {
-        return alert("対象のコースが選択されていません");
-      }
-      
-      const targetCourse = match[1];
-      const rawMode = modalMode ? modalMode.value : "lounge";
-      const category = getMemoCategory(rawMode);
-
-      // 正しいカテゴリ（nora または other）でIndexedDBに保存
-      const success = await saveCourseMemo(category, targetCourse, memoTextarea.value);
-      
-      if (success) {
-        alert(`「${targetCourse} (${category === 'nora' ? '野良' : '大会/ラウンジ'})」のメモを保存しました！`);
-      } else {
-        alert("メモの保存に失敗しました");
-      }
-    };
-  }
-
-  // モードセレクト（modalMode）が変更されたときにも対応するメモを自動で切り替え読込
-  if (typeof modalMode !== 'undefined' && modalMode) {
-    modalMode.addEventListener("change", () => {
-      loadMemoForActiveModalCourse();
-    });
-  }
-});
-
-// モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
-// ※ 既存の openModalBtn.onclick の中に以下を追加してください
-/*
-  await loadMemoForActiveModalCourse();
-*/
-
-// モーダル内の「クイック保存」ボタンのイベント設定
-document.addEventListener("DOMContentLoaded", () => {
-  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
-  if (saveModalMemoBtn) {
-    saveModalMemoBtn.onclick = async () => {
-      const courseNameSpan = document.getElementById("modalActiveCourseName");
-      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
-      
-      if (!courseNameSpan || !memoTextarea) return;
-      
-      // テキストからコース名を抽出（例: "[ マリオカートスタジアム ]" → "マリオカートスタジアム"）
-      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\]/);
-      if (!match || !match[1]) {
-        return alert("対象のコースが選択されていません");
-      }
-      
-      const targetCourse = match[1];
-      const success = await saveCourseMemo(targetCourse, memoTextarea.value);
-      
-      if (success) {
-        alert(`「${targetCourse}」のメモを保存しました！`);
-      } else {
-        alert("メモの保存に失敗しました");
-      }
-    };
-  }
-});
-
-  
   
 </script>
 
@@ -2172,7 +2054,7 @@ function generateRaceInputs(count) {
         <label>${tRank}</label><br>
         <select id="raceRank_${i}" style="width:100%; margin-bottom:8px;">
           <option value="">-- 選択してください --</option>
-          ${Array.from({length: 24}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
+          ${Array.from({length: 12}, (_, n) => `<option value="${n+1}">${n+1}</option>`).join("")}
         </select>
 
         <label>${tScore}</label><br>
@@ -2223,7 +2105,6 @@ function generateRaceInputs(count) {
     loadMemoForActiveModalCourse();
   }
 }
-  
   
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
@@ -2304,7 +2185,44 @@ function initHistoryPanelPosition() {
 }
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const memoWrapper = document.getElementById("modalMemoWrapper");
 
+  if (memoToggle && memoWrapper) {
+    // 1. 保存されている設定を読み込み（デフォルトは true / 表示）
+    const savedSetting = localStorage.getItem("mk_modal_memo_visible");
+    const isVisible = savedSetting === null ? true : (savedSetting === "true");
+
+    memoToggle.checked = isVisible;
+    memoWrapper.style.display = isVisible ? "block" : "none";
+
+    // 2. チェックボックス変更時の処理
+    memoToggle.onchange = () => {
+      const checked = memoToggle.checked;
+      memoWrapper.style.display = checked ? "block" : "none";
+      localStorage.setItem("mk_modal_memo_visible", checked);
+
+      // 表示に切り替えたときは、現在のコースのメモを即座に読み込む
+      if (checked && typeof loadMemoForActiveModalCourse === "function") {
+        loadMemoForActiveModalCourse();
+      }
+    };
+  }
+});
+
+// 3. loadMemoForActiveModalCourse 内でも「非表示設定のときは処理をスキップ」するようにガードを入れる
+const originalLoadMemoForActiveModalCourse = window.loadMemoForActiveModalCourse;
+window.loadMemoForActiveModalCourse = async function() {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  // チェックが入っていない（非表示設定）の場合は何もしない
+  if (memoToggle && !memoToggle.checked) return;
+
+  // 元の処理を実行
+  if (typeof originalLoadMemoForActiveModalCourse === "function") {
+    await originalLoadMemoForActiveModalCourse();
+  }
+};
   
 </script>
 
@@ -2431,6 +2349,128 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+
+
+
+/**
+ * 現在フォーカスされている（または選択された）コースのメモをモーダル内に読み込む
+ */
+/**
+ * モーダルのモードに連動して、野良かそれ以外のメモを自動で読み込む
+ */
+async function loadMemoForActiveModalCourse() {
+  const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+  const courseNameSpan = document.getElementById("modalActiveCourseName");
+  if (!memoTextarea) return;
+
+  // 1. 現在のモーダル上のモードを取得してカテゴリ（nora / other）を判定
+  const rawMode = modalMode ? modalMode.value : "lounge";
+  const category = getMemoCategory(rawMode);
+
+  // 2. 現在入力中の最初のコースを取得
+  let activeCourse = null;
+  const count = rawMode === "lounge" ? 12 : Number(modalRaceCount.value || 1);
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    if (courseEl && courseEl.value) {
+      activeCourse = courseEl.value;
+      break;
+    }
+  }
+
+  if (!activeCourse) {
+    const firstCourseEl = document.getElementById(`raceCourse_1`);
+    if (firstCourseEl) activeCourse = firstCourseEl.value;
+  }
+
+  const categoryLabel = (category === "nora") ? "野良" : "大会/ラウンジ";
+
+  if (activeCourse) {
+    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} (${categoryLabel}) ]`;
+    
+    // カテゴリ別にIndexedDBからメモを取得
+    const memo = await loadCourseMemo(category, activeCourse);
+    memoTextarea.value = memo || "";
+  } else {
+    if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
+    memoTextarea.value = "";
+  }
+}
+
+// モーダル内の「クイック保存」ボタンの連動
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\((.*?)\)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const rawMode = modalMode ? modalMode.value : "lounge";
+      const category = getMemoCategory(rawMode);
+
+      // 正しいカテゴリ（nora または other）でIndexedDBに保存
+      const success = await saveCourseMemo(category, targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse} (${category === 'nora' ? '野良' : '大会/ラウンジ'})」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+
+  // モードセレクト（modalMode）が変更されたときにも対応するメモを自動で切り替え読込
+  if (typeof modalMode !== 'undefined' && modalMode) {
+    modalMode.addEventListener("change", () => {
+      loadMemoForActiveModalCourse();
+    });
+  }
+});
+
+// モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
+// ※ 既存の openModalBtn.onclick の中に以下を追加してください
+/*
+  await loadMemoForActiveModalCourse();
+*/
+
+// モーダル内の「クイック保存」ボタンのイベント設定
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      // テキストからコース名を抽出（例: "[ マリオカートスタジアム ]" → "マリオカートスタジアム"）
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const success = await saveCourseMemo(targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse}」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+});
+
+  
 </script>
 
 
@@ -2567,7 +2607,6 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   }
 };
 </script>
-
 
   
 <!-- オーバーレイ専用ボックス -->
@@ -11037,7 +11076,7 @@ let activePlayerIndex = -1;
 
 // ▼ 起動時に読み込み
 function loadPlayerIdList() {
-  const raw = localStorage.getItem("mk8dxadp_player_ids");
+  const raw = localStorage.getItem("mkadp_player12P_ids");
   if (!raw) return;
   try {
     playerIdList = JSON.parse(raw);
@@ -11048,7 +11087,7 @@ function loadPlayerIdList() {
 
 // ▼ 保存
 function savePlayerIdList() {
-  localStorage.setItem("mk8dxadp_player_ids", JSON.stringify(playerIdList));
+  localStorage.setItem("mkadp_player12P_ids", JSON.stringify(playerIdList));
 }
 
 // ▼ 表示
