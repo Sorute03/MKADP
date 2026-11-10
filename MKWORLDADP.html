@@ -13174,22 +13174,45 @@ function parseHeaderInput(input) {
   return nameMmrMap;
 }
 
+// チーム戦やBotのリザルト形式（名前 [] スコア / 名前 スコア）を柔軟にパースする
 function parseScoreboardInput(input) {
   let nameScoreMap = new Map();
   let linesArr = input.split(/\r?\n/);
+
   for (const line of linesArr) {
-    let scoreTest = line.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
-    if (scoreTest) {
-      let score = Number(scoreTest[2]);
-      if (scoreTest.length >= 5 && scoreTest[4]) {
-        score += Number(scoreTest[4]);
+    let cleanLine = line.trim();
+    if (!cleanLine) continue;
+
+    // パターン1: "プレイヤー名 [] スコア" または "プレイヤー名 [team] スコア" (Loungeチーム戦のBot出力形式)
+    // 例: Vespa mandarinia [] 69 または Vespa mandarinia [A] 69
+    let matchTeamFormat = cleanLine.match(/^(.+?)\s*\[.*?\]\s*(\d+)(\s*\+\s*(\d+))?$/);
+    if (matchTeamFormat) {
+      let name = matchTeamFormat[1].replace(/\\/g, "").trim();
+      let score = Number(matchTeamFormat[2]);
+      if (matchTeamFormat[4]) {
+        score += Number(matchTeamFormat[4]);
       }
-      nameScoreMap.set(scoreTest[1].replace(/\\/g, "").trim(), score);
+      nameScoreMap.set(name, score);
+      continue;
+    }
+
+    // パターン2: 従来の個人戦形式 "プレイヤー名 スコア"
+    // 例: YamiX 119
+    let matchFFA = cleanLine.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
+    if (matchFFA) {
+      let name = matchFFA[1].replace(/\\/g, "").trim();
+      let score = Number(matchFFA[2]);
+      if (matchFFA[4]) {
+        score += Number(matchFFA[4]);
+      }
+      nameScoreMap.set(name, score);
     }
   }
   return nameScoreMap;
 }
 
+
+  
 function calculateMmrAdjustment(mmrA, mmrB, decision) {
   const cap = 30;
   const baseline = 10;
