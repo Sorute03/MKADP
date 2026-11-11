@@ -10530,28 +10530,34 @@ function getSelectedWebhookUrl() {
 
 function buildAdpCourseStatsMessage(stats) {
   let lines = [];
-  lines.push("**ADP コース比較結果（最大5コース）**");
+  lines.push("**📊 ADP コース比較結果（最大5コース）**");
 
   stats.forEach(s => {
-    let rankText = [];
+    // 上位・中位・下位のカウントを集計
+    let topCount = 0;   // 1〜5位
+    let midCount = 0;   // 6〜15位
+    let lowCount = 0;   // 16〜24位
+
     for (let i = 1; i <= 24; i++) {
       const cnt = s.rankCounts[i] || 0;
-      if (cnt > 0) {
-        const pct = ((cnt / s.count) * 100).toFixed(0);
-        rankText.push(`${i}位:${pct}%(${cnt})`);
-      }
+      if (i <= 5) topCount += cnt;
+      else if (i <= 15) midCount += cnt;
+      else lowCount += cnt;
     }
 
+    const topPct = s.count > 0 ? ((topCount / s.count) * 100).toFixed(1) : "0.0";
+    const midPct = s.count > 0 ? ((midCount / s.count) * 100).toFixed(1) : "0.0";
+    const lowPct = s.count > 0 ? ((lowCount / s.count) * 100).toFixed(1) : "0.0";
+
     lines.push(
-      `\n【${s.course}】\n` +
-      `走行数: ${s.count} | 平均順位: ${s.avgRank.toFixed(2)} | 勝率: ${(s.winRate * 100).toFixed(1)}%\n` +
-      `主な順位分布: ${rankText.join(" / ")}\n`
+      `\n> **${s.course}**\n` +
+      `> 走行数: **${s.count}** | 平均順位: **${s.avgRank.toFixed(2)}位** | 勝率: **${(s.winRate * 100).toFixed(1)}%**\n` +
+      `> 上位率(1-5位): **${topPct}%** (${topCount}回) | 中位率(6-15位): **${midPct}%** (${midCount}回) | 下位率(16-24位): **${lowPct}%** (${lowCount}回)`
     );
   });
 
   return lines.join("\n");
 }
-
 document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
   if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
     return alert("Webhook が選択されていません");
@@ -10586,6 +10592,12 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
   }
 };
 
+
+
+
+// ==========================================
+// 2. 画像生成：上位(1-5位)、中位(6-15位)、下位(16-24位)のゾーン別にまとめて描画
+// ==========================================
 async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
@@ -10633,21 +10645,43 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   y += 50;
 
   stats.forEach(s => {
+    // コース名と基本スタッツ
     ctx.font = "bold 20px 'Noto Sans JP'";
-    ctx.fillText(`【${s.course}】 (戦数: ${s.count} / 平均: ${s.avgRank.toFixed(2)}位)`, x, y);
+    ctx.fillText(`【${s.course}】 (戦数: ${s.count}回)`, x, y);
     y += 28;
 
-    ctx.font = "15px 'Noto Sans JP'";
-    let rankSummary = [];
+    ctx.font = "16px 'Noto Sans JP'";
+    ctx.fillText(
+      `平均順位: ${s.avgRank.toFixed(2)}位  |  勝率: ${(s.winRate * 100).toFixed(1)}%  |  Top3率: ${(s.top3Rate * 100).toFixed(1)}%  |  平均Pt: ${s.avgPoints.toFixed(1)}`,
+      x + 20,
+      y
+    );
+    y += 26;
+
+    // 上位・中位・下位の割合を計算
+    let topCount = 0;   // 1〜5位
+    let midCount = 0;   // 6〜15位
+    let lowCount = 0;   // 16〜24位
+
     for (let i = 1; i <= 24; i++) {
       const cnt = s.rankCounts[i] || 0;
-      if (cnt > 0) {
-        const pct = ((cnt / s.count) * 100).toFixed(0);
-        rankSummary.push(`${i}位:${pct}%`);
-      }
+      if (i <= 5) topCount += cnt;
+      else if (i <= 15) midCount += cnt;
+      else lowCount += cnt;
     }
-    ctx.fillText(`順位分布: ${rankSummary.join(" | ")}`, x + 20, y);
-    y += 32;
+
+    const topPct = s.count > 0 ? ((topCount / s.count) * 100).toFixed(1) : "0.0";
+    const midPct = s.count > 0 ? ((midCount / s.count) * 100).toFixed(1) : "0.0";
+    const lowPct = s.count > 0 ? ((lowCount / s.count) * 100).toFixed(1) : "0.0";
+
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText(
+      `上位率 (1〜5位): ${topPct}% (${topCount}回)  |  中位率 (6〜15位): ${midPct}% (${midCount}回)  |  下位率 (16〜24位): ${lowPct}% (${lowCount}回)`,
+      x + 20,
+      y
+    );
+    ctx.fillStyle = "white";
+    y += 42;
   });
 }
 
