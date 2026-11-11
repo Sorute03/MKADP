@@ -3643,7 +3643,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
-    if (!course || !rank || rank < 1 || rank > 24) continue;
+    if (!course || !rank || rank < 1 || rank > 12) continue;
 
     // キー順を美しく整えたオブジェクト構造でプッシュ
     raw.push({
@@ -5097,7 +5097,7 @@ function drawAvgRankChart(records) {
     },
     options: {
       responsive: true,
-      scales: { y: { beginAtZero: true, max: 24 } }
+      scales: { y: { beginAtZero: true, max: 12 } }
     }
   });
 }
@@ -5372,7 +5372,7 @@ function updateModeGraphs(records) {
       },
       options: {
         responsive: true,
-        scales: { y: { beginAtZero: true, max: 24 } }
+        scales: { y: { beginAtZero: true, max: 12 } }
       }
     });
   }
@@ -5597,7 +5597,7 @@ function updateHeatmapView() {
   const map = {};
   records.forEach(r => {
     // 内部的なキーは元のコース名のままで集計
-    if (!map[r.course]) map[r.course] = Array(24).fill(0);
+    if (!map[r.course]) map[r.course] = Array(12).fill(0);
     map[r.course][r.rank - 1]++;
   });
 
@@ -6646,7 +6646,7 @@ document.getElementById("importFileBtn").onclick = async () => {
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
-    if (!course || !rank || rank < 1 || rank > 24) continue;
+    if (!course || !rank || rank < 1 || rank > 12) continue;
 
     raw.push({
       mode: "lounge",
@@ -6826,7 +6826,7 @@ document.getElementById("importTSVBtn").onclick = async () => {
     let tier = "tierN";
     if (cols[5]) tier = cols[5].toUpperCase();
 
-    if (!course || !rank || rank < 1 || rank > 24) continue;
+    if (!course || !rank || rank < 1 || rank > 12) continue;
 
     raw.push({
       mode: "lounge",
@@ -10293,59 +10293,64 @@ function generateAdpCourseStatsText(stats) {
 
 function drawAdpCourseStatsTable(stats) {
   let html = `
-    <div style="overflow-x: auto;">
-      <table border="1" cellpadding="6" style="border-collapse: collapse; color: #fff; width: 100%; font-size: 13px; text-align: center;">
-        <tr style="background: rgba(39, 174, 96, 0.3);">
-          <th>コース</th>
-          <th>戦数</th>
-          <th>平均</th>
-          <th>中央</th>
-          <th>標準偏差</th>
-          <th>Top3率</th>
-          <th>平均Pt</th>
-          <th>勝率</th>
-          <th>1位</th>
-          <th>2位</th>
-          <th>3位</th>
-          <th>4位</th>
-          <th>5位</th>
-          <th>6位</th>
-          <th>7位</th>
-          <th>8位</th>
-          <th>9位</th>
-          <th>10位</th>
-          <th>11位</th>
-          <th>12位</th>
-        </tr>
+    <div style="overflow-x: auto; width: 100%; border: 1px solid #d8f3dd; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+      <table border="1" cellpadding="6" style="border-collapse: collapse; color: #222; width: 100%; font-size: 12px; text-align: center; border-color: #d8f3dd;">
+        <thead>
+          <tr style="background: #27ae60; color: #fff;">
+            <th style="text-align: left; padding-left: 10px; white-space: nowrap; position: sticky; left: 0; background: #27ae60; z-index: 2;">コース</th>
+            <th style="white-space: nowrap;">戦数</th>
+            <th style="white-space: nowrap;">平均</th>
+            <th style="white-space: nowrap;">中央</th>
+            <th style="white-space: nowrap;">標準偏差</th>
+            <th style="white-space: nowrap;">Top3率</th>
+            <th style="white-space: nowrap;">平均Pt</th>
+            <th style="white-space: nowrap;">勝率</th>
   `;
+
+  // 1位〜24位のヘッダーを展開
+  for (let i = 1; i <= 12; i++) {
+    html += `<th style="white-space: nowrap; padding: 6px 8px; min-width: 45px;">${i}位</th>`;
+  }
+  html += `</tr></thead><tbody>`;
 
   stats.forEach(s => {
     html += `
-      <tr>
-        <td style="text-align: left; font-weight: bold; padding-left: 8px;">${s.course}</td>
+      <tr style="border-bottom: 1px solid #d8f3dd;">
+        <td style="text-align: left; font-weight: bold; padding-left: 10px; white-space: nowrap; color: #27ae60; position: sticky; left: 0; background: #fdfdfd; z-index: 1;">${s.course}</td>
         <td>${s.count}</td>
         <td>${s.avgRank.toFixed(2)}</td>
-        <td>${s.medianRank.toFixed(2)}</td>
+        <td>${s.medianRank.toFixed(1)}</td>
         <td>${s.rankStdDev.toFixed(2)}</td>
         <td>${(s.top3Rate * 100).toFixed(1)}%</td>
-        <td>${s.avgPoints.toFixed(2)}</td>
+        <td>${s.avgPoints.toFixed(1)}</td>
         <td>${(s.winRate * 100).toFixed(1)}%</td>
     `;
 
+    // 1位〜24位それぞれの確率（%）と回数をセルに埋め込む
     for (let i = 1; i <= 12; i++) {
-      const cnt = s.rankCounts[i] || 0;
-      const pct = ((cnt / s.count) * 100).toFixed(1);
-      html += `<td>${pct}%<br><span style="font-size:10px; color:#aaa;">(${cnt})</span></td>`;
+      const cnt = (s.rankCounts && s.rankCounts[i]) ? s.rankCounts[i] : 0;
+      const pct = s.count > 0 ? ((cnt / s.count) * 100).toFixed(0) : "0";
+      
+      // 出現回数が多いほど緑色の濃さが変わる演出
+      const cellBg = cnt > 0 ? `background-color: rgba(39, 174, 96, ${Math.min((cnt / s.count) * 0.9 + 0.05, 0.45)}); font-weight: bold;` : `color: #bbb;`;
+      
+      html += `<td style="${cellBg} white-space: nowrap; padding: 6px 4px;">${pct}%<br><span style="font-size:10px; color:${cnt > 0 ? '#333' : '#ccc'};">(${cnt})</span></td>`;
     }
 
     html += `</tr>`;
   });
 
-  html += `</table></div>`;
+  html += `</tbody></table></div>`;
+
   const resultEl = document.getElementById("adpCourseStatsResult");
-  if (resultEl) resultEl.innerHTML = html;
+  if (resultEl) {
+    resultEl.innerHTML = html;
+  } else {
+    console.warn("adpCourseStatsResult 要素が見つかりません");
+  }
 }
 
+  
 let chartAdpCourseStats = null;
 
 function drawAdpCourseStatsChart(stats) {
@@ -11352,7 +11357,7 @@ function initModalAutoTracking() {
   });
 
   // レース入力欄（コースや順位など）の変更時にも追尾
-  for (let i = 1; i <= 24; i++) {
+  for (let i = 1; i <= 12; i++) {
     ['raceCourse', 'raceRank', 'raceScore'].forEach(prefix => {
       const inputEl = document.getElementById(`${prefix}_${i}`);
       if (inputEl) {
