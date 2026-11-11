@@ -10208,89 +10208,102 @@ function initAdpCourseSelects() {
 
   ids.forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) {
-      console.error("セレクトが存在しない:", id);
-      return;
-    }
+    if (!sel) return;
 
-    sel.innerHTML =
-      `<option value="">（未選択）</option>` +
-      courseList
-        .filter(c => typeof c === "string" && c.length > 0)
-        .map(c => `<option value="${c}">${c}</option>`)
-        .join("");
+    sel.innerHTML = '<option value="">-- コース選択 --</option>';
+
+    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
+      courseList.forEach(courseName => {
+        const opt = document.createElement("option");
+        opt.value = courseName;
+        opt.textContent = courseName;
+        sel.appendChild(opt);
+      });
+    } else {
+      console.warn("courseList が定義されていないか、配列ではありません。");
+    }
   });
+
+  console.log("ADPコースセレクトボックスの初期化が完了しました。");
 }
 
-
-
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
+  try {
+    console.log("「表示」ボタンが押されました");
 
-  const selectedCourses = ids
-    .map(id => {
-      const el = document.getElementById(id);
-      return el ? el.value : "";
-    })
-    .filter(v => v && v !== "");
+    const ids = [
+      "adpCourseSelect1",
+      "adpCourseSelect2",
+      "adpCourseSelect3",
+      "adpCourseSelect4",
+      "adpCourseSelect5"
+    ];
 
-  if (selectedCourses.length === 0) {
-    return alert("少なくとも1つコースを選択してください");
-  }
+    const selectedCourses = ids
+      .map(id => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+      })
+      .filter(v => v && v !== "");
 
-  if (typeof loadADPIndexedDBRecords !== "function") {
-    return alert("loadADPIndexedDBRecords 関数が定義されていません");
-  }
-
-  const records = await loadADPIndexedDBRecords();
-  if (!records || records.length === 0) {
-    return alert("IndexedDB にレコードが存在しません");
-  }
-
-  const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
-  const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
-  const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
-  const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
-  const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
-
-  const filtered = applyAndOrFilter(records, {
-    season: seasonVal,
-    tier: tierVal,
-    recent: recentVal,
-    courses: selectedCourses,
-    mode: modeVal
-  }, filterModeVal);
-
-  if (!filtered || filtered.length === 0) {
-    return alert("条件に一致するレコードがありませんでした");
-  }
-
-  const stats = aggregateCourseStats(filtered);
-
-  // 1. テーブル・チャートの描画
-  drawAdpCourseStatsTable(stats);
-  drawAdpCourseStatsChart(stats);
-
-  // 2. キャンバス画像の描画（★ここを追加することで、画像送信ボタンを押したときに最新画像が必ず用意される）
-  if (typeof drawAdpCourseImage === "function") {
-    let bgUrl = null;
-    if (typeof getSelectedAdpBackgroundUrl === "function") {
-      bgUrl = getSelectedAdpBackgroundUrl();
+    if (selectedCourses.length === 0) {
+      return alert("コースを少なくとも1つ選択してください");
     }
-    await drawAdpCourseImage(stats, bgUrl);
+
+    if (typeof loadADPIndexedDBRecords !== "function") {
+      console.error("loadADPIndexedDBRecords 関数が定義されていません");
+      return alert("データ読み込み関数が見つかりません");
+    }
+
+    const records = await loadADPIndexedDBRecords();
+    if (!records || records.length === 0) {
+      return alert("IndexedDBにレースデータが存在しません");
+    }
+
+    const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+    const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+    const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+    const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+    const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
+
+    const filtered = applyAndOrFilter(records, {
+      season: seasonVal,
+      tier: tierVal,
+      recent: recentVal,
+      courses: selectedCourses,
+      mode: modeVal
+    }, filterModeVal);
+
+    if (!filtered || filtered.length === 0) {
+      return alert("条件に一致するレースデータがありませんでした");
+    }
+
+    const stats = aggregateCourseStats(filtered);
+
+    if (typeof drawAdpCourseStatsTable === "function") {
+      drawAdpCourseStatsTable(stats);
+    }
+
+    if (typeof drawAdpCourseStatsChart === "function") {
+      drawAdpCourseStatsChart(stats);
+    }
+
+    if (typeof drawAdpCourseImage === "function") {
+      let bgUrl = null;
+      if (typeof getSelectedAdpBackgroundUrl === "function") {
+        bgUrl = getSelectedAdpBackgroundUrl();
+      }
+      await drawAdpCourseImage(stats, bgUrl);
+    }
+
+    window.latestAdpCourseStats = stats;
+    console.log("コース別statsの表示および画像生成が完了しました:", stats);
+
+  } catch (err) {
+    console.error("「表示」ボタン処理中にエラーが発生しました:", err);
+    alert("処理中にエラーが発生しました。F12のコンソールをご確認ください。");
   }
-
-  window.latestAdpCourseStats = stats;
-  console.log("コース別statsの表示および画像生成が完了しました:", stats);
 };
-
-
 
 function generateAdpCourseStatsText(stats) {
   if (!stats || !stats.length) return "データがありません。";
@@ -10308,30 +10321,13 @@ function generateAdpCourseStatsText(stats) {
     lines.push(`平均ポイント: ${s.avgPoints.toFixed(2)}`);
     lines.push(`勝率: ${(s.winRate * 100).toFixed(1)}%`);
 
-    // ★ Season 別（null安全）
-    lines.push("\nSeason別:");
-    if (s.season && Object.keys(s.season).length > 0) {
-      Object.keys(s.season).forEach(se => {
-        const obj = s.season[se];
-        lines.push(
-          `  ${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-        );
-      });
-    } else {
-      lines.push("  Seasonデータなし");
-    }
-
-    // ★ Tier 別（null安全）
-    lines.push("\nTier別:");
-    if (s.tier && Object.keys(s.tier).length > 0) {
-      Object.keys(s.tier).forEach(t => {
-        const obj = s.tier[t];
-        lines.push(
-          `  ${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-        );
-      });
-    } else {
-      lines.push("  Tierデータなし");
+    lines.push("\n各順位の確率:");
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (cnt > 0) { // 0回の順位は省略してスッキリさせることも可能ですが、必要に応じて表示
+        const pct = ((cnt / s.count) * 100).toFixed(1);
+        lines.push(`  ${i}位: ${pct}% (${cnt}回)`);
+      }
     }
 
     lines.push("\n");
@@ -10340,28 +10336,31 @@ function generateAdpCourseStatsText(stats) {
   return lines.join("\n");
 }
 
-
-  
-
 function drawAdpCourseStatsTable(stats) {
   let html = `
-    <table border="1" cellpadding="4" style="border-collapse: collapse; color: #fff; width: 100%;">
-      <tr>
-        <th>コース</th>
-        <th>レース数</th>
-        <th>平均順位</th>
-        <th>中央値</th>
-        <th>標準偏差</th>
-        <th>トップ3率</th>
-        <th>平均ポイント</th>
-        <th>勝率</th>
-      </tr>
+    <div style="overflow-x: auto;">
+      <table border="1" cellpadding="5" style="border-collapse: collapse; color: #fff; width: 100%; font-size: 12px; text-align: center;">
+        <tr style="background: rgba(39, 174, 96, 0.3);">
+          <th>コース</th>
+          <th>戦数</th>
+          <th>平均</th>
+          <th>中央</th>
+          <th>標準偏差</th>
+          <th>Top3率</th>
+          <th>平均Pt</th>
+          <th>勝率</th>
   `;
+
+  // 1位〜24位までのヘッダーを動的に生成
+  for (let i = 1; i <= 24; i++) {
+    html += `<th>${i}位</th>`;
+  }
+  html += `</tr>`;
 
   stats.forEach(s => {
     html += `
       <tr>
-        <td>${s.course}</td>
+        <td style="text-align: left; font-weight: bold; padding-left: 6px; white-space: nowrap;">${s.course}</td>
         <td>${s.count}</td>
         <td>${s.avgRank.toFixed(2)}</td>
         <td>${s.medianRank.toFixed(2)}</td>
@@ -10369,15 +10368,22 @@ function drawAdpCourseStatsTable(stats) {
         <td>${(s.top3Rate * 100).toFixed(1)}%</td>
         <td>${s.avgPoints.toFixed(2)}</td>
         <td>${(s.winRate * 100).toFixed(1)}%</td>
-      </tr>
     `;
+
+    // 1位〜24位までの確率＆回数を埋め込み
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      const pct = ((cnt / s.count) * 100).toFixed(0); // 24位まであるため幅を考慮して小数点以下0桁（必要に応じてtoFixed(1)に変更可能）
+      html += `<td>${pct}%<br><span style="font-size:10px; color:#aaa;">(${cnt})</span></td>`;
+    }
+
+    html += `</tr>`;
   });
 
-  html += `</table>`;
+  html += `</table></div>`;
   const resultEl = document.getElementById("adpCourseStatsResult");
   if (resultEl) resultEl.innerHTML = html;
 }
-
 
 let chartAdpCourseStats = null;
 
@@ -10411,7 +10417,7 @@ function drawAdpCourseStatsChart(stats) {
           backgroundColor: "rgba(255, 159, 64, 0.6)"
         },
         {
-          label: "トップ3率",
+          label: "トップ3率 (%)",
           data: stats.map(s => s.top3Rate * 100),
           backgroundColor: "rgba(255, 99, 132, 0.6)"
         },
@@ -10425,13 +10431,11 @@ function drawAdpCourseStatsChart(stats) {
   });
 }
 
-
 function applyRecentFilter(records, N) {
   if (!N || N === "ALL" || N <= 0) return records;
   const num = Number(N);
   return records.slice(-num);
 }
-
 
 function aggregateCourseStats(records) {
   const grouped = {};
@@ -10448,23 +10452,32 @@ function aggregateCourseStats(records) {
     const count = rs.length;
     if (count === 0) continue;
 
-    const ranks = rs.map(r => r.rank).sort((a, b) => a - b);
+    const ranks = rs.map(r => r.rank).filter(r => r >= 1 && r <= 24).sort((a, b) => a - b);
     const scores = rs.map(r => r.score || 0);
+
+    // 1〜24位までの出現回数を集計する配列（インデックス 0〜24）
+    const rankCounts = Array(25).fill(0);
+    rs.forEach(r => {
+      const rank = Number(r.rank);
+      if (rank >= 1 && rank <= 24) {
+        rankCounts[rank]++;
+      }
+    });
 
     const mid = Math.floor(ranks.length / 2);
     const medianRank =
-      ranks.length % 2 === 0
+      ranks.length % 2 === 0 && ranks.length > 0
         ? (ranks[mid - 1] + ranks[mid]) / 2
-        : ranks[mid];
+        : (ranks[mid] || 0);
 
-    const avgRank = ranks.reduce((a, b) => a + b, 0) / count;
-    const rankStdDev = Math.sqrt(
-      ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / count
-    );
+    const avgRank = ranks.length > 0 ? ranks.reduce((a, b) => a + b, 0) / ranks.length : 0;
+    const rankStdDev = ranks.length > 0 ? Math.sqrt(
+      ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / ranks.length
+    ) : 0;
 
-    const top3Rate = rs.filter(r => r.rank <= 3).length / count;
-    const avgPoints = scores.reduce((a, b) => a + b, 0) / count;
-    const winRate = rs.filter(r => r.rank === 1).length / count;
+    const top3Rate = count > 0 ? rs.filter(r => r.rank <= 3).length / count : 0;
+    const avgPoints = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const winRate = count > 0 ? rs.filter(r => r.rank === 1).length / count : 0;
 
     stats.push({
       course,
@@ -10474,16 +10487,15 @@ function aggregateCourseStats(records) {
       medianRank,
       rankStdDev,
       top3Rate,
-      avgPoints
+      avgPoints,
+      rankCounts
     });
   }
 
   return stats;
 }
 
-
 function applyAndOrFilter(records, filters, mode) {
-  // 直近N件フィルターを先に適用
   let targetRecords = applyRecentFilter(records, filters.recent);
 
   if (mode === "AND") {
@@ -10496,7 +10508,6 @@ function applyAndOrFilter(records, filters, mode) {
     });
   }
 
-  // OR モード
   if (mode === "OR") {
     return targetRecords.filter(r => {
       const matchCourse = filters.courses && filters.courses.length > 0 ? filters.courses.includes(r.course) : true;
@@ -10504,7 +10515,6 @@ function applyAndOrFilter(records, filters, mode) {
       const matchTier = filters.tier && filters.tier !== "ALL" ? r.tier === filters.tier : false;
       const matchMode = filters.mode && filters.mode !== "ALL" ? r.mode === filters.mode : false;
 
-      // コース指定が一致していることが大前提で、他の条件のいずれかに引っかかるか
       return matchCourse && (matchSeason || matchTier || matchMode || (!filters.season && !filters.tier && !filters.mode));
     });
   }
@@ -10512,160 +10522,36 @@ function applyAndOrFilter(records, filters, mode) {
   return targetRecords;
 }
 
-
-// ▼ コースセレクトボックスに候補を埋め込む関数（5つすべてに適用）
-// ▼ 5つのセレクトボックスすべてに courseList の内容を自動で埋め込む関数
-function initAdpCourseSelects() {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
-
-  ids.forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-
-    // 既にオプションが生成されている場合は二重追加を防ぐためクリア
-    sel.innerHTML = '<option value="">-- コース選択 --</option>';
-
-    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
-      courseList.forEach(courseName => {
-        const opt = document.createElement("option");
-        opt.value = courseName;
-        opt.textContent = courseName;
-        sel.appendChild(opt);
-      });
-    } else {
-      console.warn("courseList が定義されていないか、配列ではありません。");
-    }
-  });
-
-  console.log("ADPコースセレクトボックスの初期化が完了しました。");
-}
-
-
 function getSelectedWebhookUrl() {
   if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) return null;
   if (typeof webhookList === 'undefined' || !webhookList[activeWebhookIndex]) return null;
   return webhookList[activeWebhookIndex].url;
 }
 
-
 function buildAdpCourseStatsMessage(stats) {
   let lines = [];
   lines.push("**ADP コース比較結果（最大5コース）**");
 
   stats.forEach(s => {
+    let rankText = [];
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (cnt > 0) {
+        const pct = ((cnt / s.count) * 100).toFixed(0);
+        rankText.push(`${i}位:${pct}%(${cnt})`);
+      }
+    }
+
     lines.push(
       `\n【${s.course}】\n` +
-      `走行数: ${s.count}\n` +
-      `平均順位: ${s.avgRank.toFixed(2)}\n` +
-      `中央値: ${s.medianRank.toFixed(2)}\n` +
-      `勝率(1位): ${(s.winRate * 100).toFixed(1)}%\n` +
-      `平均ポイント: ${s.avgPoints.toFixed(2)}\n`
+      `走行数: ${s.count} | 平均順位: ${s.avgRank.toFixed(2)} | 勝率: ${(s.winRate * 100).toFixed(1)}%\n` +
+      `主な順位分布: ${rankText.join(" / ")}\n`
     );
   });
 
   return lines.join("\n");
 }
 
-
-// ==========================================
-// ボタンイベントの紐付け
-// ==========================================
-document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  try {
-    console.log("「表示」ボタンが押されました");
-
-    const ids = [
-      "adpCourseSelect1",
-      "adpCourseSelect2",
-      "adpCourseSelect3",
-      "adpCourseSelect4",
-      "adpCourseSelect5"
-    ];
-
-    // 選択されたコースを収集
-    const selectedCourses = ids
-      .map(id => {
-        const el = document.getElementById(id);
-        return el ? el.value : "";
-      })
-      .filter(v => v && v !== "");
-
-    console.log("選択されたコース:", selectedCourses);
-
-    if (selectedCourses.length === 0) {
-      return alert("コースを少なくとも1つ選択してください");
-    }
-
-    // レコードの読み込み
-    if (typeof loadADPIndexedDBRecords !== "function") {
-      console.error("loadADPIndexedDBRecords 関数が定義されていません");
-      return alert("データ読み込み関数が見つかりません");
-    }
-
-    const records = await loadADPIndexedDBRecords();
-    console.log("IndexedDBから取得したレコード数:", records ? records.length : 0);
-
-    if (!records || records.length === 0) {
-      return alert("IndexedDBにレースデータが存在しません");
-    }
-
-    // ★ document.getElementById を使って確実に各フィルターの値を取得する
-    const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
-    const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
-    const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
-    const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
-    const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
-
-    console.log("適用フィルター:", { seasonVal, tierVal, recentVal, modeVal, filterModeVal });
-
-    // フィルター適用
-    const filtered = applyAndOrFilter(records, {
-      season: seasonVal,
-      tier: tierVal,
-      recent: recentVal,
-      courses: selectedCourses,
-      mode: modeVal
-    }, filterModeVal);
-
-    console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
-
-    if (!filtered || filtered.length === 0) {
-      return alert("条件に一致するレースデータがありませんでした");
-    }
-
-    // 統計集計
-    const stats = aggregateCourseStats(filtered);
-    console.log("集計されたstats:", stats);
-
-    // テーブルとグラフの描画
-    if (typeof drawAdpCourseStatsTable === "function") {
-      drawAdpCourseStatsTable(stats);
-    } else {
-      console.warn("drawAdpCourseStatsTable 関数がありません");
-    }
-
-    if (typeof drawAdpCourseStatsChart === "function") {
-      drawAdpCourseStatsChart(stats);
-    } else {
-      console.warn("drawAdpCourseStatsChart 関数がありません");
-    }
-
-    // グローバルに保存（Discord送信用）
-    window.latestAdpCourseStats = stats;
-    console.log("コース統計の表示が正常に完了しました！");
-
-  } catch (err) {
-    console.error("「表示」ボタン処理中にエラーが発生しました:", err);
-    alert("処理中にエラーが発生しました。F12のコンソールをご確認ください。");
-  }
-};
-  
 document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
   if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
     return alert("Webhook が選択されていません");
@@ -10700,17 +10586,14 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
   }
 };
 
-
 async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ★ 1. backgroundUrl が渡っていない場合、state から直接拾うようにする
   if (!backgroundUrl && state.adpCourseBackgroundImage) {
     backgroundUrl = state.adpCourseBackgroundImage;
   }
 
-  // ★ 2. data:imageだけでなく blob: URL も許可するように修正する
   const isValidBg =
     backgroundUrl &&
     typeof backgroundUrl === "string" &&
@@ -10720,42 +10603,25 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     const bg = new Image();
     bg.src = backgroundUrl;
   
-    console.log("背景画像 src セット:", bg.src.slice(0, 50));
-  
     try {
       await bg.decode();
-      console.log("背景 decode 成功");
-  
-      // ★ 3. 変数名を state.adpCourseBg... に合わせる
       ctx.filter =
         `brightness(${Number(state.adpCourseBgBrightness ?? 1)}) ` +
         `contrast(${Number(state.adpCourseBgContrast ?? 1)}) ` +
         `blur(${Number(state.adpCourseBgBlur ?? 0)}px)`;
-  
       ctx.globalAlpha = Number(state.adpCourseBgOpacity ?? 1);
-  
-      console.log("背景 drawImage 実行");
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-  
       ctx.filter = "none";
       ctx.globalAlpha = 1;
-  
     } catch (e) {
-      console.error("背景画像 decode に失敗:", e);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  
   } else {
-    console.warn("背景画像が無効:", backgroundUrl);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // (以下、テキスト描画部分はそのまま)
-
-
-  // ★ ここからテキスト描画（既存コード）
   ctx.fillStyle = "white";
   ctx.font = "24px 'Noto Sans JP'";
   ctx.textBaseline = "top";
@@ -10767,49 +10633,25 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   y += 50;
 
   stats.forEach(s => {
-    ctx.fillText(`【${s.course}】`, x, y); y += 30;
-    ctx.fillText(`走行数: ${s.count}`, x + 20, y); y += 25;
-    ctx.fillText(`平均順位: ${s.avgRank.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`, x + 20, y); y += 25;
-    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x + 20, y); y += 40;
+    ctx.font = "bold 20px 'Noto Sans JP'";
+    ctx.fillText(`【${s.course}】 (戦数: ${s.count} / 平均: ${s.avgRank.toFixed(2)}位)`, x, y);
+    y += 28;
 
-    if (s.season && Object.keys(s.season).length > 0) {
-      ctx.fillText(`Season別:`, x + 20, y); y += 25;
-      Object.keys(s.season).forEach(se => {
-        const obj = s.season[se];
-        ctx.fillText(
-          `${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
-          x + 40,
-          y
-        );
-        y += 25;
-      });
-      y += 10;
+    ctx.font = "15px 'Noto Sans JP'";
+    let rankSummary = [];
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (cnt > 0) {
+        const pct = ((cnt / s.count) * 100).toFixed(0);
+        rankSummary.push(`${i}位:${pct}%`);
+      }
     }
-
-    if (s.tier && Object.keys(s.tier).length > 0) {
-      ctx.fillText(`Tier別:`, x + 20, y); y += 25;
-      Object.keys(s.tier).forEach(t => {
-        const obj = s.tier[t];
-        ctx.fillText(
-          `${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
-          x + 40,
-          y
-        );
-        y += 25;
-      });
-      y += 10;
-    }
-
-    y += 20;
+    ctx.fillText(`順位分布: ${rankSummary.join(" | ")}`, x + 20, y);
+    y += 32;
   });
 }
 
-
 async function sendAdpCourseImageToDiscord() {
-  // 1. 現在選択されているWebhook URLを取得
   let webhook = "";
   if (typeof getSelectedWebhookUrl === "function") {
     webhook = getSelectedWebhookUrl();
@@ -10822,31 +10664,26 @@ async function sendAdpCourseImageToDiscord() {
     return;
   }
 
-  // ★ 補強: 送信直前に、最新の統計データと背景でキャンバスを確実に再描画しておく
   if (typeof window.latestAdpCourseStats !== "undefined" && window.latestAdpCourseStats && typeof drawAdpCourseImage === "function") {
     const bgUrl = state.adpCourseBackgroundImage || null;
     await drawAdpCourseImage(window.latestAdpCourseStats, bgUrl);
   }
 
-  // 2. キャンバス要素の取得と存在チェック
   const canvas = document.getElementById("adpCourseImage");
   if (!canvas) {
     alert("対象のキャンバスが見つかりません");
     return;
   }
 
-  // 3. キャンバスをBlob（画像データ）に変換
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) {
     alert("画像の生成に失敗しました");
     return;
   }
 
-  // 4. FormDataを作成して画像を添付
   const form = new FormData();
   form.append("file", blob, "adp_course_stats.png");
 
-  // 5. Discordへ送信
   try {
     const response = await fetch(webhook, {
       method: "POST",
@@ -10864,7 +10701,6 @@ async function sendAdpCourseImageToDiscord() {
   }
 }
 
-// ボタンへの紐付け
 const sendBtn = document.getElementById("sendAdpCourseImageBtn");
 if (sendBtn) {
   sendBtn.onclick = async () => {
@@ -10872,10 +10708,7 @@ if (sendBtn) {
   };
 }
 
-
-// ▼ タブ切り替え時に呼ばれる runCourseStats 関数を定義
 function runCourseStats() {
-  // コース統計のビューを更新、または初期描画を行う処理
   if (typeof updateCourseStatsView === "function") {
     updateCourseStatsView();
   } else if (typeof drawAdpCourseStatsTable === "function" && window.latestAdpCourseStats) {
@@ -10883,7 +10716,6 @@ function runCourseStats() {
     drawAdpCourseStatsChart(window.latestAdpCourseStats);
   }
 }
-
 
 // ▼ 読み込み（enabled や liveWebhook の復元に対応）
 function loadWebhookSettings() {
