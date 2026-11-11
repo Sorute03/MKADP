@@ -10338,53 +10338,65 @@ function generateAdpCourseStatsText(stats) {
 
 function drawAdpCourseStatsTable(stats) {
   let html = `
-    <div style="overflow-x: auto;">
-      <table border="1" cellpadding="5" style="border-collapse: collapse; color: #fff; width: 100%; font-size: 12px; text-align: center;">
-        <tr style="background: rgba(39, 174, 96, 0.3);">
-          <th>コース</th>
-          <th>戦数</th>
-          <th>平均</th>
-          <th>中央</th>
-          <th>標準偏差</th>
-          <th>Top3率</th>
-          <th>平均Pt</th>
-          <th>勝率</th>
+    <div style="overflow-x: auto; width: 100%; border: 1px solid #d8f3dd; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+      <table border="1" cellpadding="6" style="border-collapse: collapse; color: #222; width: 100%; font-size: 12px; text-align: center; border-color: #d8f3dd;">
+        <thead>
+          <tr style="background: #27ae60; color: #fff;">
+            <th style="text-align: left; padding-left: 10px; white-space: nowrap; position: sticky; left: 0; background: #27ae60; z-index: 2;">コース</th>
+            <th style="white-space: nowrap;">戦数</th>
+            <th style="white-space: nowrap;">平均</th>
+            <th style="white-space: nowrap;">中央</th>
+            <th style="white-space: nowrap;">標準偏差</th>
+            <th style="white-space: nowrap;">Top3率</th>
+            <th style="white-space: nowrap;">平均Pt</th>
+            <th style="white-space: nowrap;">勝率</th>
   `;
 
-  // 1位〜24位までのヘッダーを動的に生成
+  // 1位〜24位のヘッダーを展開
   for (let i = 1; i <= 24; i++) {
-    html += `<th>${i}位</th>`;
+    html += `<th style="white-space: nowrap; padding: 6px 8px; min-width: 45px;">${i}位</th>`;
   }
-  html += `</tr>`;
+  html += `</tr></thead><tbody>`;
 
   stats.forEach(s => {
     html += `
-      <tr>
-        <td style="text-align: left; font-weight: bold; padding-left: 6px; white-space: nowrap;">${s.course}</td>
+      <tr style="border-bottom: 1px solid #d8f3dd;">
+        <td style="text-align: left; font-weight: bold; padding-left: 10px; white-space: nowrap; color: #27ae60; position: sticky; left: 0; background: #fdfdfd; z-index: 1;">${s.course}</td>
         <td>${s.count}</td>
         <td>${s.avgRank.toFixed(2)}</td>
-        <td>${s.medianRank.toFixed(2)}</td>
+        <td>${s.medianRank.toFixed(1)}</td>
         <td>${s.rankStdDev.toFixed(2)}</td>
         <td>${(s.top3Rate * 100).toFixed(1)}%</td>
-        <td>${s.avgPoints.toFixed(2)}</td>
+        <td>${s.avgPoints.toFixed(1)}</td>
         <td>${(s.winRate * 100).toFixed(1)}%</td>
     `;
 
-    // 1位〜24位までの確率＆回数を埋め込み
+    // 1位〜24位それぞれの確率（%）と回数をセルに埋め込む
     for (let i = 1; i <= 24; i++) {
-      const cnt = s.rankCounts[i] || 0;
-      const pct = ((cnt / s.count) * 100).toFixed(0); // 24位まであるため幅を考慮して小数点以下0桁（必要に応じてtoFixed(1)に変更可能）
-      html += `<td>${pct}%<br><span style="font-size:10px; color:#aaa;">(${cnt})</span></td>`;
+      const cnt = (s.rankCounts && s.rankCounts[i]) ? s.rankCounts[i] : 0;
+      const pct = s.count > 0 ? ((cnt / s.count) * 100).toFixed(0) : "0";
+      
+      // 出現回数が多いほど緑色の濃さが変わる演出
+      const cellBg = cnt > 0 ? `background-color: rgba(39, 174, 96, ${Math.min((cnt / s.count) * 0.9 + 0.05, 0.45)}); font-weight: bold;` : `color: #bbb;`;
+      
+      html += `<td style="${cellBg} white-space: nowrap; padding: 6px 4px;">${pct}%<br><span style="font-size:10px; color:${cnt > 0 ? '#333' : '#ccc'};">(${cnt})</span></td>`;
     }
 
     html += `</tr>`;
   });
 
-  html += `</table></div>`;
+  html += `</tbody></table></div>`;
+
   const resultEl = document.getElementById("adpCourseStatsResult");
-  if (resultEl) resultEl.innerHTML = html;
+  if (resultEl) {
+    resultEl.innerHTML = html;
+  } else {
+    console.warn("adpCourseStatsResult 要素が見つかりません");
+  }
 }
 
+
+  
 let chartAdpCourseStats = null;
 
 function drawAdpCourseStatsChart(stats) {
