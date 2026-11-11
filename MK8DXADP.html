@@ -9853,10 +9853,10 @@ function buildAdpCourseStatsMessage(stats) {
     let midCount = 0;   // 6〜15位
     let lowCount = 0;   // 16〜24位
 
-    for (let i = 1; i <= 24; i++) {
+    for (let i = 1; i <= 12; i++) {
       const cnt = s.rankCounts[i] || 0;
-      if (i <= 5) topCount += cnt;
-      else if (i <= 15) midCount += cnt;
+      if (i <= 4) topCount += cnt;
+      else if (i <= 8) midCount += cnt;
       else lowCount += cnt;
     }
 
@@ -9867,7 +9867,7 @@ function buildAdpCourseStatsMessage(stats) {
     lines.push(
       `\n> **${s.course}**\n` +
       `> 走行数: **${s.count}** | 平均順位: **${s.avgRank.toFixed(2)}位** | 勝率: **${(s.winRate * 100).toFixed(1)}%**\n` +
-      `> 上位率(1-5位): **${topPct}%** (${topCount}回) | 中位率(6-15位): **${midPct}%** (${midCount}回) | 下位率(16-24位): **${lowPct}%** (${lowCount}回)`
+      `> 上位率(1-4位): **${topPct}%** (${topCount}回) | 中位率(5-8位): **${midPct}%** (${midCount}回) | 下位率(9-12位): **${lowPct}%** (${lowCount}回)`
     );
   });
 
