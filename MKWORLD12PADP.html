@@ -956,52 +956,83 @@ document.addEventListener('DOMContentLoaded', () => {
 <br>
 <button id="migrateLocalStorageBtn" data-i18n="btn_migrate_db">過去バージョンデータをDBへ移行</button>
 
-<div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="backup_title">バックアップ（パスワード付き）</h3>
-  <div style="margin-bottom:15px;">
-    <label data-i18n="backup_label">デバイス間データ移行バックアップファイル用パスワード：</label>
-    <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <button id="downloadBackupWithPasswordBtn" data-i18n="btn_save_backup">バックアップを保存</button>
-  </div>
-  <hr>
-  <div>
-    <label data-i18n="restore_label">デバイス間データ移行復元パスワード：</label>
-    <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <input id="restoreFileInput" type="file" accept=".txt">
-    <button id="restoreBackupWithPasswordBtn" data-i18n="btn_restore_backup">復元する</button>
-  </div>
+
+<div id="tabs" style="margin-bottom:20px; display: flex; flex-wrap: wrap; gap: 6px;">
+  <button class="tabBtn active" data-tab="analysisTab" data-i18n="tab_analysis">分析</button>
+  <button class="tabBtn" data-tab="historyTab" data-i18n="tab_history">レース一覧</button>
+  <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
+  <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
+  <button class="tabBtn" data-tab="courseMemoTab" data-i18n="tab_course_memo">コースメモ</button>
+  <button class="tabBtn" data-tab="backupTab" data-i18n="tab_backup">バックアップ</button>
 </div>
+
+
   
 
-<h3 data-i18n="tsv_title">TSV読み込み（スプシコピー対応）</h3>
-<textarea id="tsvInput" data-i18n-placeholder="tsv_placeholder" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
-<button id="importTSVBtn" data-i18n="btn_import_tsv">TSVを読み込む</button>
+<!-- ▼ バックアップ・データ管理タブ本体 -->
+<div id="backupTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="backup_tab_title">バックアップ・データ管理</h2>
 
-<h3 data-i18n="csv_title">CSV / TSV 読み込み（セーブデータとして保存）</h3>
-<input type="file" id="fileInput" accept=".csv,.tsv,.txt">
-<button id="importFileBtn" data-i18n="btn_import_file">読み込んで保存</button>
+    <!-- ① パスワード付きバックアップ・復元 -->
+    <div class="backup-section" style="margin-top:0; margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="backup_title">バックアップ（パスワード付き）</h3>
+      <div style="margin-bottom:15px;">
+        <label data-i18n="backup_label" style="font-weight: bold; color: #222; display: block; margin-bottom: 6px;">デバイス間データ移行バックアップファイル用パスワード：</label>
+        <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:100%; max-width:300px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:8px;">
+        <button id="downloadBackupWithPasswordBtn" style="margin-top: 8px; background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_save_backup">バックアップを保存</button>
+      </div>
+      <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 15px 0;">
+      <div>
+        <label data-i18n="restore_label" style="font-weight: bold; color: #222; display: block; margin-bottom: 6px;">デバイス間データ移行復元パスワード：</label>
+        <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:100%; max-width:300px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:8px; margin-bottom: 8px;"><br>
+        <input id="restoreFileInput" type="file" accept=".txt" style="margin-bottom: 8px;"><br>
+        <button id="restoreBackupWithPasswordBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup">復元する</button>
+      </div>
+    </div>
 
-<div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="old_import_title">旧データ取り込み（localStorage → IndexedDB）</h3>
-  <div style="margin-bottom:15px;">
-    <label><b data-i18n="old_json_label">① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
-    <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
-    <button id="importOldJsonBtn" style="margin-left:10px;" data-i18n="btn_import_json">旧JSONを取り込む</button>
+    <!-- ② その他のバックアップ・ファイル復元ボタン類 -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px; display: flex; gap: 12px; flex-wrap: wrap;">
+      <button id="importBackupBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
+      <button id="importSaveFileBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_file">ファイルから復元</button>
+    </div>
+
+    <!-- ③ TSV読み込み -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="tsv_title">TSV読み込み（スプシコピー対応）</h3>
+      <textarea id="tsvInput" data-i18n-placeholder="tsv_placeholder" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:10px; resize:vertical; outline: none;"></textarea>
+      <button id="importTSVBtn" style="margin-top: 8px; background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_tsv">TSVを読み込む</button>
+    </div>
+
+    <!-- ④ CSV / TSV ファイル読み込み -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="csv_title">CSV / TSV 読み込み（セーブデータとして保存）</h3>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="margin-bottom: 8px;"><br>
+      <button id="importFileBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_file">読み込んで保存</button>
+    </div>
+
+    <!-- ⑤ 旧データ取り込み -->
+    <div class="import-old-container" style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="old_import_title">旧データ取り込み（localStorage → IndexedDB）</h3>
+      <div style="margin-bottom:15px;">
+        <label><b data-i18n="old_json_label" style="color: #222;">① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+        <input type="file" id="oldJsonInput" accept=".json" style="margin-top:6px; margin-bottom:8px;"><br>
+        <button id="importOldJsonBtn" style="background: #27ae60; color: #fff; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_json">旧JSONを取り込む</button>
+      </div>
+      <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 15px 0;">
+      <div style="margin-top:15px;">
+        <label><b data-i18n="old_html_label" style="color: #222;">② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+        <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:6px; margin-bottom:8px;"><br>
+        <button id="importOldHtmlBtn" style="background: #27ae60; color: #fff; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_html">旧HTMLを取り込む</button>
+      </div>
+      <p style="margin-top:12px; font-size:13px; color:#555;" data-i18n="old_import_note">
+        ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
+        ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
+      </p>
+    </div>
+
   </div>
-  <hr>
-  <div style="margin-top:15px;">
-    <label><b data-i18n="old_html_label">② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
-    <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
-    <button id="importOldHtmlBtn" style="margin-left:10px;" data-i18n="btn_import_html">旧HTMLを取り込む</button>
-  </div>
-  <p style="margin-top:15px; font-size:13px; color:#666;" data-i18n="old_import_note">
-    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
-    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
-  </p>
 </div>
-  
-<button id="importBackupBtn" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
-<button id="importSaveFileBtn" data-i18n="btn_restore_file">ファイルから復元</button>
 
 <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
   <h3 data-i18n="dup_title">重複データの整理</h3>
