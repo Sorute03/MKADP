@@ -1531,34 +1531,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <!-- ▼ コースメモタブ本体 -->
-<div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
-  <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
+<div id="courseMemoTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="course_memo_title">コース戦略・意識メモ</h2>
 
-  <!-- ▼ 【追加】野良 vs 大会・ラウンジの切替セレクトボックス -->
-  <div style="margin-bottom: 15px;">
-    <label data-i18n="lbl_memo_category" style="font-weight: bold; margin-right: 8px;">対象カテゴリ:</label>
-    <select id="memoCategorySelect" style="padding: 6px 10px; font-size: 14px; width: 220px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
-      <option value="other" data-i18n="opt_category_other">大会・ラウンジ</option>
-      <option value="nora" data-i18n="opt_category_nora">野良</option>
-    </select>
-  </div>
-
-  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-    <!-- 左側：コース選択リスト（全コース表示） -->
-    <div style="width: 320px;">
-      <label data-i18n="lbl_select_course">コース選択</label><br>
-      <select id="memoCourseSelect" size="18" style="width: 100%; height: 480px; padding: 6px; font-size: 13px; box-sizing: border-box; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;">
-        <!-- JSで動的に挿入されます -->
+    <!-- ▼ 対象カテゴリ切替セレクトボックス -->
+    <div style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+      <label data-i18n="lbl_memo_category" style="font-weight: bold; color: #222;">対象カテゴリ:</label>
+      <select id="memoCategorySelect" style="padding: 8px 12px; font-size: 14px; width: 220px; border-radius: 6px; border: 1px solid #ccc; background: #fff; color: #222; font-weight: bold; cursor: pointer; margin: 0;">
+        <option value="other" data-i18n="opt_category_other">大会・ラウンジ</option>
+        <option value="nora" data-i18n="opt_category_nora">野良</option>
       </select>
     </div>
 
-    <!-- 右側：メモ編集領域 -->
-    <div style="flex: 1; min-width: 320px;">
-      <h3 id="selectedCourseTitle" style="margin-top:0; color: #ffca28;">コースを選択してください</h3>
-      <textarea id="courseMemoTextarea" style="width: 100%; height: 430px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、立ち回りの意識、アイテム回しの意識などを記述..."></textarea>
-      <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-        <button id="saveCourseMemoBtn" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" data-i18n="btn_save_memo">メモを保存</button>
-        <span id="memoSaveStatus" style="color: #4caf50; display: none; font-size: 14px;" data-i18n="msg_saved">保存しました！</span>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- 左側：コース選択リスト（全コース表示） -->
+      <div style="width: 320px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 14px;">
+        <label data-i18n="lbl_select_course" style="font-weight: bold; color: #222; display: block; margin-bottom: 8px;">コース選択</label>
+        <select id="memoCourseSelect" size="18" style="width: 100%; height: 440px; padding: 8px; font-size: 13px; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; outline: none;">
+          <!-- JSで動的に挿入されます -->
+        </select>
+      </div>
+
+      <!-- 右側：メモ編集領域 -->
+      <div style="flex: 1; min-width: 320px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <h3 id="selectedCourseTitle" style="margin-top:0; margin-bottom: 12px; color: #27ae60; font-size: 18px; font-weight: bold;">コースを選択してください</h3>
+        <textarea id="courseMemoTextarea" style="width: 100%; height: 380px; padding: 12px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; outline: none;" placeholder="このコースの走法、立ち回りの意識、アイテム回しの意識などを記述..."></textarea>
+        
+        <div style="margin-top: 14px; display: flex; align-items: center; gap: 12px;">
+          <button id="saveCourseMemoBtn" style="padding: 10px 24px; font-weight: bold; cursor: pointer; background-color: #27ae60; color: white; border: none; border-radius: 6px;" data-i18n="btn_save_memo">メモを保存</button>
+          <span id="memoSaveStatus" style="color: #27ae60; display: none; font-size: 14px; font-weight: bold;" data-i18n="msg_saved">保存しました！</span>
+        </div>
       </div>
     </div>
   </div>
