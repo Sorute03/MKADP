@@ -1274,94 +1274,119 @@ document.addEventListener('DOMContentLoaded', () => {
   
 <!-- ▼ コース統計・比較タブ -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
-  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-    <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <select id="adpCourseSelect1" style="width:200px;"></select>
-      <select id="adpCourseSelect2" style="width:200px;"></select>
-      <select id="adpCourseSelect3" style="width:200px;"></select>
-      <select id="adpCourseSelect4" style="width:200px;"></select>
-      <select id="adpCourseSelect5" style="width:200px;"></select>
-    </div>
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="tab_coursestats">コース別stats</h2>
 
-    <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
-      <h3 data-i18n="course_stats_filter">コース統計フィルター</h3>
+    <!-- 1. フィルター設定エリア -->
+    <div id="adpCourseFilterBox" style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="course_stats_filter">1. コース統計フィルター</h3>
       
-      <label data-i18n="lbl_mode">モード</label><br>
-      <select id="adpModeSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-        <option value="nora" data-i18n="mode_nora">野良</option>
-        <option value="tournament" data-i18n="mode_tournament">大会</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="adpSeasonSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="adpTierSelect" style="width:200px;"></select><br><br>
-
-      <label data-i18n="label_recent">直近 N レース</label><br>
-      <select id="adpRecentSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-      </select><br><br>
-
-      <label data-i18n="label_filter_mode">フィルター方式</label><br>
-      <select id="adpFilterModeSelect" style="width:200px;">
-        <option value="AND">AND</option>
-        <option value="OR">OR</option>
-      </select>
-    </div>
-
-    <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
-      <h3 data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
-      
-      <!-- ① ローカルファイルから毎回直接選択する方式 -->
-      <label data-i18n="label_bg_image_local">ローカルからファイルを選択（一時的）</label><br>
-      <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
-
-      <!-- ② OPFS保存・選択式（最大5枚）の方式 -->
-      <label data-i18n="lbl_saved_bg">ストレージに保存済みの背景から選択（最大5枚）</label><br>
-      <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
-      <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;" data-i18n="btn_save_bg_storage">現在の画像をストレージに保存</button><br>
-      <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #666; padding: 8px;">
-        <!-- 動的にサムネイルが生成されます -->
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_mode">モード</label><br>
+          <select id="adpModeSelect">
+            <option value="ALL">ALL</option>
+            <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+            <option value="nora" data-i18n="mode_nora">野良</option>
+            <option value="tournament" data-i18n="mode_tournament">大会</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_season">Season</label><br>
+          <select id="adpSeasonSelect">
+            <option value="ALL">ALL</option>
+            <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_tier">Tier</label><br>
+          <select id="adpTierSelect"></select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="label_recent">直近 N レース</label><br>
+          <select id="adpRecentSelect">
+            <option value="ALL">ALL</option>
+            <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="label_filter_mode">フィルター方式</label><br>
+          <select id="adpFilterModeSelect">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+          </select>
+        </div>
       </div>
-      <br>
-
-      <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-      <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-      <label data-i18n="label_opacity">透過度</label><br><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-      <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
-
-      <button id="updateAdpCourseBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
     </div>
 
-    <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
-      <h3 data-i18n="text_color_title">テキスト色設定</h3>
-      <label data-i18n="label_text_color">テキスト色</label><br><input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
-      <label data-i18n="label_stroke_color">縁取り色</label><br><input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
-      <label data-i18n="label_stroke_width">縁取り太さ(px)</label><br><input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
-      <label data-i18n="label_shadow_blur">影の濃さ(px)</label><br><input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
-      <label data-i18n="label_shadow_color">影の色</label><br><input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+    <!-- 2. コース選択エリア -->
+    <div id="adpCourseSelectBox" style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <p style="font-weight: bold; margin-top: 0; color: #222;" data-i18n="course_compare_title">2. コースを最大5つ選択:</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <select id="adpCourseSelect1" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect2" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect3" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect4" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect5" style="flex: 1; min-width: 180px;"></select>
+      </div>
     </div>
 
-    <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
-    <canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
-    <canvas id="adpCourseImage" width="1600" height="1100" style="border:1px solid #ccc; display:block;"></canvas>
+    <!-- 3. 実行・送信ボタンエリア -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <button id="showAdpCourseStatsBtn" style="background-color: #27ae60; color: white; padding: 10px 24px;" data-i18n="btn_show">表示</button>
+      <button id="sendAdpCourseStatsBtn" style="background-color: #5865F2; color: white; padding: 10px 20px;" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn" style="background-color: #5865F2; color: white; padding: 10px 20px;" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
+    </div>
 
-    <div style="margin-top: 8px;">
-      <button id="showAdpCourseStatsBtn" data-i18n="btn_show">表示</button>
-      <button id="sendAdpCourseStatsBtn" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
-      <button id="sendAdpCourseImageBtn" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
+    <!-- 4. 結果表示エリア（テーブル＆グラフ） -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="color: #27ae60;" data-i18n="result_title">集計結果</h3>
+      <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+      <canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #d8f3dd; display:block; margin-bottom:16px; background:#fff; border-radius:8px;"></canvas>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 24px 0;">
+
+    <!-- 5. 画像出力用カスタマイズ設定（折りたたみ式などにしても便利ですが、下部にまとめて配置） -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- 背景画像設定 -->
+      <div id="adpCourseBgSettings" style="flex: 1; min-width: 300px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; color: #27ae60;" data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
+        
+        <label data-i18n="label_bg_image_local">ローカルからファイルを選択</label><br>
+        <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
+
+        <label data-i18n="lbl_saved_bg">ストレージ保存済み背景から選択（最大5枚）</label><br>
+        <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
+        <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px; background: #27ae60; color: #fff;" data-i18n="btn_save_bg_storage">現在の画像をストレージに保存</button><br>
+        <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #27ae60; padding: 8px; background: #fff; border-radius: 6px;"></div>
+        
+        <label data-i18n="label_brightness">明るさ</label><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1">
+        <label data-i18n="label_contrast">コントラスト</label><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1">
+        <label data-i18n="label_opacity">透過度</label><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1">
+        <label data-i18n="label_blur">ぼかし(px)</label><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0">
+
+        <button id="updateAdpCourseBgBtn" style="margin-top: 10px; background: #27ae60; color: white;" data-i18n="btn_update_bg">背景を即時反映</button>
+      </div>
+
+      <!-- テキスト色設定 -->
+      <div id="adpCourseTextColorSettings" style="flex: 1; min-width: 300px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; color: #27ae60;" data-i18n="text_color_title">テキスト色設定</h3>
+        <label data-i18n="label_text_color">テキスト色</label><br><input type="color" id="adpCourseTextColor" value="#ffffff"><br>
+        <label data-i18n="label_stroke_color">縁取り色</label><br><input type="color" id="adpCourseTextStrokeColor" value="#000000"><br>
+        <label data-i18n="label_stroke_width">縁取り太さ(px)</label><br><input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br>
+        <label data-i18n="label_shadow_blur">影の濃さ(px)</label><br><input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br>
+        <label data-i18n="label_shadow_color">影の色</label><br><input type="color" id="adpCourseTextShadowColor" value="#000000">
+      </div>
+    </div>
+
+    <!-- 非表示生成用キャンバス -->
+    <div style="margin-top: 20px;">
+      <canvas id="adpCourseImage" width="1600" height="1100" style="border:1px solid #d8f3dd; display:block; max-width: 100%; height: auto; border-radius: 8px;"></canvas>
     </div>
   </div>
 </div>
-
+  
   
 <!-- ▼ コースメモタブ本体 -->
 <div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
