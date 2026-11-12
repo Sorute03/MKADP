@@ -1526,6 +1526,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+<!-- ▼ MMR Matrix 計算タブ本体 -->
+<div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK8DX Lounge MMR Matrix Calculator</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
+      
+      <!-- モード選択ドロップダウン -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;">対戦形式を選択:</label>
+        <select id="formatSelect" style="background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer; min-width: 200px; margin: 0;">
+          <option value="ffa">FFA (12人 個人戦)</option>
+          <option value="2v2">2v2 (6チーム / 12人)</option>
+          <option value="3v3">3v3 (4チーム / 12人)</option>
+          <option value="4v4">4v4 (3チーム / 12人)</option>
+          <option value="6v6">6v6 (2チーム / 12人)</option>
+        </select>
+      </div>
+
+      <!-- 1. Room Header Input -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
+        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます（計12人）。</p>
+        <div style="position: relative; flex-grow: 1;">
+          <textarea
+            id="mogiHeaderInput"
+            placeholder="`Room 1 - Player List`&#10;`1.` XXX (12325 MMR)&#10;`2.` YYYY (12076 MMR)..."
+            style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin: 0;"
+          ></textarea>
+          <button type="button" class="clear-overlay" data-target="mogiHeaderInput" style="position: absolute; top: 8px; right: 12px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+        <div id="mogiHeaderStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
+      </div>
+
+      <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信ボタン -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
+        <select id="playerSelect" disabled style="width: 100%; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 14px; margin-top: 0; margin-bottom: 12px; cursor: pointer;">
+          <option value="">(先に上のプレイヤーリストを入力してください)</option>
+        </select>
+
+        <textarea
+          id="matrixResultOutput"
+          readonly
+          placeholder="自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。"
+          style="width: 100%; height: 280px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; white-space: pre; resize: vertical; margin: 0;"
+        ></textarea>
+
+        <!-- 予測早見表の送信ボタン -->
+        <div style="margin-top: 12px;">
+          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">予測早見表をDiscordに送信</button>
+        </div>
+      </div>
+
+      <!-- 3. 通常の全体一括出力 -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
+        <textarea
+          id="scoreboardInput"
+          placeholder="!submit 1 Q&#10;YamiX 119..."
+          style="width: 100%; height: 100px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; margin-top: 0; margin-bottom: 10px; resize: vertical;"
+        ></textarea>
+        <textarea
+          id="mmrTableOutput"
+          placeholder="スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。"
+          readonly
+          style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin-top: 0; margin-bottom: 0;"
+        ></textarea>
+        
+        <!-- 計算・コピー・Discord送信ボタン -->
+        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Calculate (全員分)</button>
+          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
+          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をDiscordに送信</button>
+        </div>
+
+        <div id="mmrTableStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+  
+
 
 
   
@@ -12059,6 +12143,616 @@ function initCourseMemoTabIndexedDB() {
     };
   }
 }
+
+
+
+
+
+
+  
+// ==========================================
+// MK8DX MMR Matrix 計算 & UIコントローラー（最大12人対応版）
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  const formatSelect = document.getElementById('formatSelect');
+  const mogiHeaderInput = document.getElementById('mogiHeaderInput');
+  const playerSelect = document.getElementById('playerSelect');
+  const matrixResultOutput = document.getElementById('matrixResultOutput');
+
+  const scoreboardInput = document.getElementById('scoreboardInput');
+  const mmrTableOutput = document.getElementById('mmrTableOutput');
+  const calculateButton = document.getElementById('calculateButton');
+  const copyButton = document.getElementById('copyButton');
+  const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
+  const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
+  
+  const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn');       
+  const sendMatrixDiscordBtn = document.getElementById('sendMatrixDiscordBtn'); 
+
+  if (!mogiHeaderInput) return;
+
+  const FORMAT_SETTINGS = {
+    'ffa': { teamSize: 1, totalTeams: 12, label: 'FFA (12人 個人戦)' },
+    '2v2': { teamSize: 2, totalTeams: 6,  label: '2v2 (6チーム)' },
+    '3v3': { teamSize: 3, totalTeams: 4,  label: '3v3 (4チーム)' },
+    '4v4': { teamSize: 4, totalTeams: 3,  label: '4v4 (3チーム)' },
+    '6v6': { teamSize: 6, totalTeams: 2,  label: '6v6 (2チーム)' }
+  };
+
+  function getActiveWebhookUrl() {
+    let webhook = "";
+    if (typeof getSelectedWebhookUrl === "function") {
+      webhook = getSelectedWebhookUrl();
+    } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+      webhook = webhookList[activeWebhookIndex]?.url || "";
+    }
+    return webhook;
+  }
+
+  formatSelect?.addEventListener('change', () => {
+    updatePlayerDropdown();
+  });
+
+  // ▼ 3. 確定結果のDiscord送信
+  if (sendMmrDiscordBtn) {
+    sendMmrDiscordBtn.onclick = async () => {
+      const webhook = getActiveWebhookUrl();
+      if (!webhook) {
+        return alert("Webhook が選択されていません");
+      }
+      if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
+        return alert("送信する計算結果がありません。先に Calculate を実行してください。");
+      }
+
+      const payload = { content: mmrTableOutput.value };
+
+      try {
+        sendMmrDiscordBtn.disabled = true;
+        sendMmrDiscordBtn.textContent = "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert("Discord に計算結果を送信しました！");
+        } else {
+          alert("送信に失敗しました (ステータス: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert("Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMmrDiscordBtn.disabled = false;
+        sendMmrDiscordBtn.textContent = "計算結果をDiscordに送信";
+      }
+    };
+  }
+
+  // ▼ 2. 予測早見表のDiscord送信
+  if (sendMatrixDiscordBtn) {
+    sendMatrixDiscordBtn.onclick = async () => {
+      const webhook = getActiveWebhookUrl();
+      if (!webhook) {
+        return alert("Webhook が選択されていません");
+      }
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert("送信する早見表がありません。先にチームまたはプレイヤーを選択してください。");
+      }
+
+      const payload = {
+        content: "```\n" + matrixResultOutput.value + "\n```"
+      };
+
+      try {
+        sendMatrixDiscordBtn.disabled = true;
+        sendMatrixDiscordBtn.textContent = "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert("Discord に予測早見表を送信しました！");
+        } else {
+          alert("送信に失敗しました (ステータス: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert("Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMatrixDiscordBtn.disabled = false;
+        sendMatrixDiscordBtn.textContent = "予測早見表をDiscordに送信";
+      }
+    };
+  }
+
+  // --- 確定計算実行 (Calculate) ---
+  if (calculateButton) {
+    calculateButton.addEventListener('click', () => {
+      const selectedFormat = formatSelect ? formatSelect.value : 'ffa';
+      const result = processVikeScoreboard(mogiHeaderInput.value, scoreboardInput.value, selectedFormat);
+      if (!result.ok) {
+        mmrTableOutput.value = "エラー: 入力データを確認してください（プレイヤー人数12人、フォーマット不一致など）。";
+        return;
+      }
+      mmrTableOutput.value = getMmrChangeSummaryText(result.playersInfo);
+    });
+  }
+
+  if (copyButton) {
+    copyButton.addEventListener('click', async () => {
+      if (mmrTableOutput.value === "") return;
+      await navigator.clipboard.writeText(mmrTableOutput.value);
+      alert("クリップボードにコピーしました！");
+    });
+  }
+
+  mogiHeaderInput.addEventListener('input', () => {
+    setStatus(mogiHeaderStatusBar, "", true);
+    updatePlayerDropdown();
+  });
+
+  function updatePlayerDropdown() {
+    const headerList = parseHeaderInputList(mogiHeaderInput.value);
+    playerSelect.innerHTML = "";
+    
+    if (headerList.length === 0) {
+      let opt = document.createElement('option');
+      opt.value = "";
+      opt.textContent = "(プレイヤーリストが読み込まれていません)";
+      playerSelect.appendChild(opt);
+      playerSelect.disabled = true;
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    const formatKey = formatSelect ? formatSelect.value : 'ffa';
+    const config = FORMAT_SETTINGS[formatKey] || FORMAT_SETTINGS['ffa'];
+
+    let defaultOpt = document.createElement('option');
+    defaultOpt.value = "";
+    defaultOpt.textContent = config.teamSize > 1 ? "-- チームを選択してください --" : "-- プレイヤーを選択してください --";
+    playerSelect.appendChild(defaultOpt);
+
+    if (config.teamSize > 1) {
+      for (let teamId = 1; teamId <= config.totalTeams; teamId++) {
+        let teamMembers = headerList.filter(item => item.teamId === teamId);
+        if (teamMembers.length === 0) continue;
+        let memberNames = teamMembers.map(m => `${m.name} (${m.mmr})`).join(' & ');
+        let avgMmr = Math.round(teamMembers.reduce((sum, m) => sum + m.mmr, 0) / teamMembers.length);
+
+        let opt = document.createElement('option');
+        opt.value = `team_${teamId}`;
+        opt.textContent = `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
+        playerSelect.appendChild(opt);
+      }
+    } else {
+      headerList.forEach(item => {
+        let opt = document.createElement('option');
+        opt.value = `player_${item.name}`;
+        opt.textContent = `${item.index}. ${item.name} (${item.mmr} MMR)`;
+        playerSelect.appendChild(opt);
+      });
+    }
+
+    playerSelect.disabled = false;
+  }
+
+  // --- 早見表（Matrix）生成 ---
+  playerSelect.addEventListener('change', () => {
+    const selectedVal = playerSelect.value;
+    if (!selectedVal) {
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    const formatKey = formatSelect ? formatSelect.value : 'ffa';
+    const config = FORMAT_SETTINGS[formatKey] || FORMAT_SETTINGS['ffa'];
+    const headerList = parseHeaderInputList(mogiHeaderInput.value);
+
+    if (headerList.length === 0) {
+      matrixResultOutput.value = "エラー: プレイヤーリストが読み込まれていません。";
+      return;
+    }
+
+    let targetMembers = [];
+    if (selectedVal.startsWith('team_')) {
+      const teamId = Number(selectedVal.split('_')[1]);
+      targetMembers = headerList.filter(item => item.teamId === teamId);
+    } else if (selectedVal.startsWith('player_')) {
+      const playerName = selectedVal.replace('player_', '');
+      const member = headerList.find(m => m.name === playerName);
+      if (member) targetMembers.push(member);
+    }
+
+    if (targetMembers.length === 0) return;
+
+    let teamAvgMmrs = new Map();
+    if (config.teamSize > 1) {
+      for (let tId = 1; tId <= config.totalTeams; tId++) {
+        let members = headerList.filter(m => m.teamId === tId);
+        if (members.length > 0) {
+          let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+          teamAvgMmrs.set(tId, avg);
+        }
+      }
+    }
+
+    let fullOutputText = "";
+    const isTeamMode = (config.teamSize > 1);
+
+    targetMembers.forEach((targetItem, memberIdx) => {
+      const selectedName = targetItem.name;
+      const targetMmr = targetItem.mmr;
+      const targetTeamId = targetItem.teamId;
+
+      let opponentMmrs = [];
+      if (isTeamMode) {
+        for (let tId = 1; tId <= config.totalTeams; tId++) {
+          if (tId !== targetTeamId) {
+            opponentMmrs.push(teamAvgMmrs.get(tId));
+          }
+        }
+      } else {
+        headerList.forEach(item => {
+          if (item.name !== selectedName) {
+            opponentMmrs.push(item.mmr);
+          }
+        });
+      }
+
+      opponentMmrs.sort((a, b) => a - b);
+
+      if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
+
+      if (isTeamMode) {
+        fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+        fullOutputText += `チーム順位 | 予想変動レンジ\n`;
+        fullOutputText += `----------------------------------------\n`;
+      } else {
+        fullOutputText += `=== 【${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
+        fullOutputText += `順位       | 予想変動レンジ            | 変動後MMR目安\n`;
+        fullOutputText += `----------------------------------------------------------\n`;
+      }
+
+      const numTeams = config.totalTeams;
+      const totalOpponents = opponentMmrs.length;
+
+      for (let place = 1; place <= numTeams; place++) {
+        let winningCount = numTeams - place;
+        let losingCount = place - 1;
+
+        let realisticMaxChange = 0;
+        let realisticMinChange = 0;
+
+        for (let i = 0; i < totalOpponents; i++) {
+          const oppMmr = opponentMmrs[i];
+          if (i >= losingCount) {
+            realisticMaxChange += getMmrDeltaWhenWon(config.teamSize, targetMmr, oppMmr);
+          } else {
+            realisticMaxChange -= getMmrDeltaWhenWon(config.teamSize, oppMmr, targetMmr);
+          }
+
+          if (i < winningCount) {
+            realisticMinChange += getVikeMmrDeltaWhenWon(config.teamSize, targetMmr, oppMmr);
+          } else {
+            realisticMinChange -= getVikeMmrDeltaWhenWon(config.teamSize, oppMmr, targetMmr);
+          }
+        }
+
+        let valMax = Math.round(Math.max(realisticMaxChange, realisticMinChange));
+        let valMin = Math.round(Math.min(realisticMaxChange, realisticMinChange));
+
+        const maxText = (valMax > 0 ? "+" : "") + valMax;
+        const minText = (valMin > 0 ? "+" : "") + valMin;
+
+        const placeStr = String(place).padStart(2, ' ') + "位";
+        const rangeStr = (valMin === valMax) 
+          ? `${maxText.padStart(5, ' ')} MMR` 
+          : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
+
+        if (isTeamMode) {
+          fullOutputText += `${placeStr}        | ${rangeStr}\n`;
+        } else {
+          const finalMaxMmr = Math.max(targetMmr + valMax, 0);
+          const finalMinMmr = Math.max(targetMmr + valMin, 0);
+          const afterMmrStr = (finalMinMmr === finalMaxMmr) ? `${finalMaxMmr}` : `${finalMinMmr} ～ ${finalMaxMmr}`;
+          fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+        }
+      }
+    });
+
+    matrixResultOutput.value = fullOutputText;
+  });
+
+  document.querySelectorAll('.clear-overlay').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const textarea = document.getElementById(targetId);
+      if (textarea) {
+        textarea.value = '';
+        textarea.focus();
+        if (targetId === 'mogiHeaderInput') updatePlayerDropdown();
+      }
+    });
+  });
+});
+
+// ==========================================
+// Vike公式 MK8DX 12人計算ロジック
+// ==========================================
+const teamSizes = { "ffa": 1, "2v2": 2, "3v3": 3, "4v4": 4, "6v6": 6 };
+const caps = { 1: 60, 2: 120, 3: 180, 4: 240, 6: 300 };
+const scalingFactors = { 1: 9500, 2: 5500, 3: 5100, 4: 4800, 6: 4650 };
+const offsets = { 1: 2746.116, 2: 1589.856, 3: 1474.230, 4: 1387.511, 6: 1344.151 };
+
+function getVikeMmrDeltaWhenWon(teamSize, winnerMmr, loserMmr) {
+  return caps[teamSize] / (1 + Math.pow(11, -(loserMmr - winnerMmr - offsets[teamSize]) / scalingFactors[teamSize]));
+}
+
+function getVikeMmrDeltaWhenTied(teamSize, mmr1, mmr2) {
+  return caps[teamSize] / (1 + Math.pow(11, -(Math.abs(mmr1 - mmr2) - offsets[teamSize]) / scalingFactors[teamSize])) - (caps[teamSize] / 3);
+}
+
+function setStatus(target, message, isPositive) {
+  if (!target) return;
+  target.textContent = message;
+  if (isPositive) {
+    target.classList.remove("error");
+  } else {
+    target.classList.add("error");
+  }
+}
+
+function parseHeaderInputList(input) {
+  let result = [];
+  let linesArr = input.split(/\r?\n/);
+  let globalIndex = 1;
+  let currentTeamId = 1;
+  let currentTeamCount = 0;
+
+  const formatSelect = document.getElementById('formatSelect');
+  const formatKey = formatSelect ? formatSelect.value : 'ffa';
+  const teamSize = teamSizes[formatKey] || 1;
+
+  for (const line of linesArr) {
+    let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
+    if (match) {
+      let namesPart = match[2].replace(/\\/g, "").trim();
+      let mmrVal = Number(match[3]);
+      let names = namesPart.split(',').map(n => n.trim()).filter(n => n.length > 0);
+
+      for (const name of names) {
+        result.push({
+          index: globalIndex++,
+          name: name,
+          mmr: mmrVal,
+          teamId: currentTeamId
+        });
+        currentTeamCount++;
+        if (currentTeamCount >= teamSize) {
+          currentTeamId++;
+          currentTeamCount = 0;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function parseHeaderInput(input) {
+  let nameMmrMap = new Map();
+  let list = parseHeaderInputList(input);
+  for (const item of list) {
+    nameMmrMap.set(item.name, item.mmr);
+  }
+  return nameMmrMap;
+}
+
+function parseScoreboardInput(input) {
+  let nameScoreMap = new Map();
+  let linesArr = input.split(/\r?\n/);
+
+  for (const line of linesArr) {
+    let cleanLine = line.trim();
+    if (!cleanLine) continue;
+
+    let matchTeamFormat = cleanLine.match(/^(.+?)\s*\[.*?\]\s*(\d+)(\s*\+\s*(\d+))?$/);
+    if (matchTeamFormat) {
+      let name = matchTeamFormat[1].replace(/\\/g, "").trim();
+      let score = Number(matchTeamFormat[2]);
+      if (matchTeamFormat[4]) score += Number(matchTeamFormat[4]);
+      nameScoreMap.set(name, score);
+      continue;
+    }
+
+    let matchFFA = cleanLine.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
+    if (matchFFA) {
+      let name = matchFFA[1].replace(/\\/g, "").trim();
+      let score = Number(matchFFA[2]);
+      if (matchFFA[4]) score += Number(matchFFA[4]);
+      nameScoreMap.set(name, score);
+    }
+  }
+  return nameScoreMap;
+}
+
+function processVikeScoreboard(headerText, scoreboardText, format = 'ffa') {
+  const FORMAT_SETTINGS = {
+    'ffa': { teamSize: 1, totalTeams: 12 },
+    '2v2': { teamSize: 2, totalTeams: 6 },
+    '3v3': { teamSize: 3, totalTeams: 4 },
+    '4v4': { teamSize: 4, totalTeams: 3 },
+    '6v6': { teamSize: 6, totalTeams: 2 }
+  };
+  const config = FORMAT_SETTINGS[format] || FORMAT_SETTINGS['ffa'];
+  const teamSize = config.teamSize;
+  const teams = config.totalTeams;
+
+  let headerList = parseHeaderInputList(headerText);
+  let nameScoreMap = parseScoreboardInput(scoreboardText);
+
+  if (headerList.length !== 12 || nameScoreMap.size !== 12) return { ok: false };
+
+  let teamScoreMap = new Map();
+  let teamAvgMmrMap = new Map();
+  let playerTeamMap = new Map();
+
+  headerList.forEach(item => {
+    playerTeamMap.set(item.name, item.teamId);
+    let sc = nameScoreMap.get(item.name) || 0;
+    teamScoreMap.set(item.teamId, (teamScoreMap.get(item.teamId) || 0) + sc);
+  });
+
+  for (let tId = 1; tId <= teams; tId++) {
+    let members = headerList.filter(m => m.teamId === tId);
+    if (members.length > 0) {
+      let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+      teamAvgMmrMap.set(tId, avg);
+    }
+  }
+
+  let teamScoresArr = [];
+  for (let tId = 1; tId <= teams; tId++) {
+    teamScoresArr.push({ teamId: tId, score: teamScoreMap.get(tId) || 0 });
+  }
+  teamScoresArr.sort((a, b) => b.score - a.score);
+
+  let teamPlaceMap = new Map();
+  teamScoresArr.forEach((t, idx) => {
+    teamPlaceMap.set(t.teamId, idx + 1);
+  });
+
+  let playersInfo = [];
+
+  if (teamSize > 1) {
+    let teamDeltas = new Map();
+    for (let i = 0; i < teams; i++) {
+      let iTeamId = teamScoresArr[i].teamId;
+      let iPlace = i + 1;
+      let iMMR = teamAvgMmrMap.get(iTeamId);
+
+      let totalDelta = 0;
+      for (let j = 0; j < teams; j++) {
+        if (i === j) continue;
+        let jTeamId = teamScoresArr[j].teamId;
+        let jPlace = j + 1;
+        let jMMR = teamAvgMmrMap.get(jTeamId);
+
+        if (iPlace === jPlace) {
+          totalDelta += (iMMR < jMMR ? 1 : -1) * getVikeMmrDeltaWhenTied(teamSize, iMMR, jMMR);
+        } else if (iPlace < jPlace) {
+          totalDelta += getVikeMmrDeltaWhenWon(teamSize, iMMR, jMMR);
+        } else {
+          totalDelta -= getVikeMmrDeltaWhenWon(teamSize, jMMR, iMMR);
+        }
+      }
+      teamDeltas.set(iTeamId, Math.round(totalDelta));
+    }
+
+    headerList.forEach(item => {
+      let tId = playerTeamMap.get(item.name);
+      let delta = teamDeltas.get(tId) || 0;
+      let newMmr = Math.max(0, item.mmr + delta);
+      let actualDelta = newMmr - item.mmr;
+      let place = teamPlaceMap.get(tId);
+      let score = nameScoreMap.get(item.name) || 0;
+
+      playersInfo.push({
+        name: item.name,
+        mmrBefore: item.mmr,
+        mmrChange: actualDelta,
+        mmrAfter: newMmr,
+        score: score,
+        place: place
+      });
+    });
+
+  } else {
+    let sortedPlayers = [...headerList].sort((a, b) => {
+      let scA = nameScoreMap.get(a.name) || 0;
+      let scB = nameScoreMap.get(b.name) || 0;
+      return scB - scA;
+    });
+
+    let playerPlaceMap = new Map();
+    sortedPlayers.forEach((p, idx) => {
+      playerPlaceMap.set(p.name, idx + 1);
+    });
+
+    headerList.forEach(item1 => {
+      let iPlace = playerPlaceMap.get(item1.name);
+      let totalDelta = 0;
+
+      headerList.forEach(item2 => {
+        if (item1.name === item2.name) return;
+        let jPlace = playerPlaceMap.get(item2.name);
+
+        if (iPlace === jPlace) {
+          totalDelta += (item1.mmr < item2.mmr ? 1 : -1) * getVikeMmrDeltaWhenTied(1, item1.mmr, item2.mmr);
+        } else if (iPlace < jPlace) {
+          totalDelta += getVikeMmrDeltaWhenWon(1, item1.mmr, item2.mmr);
+        } else {
+          totalDelta -= getVikeMmrDeltaWhenWon(1, item2.mmr, item1.mmr);
+        }
+      });
+
+      let delta = Math.round(totalDelta);
+      let newMmr = Math.max(0, item1.mmr + delta);
+      let actualDelta = newMmr - item1.mmr;
+      let score = nameScoreMap.get(item1.name) || 0;
+
+      playersInfo.push({
+        name: item1.name,
+        mmrBefore: item1.mmr,
+        mmrChange: actualDelta,
+        mmrAfter: newMmr,
+        score: score,
+        place: iPlace
+      });
+    });
+  }
+
+  playersInfo.sort((a, b) => a.place !== b.place ? a.place - b.place : b.mmrBefore - a.mmrBefore);
+  return { ok: true, playersInfo: playersInfo };
+}
+
+function getMmrChangeSummaryText(playersInfo) {
+  let longestNameLength = 0;
+  let longestMmrBeforeLength = 0;
+  let longestMmrAfterLength = 0;
+  let longestMmrDeltaLength = 0;
+  let mmrDeltaTextMap = new Map();
+
+  for (const player of playersInfo) {
+    if (player.name.length > longestNameLength) longestNameLength = player.name.length;
+    if (String(player.mmrBefore).length > longestMmrBeforeLength) longestMmrBeforeLength = String(player.mmrBefore).length;
+    if (String(player.mmrAfter).length > longestMmrAfterLength) longestMmrAfterLength = String(player.mmrAfter).length;
+    let mmrDeltaText = (player.mmrChange > 0 ? "+" : "") + player.mmrChange;
+    if (mmrDeltaText.length > longestMmrDeltaLength) longestMmrDeltaLength = mmrDeltaText.length;
+    mmrDeltaTextMap.set(player.name, mmrDeltaText);
+  }
+  
+  let mmrAdjustmentText = "```Expected MMR Changes (MK8DX Vike Formula)";
+  for (const player of playersInfo) {
+    let mmrDeltaText = mmrDeltaTextMap.get(player.name);
+    mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
+        " ".repeat(longestMmrBeforeLength - String(player.mmrBefore).length) + player.mmrBefore + " --> " +
+        " ".repeat(longestMmrAfterLength - String(player.mmrAfter).length) + player.mmrAfter + " (" +
+        " ".repeat(longestMmrDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
+  }
+
+  mmrAdjustmentText += "```\n-# Calculated using MK8DX Vike Lounge MMR Formula (12p).";
+  return mmrAdjustmentText;
+}
+
+
   
 </script>
 
