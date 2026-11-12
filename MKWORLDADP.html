@@ -788,7 +788,27 @@ const i18nDict = {
     label_modal_memo_setting: "📌 モーダル内コースメモ表示",
     label_show_memo: "表示する",
     tab_mmr_matrix: "MMR変動予測計算(mmr predict)",
-    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator"
+    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator",
+    mmr_matrix_title: "MK Lounge MMR Matrix Calculator",
+    mmr_select_format: "対戦形式を選択:",
+    mmr_fmt_ffa_24: "FFA (24人 個人戦)",
+    mmr_fmt_2v2_12: "2v2 (12チーム)",
+    mmr_fmt_3v3_8: "3v3 (8チーム)",
+    mmr_fmt_4v4_6: "4v4 (6チーム)",
+    mmr_fmt_6v6_4: "6v6 (4チーム)",
+    mmr_fmt_8v8_3: "8v8 (3チーム)",
+    mmr_fmt_12v12_2: "12v12 (2チーム)",
+    mmr_step1_title: "1. 部屋のメッセージ（プレイヤーリスト）を貼り付け",
+    mmr_step1_note_24: "※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます。",
+    mmr_step2_title: "2. 自分の名前（または番号）を選択して全順位早見表を生成",
+    mmr_select_wait: "(先に上のプレイヤーリストを入力してください)",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    btn_send_matrix_discord: "予測早見表をDiscordに送信",
+    mmr_step3_title: "3. 従来のスコアボード一括計算（リザルトが出た後用）",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
+    mmr_calculate_24: "Calculate (24人分)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "計算結果をDiscordに送信",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -1038,6 +1058,26 @@ const i18nDict = {
     backup_tab: "Backup",
     btn_restore_backup_alt: "Restore Backup",
     btn_restore_file: "Restore from File",
+    mmr_matrix_title: "MK Lounge MMR Matrix Calculator",
+    mmr_select_format: "Select Format:",
+    mmr_fmt_ffa_24: "FFA (24p Solo)",
+    mmr_fmt_2v2_12: "2v2 (12 Teams)",
+    mmr_fmt_3v3_8: "3v3 (8 Teams)",
+    mmr_fmt_4v4_6: "4v4 (6 Teams)",
+    mmr_fmt_6v6_4: "6v6 (4 Teams)",
+    mmr_fmt_8v8_3: "8v8 (3 Teams)",
+    mmr_fmt_12v12_2: "12v12 (2 Teams)",
+    mmr_step1_title: "1. Paste Room Message (Player List)",
+    mmr_step1_note_24: "* For team formats, players are assigned to Team 1, Team 2... from top to bottom.",
+    mmr_step2_title: "2. Select Your Name (or Team) to Generate Placement Matrix",
+    mmr_select_wait: "(Please enter the player list above first)",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    btn_send_matrix_discord: "Send Matrix to Discord",
+    mmr_step3_title: "3. Scoreboard Batch Calculation (Post-Mogi)",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
+    mmr_calculate_24: "Calculate (All 24p)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "Send Results to Discord",
     }
   };
 
@@ -1670,7 +1710,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼ MMR Matrix 計算タブ本体 -->
+<!-- ▼ MMR Matrix 計算タブ本体（24人対応・多言語化版） -->
 <div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
   <div class="section-block">
     <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK Lounge MMR Matrix Calculator</h2>
@@ -1678,23 +1718,23 @@ document.addEventListener('DOMContentLoaded', () => {
     <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
       
       <!-- モード選択ドロップダウン -->
-      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
-        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;">対戦形式を選択:</label>
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;" data-i18n="mmr_select_format">対戦形式を選択:</label>
         <select id="formatSelect" style="background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer; min-width: 200px; margin: 0;">
-          <option value="ffa">FFA (24人 個人戦)</option>
-          <option value="2v2">2v2 (12チーム)</option>
-          <option value="3v3">3v3 (8チーム)</option>
-          <option value="4v4">4v4 (6チーム)</option>
-          <option value="6v6">6v6 (4チーム)</option>
-          <option value="8v8">8v8 (3チーム)</option>
-          <option value="12v12">12v12 (2チーム)</option>
+          <option value="ffa" data-i18n="mmr_fmt_ffa_24">FFA (24人 個人戦)</option>
+          <option value="2v2" data-i18n="mmr_fmt_2v2_12">2v2 (12チーム)</option>
+          <option value="3v3" data-i18n="mmr_fmt_3v3_8">3v3 (8チーム)</option>
+          <option value="4v4" data-i18n="mmr_fmt_4v4_6">4v4 (6チーム)</option>
+          <option value="6v6" data-i18n="mmr_fmt_6v6_4">6v6 (4チーム)</option>
+          <option value="8v8" data-i18n="mmr_fmt_8v8_3">8v8 (3チーム)</option>
+          <option value="12v12" data-i18n="mmr_fmt_12v12_2">12v12 (2チーム)</option>
         </select>
       </div>
 
       <!-- 1. Room Header Input -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
-        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます。</p>
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step1_title">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
+        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;" data-i18n="mmr_step1_note_24">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます。</p>
         <div style="position: relative; flex-grow: 1;">
           <textarea
             id="mogiHeaderInput"
@@ -1708,27 +1748,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信ボタン -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
+        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step2_title">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
         <select id="playerSelect" disabled style="width: 100%; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 14px; margin-top: 0; margin-bottom: 12px; cursor: pointer;">
-          <option value="">(先に上のプレイヤーリストを入力してください)</option>
+          <option value="" data-i18n="mmr_select_wait">(先に上のプレイヤーリストを入力してください)</option>
         </select>
 
         <textarea
           id="matrixResultOutput"
           readonly
+          data-i18n-placeholder="mmr_matrix_placeholder"
           placeholder="自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。"
           style="width: 100%; height: 280px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; white-space: pre; resize: vertical; margin: 0;"
         ></textarea>
 
         <!-- 予測早見表の送信ボタン -->
         <div style="margin-top: 12px;">
-          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">予測早見表をDiscordに送信</button>
+          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_matrix_discord">予測早見表をDiscordに送信</button>
         </div>
       </div>
 
       <!-- 3. 通常の全体一括出力 -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step3_title">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
         <textarea
           id="scoreboardInput"
           placeholder="!submit 1 Q&#10;YamiX 119..."
@@ -1736,6 +1777,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ></textarea>
         <textarea
           id="mmrTableOutput"
+          data-i18n-placeholder="mmr_table_placeholder"
           placeholder="スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。"
           readonly
           style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin-top: 0; margin-bottom: 0;"
@@ -1743,9 +1785,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         <!-- 計算・コピー・Discord送信ボタン -->
         <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
-          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Calculate (全員分)</button>
-          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
-          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をDiscordに送信</button>
+          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="mmr_calculate_24">Calculate (24人分)</button>
+          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;" data-i18n="btn_copy">Copy</button>
+          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_mmr_discord">計算結果をDiscordに送信</button>
         </div>
 
         <div id="mmrTableStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
@@ -12799,8 +12841,18 @@ function initCourseMemoTabIndexedDB() {
 
 
 // ==========================================
-// MMR Matrix 計算 & UIコントローラー（チーム戦：変動後目安非表示対応版）
+// MMR Matrix 計算 & UIコントローラー（多言語対応版）
 // ==========================================
+
+function isEn() {
+  return typeof currentLang !== 'undefined' && currentLang === 'en';
+}
+
+function formatOrdinalEn(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const formatSelect = document.getElementById('formatSelect');
@@ -12821,13 +12873,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!mogiHeaderInput) return;
 
   const FORMAT_SETTINGS = {
-    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500, label: 'FFA (24人 個人戦)' },
-    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500, label: '2v2 (12チーム)' },
-    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100, label: '3v3 (8チーム)' },
-    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800, label: '4v4 (6チーム)' },
-    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650, label: '6v6 (4チーム)' },
-    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550, label: '8v8 (3チーム)' },
-    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500, label: '12v12 (2チーム)' }
+    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500, labelJa: 'FFA (24人 個人戦)', labelEn: 'FFA (24p Solo)' },
+    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500, labelJa: '2v2 (12チーム)',    labelEn: '2v2 (12 Teams)' },
+    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100, labelJa: '3v3 (8チーム)',    labelEn: '3v3 (8 Teams)' },
+    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800, labelJa: '4v4 (6チーム)',    labelEn: '4v4 (6 Teams)' },
+    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650, labelJa: '6v6 (4チーム)',    labelEn: '6v6 (4 Teams)' },
+    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550, labelJa: '8v8 (3チーム)',    labelEn: '8v8 (3 Teams)' },
+    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500, labelJa: '12v12 (2チーム)',  labelEn: '12v12 (2 Teams)' }
   };
 
   function getActiveWebhookUrl() {
@@ -12849,18 +12901,18 @@ document.addEventListener('DOMContentLoaded', () => {
     sendMmrDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
       if (!webhook) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
+        return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
       }
 
       if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No calculation result to send. Please calculate first." : "送信する計算結果がありません。先に Calculate を実行してください。");
+        return alert(isEn() ? "No calculation result to send. Please calculate first." : "送信する計算結果がありません。先に Calculate を実行してください。");
       }
 
       const payload = { content: mmrTableOutput.value };
 
       try {
         sendMmrDiscordBtn.disabled = true;
-        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Sending..." : "送信中...";
+        sendMmrDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
 
         const response = await fetch(webhook, {
           method: "POST",
@@ -12869,16 +12921,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (response.ok || response.status === 204) {
-          alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Calculation results sent to Discord!" : "Discord に計算結果を送信しました！");
+          alert(isEn() ? "Calculation results sent to Discord!" : "Discord に計算結果を送信しました！");
         } else {
           alert("Failed to send (Status: " + response.status + ")");
         }
       } catch (error) {
         console.error("Webhook送信エラー:", error);
-        alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
       } finally {
         sendMmrDiscordBtn.disabled = false;
-        sendMmrDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send to Discord" : "計算結果をDiscordに送信";
+        sendMmrDiscordBtn.textContent = isEn() ? "Send to Discord" : "計算結果をDiscordに送信";
       }
     };
   }
@@ -12888,11 +12940,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sendMatrixDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
       if (!webhook) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Webhook is not selected." : "Webhook が選択されていません");
+        return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
       }
 
       if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
-        return alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームを選択してください。");
+        return alert(isEn() ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームを選択してください。");
       }
 
       const payload = {
@@ -12901,7 +12953,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         sendMatrixDiscordBtn.disabled = true;
-        sendMatrixDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Sending..." : "送信中...";
+        sendMatrixDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
 
         const response = await fetch(webhook, {
           method: "POST",
@@ -12910,16 +12962,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (response.ok || response.status === 204) {
-          alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "Matrix result sent to Discord!" : "Discord に予測早見表を送信しました！");
+          alert(isEn() ? "Matrix result sent to Discord!" : "Discord に予測早見表を送信しました！");
         } else {
           alert("Failed to send (Status: " + response.status + ")");
         }
       } catch (error) {
         console.error("Webhook送信エラー:", error);
-        alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
       } finally {
         sendMatrixDiscordBtn.disabled = false;
-        sendMatrixDiscordBtn.textContent = typeof currentLang !== 'undefined' && currentLang === 'en' ? "Send Matrix to Discord" : "予測早見表をDiscordに送信";
+        sendMatrixDiscordBtn.textContent = isEn() ? "Send Matrix to Discord" : "予測早見表をDiscordに送信";
       }
     };
   }
@@ -12930,7 +12982,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedFormat = formatSelect ? formatSelect.value : 'ffa';
       let processTextResult = processText(mogiHeaderInput.value, scoreboardInput.value, selectedFormat);
       if (!processTextResult.ok) {
-        mmrTableOutput.value = "エラー: 入力データまたはプレイヤー人数(24人)を確認してください。";
+        mmrTableOutput.value = isEn()
+          ? "Error: Please check input data or player count (24 players required)."
+          : "エラー: 入力データまたはプレイヤー人数(24人)を確認してください。";
         return;
       }
       mmrTableOutput.value = getMmrChangeSummaryText(processTextResult.playersInfo);
@@ -12956,7 +13010,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (headerList.length === 0) {
       let opt = document.createElement('option');
       opt.value = "";
-      opt.textContent = "(プレイヤーリストが読み込まれていません)";
+      opt.textContent = isEn() ? "(Player list not loaded)" : "(プレイヤーリストが読み込まれていません)";
       playerSelect.appendChild(opt);
       playerSelect.disabled = true;
       matrixResultOutput.value = "";
@@ -12968,7 +13022,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let defaultOpt = document.createElement('option');
     defaultOpt.value = "";
-    defaultOpt.textContent = config.teamSize > 1 ? "-- チームを選択してください --" : "-- プレイヤーを選択してください --";
+    if (config.teamSize > 1) {
+      defaultOpt.textContent = isEn() ? "-- Select a Team --" : "-- チームを選択してください --";
+    } else {
+      defaultOpt.textContent = isEn() ? "-- Select a Player --" : "-- プレイヤーを選択してください --";
+    }
     playerSelect.appendChild(defaultOpt);
 
     if (config.teamSize > 1) {
@@ -12979,7 +13037,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let opt = document.createElement('option');
         opt.value = `team_${teamId}`;
-        opt.textContent = `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
+        opt.textContent = isEn()
+          ? `Team ${teamId}: ${memberNames} [Avg ${avgMmr}]`
+          : `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
         playerSelect.appendChild(opt);
       }
     } else {
@@ -13006,7 +13066,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerList = parseHeaderInputList(mogiHeaderInput.value);
 
     if (headerList.length !== 24) {
-      matrixResultOutput.value = "エラー: プレイヤーリストが24人分正しく読み込めていません。";
+      matrixResultOutput.value = isEn()
+        ? "Error: Player list does not contain exactly 24 players."
+        : "エラー: プレイヤーリストが24人分正しく読み込めていません。";
       return;
     }
 
@@ -13036,6 +13098,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let fullOutputText = "";
     const isTeamMode = (config.teamSize > 1);
+    const fmtLabel = isEn() ? config.labelEn : config.labelJa;
 
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
@@ -13061,15 +13124,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
 
-      // ヘッダーおよびカラム構成の切り替え（チーム戦のときは変動後目安を表示しない）
+      // ヘッダーおよびカラム構成の切り替え（多言語対応）
       if (isTeamMode) {
-        fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-        fullOutputText += `チーム順位 | 予想変動レンジ\n`;
-        fullOutputText += `----------------------------------------\n`;
+        fullOutputText += isEn()
+          ? `=== [Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nTeam Place | Expected Range\n----------------------------------------\n`
+          : `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\nチーム順位 | 予想変動レンジ\n----------------------------------------\n`;
       } else {
-        fullOutputText += `=== 【${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-        fullOutputText += `順位        | 予想変動レンジ            | 変動後MMR目安\n`;
-        fullOutputText += `----------------------------------------------------------\n`;
+        fullOutputText += isEn()
+          ? `=== [${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nPlace      | Expected Range            | Est. New MMR\n----------------------------------------------------------\n`
+          : `=== 【${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\n順位       | 予想変動レンジ            | 変動後MMR目安\n----------------------------------------------------------\n`;
       }
 
       const numTeams = config.totalTeams;
@@ -13104,13 +13167,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
-        const placeStr = String(place).padStart(2, ' ') + "位";
+        const placeStr = isEn()
+          ? formatOrdinalEn(place).padStart(4, ' ')
+          : String(place).padStart(2, ' ') + "位";
+
         const rangeStr = (valMin === valMax) 
           ? `${maxText.padStart(5, ' ')} MMR` 
           : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
 
         if (isTeamMode) {
-          fullOutputText += `${placeStr}        | ${rangeStr}\n`;
+          fullOutputText += `${placeStr.padEnd(10, ' ')} | ${rangeStr}\n`;
         } else {
           const finalMaxMmr = Math.max(targetMmr + valMax, 0);
           const finalMinMmr = Math.max(targetMmr + valMin, 0);
@@ -13137,7 +13203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// パーサー・計算コアロジック
+// パーサー・計算コアロジック（そのまま維持）
 // ==========================================
 
 function setStatus(target, message, isPositive) {
@@ -13355,7 +13421,6 @@ function getMmrChangeSummaryText(playersInfo) {
   mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
   return mmrAdjustmentText;
 }
-
   
   
   
