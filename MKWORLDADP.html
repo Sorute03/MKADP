@@ -1364,7 +1364,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
       </p>
     </div>
-
+    
+    <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+      <h3 data-i18n="dup_title">重複データの整理</h3>
+      <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
+      <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
+        ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+      </p>
+    </div>
   </div>
 </div>
 
