@@ -12150,10 +12150,28 @@ function initCourseMemoTabIndexedDB() {
 
 
 
-  
 // ==========================================
-// MK8DX MMR Matrix 計算 & UIコントローラー（最大12人対応版）
+// Vike公式 MK8DX 12人計算ロジック＆Matrix制御
 // ==========================================
+const teamSizes = { "ffa": 1, "2v2": 2, "3v3": 3, "4v4": 4, "6v6": 6 };
+const caps = { 1: 60, 2: 120, 3: 180, 4: 240, 6: 300 };
+const scalingFactors = { 1: 9500, 2: 5500, 3: 5100, 4: 4800, 6: 4650 };
+const offsets = { 1: 2746.116, 2: 1589.856, 3: 1474.230, 4: 1387.511, 6: 1344.151 };
+
+// 関数名を統一・定義
+function getMmrDeltaWhenWon(teamSize, winnerMmr, loserMmr) {
+  const cap = caps[teamSize] || 60;
+  const scaling = scalingFactors[teamSize] || 9500;
+  const offset = offsets[teamSize] || 2746.116;
+  return cap / (1 + Math.pow(11, -(loserMmr - winnerMmr - offset) / scaling));
+}
+
+function getMmrDeltaWhenTied(teamSize, mmr1, mmr2) {
+  const cap = caps[teamSize] || 60;
+  const scaling = scalingFactors[teamSize] || 9500;
+  const offset = offsets[teamSize] || 2746.116;
+  return cap / (1 + Math.pow(11, -(Math.abs(mmr1 - mmr2) - offset) / scaling)) - (cap / 3);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const formatSelect = document.getElementById('formatSelect');
@@ -12166,7 +12184,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const calculateButton = document.getElementById('calculateButton');
   const copyButton = document.getElementById('copyButton');
   const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
-  const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
   
   const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn');       
   const sendMatrixDiscordBtn = document.getElementById('sendMatrixDiscordBtn'); 
@@ -12199,25 +12216,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sendMmrDiscordBtn) {
     sendMmrDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
-      if (!webhook) {
-        return alert("Webhook が選択されていません");
-      }
-      if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
-        return alert("送信する計算結果がありません。先に Calculate を実行してください。");
-      }
+      if (!webhook) return alert("Webhook が選択されていません");
+      if (!mmrTableOutput || !mmrTableOutput.value.trim()) return alert("送信する計算結果がありません。");
 
       const payload = { content: mmrTableOutput.value };
-
       try {
         sendMmrDiscordBtn.disabled = true;
         sendMmrDiscordBtn.textContent = "送信中...";
-
         const response = await fetch(webhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (response.ok || response.status === 204) {
           alert("Discord に計算結果を送信しました！");
         } else {
@@ -12237,27 +12247,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sendMatrixDiscordBtn) {
     sendMatrixDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
-      if (!webhook) {
-        return alert("Webhook が選択されていません");
-      }
-      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
-        return alert("送信する早見表がありません。先にチームまたはプレイヤーを選択してください。");
-      }
+      if (!webhook) return alert("Webhook が選択されていません");
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) return alert("送信する早見表がありません。");
 
-      const payload = {
-        content: "```\n" + matrixResultOutput.value + "\n```"
-      };
-
+      const payload = { content: "```\n" + matrixResultOutput.value + "\n```" };
       try {
         sendMatrixDiscordBtn.disabled = true;
         sendMatrixDiscordBtn.textContent = "送信中...";
-
         const response = await fetch(webhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (response.ok || response.status === 204) {
           alert("Discord に予測早見表を送信しました！");
         } else {
@@ -12273,7 +12274,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // --- 確定計算実行 (Calculate) ---
   if (calculateButton) {
     calculateButton.addEventListener('click', () => {
       const selectedFormat = formatSelect ? formatSelect.value : 'ffa';
@@ -12345,7 +12345,6 @@ document.addEventListener('DOMContentLoaded', () => {
     playerSelect.disabled = false;
   }
 
-  // --- 早見表（Matrix）生成 ---
   playerSelect.addEventListener('change', () => {
     const selectedVal = playerSelect.value;
     if (!selectedVal) {
@@ -12396,15 +12395,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let opponentMmrs = [];
       if (isTeamMode) {
         for (let tId = 1; tId <= config.totalTeams; tId++) {
-          if (tId !== targetTeamId) {
-            opponentMmrs.push(teamAvgMmrs.get(tId));
-          }
+          if (tId !== targetTeamId) opponentMmrs.push(teamAvgMmrs.get(tId));
         }
       } else {
         headerList.forEach(item => {
-          if (item.name !== selectedName) {
-            opponentMmrs.push(item.mmr);
-          }
+          if (item.name !== selectedName) opponentMmrs.push(item.mmr);
         });
       }
 
@@ -12441,9 +12436,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           if (i < winningCount) {
-            realisticMinChange += getVikeMmrDeltaWhenWon(config.teamSize, targetMmr, oppMmr);
+            realisticMinChange += getMmrDeltaWhenWon(config.teamSize, targetMmr, oppMmr);
           } else {
-            realisticMinChange -= getVikeMmrDeltaWhenWon(config.teamSize, oppMmr, targetMmr);
+            realisticMinChange -= getMmrDeltaWhenWon(config.teamSize, oppMmr, targetMmr);
           }
         }
 
@@ -12484,22 +12479,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
-
-// ==========================================
-// Vike公式 MK8DX 12人計算ロジック
-// ==========================================
-const teamSizes = { "ffa": 1, "2v2": 2, "3v3": 3, "4v4": 4, "6v6": 6 };
-const caps = { 1: 60, 2: 120, 3: 180, 4: 240, 6: 300 };
-const scalingFactors = { 1: 9500, 2: 5500, 3: 5100, 4: 4800, 6: 4650 };
-const offsets = { 1: 2746.116, 2: 1589.856, 3: 1474.230, 4: 1387.511, 6: 1344.151 };
-
-function getVikeMmrDeltaWhenWon(teamSize, winnerMmr, loserMmr) {
-  return caps[teamSize] / (1 + Math.pow(11, -(loserMmr - winnerMmr - offsets[teamSize]) / scalingFactors[teamSize]));
-}
-
-function getVikeMmrDeltaWhenTied(teamSize, mmr1, mmr2) {
-  return caps[teamSize] / (1 + Math.pow(11, -(Math.abs(mmr1 - mmr2) - offsets[teamSize]) / scalingFactors[teamSize])) - (caps[teamSize] / 3);
-}
 
 function setStatus(target, message, isPositive) {
   if (!target) return;
@@ -12647,11 +12626,11 @@ function processVikeScoreboard(headerText, scoreboardText, format = 'ffa') {
         let jMMR = teamAvgMmrMap.get(jTeamId);
 
         if (iPlace === jPlace) {
-          totalDelta += (iMMR < jMMR ? 1 : -1) * getVikeMmrDeltaWhenTied(teamSize, iMMR, jMMR);
+          totalDelta += (iMMR < jMMR ? 1 : -1) * getMmrDeltaWhenTied(teamSize, iMMR, jMMR);
         } else if (iPlace < jPlace) {
-          totalDelta += getVikeMmrDeltaWhenWon(teamSize, iMMR, jMMR);
+          totalDelta += getMmrDeltaWhenWon(teamSize, iMMR, jMMR);
         } else {
-          totalDelta -= getVikeMmrDeltaWhenWon(teamSize, jMMR, iMMR);
+          totalDelta -= getMmrDeltaWhenWon(teamSize, jMMR, iMMR);
         }
       }
       teamDeltas.set(iTeamId, Math.round(totalDelta));
@@ -12696,11 +12675,11 @@ function processVikeScoreboard(headerText, scoreboardText, format = 'ffa') {
         let jPlace = playerPlaceMap.get(item2.name);
 
         if (iPlace === jPlace) {
-          totalDelta += (item1.mmr < item2.mmr ? 1 : -1) * getVikeMmrDeltaWhenTied(1, item1.mmr, item2.mmr);
+          totalDelta += (item1.mmr < item2.mmr ? 1 : -1) * getMmrDeltaWhenTied(1, item1.mmr, item2.mmr);
         } else if (iPlace < jPlace) {
-          totalDelta += getVikeMmrDeltaWhenWon(1, item1.mmr, item2.mmr);
+          totalDelta += getMmrDeltaWhenWon(1, item1.mmr, item2.mmr);
         } else {
-          totalDelta -= getVikeMmrDeltaWhenWon(1, item2.mmr, item1.mmr);
+          totalDelta -= getMmrDeltaWhenWon(1, item2.mmr, item1.mmr);
         }
       });
 
@@ -12740,7 +12719,7 @@ function getMmrChangeSummaryText(playersInfo) {
     mmrDeltaTextMap.set(player.name, mmrDeltaText);
   }
   
-  let mmrAdjustmentText = "```Expected MMR Changes (MK8DX Vike Formula)";
+  let mmrAdjustmentText = "```Expected MMR Changes";
   for (const player of playersInfo) {
     let mmrDeltaText = mmrDeltaTextMap.get(player.name);
     mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
@@ -12749,10 +12728,9 @@ function getMmrChangeSummaryText(playersInfo) {
         " ".repeat(longestMmrDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
   }
 
-  mmrAdjustmentText += "```\n-# Calculated using MK8DX Vike Lounge MMR Formula (12p).";
+  mmrAdjustmentText += "```\n-# Calculated.";
   return mmrAdjustmentText;
 }
-
 
   
 </script>
