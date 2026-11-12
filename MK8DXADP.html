@@ -577,6 +577,33 @@ const i18nDict = {
     opt_category_nora: "野良",
     label_modal_memo_setting: "📌 モーダル内コースメモ表示",
     label_show_memo: "表示する",
+    tab_mmr_matrix: "MMR予測計算",
+    tab_backup: "バックアップ",
+
+    // MMR Matrix 計算タブ
+    mmr_matrix_title: "MK8DX Lounge MMR Matrix Calculator",
+    mmr_select_format: "対戦形式を選択:",
+    mmr_fmt_ffa: "FFA (12人 個人戦)",
+    mmr_fmt_2v2: "2v2 (6チーム / 12人)",
+    mmr_fmt_3v3: "3v3 (4チーム / 12人)",
+    mmr_fmt_4v4: "4v4 (3チーム / 12人)",
+    mmr_fmt_6v6: "6v6 (2チーム / 12人)",
+    mmr_step1_title: "1. 部屋のメッセージ（プレイヤーリスト）を貼り付け",
+    mmr_step1_note: "※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます（計12人）。",
+    mmr_step2_title: "2. 自分の名前（または番号）を選択して全順位早見表を生成",
+    mmr_select_wait: "(先に上のプレイヤーリストを入力してください)",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    btn_send_matrix_discord: "予測早見表をDiscordに送信",
+    mmr_step3_title: "3. 従来のスコアボード一括計算（リザルトが出た後用）",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
+    btn_calculate_all: "Calculate (全員分)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "計算結果をDiscordに送信",
+
+    // バックアップタブ
+    backup_tab_title: "バックアップ・データ管理",
+    btn_restore_backup_alt: "バックアップ復元",
+    btn_restore_file: "ファイルから復元",
   },
   en: {
     app_title: "🏎️ MK8DX ADP - Match Tracker & Analytics Tool",
@@ -815,6 +842,34 @@ const i18nDict = {
     opt_category_nora: "Worldwide / Regional (Nora)",
     label_modal_memo_setting: "📌 Course Note in Modal",
     label_show_memo: "Show",
+    // Tab names
+    tab_mmr_matrix: "MMR Calculator",
+    tab_backup: "Backup",
+
+    // MMR Matrix Calculator Tab
+    mmr_matrix_title: "MK8DX Lounge MMR Matrix Calculator",
+    mmr_select_format: "Select Format:",
+    mmr_fmt_ffa: "FFA (12 Players Solo)",
+    mmr_fmt_2v2: "2v2 (6 Teams / 12p)",
+    mmr_fmt_3v3: "3v3 (4 Teams / 12p)",
+    mmr_fmt_4v4: "4v4 (3 Teams / 12p)",
+    mmr_fmt_6v6: "6v6 (2 Teams / 12p)",
+    mmr_step1_title: "1. Paste Room Message (Player List)",
+    mmr_step1_note: "* For team formats, players are assigned to Team 1, Team 2... from top to bottom (12p total).",
+    mmr_step2_title: "2. Select Your Name (or Team) to Generate Placement Matrix",
+    mmr_select_wait: "(Please enter the player list above first)",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    btn_send_matrix_discord: "Send Matrix to Discord",
+    mmr_step3_title: "3. Scoreboard Batch Calculation (Post-Mogi)",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
+    btn_calculate_all: "Calculate (All)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "Send Results to Discord",
+
+    // Backup Tab
+    backup_tab_title: "Backup & Data Management",
+    btn_restore_backup_alt: "Restore Backup",
+    btn_restore_file: "Restore from File",
     }
   };
 
@@ -1536,20 +1591,20 @@ document.addEventListener('DOMContentLoaded', () => {
       
       <!-- モード選択ドロップダウン -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;">対戦形式を選択:</label>
+        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;" data-i18n="mmr_select_format">対戦形式を選択:</label>
         <select id="formatSelect" style="background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer; min-width: 200px; margin: 0;">
-          <option value="ffa">FFA (12人 個人戦)</option>
-          <option value="2v2">2v2 (6チーム / 12人)</option>
-          <option value="3v3">3v3 (4チーム / 12人)</option>
-          <option value="4v4">4v4 (3チーム / 12人)</option>
-          <option value="6v6">6v6 (2チーム / 12人)</option>
+          <option value="ffa" data-i18n="mmr_fmt_ffa">FFA (12人 個人戦)</option>
+          <option value="2v2" data-i18n="mmr_fmt_2v2">2v2 (6チーム / 12人)</option>
+          <option value="3v3" data-i18n="mmr_fmt_3v3">3v3 (4チーム / 12人)</option>
+          <option value="4v4" data-i18n="mmr_fmt_4v4">4v4 (3チーム / 12人)</option>
+          <option value="6v6" data-i18n="mmr_fmt_6v6">6v6 (2チーム / 12人)</option>
         </select>
       </div>
 
       <!-- 1. Room Header Input -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
-        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます（計12人）。</p>
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step1_title">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
+        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;" data-i18n="mmr_step1_note">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます（計12人）。</p>
         <div style="position: relative; flex-grow: 1;">
           <textarea
             id="mogiHeaderInput"
@@ -1563,27 +1618,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信ボタン -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
+        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step2_title">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
         <select id="playerSelect" disabled style="width: 100%; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 14px; margin-top: 0; margin-bottom: 12px; cursor: pointer;">
-          <option value="">(先に上のプレイヤーリストを入力してください)</option>
+          <option value="" data-i18n="mmr_select_wait">(先に上のプレイヤーリストを入力してください)</option>
         </select>
 
         <textarea
           id="matrixResultOutput"
           readonly
+          data-i18n-placeholder="mmr_matrix_placeholder"
           placeholder="自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。"
           style="width: 100%; height: 280px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; white-space: pre; resize: vertical; margin: 0;"
         ></textarea>
 
         <!-- 予測早見表の送信ボタン -->
         <div style="margin-top: 12px;">
-          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">予測早見表をDiscordに送信</button>
+          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_matrix_discord">予測早見表をDiscordに送信</button>
         </div>
       </div>
 
       <!-- 3. 通常の全体一括出力 -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
-        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step3_title">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
         <textarea
           id="scoreboardInput"
           placeholder="!submit 1 Q&#10;YamiX 119..."
@@ -1591,6 +1647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ></textarea>
         <textarea
           id="mmrTableOutput"
+          data-i18n-placeholder="mmr_table_placeholder"
           placeholder="スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。"
           readonly
           style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin-top: 0; margin-bottom: 0;"
@@ -1598,9 +1655,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         <!-- 計算・コピー・Discord送信ボタン -->
         <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
-          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Calculate (全員分)</button>
-          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">Copy</button>
-          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;">計算結果をDiscordに送信</button>
+          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="btn_calculate_all">Calculate (全員分)</button>
+          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;" data-i18n="btn_copy">Copy</button>
+          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_mmr_discord">計算結果をDiscordに送信</button>
         </div>
 
         <div id="mmrTableStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
