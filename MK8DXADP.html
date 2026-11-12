@@ -12206,16 +12206,14 @@ function initCourseMemoTabIndexedDB() {
 
 
 
-
 // ==========================================
-// Vike公式 MK8DX 12人計算ロジック＆Matrix制御
+//  MK8DX 12人計算ロジック＆Matrix制御
 // ==========================================
 const teamSizes = { "ffa": 1, "2v2": 2, "3v3": 3, "4v4": 4, "6v6": 6 };
 const caps = { 1: 60, 2: 120, 3: 180, 4: 240, 6: 300 };
 const scalingFactors = { 1: 9500, 2: 5500, 3: 5100, 4: 4800, 6: 4650 };
 const offsets = { 1: 2746.116, 2: 1589.856, 3: 1474.230, 4: 1387.511, 6: 1344.151 };
 
-// 関数名を統一・定義
 function getMmrDeltaWhenWon(teamSize, winnerMmr, loserMmr) {
   const cap = caps[teamSize] || 60;
   const scaling = scalingFactors[teamSize] || 9500;
@@ -12228,6 +12226,18 @@ function getMmrDeltaWhenTied(teamSize, mmr1, mmr2) {
   const scaling = scalingFactors[teamSize] || 9500;
   const offset = offsets[teamSize] || 2746.116;
   return cap / (1 + Math.pow(11, -(Math.abs(mmr1 - mmr2) - offset) / scaling)) - (cap / 3);
+}
+
+// 言語判定ヘルパー（currentLang が "en" の場合に英語を返す）
+function isEn() {
+  return typeof currentLang !== 'undefined' && currentLang === 'en';
+}
+
+// 英語の順位表記 (1st, 2nd, 3rd, 4th...)
+function formatOrdinalEn(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12248,11 +12258,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!mogiHeaderInput) return;
 
   const FORMAT_SETTINGS = {
-    'ffa': { teamSize: 1, totalTeams: 12, label: 'FFA (12人 個人戦)' },
-    '2v2': { teamSize: 2, totalTeams: 6,  label: '2v2 (6チーム)' },
-    '3v3': { teamSize: 3, totalTeams: 4,  label: '3v3 (4チーム)' },
-    '4v4': { teamSize: 4, totalTeams: 3,  label: '4v4 (3チーム)' },
-    '6v6': { teamSize: 6, totalTeams: 2,  label: '6v6 (2チーム)' }
+    'ffa': { teamSize: 1, totalTeams: 12, labelJa: 'FFA (12人 個人戦)', labelEn: 'FFA (12p Solo)' },
+    '2v2': { teamSize: 2, totalTeams: 6,  labelJa: '2v2 (6チーム)',   labelEn: '2v2 (6 Teams)' },
+    '3v3': { teamSize: 3, totalTeams: 4,  labelJa: '3v3 (4チーム)',   labelEn: '3v3 (4 Teams)' },
+    '4v4': { teamSize: 4, totalTeams: 3,  labelJa: '4v4 (3チーム)',   labelEn: '4v4 (3 Teams)' },
+    '6v6': { teamSize: 6, totalTeams: 2,  labelJa: '6v6 (2チーム)',   labelEn: '6v6 (2 Teams)' }
   };
 
   function getActiveWebhookUrl() {
@@ -12273,29 +12283,31 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sendMmrDiscordBtn) {
     sendMmrDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
-      if (!webhook) return alert("Webhook が選択されていません");
-      if (!mmrTableOutput || !mmrTableOutput.value.trim()) return alert("送信する計算結果がありません。");
+      if (!webhook) return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
+      if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
+        return alert(isEn() ? "No calculation result to send." : "送信する計算結果がありません。");
+      }
 
       const payload = { content: mmrTableOutput.value };
       try {
         sendMmrDiscordBtn.disabled = true;
-        sendMmrDiscordBtn.textContent = "送信中...";
+        sendMmrDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
         const response = await fetch(webhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
         if (response.ok || response.status === 204) {
-          alert("Discord に計算結果を送信しました！");
+          alert(isEn() ? "Calculation results sent to Discord!" : "Discord に計算結果を送信しました！");
         } else {
-          alert("送信に失敗しました (ステータス: " + response.status + ")");
+          alert((isEn() ? "Failed to send (Status: " : "送信に失敗しました (ステータス: ") + response.status + ")");
         }
       } catch (error) {
         console.error("Webhook送信エラー:", error);
-        alert("Discordへの送信中にエラーが発生しました");
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
       } finally {
         sendMmrDiscordBtn.disabled = false;
-        sendMmrDiscordBtn.textContent = "計算結果をDiscordに送信";
+        sendMmrDiscordBtn.textContent = isEn() ? "Send Results to Discord" : "計算結果をDiscordに送信";
       }
     };
   }
@@ -12304,29 +12316,31 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sendMatrixDiscordBtn) {
     sendMatrixDiscordBtn.onclick = async () => {
       const webhook = getActiveWebhookUrl();
-      if (!webhook) return alert("Webhook が選択されていません");
-      if (!matrixResultOutput || !matrixResultOutput.value.trim()) return alert("送信する早見表がありません。");
+      if (!webhook) return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert(isEn() ? "No matrix result to send." : "送信する早見表がありません。");
+      }
 
       const payload = { content: "```\n" + matrixResultOutput.value + "\n```" };
       try {
         sendMatrixDiscordBtn.disabled = true;
-        sendMatrixDiscordBtn.textContent = "送信中...";
+        sendMatrixDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
         const response = await fetch(webhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
         if (response.ok || response.status === 204) {
-          alert("Discord に予測早見表を送信しました！");
+          alert(isEn() ? "Matrix result sent to Discord!" : "Discord に予測早見表を送信しました！");
         } else {
-          alert("送信に失敗しました (ステータス: " + response.status + ")");
+          alert((isEn() ? "Failed to send (Status: " : "送信に失敗しました (ステータス: ") + response.status + ")");
         }
       } catch (error) {
         console.error("Webhook送信エラー:", error);
-        alert("Discordへの送信中にエラーが発生しました");
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
       } finally {
         sendMatrixDiscordBtn.disabled = false;
-        sendMatrixDiscordBtn.textContent = "予測早見表をDiscordに送信";
+        sendMatrixDiscordBtn.textContent = isEn() ? "Send Matrix to Discord" : "予測早見表をDiscordに送信";
       }
     };
   }
@@ -12336,7 +12350,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedFormat = formatSelect ? formatSelect.value : 'ffa';
       const result = processVikeScoreboard(mogiHeaderInput.value, scoreboardInput.value, selectedFormat);
       if (!result.ok) {
-        mmrTableOutput.value = "エラー: 入力データを確認してください（プレイヤー人数12人、フォーマット不一致など）。";
+        mmrTableOutput.value = isEn()
+          ? "Error: Please check input data (12 players required, format match, etc.)."
+          : "エラー: 入力データを確認してください（プレイヤー人数12人、フォーマット不一致など）。";
         return;
       }
       mmrTableOutput.value = getMmrChangeSummaryText(result.playersInfo);
@@ -12347,7 +12363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     copyButton.addEventListener('click', async () => {
       if (mmrTableOutput.value === "") return;
       await navigator.clipboard.writeText(mmrTableOutput.value);
-      alert("クリップボードにコピーしました！");
+      alert(isEn() ? "Copied to clipboard!" : "クリップボードにコピーしました！");
     });
   }
 
@@ -12363,7 +12379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (headerList.length === 0) {
       let opt = document.createElement('option');
       opt.value = "";
-      opt.textContent = "(プレイヤーリストが読み込まれていません)";
+      opt.textContent = isEn() ? "(Player list not loaded)" : "(プレイヤーリストが読み込まれていません)";
       playerSelect.appendChild(opt);
       playerSelect.disabled = true;
       matrixResultOutput.value = "";
@@ -12375,7 +12391,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let defaultOpt = document.createElement('option');
     defaultOpt.value = "";
-    defaultOpt.textContent = config.teamSize > 1 ? "-- チームを選択してください --" : "-- プレイヤーを選択してください --";
+    if (config.teamSize > 1) {
+      defaultOpt.textContent = isEn() ? "-- Select a Team --" : "-- チームを選択してください --";
+    } else {
+      defaultOpt.textContent = isEn() ? "-- Select a Player --" : "-- プレイヤーを選択してください --";
+    }
     playerSelect.appendChild(defaultOpt);
 
     if (config.teamSize > 1) {
@@ -12387,7 +12407,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let opt = document.createElement('option');
         opt.value = `team_${teamId}`;
-        opt.textContent = `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
+        opt.textContent = isEn()
+          ? `Team ${teamId}: ${memberNames} [Avg ${avgMmr}]`
+          : `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
         playerSelect.appendChild(opt);
       }
     } else {
@@ -12414,7 +12436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerList = parseHeaderInputList(mogiHeaderInput.value);
 
     if (headerList.length === 0) {
-      matrixResultOutput.value = "エラー: プレイヤーリストが読み込まれていません。";
+      matrixResultOutput.value = isEn() ? "Error: Player list not loaded." : "エラー: プレイヤーリストが読み込まれていません。";
       return;
     }
 
@@ -12443,6 +12465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let fullOutputText = "";
     const isTeamMode = (config.teamSize > 1);
+    const fmtLabel = isEn() ? config.labelEn : config.labelJa;
 
     targetMembers.forEach((targetItem, memberIdx) => {
       const selectedName = targetItem.name;
@@ -12465,13 +12488,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
 
       if (isTeamMode) {
-        fullOutputText += `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-        fullOutputText += `チーム順位 | 予想変動レンジ\n`;
-        fullOutputText += `----------------------------------------\n`;
+        fullOutputText += isEn()
+          ? `=== [Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nTeam Place | Expected MMR Range\n----------------------------------------\n`
+          : `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\nチーム順位 | 予想変動レンジ\n----------------------------------------\n`;
       } else {
-        fullOutputText += `=== 【${selectedName} (${targetMmr} MMR)】 ${config.label} 早見表 ===\n`;
-        fullOutputText += `順位       | 予想変動レンジ            | 変動後MMR目安\n`;
-        fullOutputText += `----------------------------------------------------------\n`;
+        fullOutputText += isEn()
+          ? `=== [${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nPlace      | Expected MMR Range        | Est. New MMR\n----------------------------------------------------------\n`
+          : `=== 【${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\n順位       | 予想変動レンジ            | 変動後MMR目安\n----------------------------------------------------------\n`;
       }
 
       const numTeams = config.totalTeams;
@@ -12505,18 +12528,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxText = (valMax > 0 ? "+" : "") + valMax;
         const minText = (valMin > 0 ? "+" : "") + valMin;
 
-        const placeStr = String(place).padStart(2, ' ') + "位";
+        const placeStr = isEn()
+          ? formatOrdinalEn(place).padStart(4, ' ')
+          : String(place).padStart(2, ' ') + "位";
+
         const rangeStr = (valMin === valMax) 
           ? `${maxText.padStart(5, ' ')} MMR` 
           : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
 
         if (isTeamMode) {
-          fullOutputText += `${placeStr}        | ${rangeStr}\n`;
+          fullOutputText += `${placeStr.padEnd(10, ' ')} | ${rangeStr}\n`;
         } else {
           const finalMaxMmr = Math.max(targetMmr + valMax, 0);
           const finalMinMmr = Math.max(targetMmr + valMin, 0);
           const afterMmrStr = (finalMinMmr === finalMaxMmr) ? `${finalMaxMmr}` : `${finalMinMmr} ～ ${finalMaxMmr}`;
-          fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+          fullOutputText += `${placeStr.padEnd(10, ' ')} | ${rangeStr.padEnd(25, ' ')} | ${afterMmrStr}\n`;
         }
       }
     });
@@ -12776,7 +12802,9 @@ function getMmrChangeSummaryText(playersInfo) {
     mmrDeltaTextMap.set(player.name, mmrDeltaText);
   }
   
-  let mmrAdjustmentText = "```Expected MMR Changes";
+  let titleText = isEn() ? "```Expected MMR Changes (MK8DX Vike Formula)" : "```Expected MMR Changes";
+  let mmrAdjustmentText = titleText;
+  
   for (const player of playersInfo) {
     let mmrDeltaText = mmrDeltaTextMap.get(player.name);
     mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
@@ -12785,10 +12813,13 @@ function getMmrChangeSummaryText(playersInfo) {
         " ".repeat(longestMmrDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
   }
 
-  mmrAdjustmentText += "```\n-# Calculated.";
+  const footerText = isEn()
+    ? "```\n-# Calculated."
+    : "```\n-# Calculated.";
+  mmrAdjustmentText += footerText;
+
   return mmrAdjustmentText;
 }
-
   
 </script>
 
