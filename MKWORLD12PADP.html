@@ -548,7 +548,11 @@ const i18nDict = {
     // バックアップタブ
     backup_tab_title: "バックアップ・データ管理",
     btn_restore_backup_alt: "バックアップ復元",
-    btn_restore_file: "ファイルから復元"
+    btn_restore_file: "ファイルから復元",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -817,6 +821,10 @@ const i18nDict = {
     backup_tab_title: "Backup & Data Management",
     btn_restore_backup_alt: "Restore Backup",
     btn_restore_file: "Restore from File",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
     }
   };
 
@@ -866,15 +874,28 @@ const MKWORLD_COURSE_I18N = {
   "レインボーロード": "Rainbow Road"
 };
 
+// ==========================================
 // 逆引き辞書（英語名 -> 日本語名）
+// ==========================================
 const MKWORLD_COURSE_REVERSE = {};
-Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
-  MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
-});
+if (typeof MKWORLD_COURSE_I18N !== 'undefined') {
+  Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
+    MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
+  });
+}
 
 /**
  * コース名の言語変換（単体コース / 遷移コース対応）
  */
+function translateMKWorldCourse(courseName, targetLang = currentLang) {
+  if (!courseName) return '';
+  
+  if (courseName.includes('→') || courseName.includes('->')) {
+    const sep = courseName.includes('→') ? '→' : '->';
+    return courseName.split(sep).map(p => translateSingleTrack(p.trim(), targetLang)).join(' → ');
+  }
+  return translateSingleTrack(courseName, targetLang);
+}
 
 function translateSingleTrack(name, targetLang) {
   if (targetLang === 'en') {
@@ -906,18 +927,25 @@ function setLanguage(lang) {
     }
   });
 
-
   document.querySelectorAll('option[data-i18n]').forEach(opt => {
     const key = opt.getAttribute('data-i18n');
     if (i18nDict[lang] && i18nDict[lang][key]) {
       opt.textContent = i18nDict[lang][key];
     }
   });
+
+  // プレースホルダーの言語置換
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      el.placeholder = i18nDict[lang][key];
+    }
+  });
+
   // ドロップダウン内のコース名表示を切り替え
   updateCourseDropdownsLanguage();
 
-  // --- ▼ 【ここを追加】モーダルが開いている（表示されている）場合、入力欄のコース名も再生成して言語を反映する ---
- // モダルが開いている場合、モーダル内のコースセレクトの表示名だけを更新する
+  // --- ▼ モーダルが開いている場合、入力欄のコース名も再生成して言語を反映する ---
   const modal = document.getElementById("raceModal");
   if (modal && modal.classList.contains("show")) {
     const activeCount = document.querySelectorAll("[id^='raceCourse_']").length;
@@ -934,8 +962,11 @@ function setLanguage(lang) {
   }
   // ---------------------------------------------------------------------------------------------------
 
-  logMessage(i18nDict[lang].msg_ready);
+  if (typeof i18nDict[lang].msg_ready !== 'undefined') {
+    logMessage(i18nDict[lang].msg_ready);
+  }
 }
+
 /**
  * 12レース分すべてのコース選択ドロップダウンの表示文言を更新
  */
@@ -967,15 +998,6 @@ function logMessage(text) {
   }
 }
 
-
-
-// --- ▼ プレースホルダーの言語置換を追加する場合 ---
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (i18nDict[lang] && i18nDict[lang][key]) {
-      el.placeholder = i18nDict[lang][key];
-    }
-  });
 // ==========================================
 // 4. 初期化処理
 // ==========================================
@@ -1459,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼ MMR Matrix 計算タブ本体 -->
+<!-- ▼ MMR Matrix 計算タブ本体（12人対応・多言語化版） -->
 <div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
   <div class="section-block">
     <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK8DX Lounge MMR Matrix Calculator</h2>
@@ -1485,6 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="position: relative; flex-grow: 1;">
           <textarea
             id="mogiHeaderInput"
+            data-i18n-placeholder="placeholder_mogi_header"
             placeholder="`Room 1 - Player List`&#10;`1.` XXX (12325 MMR)&#10;`2.` YYYY (12076 MMR)..."
             style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin: 0;"
           ></textarea>
@@ -1519,6 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step3_title">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
         <textarea
           id="scoreboardInput"
+          data-i18n-placeholder="placeholder_scoreboard"
           placeholder="!submit 1 Q&#10;YamiX 119..."
           style="width: 100%; height: 100px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; margin-top: 0; margin-bottom: 10px; resize: vertical;"
         ></textarea>
