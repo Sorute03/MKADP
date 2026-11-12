@@ -553,6 +553,7 @@ const i18nDict = {
     mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
     placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
     mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
+    btn_copy_matrix: "早見表をコピー",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -825,6 +826,7 @@ const i18nDict = {
     mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
     placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
     mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
+    btn_copy_matrix: "Copy Matrix",
     }
   };
 
@@ -1481,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼ MMR Matrix 計算タブ本体（12人対応・多言語化版） -->
+<!-- ▼ MMR Matrix 計算タブ本体（12人対応・早見表コピー＆多言語化対応版） -->
 <div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
   <div class="section-block">
     <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK8DX Lounge MMR Matrix Calculator</h2>
@@ -1516,7 +1518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="mogiHeaderStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
       </div>
 
-      <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信ボタン -->
+      <!-- 2. 全順位変動一覧表示パネル ＆ 予測用コピー・送信ボタン -->
       <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
         <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step2_title">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
         <select id="playerSelect" disabled style="width: 100%; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 14px; margin-top: 0; margin-bottom: 12px; cursor: pointer;">
@@ -1531,9 +1533,10 @@ document.addEventListener('DOMContentLoaded', () => {
           style="width: 100%; height: 280px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; white-space: pre; resize: vertical; margin: 0;"
         ></textarea>
 
-        <!-- 予測早見表の送信ボタン -->
-        <div style="margin-top: 12px;">
-          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_matrix_discord">予測早見表をDiscordに送信</button>
+        <!-- 予測早見表のコピー＆Discord送信ボタン -->
+        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <button id="copyMatrixButton" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="btn_copy_matrix">早見表をコピー</button>
+          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="btn_send_matrix_discord">予測早見表をDiscordに送信</button>
         </div>
       </div>
 
@@ -13273,7 +13276,25 @@ function getMmrChangeSummaryText(playersInfo) {
 
   return mmrAdjustmentText;
 }
- 
+
+
+// ▼ 予測早見表のクリップボードコピー処理
+  const copyMatrixButton = document.getElementById('copyMatrixButton');
+  if (copyMatrixButton) {
+    copyMatrixButton.addEventListener('click', async () => {
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert(isEn() ? "No matrix result to copy." : "コピーする早見表がありません。");
+      }
+      try {
+        await navigator.clipboard.writeText(matrixResultOutput.value);
+        alert(isEn() ? "Matrix copied to clipboard!" : "早見表をクリップボードにコピーしました！");
+      } catch (error) {
+        console.error("コピーエラー:", error);
+        alert(isEn() ? "Failed to copy to clipboard." : "クリップボードへのコピーに失敗しました。");
+      }
+    });
+  }
+  
 
 </script>
 
