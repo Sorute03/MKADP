@@ -827,6 +827,7 @@ const i18nDict = {
     placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
     mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
     btn_copy_matrix: "Copy Matrix",
+    tab_webhook_overlay: "webhook&overlay",
     }
   };
 
@@ -1037,11 +1038,10 @@ document.addEventListener('DOMContentLoaded', () => {
   <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
   <button class="tabBtn" data-tab="courseMemoTab" data-i18n="tab_course_memo">コースメモ</button>
-  <button class="tabBtn" data-tab="mmrMatrixTab" data-i18n="tab_mmr_matrix">MMR予測計算</button>
+  <button class="tabBtn" data-tab="mmrMatrixTab" data-i18n="tab_mmr_matrix">MMR predict計算</button>
+  <button class="tabBtn" data-tab="webhookOverlayTab" data-i18n="tab_webhook_overlay">Webhook&オーバーレイ</button>
   <button class="tabBtn" data-tab="backupTab" data-i18n="tab_backup">バックアップ</button>
 </div>
-
-
   
 
 <!-- ▼ バックアップ・データ管理タブ本体 -->
@@ -1105,17 +1105,17 @@ document.addEventListener('DOMContentLoaded', () => {
         ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
       </p>
     </div>
-
+    <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+      <h3 data-i18n="dup_title">重複データの整理</h3>
+      <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
+      <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
+        ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+      </p>
+    </div> 
   </div>
 </div>
 
-<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="dup_title">重複データの整理</h3>
-  <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
-  <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
-    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
-  </p>
-</div>
+
 
 
 
@@ -1150,22 +1150,142 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="raceHistoryList"></div>
 </div>
 
-<div style="margin-top: 15px;">
-  <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook 名前</label>
-  <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px;"><br><br>
+<!-- ▼ Webhook & オーバーレイ統合タブ本体 -->
+<div id="webhookOverlayTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="webhook_obs_settings_title">Webhook & オーバーレイ設定</h2>
 
-  <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook URL</label>
-  <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px;"><br>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
 
-  <!-- ▼ テキストとボタンを近くに配置したコンパクトなデザイン -->
-  <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
-    <span>1コース入力ごとにリアルタイムで通知</span>
-    <button id="toggleLiveWebhookBtn" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; color: #4caf50;">ON</button>
+      <!-- ========================================== -->
+      <!-- 1. Webhook 設定セクション -->
+      <!-- ========================================== -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #2e7d32;" data-i18n="webhook_section_title">Discord Webhook設定</h3>
+        
+        <div style="margin-bottom: 15px;">
+          <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook 名前</label>
+          <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook URL</label>
+          <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <!-- リアルタイム通知トグル -->
+        <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+          <span data-i18n="webhook_live_note">1コース入力ごとにリアルタイムで通知</span>
+          <button id="toggleLiveWebhookBtn" type="button" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; color: #4caf50; background: #fff; border: 1px solid #4caf50; border-radius: 4px;">ON</button>
+        </div>
+
+        <button type="button" onclick="addWebhook()" data-i18n="btn_add" style="padding: 8px 16px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">追加</button>
+        <div id="webhookListArea" style="margin-top: 12px;"></div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 2. オーバーレイ設定 & OBS WebSocket セクション -->
+      <!-- ========================================== -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #2e7d32;" data-i18n="overlay_settings_title">オーバーレイ設定</h3>
+
+        <div id="overlayFilterBox" style="margin: 0;">
+          
+          <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #333;" data-i18n="obs_websocket_title">OBS WebSocket接続</h4>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label data-i18n="label_host" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">ホスト</label>
+              <input id="obsHost" value="localhost" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+            <div>
+              <label data-i18n="label_port" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">ポート</label>
+              <input id="obsPort" value="4455" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+            <div>
+              <label data-i18n="label_password" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">パスワード</label>
+              <input id="obsPassword" type="password" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+          </div>
+          
+          <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" onclick="connectOBS()" data-i18n="btn_connect" style="padding: 6px 14px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">接続</button>
+            <button type="button" onclick="disconnectOBS()" data-i18n="btn_disconnect" style="padding: 6px 14px; font-weight: bold; background-color: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">切断</button>
+            <button type="button" onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              🔄 即時反映・再接続
+            </button>
+          </div>
+          
+          <div id="obsStatus" data-i18n="status_disconnected" style="margin-top: 8px; font-size: 13px; font-weight: bold; color: #666;">未接続</div>
+
+          <div style="margin-top: 15px;">
+            <label data-i18n="lbl_mode" style="display: block; font-weight: 500; margin-bottom: 4px;">モード</label>
+            <select id="overlayModeSelect" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+              <option value="ALL" data-i18n="opt_all">ALL</option>
+              <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+              <option value="nora" data-i18n="mode_nora">野良</option>
+              <option value="tournament" data-i18n="mode_tournament">大会</option>
+            </select>
+          </div>
+
+          <!-- ラウンジ用フィルター（シーズン・Tier） -->
+          <div id="loungeFilters" style="margin-top: 15px; display: none;">
+            <div style="margin-bottom: 10px;">
+              <label data-i18n="lbl_season" style="display: block; font-weight: 500; margin-bottom: 4px;">シーズン</label>
+              <select id="loungeSeasonSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;"></select>
+            </div>
+            <div>
+              <label data-i18n="lbl_tier" style="display: block; font-weight: 500; margin-bottom: 4px;">Tier</label>
+              <select id="loungeTierSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;"></select>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <label data-i18n="label_recent" style="display: block; font-weight: 500; margin-bottom: 4px;">Recent</label>
+            <select id="loungeRecentSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+              <option value="ALL" data-i18n="opt_all">ALL</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <!-- 自動追尾・合算・件数指定設定 -->
+          <div style="margin-top: 20px; padding: 12px; border: 1px solid #d8f3dd; border-radius: 6px; background: #fff;">
+            
+            <!-- 自動追尾ON/OFF -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
+              <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px; color: #222;">
+                モーダル条件のオーバーレイ自動追尾を有効にする
+              </label>
+            </div>
+
+            <!-- 最低レース数の指定UI -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #333; flex-wrap: wrap;">
+              <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
+              <input type="number" id="fallbackMinCountInput" value="360" min="1" max="10000" style="width: 70px; padding: 4px; text-align: center; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 4px;">
+              <span data-i18n="label_races_unit">レース未満</span>
+            </div>
+            
+            <!-- Tier補完ルールの切り替え設定 -->
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; flex-wrap: wrap;">
+              <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ）:</span>
+              <select id="fallbackTierModeSelect" style="padding: 4px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
+                <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
+                <option value="none" data-i18n="opt_tier_none">合算しない</option>
+              </select>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
   </div>
-  <!-- ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ -->
-
-  <button onclick="addWebhook()" data-i18n="btn_add" style="padding: 6px 14px; cursor: pointer;">追加</button>
-  <div id="webhookListArea" style="margin-top: 12px;"></div>
 </div>
 
 <!-- ▼ ラウンジ統計タブ -->
@@ -1406,78 +1526,6 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
   
-<!-- ▼ オーバーレイ設定 -->
-<h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
-<div id="overlayFilterBox" style="margin:10px 0;">
-  
-  <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
-  <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
-  <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
-  <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
-  
-  <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
-    <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
-    <button onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
-      🔄 即時反映・再接続
-    </button>
-  </div>
-  
-  <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
-
-  <!-- モード選択 -->
-  <label data-i18n="lbl_mode">モード</label><br>
-  <select id="overlayModeSelect" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-    <option value="nora" data-i18n="mode_nora">野良</option>
-    <option value="tournament" data-i18n="mode_tournament">大会</option>
-  </select>
-
-  <!-- ラウンジ用フィルター（シーズン・Tier） -->
-  <div id="loungeFilters" style="margin-top:10px; display:none;">
-    <label data-i18n="lbl_season">シーズン</label><br>
-    <select id="loungeSeasonSelect2" style="width:200px;"></select><br><br>
-    <label data-i18n="lbl_tier">Tier</label><br>
-    <select id="loungeTierSelect2" style="width:200px;"></select>
-  </div>
-
-  <br>
-  <label data-i18n="label_recent">Recent</label><br>
-  <select id="loungeRecentSelect2" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-  </select>
-
- <!-- ▼ モード選択やフィルターの下に配置した自動追尾・合算・件数指定設定 -->
-  <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
-    
-    <!-- 自動追尾ON/OFF -->
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-      <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
-      <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px;">
-        モーダル条件のオーバーレイ自動追尾を有効にする
-      </label>
-    </div>
-
-    <!-- ▼ ユーザーによる一定回数（最小レース数）の指定UI -->
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555;">
-      <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
-      <input type="number" id="fallbackMinCountInput" value="360" min="1" max="10000" style="width: 60px; padding: 2px 4px; text-align: center;">
-      <span data-i18n="label_races_unit">レース未満</span>
-    </div>
-    
-    <!-- Tier補完ルールの切り替え設定 -->
-    <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555;">
-      <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ）:</span>
-      <select id="fallbackTierModeSelect" style="padding: 2px 6px;">
-        <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
-        <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
-        <option value="none" data-i18n="opt_tier_none">合算しない</option>
-      </select>
-    </div>
-  </div>
-</div>
 
 
 
