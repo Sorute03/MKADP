@@ -604,6 +604,10 @@ const i18nDict = {
     backup_tab_title: "バックアップ・データ管理",
     btn_restore_backup_alt: "バックアップ復元",
     btn_restore_file: "ファイルから復元",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
   },
   en: {
     app_title: "🏎️ MK8DX ADP - Match Tracker & Analytics Tool",
@@ -870,6 +874,10 @@ const i18nDict = {
     backup_tab_title: "Backup & Data Management",
     btn_restore_backup_alt: "Restore Backup",
     btn_restore_file: "Restore from File",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
     }
   };
 
@@ -1582,7 +1590,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼ MMR Matrix 計算タブ本体 -->
+<!-- ▼ MMR Matrix 計算タブ本体（12人対応・プレースホルダー多言語化対応版） -->
 <div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
   <div class="section-block">
     <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK8DX Lounge MMR Matrix Calculator</h2>
@@ -1608,6 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="position: relative; flex-grow: 1;">
           <textarea
             id="mogiHeaderInput"
+            data-i18n-placeholder="placeholder_mogi_header"
             placeholder="`Room 1 - Player List`&#10;`1.` XXX (12325 MMR)&#10;`2.` YYYY (12076 MMR)..."
             style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin: 0;"
           ></textarea>
@@ -1642,6 +1651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step3_title">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
         <textarea
           id="scoreboardInput"
+          data-i18n-placeholder="placeholder_scoreboard"
           placeholder="!submit 1 Q&#10;YamiX 119..."
           style="width: 100%; height: 100px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; margin-top: 0; margin-bottom: 10px; resize: vertical;"
         ></textarea>
