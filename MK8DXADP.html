@@ -3467,7 +3467,7 @@ function openDB() {
       const db = e.target.result;
       if (!db.objectStoreNames.contains("records")) {
         db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
-        console.log("[IndexedDB] 'records' オブジェクトストアを新規作成しました。");
+        ("[IndexedDB] 'records' オブジェクトストアを新規作成しました。");
       }
     };
 
@@ -3626,7 +3626,7 @@ async function fixMissingTimestamps() {
   }
 
   await promisifyTx(tx);
-  console.log("timestamp 修復完了");
+  ("timestamp 修復完了");
 }
 
 
@@ -4660,7 +4660,7 @@ window.addEventListener("load", async () => {
     if (typeof loadOBSSettings === 'function') loadOBSSettings();
     if (typeof renderRaceHistory === 'function') renderRaceHistory();
 
-    console.log("すべての初期化・描画処理が正常に完了しました。");
+    ("すべての初期化・描画処理が正常に完了しました。");
 
   } catch (e) {
     console.error("アプリケーションの初期化中に致命的なエラーが発生しました:", e);
@@ -4692,7 +4692,7 @@ async function initADPRecords() {
     history: records
   };
 
-  console.log("courseStatsSource 初期化完了", courseStatsSource);
+  ("courseStatsSource 初期化完了", courseStatsSource);
 }
 
 /* ==========
@@ -4707,7 +4707,7 @@ let webhookList = [];
 
   
 async function refreshAllAnalysisViews() {
-  console.log("すべての分析ビューを更新中...");
+  ("すべての分析ビューを更新中...");
   
   // 安全に各ビューの更新関数を呼び出す
   if (typeof updateStatsView === "function") await updateStatsView();
@@ -4718,7 +4718,7 @@ async function refreshAllAnalysisViews() {
   if (typeof updateScatterView === "function") await updateScatterView();
   if (typeof updateLoungeSetView === "function") await updateLoungeSetView();
   
-  console.log("すべての分析ビューの更新が完了しました。");
+  ("すべての分析ビューの更新が完了しました。");
 }
 
 
@@ -6238,7 +6238,7 @@ async function sendDataToWorker() {
   if (!queue.length) return;
 
   if (!shouldSendNow()) {
-    console.log("まだ送信しない（6時間に1回）");
+    ("まだ送信しない（6時間に1回）");
     return;
   }
 
@@ -6257,15 +6257,15 @@ async function sendDataToWorker() {
     });
 
     if (res.ok) {
-      console.log("送信完了（6時間に1回）");
+      ("送信完了（6時間に1回）");
       localStorage.setItem("sendQueue", "[]");
       localStorage.setItem("lastSent", Date.now());
     } else {
-      console.log("送信失敗 → 次の6時間後に再試行");
-      console.log(await res.text());
+      ("送信失敗 → 次の6時間後に再試行");
+      (await res.text());
     }
   } catch (e) {
-    console.log("送信エラー → 次の6時間後に再試行");
+    ("送信エラー → 次の6時間後に再試行");
     console.error(e);
   }
 }
@@ -7064,7 +7064,7 @@ function mergeRecords(existingRecords, incomingRecords) {
     }
   }
 
-  console.log(`[重複チェック] 既存: ${existingRecords.length}件 / 新規候補: ${incomingRecords.length}件 / 実際に追加された差分: ${addedCount}件`);
+  (`[重複チェック] 既存: ${existingRecords.length}件 / 新規候補: ${incomingRecords.length}件 / 実際に追加された差分: ${addedCount}件`);
 
   // 3. 全体を綺麗に時系列・セット順にソート
   return sortRecords(merged);
@@ -7839,7 +7839,7 @@ async function saveBackgroundToOPFS(file, settings) {
       await metaWritable.write(JSON.stringify(settings));
       await metaWritable.close();
 
-      console.log("[OPFS] 背景と設定を保存しました:", idName);
+      ("[OPFS] 背景と設定を保存しました:", idName);
       return;
     }
   } catch (err) {
@@ -7860,7 +7860,7 @@ async function saveBackgroundToOPFS(file, settings) {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
-    console.log("[IndexedDB] 背景と設定を保存しました:", idName);
+    ("[IndexedDB] 背景と設定を保存しました:", idName);
   } catch (dbErr) {
     console.error("[IndexedDB] 保存に失敗しました:", dbErr);
     throw new Error("背景の保存に失敗しました。");
@@ -7876,7 +7876,7 @@ async function deleteBackgroundFromOPFS(idName) {
     if (await checkOpfsUsable()) {
       const dirHandle = await getOpfsDirectory();
       await dirHandle.removeEntry(idName, { recursive: true });
-      console.log("[OPFS] 削除しました:", idName);
+      ("[OPFS] 削除しました:", idName);
     }
   } catch (err) {
     // OPFSになければ無視
@@ -7892,7 +7892,7 @@ async function deleteBackgroundFromOPFS(idName) {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
-    console.log("[IndexedDB] 削除しました:", idName);
+    ("[IndexedDB] 削除しました:", idName);
   } catch (dbErr) {
     console.error("[IndexedDB] 削除に失敗しました:", dbErr);
   }
@@ -8545,9 +8545,9 @@ async function onLoadLoungeStats() {
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
-  console.log("=== Lounge Debug ===");
-  console.log("playerId:", playerId);
-  console.log("selectedSeason:", selectedSeason);
+  ("=== Lounge Debug ===");
+  ("playerId:", playerId);
+  ("selectedSeason:", selectedSeason);
 
   let stats;
 
@@ -8558,7 +8558,7 @@ async function onLoadLoungeStats() {
 
     for (let s = 4; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
-      console.log("Fetching Season", s, "URL:", url);
+      ("Fetching Season", s, "URL:", url);
 
       try {
         const html = await fetchWorldHTML(url);
@@ -8571,7 +8571,7 @@ async function onLoadLoungeStats() {
           
           // 試合データが1件もない（休止中など）場合はリストに追加せず次シーズンへ
           if (!tempParsed.history || tempParsed.history.length === 0) {
-            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+            (`-> Season ${s} はデータなし（休止等）のためスキップ`);
             continue;
           }
 
@@ -8580,14 +8580,14 @@ async function onLoadLoungeStats() {
 
           // 直前のシーズンと全く同じ内容が返ってきたら、未来シーズンからの自動リダイレクトと判定して終了！
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
+            (`-> Season ${s} は最新シーズンのリダイレクトデータと判定されたため、ALL取得を完了します。`);
             break;
           }
 
           // 正常な新しいシーズンデータとして保持
           htmlList.push({ html, season: s });
           lastParsedSignature = currentSignature;
-          console.log(`-> Season ${s} のデータを追加しました。`);
+          (`-> Season ${s} のデータを追加しました。`);
         }
       } catch (e) {
         console.warn(`Season ${s} の取得エラー。スキップします。`, e);
@@ -8598,13 +8598,13 @@ async function onLoadLoungeStats() {
 
   } else {
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
-    console.log("detailsUrl:", detailsUrl);
+    ("detailsUrl:", detailsUrl);
 
     const html = await fetchWorldHTML(detailsUrl);
     stats = parseWorldHTML(html, selectedSeason);
   }
 
-  console.log("stats:", stats);
+  ("stats:", stats);
 
   // ▼ 表示用 stats
   drawLoungeStats({
@@ -8687,7 +8687,7 @@ if (updateLoungeBgBtn) {
     if (window.latestLoungeStats) {
       const imgStats = convertStatsForImage(window.latestLoungeStats);
       await drawLoungeImage(imgStats);
-      console.log("背景画像の設定を即時反映しました");
+      ("背景画像の設定を即時反映しました");
     } else {
       alert("先に「データ取得」を行ってプレイヤーデータを読み込んでください。");
     }
@@ -9212,7 +9212,7 @@ function setBgImage(file) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    console.log("背景画像セット:", reader.result.slice(0, 50)); // デバッグ
+    ("背景画像セット:", reader.result.slice(0, 50)); // デバッグ
     state.backgroundImage = reader.result;  // ★ DataURL
   };
   reader.readAsDataURL(file);
@@ -9771,12 +9771,12 @@ function initAdpCourseSelects() {
     }
   });
 
-  console.log("ADPコースセレクトボックスの初期化が完了しました。");
+  ("ADPコースセレクトボックスの初期化が完了しました。");
 }
 
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
   try {
-    console.log("「表示」ボタンが押されました");
+    ("「表示」ボタンが押されました");
 
     const ids = [
       "adpCourseSelect1",
@@ -9844,7 +9844,7 @@ document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
     }
 
     window.latestAdpCourseStats = stats;
-    console.log("コース別statsの表示および画像生成が完了しました:", stats);
+    ("コース別statsの表示および画像生成が完了しました:", stats);
 
   } catch (err) {
     console.error("「表示」ボタン処理中にエラーが発生しました:", err);
@@ -10584,7 +10584,7 @@ document.getElementById("loadLoungeBtn").onclick = async () => {
 
   const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
 
-  console.log("Fetch URL:", url);
+  ("Fetch URL:", url);
 
   const html = await fetchWorldHTML(url);
   await parseAndDisplayLoungeStats(html, season);
@@ -10814,7 +10814,7 @@ function sendOverlayWithModalTracking(sourceDataset) {
   if (!isAutoTrackEnabled()) return;
 
   const conditions = getModalCurrentConditions();
-  console.log("★ 自動追尾による条件検出:", conditions);
+  ("★ 自動追尾による条件検出:", conditions);
 
   // オーバーレイ設定側のセレクトボックスを自動連動
   const overlayModeSelect = document.getElementById("overlayModeSelect");
@@ -10859,7 +10859,7 @@ function initModalAutoTracking() {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("change", () => {
-        console.log(`[AutoTrack] ${id} の変更を検知しました`);
+        (`[AutoTrack] ${id} の変更を検知しました`);
         sendOverlayWithModalTracking(allRecords);
       });
     }
@@ -10963,14 +10963,14 @@ function getFilteredStatsForOverlay(stats) {
       
       // Step 1: 指定シーズン ＆ 指定Tier
       let exactMatch = filtered.filter(r => String(r.season) === String(targetSeason) && String(r.tier).trim() === String(targetTier).trim());
-      console.log(`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length} (閾値: ${minCount})`);
+      (`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length} (閾値: ${minCount})`);
 
       if (!shouldFallback || exactMatch.length >= minCount) {
         resultRecords = exactMatch;
       } else {
         // Step 2: 指定シーズン + 1個前のシーズン (同条件Tier)
         const prevSeason = getPrevSeason(targetSeason);
-        console.log(`[Fallback Step 2] 前シーズン計算結果: ${prevSeason}`);
+        (`[Fallback Step 2] 前シーズン計算結果: ${prevSeason}`);
 
         let seasonFallbackMatch = filtered.filter(r => {
           const s = String(r.season);
@@ -10980,21 +10980,21 @@ function getFilteredStatsForOverlay(stats) {
           return (isTarget || isPrev) && isSameTier;
         });
         
-        console.log(`[Fallback Step 2] 前シーズン合算 -> 件数: ${seasonFallbackMatch.length}`);
+        (`[Fallback Step 2] 前シーズン合算 -> 件数: ${seasonFallbackMatch.length}`);
 
         if (seasonFallbackMatch.length >= minCount) {
           resultRecords = seasonFallbackMatch;
         } else {
           // Step 3: ALLシーズン ＆ 指定Tier（すべてのシーズン＋指定Tier）
           let allSeasonMatch = filtered.filter(r => String(r.tier).trim() === String(targetTier).trim());
-          console.log(`[Fallback Step 3] ALLシーズン同Tier合算 -> 件数: ${allSeasonMatch.length}`);
+          (`[Fallback Step 3] ALLシーズン同Tier合算 -> 件数: ${allSeasonMatch.length}`);
 
           if (allSeasonMatch.length >= minCount) {
             resultRecords = allSeasonMatch;
           } else {
             // Step 4: それでも足りない場合は ALLシーズン ＆ ALL Tier（モード内の全履歴）
             let allSeasonAllTierMatch = filtered;
-            console.log(`[Fallback Step 4] ALLシーズン・ALL Tier（全履歴）合算 -> 件数: ${allSeasonAllTierMatch.length}`);
+            (`[Fallback Step 4] ALLシーズン・ALL Tier（全履歴）合算 -> 件数: ${allSeasonAllTierMatch.length}`);
 
             resultRecords = allSeasonAllTierMatch;
           }
@@ -11020,7 +11020,7 @@ function getFilteredStatsForOverlay(stats) {
     filtered = filtered.slice(-Number(recent));
   }
 
-  console.log(`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
+  (`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
   return { history: filtered };
 }
 
@@ -11071,7 +11071,7 @@ async function sendLoungeOverlay(stats) {
       updatedAt: Date.now()
     };
 
-    console.log("★ 送信用 payload 作成完了:", payload);
+    ("★ 送信用 payload 作成完了:", payload);
 
     // ★ PeerJS 送信
     const userSelect = document.getElementById("overlayUserSelect");
@@ -11100,7 +11100,7 @@ async function sendOverlayOBS(payload) {
         payload: payload
       }
     });
-    console.log("OBS CustomEvent 送信成功:", payload);
+    ("OBS CustomEvent 送信成功:", payload);
   } catch (e) {
     console.error("OBS送信エラー:", e);
   }
@@ -11111,7 +11111,7 @@ async function sendOverlayOBS(payload) {
 // 接続状態の確認 ＆ 切断・再接続を伴う即時反映関数
 // ==========================================
 async function applyOverlayManually() {
-  console.log("[Overlay] 即時反映ボタンが押されました：接続確認・再接続およびデータ送信を開始します...");
+  ("[Overlay] 即時反映ボタンが押されました：接続確認・再接続およびデータ送信を開始します...");
 
   try {
     // 1. もし obs オブジェクトが存在し、何らかの理由でフリーズしている可能性を考慮して一度クリーンアップを試みる
@@ -11125,7 +11125,7 @@ async function applyOverlayManually() {
 
     // 2. わずかにウェイトを置いてから再接続を実行（接続関数が非同期の場合は await）
     if (typeof connectOBS === "function") {
-      console.log("[Overlay] OBS WebSocket へ再接続中...");
+      ("[Overlay] OBS WebSocket へ再接続中...");
       // connectOBS が Promise を返す設計であれば await する
       await connectOBS();
     }
@@ -11133,7 +11133,7 @@ async function applyOverlayManually() {
     // 3. 再接続（または接続確認）が完了した後に、最新データを即時送信
     if (typeof allRecords !== 'undefined' && Array.isArray(allRecords)) {
       await sendLoungeOverlay({ history: allRecords });
-      console.log("[Overlay] 接続の再確立 ＆ オーバーレイデータの即時送信が完了しました！");
+      ("[Overlay] 接続の再確立 ＆ オーバーレイデータの即時送信が完了しました！");
     } else {
       console.warn("[Overlay] 送信対象の allRecords データが見つかりません");
     }
@@ -11187,7 +11187,7 @@ function initLiveWebhookSetting() {
 // チェックボックス変更時の保存処理
 function toggleLiveWebhookSetting(checkbox) {
   localStorage.setItem('mkadp_live_webhook_enabled', checkbox.checked);
-  console.log(`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
+  (`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
 }
 
 // 修正版：送信関数（ONのときだけ実行されるようにガード）
@@ -11502,17 +11502,17 @@ async function sendToCloudflareWorker(payload) {
  */
 async function sendBackupDataViaForm() {
   try {
-    console.log('[Sync] mogiDXDB からデータを取得してバックアップ送信を開始します...');
+    ('[Sync] mogiDXDB からデータを取得してバックアップ送信を開始します...');
 
     // 1. mogiDB から全データを自動取得
     const allRecords = await getAllRecordsFromMogiDB();
 
     if (!Array.isArray(allRecords) || allRecords.length === 0) {
-      console.log('[Sync] DB内に送信可能なレコードがありません。');
+      ('[Sync] DB内に送信可能なレコードがありません。');
       return true;
     }
 
-    console.log(`[Sync] 取得データ ${allRecords.length} 件をフォーム経由で送信します。`);
+    (`[Sync] 取得データ ${allRecords.length} 件をフォーム経由で送信します。`);
 
     // 2. 送信データを構築
     const payload = allRecords.map(record => {
@@ -11542,7 +11542,7 @@ async function sendBackupDataViaForm() {
     }
     formEl.submit();
 
-    console.log('✅ バックアップデータの送信リクエストをフォーム経由で実行しました。');
+    ('✅ バックアップデータの送信リクエストをフォーム経由で実行しました。');
     
     // 同期済みフラグを更新
     await markMogiDBRecordsAsSynced(allRecords);
@@ -11565,19 +11565,19 @@ async function sendBackupDataViaForm() {
  * 定時同期実行メイン関数（環境に応じて fetch とフォーム送信を自動切り替え）
  */
 async function runScheduledSync() {
-  console.log('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
+  ('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
   
   try {
     // 1. mogiDB から全データ取得
     const allRecords = await getAllRecordsFromMogiDB();
 
     if (allRecords.length === 0) {
-      console.log('[Sync] DB内に送信可能なレコードがありません。');
+      ('[Sync] DB内に送信可能なレコードがありません。');
       updateLastSyncTime();
       return;
     }
 
-    console.log(`[Sync] DB内データ ${allRecords.length} 件を取得。バッチ内重複チェックを開始します。`);
+    (`[Sync] DB内データ ${allRecords.length} 件を取得。バッチ内重複チェックを開始します。`);
 
     // 2. 送信データバッチ内での重複チェック
     const validRecordsToSend = sanitizeAndDeduplicateBatch(allRecords);
@@ -11600,11 +11600,11 @@ async function runScheduledSync() {
     let sendSuccess = false;
 
     if (isLocalFile) {
-      console.log('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
+      ('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
       // フォーム送信版を呼び出し
       sendSuccess = await sendBackupDataViaForm(); 
     } else {
-      console.log('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
+      ('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
       // 通常の fetch 送信
       sendSuccess = await sendToCloudflareWorker(payload);
 
@@ -11616,7 +11616,7 @@ async function runScheduledSync() {
     }
 
     if (sendSuccess) {
-      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータの同期処理が正常に完了しました。`);
+      (`[Sync] 全 ${validRecordsToSend.length} 件のデータの同期処理が正常に完了しました。`);
     } else {
       console.error('[Sync] クラウドへの送信に失敗しました。次回定時で再実行します。');
     }
@@ -11673,11 +11673,11 @@ function checkAndScheduleSync() {
 
   // 前回送信完了時刻が「1つ前の定時時刻」より古い場合、または12時間以上前なら即時実行
   if (lastSync < lastScheduledTime) {
-    console.log('[Sync] 前回の定時（0:00/12:00）同期が未完了のため、即時実行します。');
+    ('[Sync] 前回の定時（0:00/12:00）同期が未完了のため、即時実行します。');
     runScheduledSync();
   } else {
     const minutesUntilNext = Math.round(msUntilNext / 1000 / 60);
-    console.log(`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
+    (`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
   }
 
   // 次の 12:00 または 0:00 に実行されるようタイマー設定
@@ -11698,7 +11698,7 @@ function initFixedTimeSyncScheduler() {
   // ★ タブが表に戻った時 / スマホのスリープ復帰時に未実行分がないか自動再チェック
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      console.log('[Sync] タブがフォアグラウンドに戻りました。定時同期の状況を確認します。');
+      ('[Sync] タブがフォアグラウンドに戻りました。定時同期の状況を確認します。');
       checkAndScheduleSync();
     }
   });
@@ -11706,7 +11706,7 @@ function initFixedTimeSyncScheduler() {
   // モバイルブラウザでのキャッシュ復旧対策
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) {
-      console.log('[Sync] ページ復旧を検知。定時同期の状況を確認します。');
+      ('[Sync] ページ復旧を検知。定時同期の状況を確認します。');
       checkAndScheduleSync();
     }
   });
