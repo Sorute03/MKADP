@@ -2107,8 +2107,9 @@ function renderRaceHistory(records) {
   // ▼ 共通フィルター済み records が渡される前提
   let list = records || [];
 
-  // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
-  list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
+  // ▼ 必ず配列に変換してから sort を実行するよう修正
+  let clonedList = Array.isArray(list) ? clone(list) : Array.from(list || []);
+  list = clonedList.sort((a, b) => b.timestamp - a.timestamp);
 
   const dict = i18nDict[currentLang] || i18nDict['ja'];
 
@@ -2139,7 +2140,7 @@ function renderRaceHistory(records) {
     let modeKey = `opt_mode_${r.mode}`;
     const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, '');
 
-    // ★ここでボタンのテキスト変数をしっかりと定義する
+    // ボタンのテキスト変数
     const editLabel = dict.btn_edit || "編集";
     const deleteLabel = dict.btn_delete || "削除";
 
