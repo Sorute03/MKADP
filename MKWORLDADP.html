@@ -13482,6 +13482,94 @@ function getMmrChangeSummaryText(playersInfo) {
       }
     });
   }
+
+
+
+
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
+const playerIdCache = {};
+
+/**
+ * プレイヤー名またはIDからIDを解決するヘルパー
+ */
+async function resolvePlayerId(identifier) {
+  if (!identifier) return null;
+  if (!isNaN(identifier)) return Number(identifier);
+
+  const queryName = String(identifier).trim();
+  if (playerIdCache[queryName]) return playerIdCache[queryName];
+
+  // 名前の場合は検索API経由でIDを取得
+  const searchResult = await fetchLoungeApiViaGas("api/player/search", { name: queryName });
+  let foundId = null;
+  if (Array.isArray(searchResult) && searchResult.length > 0) {
+    foundId = searchResult[0].id || searchResult[0].playerId;
+  } else if (searchResult && searchResult.id) {
+    foundId = searchResult.id;
+  }
+
+  if (foundId) {
+    playerIdCache[queryName] = foundId;
+    return foundId;
+  } else {
+    alert(`プレイヤー "${queryName}" が見つかりませんでした。`);
+    return null;
+  }
+}
+
+/**
+ * GAS経由でLounge APIを叩く汎用フェッチ関数
+ */
+async function fetchLoungeApiViaGas(apiPath, queryParams = {}) {
+  try {
+    let params = { path: apiPath, ...queryParams };
+    let searchParams = new URLSearchParams(params);
+    const url = `${GAS_API_URL}?${searchParams.toString()}`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("通信エラー:", error);
+    return null;
+  }
+}
+
+/**
+ * 【名前・ID両対応】プレイヤーの stats データを取得して表示する関数
+ * @param {string|number} playerIdentifier - プレイヤー名 または プレイヤーID
+ * @param {number} season - シーズン番号
+ */
+async function loadPlayerStats(playerIdentifier, season) {
+  // 名前の場合は自動でIDに変換
+  const playerId = await resolvePlayerId(playerIdentifier);
+  if (!playerId) return;
+
+  // プレイヤーの stats（詳細情報）を取得
+  const data = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: season });
+  
+  if (data) {
+    console.log("Stats取得成功:", data);
+    renderPlayerStatsUI(data);
+  }
+}
+
+/**
+ * 取得した stats データを画面（UI）に反映する関数
+ */
+function renderPlayerStatsUI(data) {
+  const container = document.getElementById("loungeStatsDisplayArea");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="padding: 12px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 6px;">
+      <h3 style="margin: 0 0 8px 0; color: #27ae60;">${data.name || "Player"}</h3>
+      <p><strong>MMR:</strong> ${data.mmr || 0}</p>
+      <p><strong>Peak MMR:</strong> ${data.maxMmr || 0}</p>
+      <p><strong>Wins / Events:</strong> ${data.wins || 0} / ${data.attended || 0}</p>
+    </div>
+  `;
+}
   
   
 </script>
