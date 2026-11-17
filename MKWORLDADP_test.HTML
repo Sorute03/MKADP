@@ -9,14 +9,45 @@
   <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
   <link rel="manifest" href="site.webmanifest">
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google-site-verification" content="ieBz5NZIDa5VACPaNlLBlGx4ye0W1oMvQ-Uy0lCtf5U" />
   <meta name="msvalidate.01" content="438630E93A9B80137E002A9BCF5610CD" />
-  <title>MKWorld ラウンジ分析</title>
 
-  <!-- Chart.js -->
+  <title>MKWorld ADP - マリオカート戦績データ記録・分析・MMR計算ツール</title>
+  <meta name="description" content="MKWorld ADP（All Database Program）は、マリオカートのラウンジや大会・野良戦の戦績データを自動保存・分析・管理できる総合Webツールです。コース別勝率分析、OBS用配信オーバーレイ、Lounge Stats同期、MMR Matrix予測計算機能を標準搭載。">
+  <meta name="keywords" content="MKWorld, MKADP, マリオカート, ラウンジ, Lounge Stats, MMR計算, コース統計, OBSオーバーレイ, 戦績管理">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MKWorld ADP - 戦績データ記録・分析・共有ツール">
+  <meta property="og:description" content="マリオカートの戦績管理・分析・OBSオーバーレイ出力・MMR予測計算に対応したWebデータベースツール。">
+  <meta property="og:image" content="android-chrome-512x512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MKWorld ADP - 戦績データ記録・分析・共有ツール">
+  <meta name="twitter:description" content="マリオカートの戦績データ記録・コース別勝率分析・OBS配信オーバーレイ・MMR計算ツール。">
+
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "MKWorld ADP (All Database Program)",
+    "alternateName": ["MKADP", "MKWorld ラウンジ分析"],
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "All",
+    "description": "マリオカートの戦績データ記録、コース別分析、Lounge Stats連携、OBS用リアルタイム配信オーバーレイ、MMR Matrix計算機能を備えた総合データベースツール。",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "JPY"
+    }
+  }
+  </script>
+
+  <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- OBS WebSocket v5 用ライブラリの読み込み -->
   <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.3/dist/obs-ws.min.js"></script>
+
   <style>
         /* ===========================
        全体
@@ -751,6 +782,38 @@ const i18nDict = {
     msg_saved: "保存しました！",
     modal_memo_title: "📌 コースメモ",
     btn_quick_save: "簡易保存",
+    lbl_memo_category: "対象カテゴリ:",
+    opt_category_other: "大会・ラウンジ",
+    opt_category_nora: "野良",
+    label_modal_memo_setting: "📌 モーダル内コースメモ表示",
+    label_show_memo: "表示する",
+    tab_mmr_matrix: "MMR変動予測計算(mmr predict)",
+    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator",
+    mmr_matrix_title: "MK Lounge MMR Matrix Calculator",
+    mmr_select_format: "対戦形式を選択:",
+    mmr_fmt_ffa_24: "FFA (24人 個人戦)",
+    mmr_fmt_2v2_12: "2v2 (12チーム)",
+    mmr_fmt_3v3_8: "3v3 (8チーム)",
+    mmr_fmt_4v4_6: "4v4 (6チーム)",
+    mmr_fmt_6v6_4: "6v6 (4チーム)",
+    mmr_fmt_8v8_3: "8v8 (3チーム)",
+    mmr_fmt_12v12_2: "12v12 (2チーム)",
+    mmr_step1_title: "1. 部屋のメッセージ（プレイヤーリスト）を貼り付け",
+    mmr_step1_note_24: "※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます。",
+    mmr_step2_title: "2. 自分の名前（または番号）を選択して全順位早見表を生成",
+    mmr_select_wait: "(先に上のプレイヤーリストを入力してください)",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    btn_send_matrix_discord: "予測早見表をDiscordに送信",
+    mmr_step3_title: "3. 従来のスコアボード一括計算（リザルトが出た後用）",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
+    mmr_calculate_24: "Calculate (24人分)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "計算結果をDiscordに送信",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。",
+    btn_copy_matrix: "早見表をコピー",
   },
   en: {
     app_title: "🏎️ MKWORLD ADP - Match Tracker & Analytics Tool",
@@ -989,6 +1052,43 @@ const i18nDict = {
     msg_saved: "Saved!",
     modal_memo_title: "📌 Course Note",
     btn_quick_save: "Quick Save",
+    lbl_memo_category: "Category:",
+    opt_category_other: "Tournament / Lounge",
+    opt_category_nora: "Worldwide / Regional (Nora)",
+    label_modal_memo_setting: "📌 Course Note in Modal",
+    label_show_memo: "Show",
+    tab_mmr_matrix: "MMR predict",
+    mmr_matrix_title: "MK Lounge 24-player MMR Matrix Calculator",
+    backup_tab_title: "Backup & Data Management",
+    tab_backup: "Backup",
+    btn_restore_backup_alt: "Restore Backup",
+    btn_restore_file: "Restore from File",
+    mmr_matrix_title: "MK Lounge MMR Matrix Calculator",
+    mmr_select_format: "Select Format:",
+    mmr_fmt_ffa_24: "FFA (24p Solo)",
+    mmr_fmt_2v2_12: "2v2 (12 Teams)",
+    mmr_fmt_3v3_8: "3v3 (8 Teams)",
+    mmr_fmt_4v4_6: "4v4 (6 Teams)",
+    mmr_fmt_6v6_4: "6v6 (4 Teams)",
+    mmr_fmt_8v8_3: "8v8 (3 Teams)",
+    mmr_fmt_12v12_2: "12v12 (2 Teams)",
+    mmr_step1_title: "1. Paste Room Message (Player List)",
+    mmr_step1_note_24: "* For team formats, players are assigned to Team 1, Team 2... from top to bottom.",
+    mmr_step2_title: "2. Select Your Name (or Team) to Generate Placement Matrix",
+    mmr_select_wait: "(Please enter the player list above first)",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    btn_send_matrix_discord: "Send Matrix to Discord",
+    mmr_step3_title: "3. Scoreboard Batch Calculation (Post-Mogi)",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
+    mmr_calculate_24: "Calculate (All 24p)",
+    btn_copy: "Copy",
+    btn_send_mmr_discord: "Send Results to Discord",
+    placeholder_mogi_header: "`Room 1 - Player List`\n`1.` XXX (12325 MMR)\n`2.` YYYY (12076 MMR)...",
+    mmr_matrix_placeholder: "Select yourself/team to automatically generate expected MMR changes for every placement.",
+    placeholder_scoreboard: "!submit 1 Q\nYamiX 119...",
+    mmr_table_placeholder: "Enter scoreboard and click Calculate to output exact MMR changes for all players.",
+    btn_copy_matrix: "Copy predict",
+    tab_webhook_overlay: "webhook&Overlay",
     }
   };
 
@@ -1038,11 +1138,15 @@ const MKWORLD_COURSE_I18N = {
   "レインボーロード": "Rainbow Road"
 };
 
+// ==========================================
 // 逆引き辞書（英語名 -> 日本語名）
+// ==========================================
 const MKWORLD_COURSE_REVERSE = {};
-Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
-  MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
-});
+if (typeof MKWORLD_COURSE_I18N !== 'undefined') {
+  Object.keys(MKWORLD_COURSE_I18N).forEach(ja => {
+    MKWORLD_COURSE_REVERSE[MKWORLD_COURSE_I18N[ja]] = ja;
+  });
+}
 
 /**
  * コース名の言語変換（単体コース / 遷移コース対応）
@@ -1087,18 +1191,25 @@ function setLanguage(lang) {
     }
   });
 
-
   document.querySelectorAll('option[data-i18n]').forEach(opt => {
     const key = opt.getAttribute('data-i18n');
     if (i18nDict[lang] && i18nDict[lang][key]) {
       opt.textContent = i18nDict[lang][key];
     }
   });
+
+  // プレースホルダーの言語置換
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18nDict[lang] && i18nDict[lang][key]) {
+      el.placeholder = i18nDict[lang][key];
+    }
+  });
+
   // ドロップダウン内のコース名表示を切り替え
   updateCourseDropdownsLanguage();
 
-  // --- ▼ 【ここを追加】モーダルが開いている（表示されている）場合、入力欄のコース名も再生成して言語を反映する ---
- // モダルが開いている場合、モーダル内のコースセレクトの表示名だけを更新する
+  // --- ▼ モーダルが開いている場合、入力欄のコース名も再生成して言語を反映する ---
   const modal = document.getElementById("raceModal");
   if (modal && modal.classList.contains("show")) {
     const activeCount = document.querySelectorAll("[id^='raceCourse_']").length;
@@ -1115,8 +1226,11 @@ function setLanguage(lang) {
   }
   // ---------------------------------------------------------------------------------------------------
 
-  logMessage(i18nDict[lang].msg_ready);
+  if (typeof i18nDict[lang].msg_ready !== 'undefined') {
+    logMessage(i18nDict[lang].msg_ready);
+  }
 }
+
 /**
  * 12レース分すべてのコース選択ドロップダウンの表示文言を更新
  */
@@ -1148,15 +1262,6 @@ function logMessage(text) {
   }
 }
 
-
-
-// --- ▼ プレースホルダーの言語置換を追加する場合 ---
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (i18nDict[lang] && i18nDict[lang][key]) {
-      el.placeholder = i18nDict[lang][key];
-    }
-  });
 // ==========================================
 // 4. 初期化処理
 // ==========================================
@@ -1187,68 +1292,91 @@ document.addEventListener('DOMContentLoaded', () => {
 <br>
 <button id="migrateLocalStorageBtn" data-i18n="btn_migrate_db">過去バージョンデータをDBへ移行</button>
 
-<div class="backup-section" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="backup_title">バックアップ（パスワード付き）</h3>
-  <div style="margin-bottom:15px;">
-    <label data-i18n="backup_label">デバイス間データ移行バックアップファイル用パスワード：</label>
-    <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <button id="downloadBackupWithPasswordBtn" data-i18n="btn_save_backup">バックアップを保存</button>
-  </div>
-  <hr>
-  <div>
-    <label data-i18n="restore_label">デバイス間データ移行復元パスワード：</label>
-    <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:200px;">
-    <input id="restoreFileInput" type="file" accept=".txt">
-    <button id="restoreBackupWithPasswordBtn" data-i18n="btn_restore_backup">復元する</button>
-  </div>
-</div>
-  
-
-<h3 data-i18n="tsv_title">TSV読み込み（スプシコピー対応）</h3>
-<textarea id="tsvInput" data-i18n-placeholder="tsv_placeholder" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px;"></textarea>
-<button id="importTSVBtn" data-i18n="btn_import_tsv">TSVを読み込む</button>
-
-<h3 data-i18n="csv_title">CSV / TSV 読み込み（セーブデータとして保存）</h3>
-<input type="file" id="fileInput" accept=".csv,.tsv,.txt">
-<button id="importFileBtn" data-i18n="btn_import_file">読み込んで保存</button>
-
-<div class="import-old-container" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="old_import_title">旧データ取り込み（localStorage → IndexedDB）</h3>
-  <div style="margin-bottom:15px;">
-    <label><b data-i18n="old_json_label">① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
-    <input type="file" id="oldJsonInput" accept=".json" style="margin-top:5px;">
-    <button id="importOldJsonBtn" style="margin-left:10px;" data-i18n="btn_import_json">旧JSONを取り込む</button>
-  </div>
-  <hr>
-  <div style="margin-top:15px;">
-    <label><b data-i18n="old_html_label">② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
-    <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:5px;">
-    <button id="importOldHtmlBtn" style="margin-left:10px;" data-i18n="btn_import_html">旧HTMLを取り込む</button>
-  </div>
-  <p style="margin-top:15px; font-size:13px; color:#666;" data-i18n="old_import_note">
-    ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
-    ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
-  </p>
-</div>
-  
-<button id="importBackupBtn" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
-<button id="importSaveFileBtn" data-i18n="btn_restore_file">ファイルから復元</button>
-
-<div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
-  <h3 data-i18n="dup_title">重複データの整理</h3>
-  <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
-  <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
-    ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
-  </p>
-</div>
-
-<div id="tabs" style="margin-bottom:20px;">
+<div id="tabs" style="margin-bottom:20px; display: flex; flex-wrap: wrap; gap: 6px;">
   <button class="tabBtn active" data-tab="analysisTab" data-i18n="tab_analysis">分析</button>
   <button class="tabBtn" data-tab="historyTab" data-i18n="tab_history">レース一覧</button>
   <button class="tabBtn" data-tab="loungeTab" data-i18n="tab_lounge">ラウンジ統計</button>
   <button class="tabBtn" data-tab="coursestatsTab" data-i18n="tab_coursestats">コース別stats</button>
   <button class="tabBtn" data-tab="courseMemoTab" data-i18n="tab_course_memo">コースメモ</button>
+  <button class="tabBtn" data-tab="mmrMatrixTab" data-i18n="tab_mmr_matrix">MMR predict計算</button>
+  <button class="tabBtn" data-tab="webhookOverlayTab" data-i18n="tab_webhook_overlay">Webhook&オーバーレイ</button>
+  <button class="tabBtn" data-tab="backupTab" data-i18n="tab_backup">バックアップ</button>
 </div>
+
+  
+
+<!-- ▼ バックアップ・データ管理タブ本体 -->
+<div id="backupTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="backup_tab_title">バックアップ・データ管理</h2>
+
+    <!-- ① パスワード付きバックアップ・復元 -->
+    <div class="backup-section" style="margin-top:0; margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="backup_title">バックアップ（パスワード付き）</h3>
+      <div style="margin-bottom:15px;">
+        <label data-i18n="backup_label" style="font-weight: bold; color: #222; display: block; margin-bottom: 6px;">デバイス間データ移行バックアップファイル用パスワード：</label>
+        <input id="backupPassword" type="password" placeholder="パスワードを入力" style="width:100%; max-width:300px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:8px;">
+        <button id="downloadBackupWithPasswordBtn" style="margin-top: 8px; background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_save_backup">バックアップを保存</button>
+      </div>
+      <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 15px 0;">
+      <div>
+        <label data-i18n="restore_label" style="font-weight: bold; color: #222; display: block; margin-bottom: 6px;">デバイス間データ移行復元パスワード：</label>
+        <input id="restorePassword" type="password" placeholder="パスワードを入力" style="width:100%; max-width:300px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:8px; margin-bottom: 8px;"><br>
+        <input id="restoreFileInput" type="file" accept=".txt" style="margin-bottom: 8px;"><br>
+        <button id="restoreBackupWithPasswordBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup">復元する</button>
+      </div>
+    </div>
+
+    <!-- ② その他のバックアップ・ファイル復元ボタン類 -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px; display: flex; gap: 12px; flex-wrap: wrap;">
+      <button id="importBackupBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
+      <button id="importSaveFileBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_file">ファイルから復元</button>
+    </div>
+
+    <!-- ③ TSV読み込み -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="tsv_title">TSV読み込み（スプシコピー対応）</h3>
+      <textarea id="tsvInput" data-i18n-placeholder="tsv_placeholder" placeholder="ここにスプシからコピーしたデータを貼り付け" style="width:100%; height:120px; background:#fff; color:#222; border:1px solid #ccc; border-radius:6px; padding:10px; resize:vertical; outline: none;"></textarea>
+      <button id="importTSVBtn" style="margin-top: 8px; background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_tsv">TSVを読み込む</button>
+    </div>
+
+    <!-- ④ CSV / TSV ファイル読み込み -->
+    <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="csv_title">CSV / TSV 読み込み（セーブデータとして保存）</h3>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="margin-bottom: 8px;"><br>
+      <button id="importFileBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_file">読み込んで保存</button>
+    </div>
+
+    <!-- ⑤ 旧データ取り込み -->
+    <div class="import-old-container" style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="old_import_title">旧データ取り込み（localStorage → IndexedDB）</h3>
+      <div style="margin-bottom:15px;">
+        <label><b data-i18n="old_json_label" style="color: #222;">① 旧JSONファイル（oldData.json）を読み込む</b></label><br>
+        <input type="file" id="oldJsonInput" accept=".json" style="margin-top:6px; margin-bottom:8px;"><br>
+        <button id="importOldJsonBtn" style="background: #27ae60; color: #fff; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_json">旧JSONを取り込む</button>
+      </div>
+      <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 15px 0;">
+      <div style="margin-top:15px;">
+        <label><b data-i18n="old_html_label" style="color: #222;">② 旧HTMLファイル（旧 index.html）を読み込む</b></label><br>
+        <input type="file" id="oldHtmlInput" accept=".html,.htm" style="margin-top:6px; margin-bottom:8px;"><br>
+        <button id="importOldHtmlBtn" style="background: #27ae60; color: #fff; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_import_html">旧HTMLを取り込む</button>
+      </div>
+      <p style="margin-top:12px; font-size:13px; color:#555;" data-i18n="old_import_note">
+        ※ 旧バージョンの localStorage に保存されていた allRecords を自動で解析して取り込みます。<br>
+        ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
+      </p>
+    </div>
+    
+    <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+      <h3 data-i18n="dup_title">重複データの整理</h3>
+      <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
+      <p style="font-size:13px; color:#666; margin-top:10px;" data-i18n="dup_note">
+        ※ コース・順位・スコア・Season・Tier・Mode・timestamp が同じレースを重複とみなします。
+      </p>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -1264,23 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="raceHistoryList"></div>
 </div>
 
-<div style="margin-top: 15px;">
-  <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook 名前</label>
-  <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px;"><br><br>
 
-  <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook URL</label>
-  <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px;"><br>
-
-  <!-- ▼ テキストとボタンを近くに配置したコンパクトなデザイン -->
-  <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
-    <span>1コース入力ごとにリアルタイムで通知</span>
-    <button id="toggleLiveWebhookBtn" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; color: #4caf50;">ON</button>
-  </div>
-  <!-- ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ ▲ -->
-
-  <button onclick="addWebhook()" data-i18n="btn_add" style="padding: 6px 14px; cursor: pointer;">追加</button>
-  <div id="webhookListArea" style="margin-top: 12px;"></div>
-</div>
 
 
   
@@ -1369,90 +1481,115 @@ document.addEventListener('DOMContentLoaded', () => {
   
 <!-- ▼ コース統計・比較タブ -->
 <div id="coursestatsTab" class="tabContent" style="display:none; padding:20px;">  
-  <div id="adpCourseSelectBox" style="margin-bottom: 16px;">
-    <p data-i18n="course_compare_title">コースを最大5つ選択:</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <select id="adpCourseSelect1" style="width:200px;"></select>
-      <select id="adpCourseSelect2" style="width:200px;"></select>
-      <select id="adpCourseSelect3" style="width:200px;"></select>
-      <select id="adpCourseSelect4" style="width:200px;"></select>
-      <select id="adpCourseSelect5" style="width:200px;"></select>
-    </div>
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="tab_coursestats">コース別stats</h2>
 
-    <div id="adpCourseFilterBox" style="margin-bottom: 20px;">
-      <h3 data-i18n="course_stats_filter">コース統計フィルター</h3>
+    <!-- 1. フィルター設定エリア -->
+    <div id="adpCourseFilterBox" style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <h3 style="margin-top: 0; color: #27ae60;" data-i18n="course_stats_filter">1. コース統計フィルター</h3>
       
-      <label data-i18n="lbl_mode">モード</label><br>
-      <select id="adpModeSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-        <option value="nora" data-i18n="mode_nora">野良</option>
-        <option value="tournament" data-i18n="mode_tournament">大会</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="adpSeasonSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
-      </select><br><br>
-
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="adpTierSelect" style="width:200px;"></select><br><br>
-
-      <label data-i18n="label_recent">直近 N レース</label><br>
-      <select id="adpRecentSelect" style="width:200px;">
-        <option value="ALL">ALL</option>
-        <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-      </select><br><br>
-
-      <label data-i18n="label_filter_mode">フィルター方式</label><br>
-      <select id="adpFilterModeSelect" style="width:200px;">
-        <option value="AND">AND</option>
-        <option value="OR">OR</option>
-      </select>
-    </div>
-
-    <div id="adpCourseBgSettings" style="margin-bottom: 20px;">
-      <h3 data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
-      
-      <!-- ① ローカルファイルから毎回直接選択する方式 -->
-      <label data-i18n="label_bg_image_local">ローカルからファイルを選択（一時的）</label><br>
-      <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
-
-      <!-- ② OPFS保存・選択式（最大5枚）の方式 -->
-      <label data-i18n="lbl_saved_bg">ストレージに保存済みの背景から選択（最大5枚）</label><br>
-      <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
-      <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px;" data-i18n="btn_save_bg_storage">現在の画像をストレージに保存</button><br>
-      <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #666; padding: 8px;">
-        <!-- 動的にサムネイルが生成されます -->
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_mode">モード</label><br>
+          <select id="adpModeSelect">
+            <option value="ALL">ALL</option>
+            <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+            <option value="nora" data-i18n="mode_nora">野良</option>
+            <option value="tournament" data-i18n="mode_tournament">大会</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_season">Season</label><br>
+          <select id="adpSeasonSelect">
+            <option value="ALL">ALL</option>
+            <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option><option value="S4">S4</option><option value="S5">S5</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="lbl_tier">Tier</label><br>
+          <select id="adpTierSelect"></select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="label_recent">直近 N レース</label><br>
+          <select id="adpRecentSelect">
+            <option value="ALL">ALL</option>
+            <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label data-i18n="label_filter_mode">フィルター方式</label><br>
+          <select id="adpFilterModeSelect">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+          </select>
+        </div>
       </div>
-      <br>
-
-      <label data-i18n="label_brightness">明るさ</label><br><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1"><br><br>
-      <label data-i18n="label_contrast">コントラスト</label><br><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1"><br><br>
-      <label data-i18n="label_opacity">透過度</label><br><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1"><br><br>
-      <label data-i18n="label_blur">ぼかし(px)</label><br><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0"><br><br>
-
-      <button id="updateAdpCourseBgBtn" style="padding: 8px 16px; cursor: pointer;" data-i18n="btn_update_bg">背景を即時反映</button>
     </div>
 
-    <div id="adpCourseTextColorSettings" style="margin-bottom: 20px;">
-      <h3 data-i18n="text_color_title">テキスト色設定</h3>
-      <label data-i18n="label_text_color">テキスト色</label><br><input type="color" id="adpCourseTextColor" value="#ffffff"><br><br>
-      <label data-i18n="label_stroke_color">縁取り色</label><br><input type="color" id="adpCourseTextStrokeColor" value="#000000"><br><br>
-      <label data-i18n="label_stroke_width">縁取り太さ(px)</label><br><input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br><br>
-      <label data-i18n="label_shadow_blur">影の濃さ(px)</label><br><input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br><br>
-      <label data-i18n="label_shadow_color">影の色</label><br><input type="color" id="adpCourseTextShadowColor" value="#000000"><br><br>
+    <!-- 2. コース選択エリア -->
+    <div id="adpCourseSelectBox" style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <p style="font-weight: bold; margin-top: 0; color: #222;" data-i18n="course_compare_title">2. コースを最大5つ選択:</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <select id="adpCourseSelect1" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect2" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect3" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect4" style="flex: 1; min-width: 180px;"></select>
+        <select id="adpCourseSelect5" style="flex: 1; min-width: 180px;"></select>
+      </div>
     </div>
 
-    <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
-    <canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #ccc; display:block; margin-bottom:16px;"></canvas>
-    <canvas id="adpCourseImage" width="1600" height="1100" style="border:1px solid #ccc; display:block;"></canvas>
+    <!-- 3. 実行・送信ボタンエリア -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <button id="showAdpCourseStatsBtn" style="background-color: #27ae60; color: white; padding: 10px 24px;" data-i18n="btn_show">表示</button>
+      <button id="sendAdpCourseStatsBtn" style="background-color: #5865F2; color: white; padding: 10px 20px;" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
+      <button id="sendAdpCourseImageBtn" style="background-color: #5865F2; color: white; padding: 10px 20px;" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
+    </div>
 
-    <div style="margin-top: 8px;">
-      <button id="showAdpCourseStatsBtn" data-i18n="btn_show">表示</button>
-      <button id="sendAdpCourseStatsBtn" data-i18n="btn_send_text_discord">Discordにテキスト送信</button>
-      <button id="sendAdpCourseImageBtn" data-i18n="btn_send_image_discord">画像をDiscordに送信</button>
+    <!-- 4. 結果表示エリア（テーブル＆グラフ） -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="color: #27ae60;" data-i18n="result_title">集計結果</h3>
+      <div id="adpCourseStatsResult" style="margin-bottom: 16px;"></div>
+      <canvas id="adpCourseStatsChart" width="600" height="300" style="border:1px solid #d8f3dd; display:block; margin-bottom:16px; background:#fff; border-radius:8px;"></canvas>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d8f3dd; margin: 24px 0;">
+
+    <!-- 5. 画像出力用カスタマイズ設定（折りたたみ式などにしても便利ですが、下部にまとめて配置） -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- 背景画像設定 -->
+      <div id="adpCourseBgSettings" style="flex: 1; min-width: 300px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; color: #27ae60;" data-i18n="adp_bg_title">背景画像設定（コース比較画像用）</h3>
+        
+        <label data-i18n="label_bg_image_local">ローカルからファイルを選択</label><br>
+        <input type="file" id="adpCourseBgLocalInput" accept="image/*"><br><br>
+
+        <label data-i18n="lbl_saved_bg">ストレージ保存済み背景から選択（最大5枚）</label><br>
+        <input type="file" id="adpCourseBgOpfsInput" accept="image/*">
+        <button id="saveAdpBgToOpfsBtn" style="margin-top:4px; padding:4px 10px; background: #27ae60; color: #fff;" data-i18n="btn_save_bg_storage">現在の画像をストレージに保存</button><br>
+        <div id="savedAdpBgListContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; min-height: 45px; border: 1px dashed #27ae60; padding: 8px; background: #fff; border-radius: 6px;"></div>
+        
+        <label data-i18n="label_brightness">明るさ</label><input type="range" id="adpCourseBgBrightness" min="0.2" max="2" step="0.01" value="1">
+        <label data-i18n="label_contrast">コントラスト</label><input type="range" id="adpCourseBgContrast" min="0.2" max="2" step="0.01" value="1">
+        <label data-i18n="label_opacity">透過度</label><input type="range" id="adpCourseBgOpacity" min="0" max="1" step="0.01" value="1">
+        <label data-i18n="label_blur">ぼかし(px)</label><input type="range" id="adpCourseBgBlur" min="0" max="20" step="1" value="0">
+
+        <button id="updateAdpCourseBgBtn" style="margin-top: 10px; background: #27ae60; color: white;" data-i18n="btn_update_bg">背景を即時反映</button>
+      </div>
+
+      <!-- テキスト色設定 -->
+      <div id="adpCourseTextColorSettings" style="flex: 1; min-width: 300px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; color: #27ae60;" data-i18n="text_color_title">テキスト色設定</h3>
+        <label data-i18n="label_text_color">テキスト色</label><br><input type="color" id="adpCourseTextColor" value="#ffffff"><br>
+        <label data-i18n="label_stroke_color">縁取り色</label><br><input type="color" id="adpCourseTextStrokeColor" value="#000000"><br>
+        <label data-i18n="label_stroke_width">縁取り太さ(px)</label><br><input type="range" id="adpCourseTextStrokeWidth" min="0" max="10" step="1" value="2"><br>
+        <label data-i18n="label_shadow_blur">影の濃さ(px)</label><br><input type="range" id="adpCourseTextShadowBlur" min="0" max="20" step="1" value="4"><br>
+        <label data-i18n="label_shadow_color">影の色</label><br><input type="color" id="adpCourseTextShadowColor" value="#000000">
+      </div>
+    </div>
+
+    <!-- 非表示生成用キャンバス -->
+    <div style="margin-top: 20px;">
+      <canvas id="adpCourseImage" width="1600" height="1100" style="border:1px solid #d8f3dd; display:block; max-width: 100%; height: auto; border-radius: 8px;"></canvas>
     </div>
   </div>
 </div>
@@ -1460,106 +1597,277 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <!-- ▼ コースメモタブ本体 -->
-<div id="courseMemoTab" class="tabContent" style="display:none; padding:20px;">
-  <h2 data-i18n="course_memo_title">コース戦略・意識メモ</h2>
+<div id="courseMemoTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="course_memo_title">コース戦略・意識メモ</h2>
 
-  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-    <!-- 左側：コース選択リスト -->
-    <div style="width: 280px;">
-      <label data-i18n="lbl_select_course">コース選択</label><br>
-      <select id="memoCourseSelect" size="15" style="width: 100%; height: 420px; padding: 6px; font-size: 14px; box-sizing: border-box;">
-        <!-- JSで動的に挿入されます -->
+    <!-- ▼ 対象カテゴリ切替セレクトボックス -->
+    <div style="background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+      <label data-i18n="lbl_memo_category" style="font-weight: bold; color: #222;">対象カテゴリ:</label>
+      <select id="memoCategorySelect" style="padding: 8px 12px; font-size: 14px; width: 220px; border-radius: 6px; border: 1px solid #ccc; background: #fff; color: #222; font-weight: bold; cursor: pointer; margin: 0;">
+        <option value="other" data-i18n="opt_category_other">大会・ラウンジ</option>
+        <option value="nora" data-i18n="opt_category_nora">野良</option>
       </select>
     </div>
 
-    <!-- 右側：メモ編集領域 -->
-    <div style="flex: 1; min-width: 320px;">
-      <h3 id="selectedCourseTitle" style="margin-top:0; color: #ffca28;">コースを選択してください</h3>
-      <textarea id="courseMemoTextarea" style="width: 100%; height: 370px; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px;" placeholder="このコースの走法、ライン取り、アイテム保持の意識などを記述..."></textarea>
-      <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-        <button id="saveCourseMemoBtn" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" data-i18n="btn_save_memo">メモを保存</button>
-        <span id="memoSaveStatus" style="color: #4caf50; display: none; font-size: 14px;" data-i18n="msg_saved">保存しました！</span>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- 左側：コース選択リスト（全コース表示） -->
+      <div style="width: 320px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 14px;">
+        <label data-i18n="lbl_select_course" style="font-weight: bold; color: #222; display: block; margin-bottom: 8px;">コース選択</label>
+        <select id="memoCourseSelect" size="18" style="width: 100%; height: 440px; padding: 8px; font-size: 13px; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; outline: none;">
+          <!-- JSで動的に挿入されます -->
+        </select>
+      </div>
+
+      <!-- 右側：メモ編集領域 -->
+      <div style="flex: 1; min-width: 320px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <h3 id="selectedCourseTitle" style="margin-top:0; margin-bottom: 12px; color: #27ae60; font-size: 18px; font-weight: bold;">コースを選択してください</h3>
+        <textarea id="courseMemoTextarea" style="width: 100%; height: 380px; padding: 12px; font-size: 14px; box-sizing: border-box; resize: vertical; background: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; outline: none;" placeholder="このコースの走法、立ち回りの意識、アイテム回しの意識などを記述..."></textarea>
+        
+        <div style="margin-top: 14px; display: flex; align-items: center; gap: 12px;">
+          <button id="saveCourseMemoBtn" style="padding: 10px 24px; font-weight: bold; cursor: pointer; background-color: #27ae60; color: white; border: none; border-radius: 6px;" data-i18n="btn_save_memo">メモを保存</button>
+          <span id="memoSaveStatus" style="color: #27ae60; display: none; font-size: 14px; font-weight: bold;" data-i18n="msg_saved">保存しました！</span>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
   
-<!-- ▼ オーバーレイ設定 -->
-<h3 data-i18n="overlay_settings_title">オーバーレイ設定</h3>
-<div id="overlayFilterBox" style="margin:10px 0;">
-  
-  <h3 data-i18n="obs_websocket_title">OBS WebSocket接続</h3>
-  <div><label data-i18n="label_host">ホスト</label><input id="obsHost" value="localhost"></div>
-  <div><label data-i18n="label_port">ポート</label><input id="obsPort" value="4455"></div>
-  <div><label data-i18n="label_password">パスワード</label><input id="obsPassword" type="password"></div>
-  
-  <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <button onclick="connectOBS()" data-i18n="btn_connect">接続</button>
-    <button onclick="disconnectOBS()" data-i18n="btn_disconnect">切断</button>
-    <button onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
-      🔄 即時反映・再接続
-    </button>
-  </div>
-  
-  <div id="obsStatus" data-i18n="status_disconnected">未接続</div>
+<!-- ▼ Webhook & オーバーレイ統合タブ本体 -->
+<div id="webhookOverlayTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="webhook_obs_settings_title">Webhook & オーバーレイ設定</h2>
 
-  <!-- モード選択 -->
-  <label data-i18n="lbl_mode">モード</label><br>
-  <select id="overlayModeSelect" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
-    <option value="nora" data-i18n="mode_nora">野良</option>
-    <option value="tournament" data-i18n="mode_tournament">大会</option>
-  </select>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
 
-  <!-- ラウンジ用フィルター（シーズン・Tier） -->
-  <div id="loungeFilters" style="margin-top:10px; display:none;">
-    <label data-i18n="lbl_season">シーズン</label><br>
-    <select id="loungeSeasonSelect2" style="width:200px;"></select><br><br>
-    <label data-i18n="lbl_tier">Tier</label><br>
-    <select id="loungeTierSelect2" style="width:200px;"></select>
-  </div>
+      <!-- ========================================== -->
+      <!-- 1. Webhook 設定セクション -->
+      <!-- ========================================== -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #2e7d32;" data-i18n="webhook_section_title">Discord Webhook設定</h3>
+        
+        <div style="margin-bottom: 15px;">
+          <label data-i18n="webhook_name_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook 名前</label>
+          <input id="webhookNameInput" type="text" data-i18n-placeholder="placeholder_webhook_name" placeholder="例：大会用" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
 
-  <br>
-  <label data-i18n="label_recent">Recent</label><br>
-  <select id="loungeRecentSelect2" style="width:200px;">
-    <option value="ALL" data-i18n="opt_all">ALL</option>
-    <option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
-  </select>
+        <div style="margin-bottom: 15px;">
+          <label data-i18n="webhook_url_label" style="display: block; margin-bottom: 4px; font-weight: 500;">Webhook URL</label>
+          <input id="webhookUrlInput" type="text" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
 
- <!-- ▼ モード選択やフィルターの下に配置した自動追尾・合算・件数指定設定 -->
-  <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
-    
-    <!-- 自動追尾ON/OFF -->
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-      <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
-      <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px;">
-        モーダル条件のオーバーレイ自動追尾を有効にする
-      </label>
-    </div>
+        <!-- リアルタイム通知トグル -->
+        <div style="margin-top: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+          <span data-i18n="webhook_live_note">1コース入力ごとにリアルタイムで通知</span>
+          <button id="toggleLiveWebhookBtn" type="button" onclick="toggleLiveWebhook()" style="padding: 2px 10px; font-size: 12px; cursor: pointer; font-weight: bold; color: #4caf50; background: #fff; border: 1px solid #4caf50; border-radius: 4px;">ON</button>
+        </div>
 
-    <!-- ▼ ユーザーによる一定回数（最小レース数）の指定UI -->
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555;">
-      <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
-      <input type="number" id="fallbackMinCountInput" value="360" min="1" max="10000" style="width: 60px; padding: 2px 4px; text-align: center;">
-      <span data-i18n="label_races_unit">レース未満</span>
-    </div>
-    
-    <!-- Tier補完ルールの切り替え設定 -->
-    <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555;">
-      <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ）:</span>
-      <select id="fallbackTierModeSelect" style="padding: 2px 6px;">
-        <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
-        <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
-        <option value="none" data-i18n="opt_tier_none">合算しない</option>
-      </select>
+        <button type="button" onclick="addWebhook()" data-i18n="btn_add" style="padding: 8px 16px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">追加</button>
+        <div id="webhookListArea" style="margin-top: 12px;"></div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 2. オーバーレイ設定 & OBS WebSocket セクション -->
+      <!-- ========================================== -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #2e7d32;" data-i18n="overlay_settings_title">オーバーレイ設定</h3>
+
+        <div id="overlayFilterBox" style="margin: 0;">
+          
+          <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #333;" data-i18n="obs_websocket_title">OBS WebSocket接続</h4>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label data-i18n="label_host" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">ホスト</label>
+              <input id="obsHost" value="localhost" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+            <div>
+              <label data-i18n="label_port" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">ポート</label>
+              <input id="obsPort" value="4455" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+            <div>
+              <label data-i18n="label_password" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">パスワード</label>
+              <input id="obsPassword" type="password" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+          </div>
+          
+          <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" onclick="connectOBS()" data-i18n="btn_connect" style="padding: 6px 14px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">接続</button>
+            <button type="button" onclick="disconnectOBS()" data-i18n="btn_disconnect" style="padding: 6px 14px; font-weight: bold; background-color: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">切断</button>
+            <button type="button" onclick="applyOverlayManually()" data-i18n="btn_apply_overlay" style="background-color: #28a745; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              🔄 即時反映・再接続
+            </button>
+          </div>
+          
+          <div id="obsStatus" data-i18n="status_disconnected" style="margin-top: 8px; font-size: 13px; font-weight: bold; color: #666;">未接続</div>
+
+          <div style="margin-top: 15px;">
+            <label data-i18n="lbl_mode" style="display: block; font-weight: 500; margin-bottom: 4px;">モード</label>
+            <select id="overlayModeSelect" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+              <option value="ALL" data-i18n="opt_all">ALL</option>
+              <option value="lounge" data-i18n="mode_lounge">ラウンジ</option>
+              <option value="nora" data-i18n="mode_nora">野良</option>
+              <option value="tournament" data-i18n="mode_tournament">大会</option>
+            </select>
+          </div>
+
+          <!-- ラウンジ用フィルター（シーズン・Tier） -->
+          <div id="loungeFilters" style="margin-top: 15px; display: none;">
+            <div style="margin-bottom: 10px;">
+              <label data-i18n="lbl_season" style="display: block; font-weight: 500; margin-bottom: 4px;">シーズン</label>
+              <select id="loungeSeasonSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;"></select>
+            </div>
+            <div>
+              <label data-i18n="lbl_tier" style="display: block; font-weight: 500; margin-bottom: 4px;">Tier</label>
+              <select id="loungeTierSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;"></select>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <label data-i18n="label_recent" style="display: block; font-weight: 500; margin-bottom: 4px;">Recent</label>
+            <select id="loungeRecentSelect2" style="width: 100%; max-width: 300px; padding: 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px;">
+              <option value="ALL" data-i18n="opt_all">ALL</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <!-- 自動追尾・合算・件数指定設定 -->
+          <div style="margin-top: 20px; padding: 12px; border: 1px solid #d8f3dd; border-radius: 6px; background: #fff;">
+            
+            <!-- 自動追尾ON/OFF -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <input type="checkbox" id="autoTrackOverlayToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
+              <label for="autoTrackOverlayToggle" data-i18n="label_auto_track" style="cursor: pointer; font-weight: bold; font-size: 14px; color: #222;">
+                モーダル条件のオーバーレイ自動追尾を有効にする
+              </label>
+            </div>
+
+            <!-- 最低レース数の指定UI -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #333; flex-wrap: wrap;">
+              <label for="fallbackMinCountInput" data-i18n="label_fallback_min_count">合算を発動する最低レース数:</label>
+              <input type="number" id="fallbackMinCountInput" value="360" min="1" max="10000" style="width: 70px; padding: 4px; text-align: center; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 4px;">
+              <span data-i18n="label_races_unit">レース未満</span>
+            </div>
+            
+            <!-- Tier補完ルールの切り替え設定 -->
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; flex-wrap: wrap;">
+              <span data-i18n="label_fallback_tier_note">データ不足時のTier補完（追尾ON時のみ）:</span>
+              <select id="fallbackTierModeSelect" style="padding: 4px 8px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="lower" data-i18n="opt_tier_lower">1個下のTierと合算</option>
+                <option value="ALL" data-i18n="opt_tier_all">ALL（全Tier）と合算</option>
+                <option value="none" data-i18n="opt_tier_none">合算しない</option>
+              </select>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
 
 
 
+
+
+<!-- ▼ MMR Matrix 計算タブ本体（早見表コピーボタン対応版） -->
+<div id="mmrMatrixTab" class="tabContent" style="display:none; padding: 0;">
+  <div class="section-block">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 26px; font-weight: bold; color: #27ae60;" data-i18n="mmr_matrix_title">MK Lounge MMR Matrix Calculator</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 960px;">
+      
+      <!-- モード選択ドロップダウン -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <label for="formatSelect" style="font-weight: bold; font-size: 15px; color: #222; margin: 0;" data-i18n="mmr_select_format">対戦形式を選択:</label>
+        <select id="formatSelect" style="background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer; min-width: 200px; margin: 0;">
+          <option value="ffa" data-i18n="mmr_fmt_ffa_24">FFA (24人 個人戦)</option>
+          <option value="2v2" data-i18n="mmr_fmt_2v2_12">2v2 (12チーム)</option>
+          <option value="3v3" data-i18n="mmr_fmt_3v3_8">3v3 (8チーム)</option>
+          <option value="4v4" data-i18n="mmr_fmt_4v4_6">4v4 (6チーム)</option>
+          <option value="6v6" data-i18n="mmr_fmt_6v6_4">6v6 (4チーム)</option>
+          <option value="8v8" data-i18n="mmr_fmt_8v8_3">8v8 (3チーム)</option>
+          <option value="12v12" data-i18n="mmr_fmt_12v12_2">12v12 (2チーム)</option>
+        </select>
+      </div>
+
+      <!-- 1. Room Header Input -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step1_title">1. 部屋のメッセージ（プレイヤーリスト）を貼り付け</label>
+        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 8px;" data-i18n="mmr_step1_note_24">※チーム戦の場合、上から順にチーム1, チーム2...と自動割り当てされます。</p>
+        <div style="position: relative; flex-grow: 1;">
+          <textarea
+            id="mogiHeaderInput"
+            data-i18n-placeholder="placeholder_mogi_header"
+            placeholder="`Room 1 - Player List`&#10;`1.` XXX (12325 MMR)&#10;`2.` YYYY (12076 MMR)..."
+            style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin: 0;"
+          ></textarea>
+          <button type="button" class="clear-overlay" data-target="mogiHeaderInput" style="position: absolute; top: 8px; right: 12px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+        <div id="mogiHeaderStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
+      </div>
+
+      <!-- 2. 全順位変動一覧表示パネル ＆ 予測用送信・コピーボタン -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label for="playerSelect" style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step2_title">2. 自分の名前（または番号）を選択して全順位早見表を生成</label>
+        <select id="playerSelect" disabled style="width: 100%; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 14px; margin-top: 0; margin-bottom: 12px; cursor: pointer;">
+          <option value="" data-i18n="mmr_select_wait">(先に上のプレイヤーリストを入力してください)</option>
+        </select>
+
+        <textarea
+          id="matrixResultOutput"
+          readonly
+          data-i18n-placeholder="mmr_matrix_placeholder"
+          placeholder="自分を選択すると、各チーム順位を取った場合の変動幅一覧がここに自動で出力されます。"
+          style="width: 100%; height: 280px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; white-space: pre; resize: vertical; margin: 0;"
+        ></textarea>
+
+        <!-- 予測早見表のコピー＆Discord送信ボタン -->
+        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <button id="copyMatrixButton" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="btn_copy_matrix">早見表をコピー</button>
+          <button id="sendMatrixDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="btn_send_matrix_discord">予測早見表をDiscordに送信</button>
+        </div>
+      </div>
+
+      <!-- 3. 通常の全体一括出力 -->
+      <div style="background-color: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <label style="font-weight: bold; font-size: 15px; color: #222; margin-bottom: 8px;" data-i18n="mmr_step3_title">3. 従来のスコアボード一括計算（リザルトが出た後用）</label>
+        <textarea
+          id="scoreboardInput"
+          data-i18n-placeholder="placeholder_scoreboard"
+          placeholder="!submit 1 Q&#10;YamiX 119..."
+          style="width: 100%; height: 100px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; margin-top: 0; margin-bottom: 10px; resize: vertical;"
+        ></textarea>
+        <textarea
+          id="mmrTableOutput"
+          data-i18n-placeholder="mmr_table_placeholder"
+          placeholder="スコアボードを入力して Calculate を押すと全員の確定変動量が出力されます。"
+          readonly
+          style="width: 100%; height: 180px; background-color: #fff; color: #222; border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 13px; resize: vertical; margin-top: 0; margin-bottom: 0;"
+        ></textarea>
+        
+        <!-- 計算・コピー・Discord送信ボタン -->
+        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <button id="calculateButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;" data-i18n="mmr_calculate_24">Calculate (24人分)</button>
+          <button id="copyButton" style="padding: 10px 20px; font-weight: bold; background-color: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;" data-i18n="btn_copy">Copy</button>
+          <button id="sendMmrDiscordBtn" type="button" style="padding: 10px 20px; font-weight: bold; background-color: #5865F2; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%;" data-i18n="btn_send_mmr_discord">計算結果をDiscordに送信</button>
+        </div>
+
+        <div id="mmrTableStatusBar" class="statusBar" style="font-size: 13px; margin-top: 8px; min-height: 1.2em;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+  
 
 
   
@@ -1580,99 +1888,140 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <!-- ▼ レース登録モーダル -->
-<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box;">
+<div id="raceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; box-sizing: border-box; overflow-y: auto;">
 
-  <!-- 2. 【別枠パネル】入力中のコース一覧 -->
+  <!-- 2. 【別枠サイドパネル】入力中のコース一覧 ＆ コースメモ統合版（縦長を拡張） -->
   <div id="modalSideHistoryPanel" style="
     background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
-    padding: 16px;
-    width: 260px;
-    max-height: 85vh;
+    padding: 14px;
+    width: 280px;
+    max-height: 94vh;
+    height: 94vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     box-sizing: border-box;
+    flex-shrink: 0;
+    gap: 10px;
   ">
-    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-      <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 11px;">0件</span>
-        <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+    <!-- ① 上部：入力中のコース一覧 -->
+    <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+      <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <span data-i18n="modal_input_course_list">📋 入力中のコース一覧</span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span id="modalCurrentCount" style="background: #007bff; color: #fff; padding: 1px 5px; border-radius: 8px; font-size: 10px;">0件</span>
+          <button onclick="toggleHistoryPanelPosition()" title="パネルの位置を左右切替" style="background: #f1f3f5; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 5px; font-size: 10px; cursor: pointer;" id="panelPosToggleBtn">⇄</button>
+        </div>
+      </div>
+      <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 11px; padding-right: 2px;">
+        <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 20px 0;">まだ入力されていません</div>
       </div>
     </div>
-    <div id="modalCourseHistoryArea" style="overflow-y: auto; flex-grow: 1; font-size: 12px; padding-right: 2px;">
-      <div data-i18n="msg_no_input_yet" style="color: #888; text-align: center; padding: 30px 0;">まだ入力されていません</div>
+
+    <!-- ② 下部：サイドパネル版コースメモエリア（高さを拡張） -->
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; flex-shrink: 0;">
+      
+      <!-- ▼ 開閉する対象（テキストエリアとタイトル部分） -->
+      <div id="modalMemoWrapper">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; border-bottom: 1px solid #eee; padding-bottom: 2px;">
+          <span style="font-size: 11px; font-weight: bold; color: #495057;" data-i18n="modal_memo_title">📌 選択中コースメモ</span>
+          <span id="modalActiveCourseName" style="font-size: 10px; font-weight: bold; color: #007bff; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="コース未選択">（未選択）</span>
+        </div>
+        <textarea id="modalCourseMemoTextarea" style="width: 100%; height: 110px; padding: 6px; font-size: 11px; box-sizing: border-box; background: #fff; color: #333; border: 1px solid #ced4da; border-radius: 4px; resize: vertical;" placeholder="このコースの戦略や意識メモ..."></textarea>
+      </div>
+
+      <!-- ▼ 常に表示される切り替えスイッチ＆クイック保存ボタンのバー -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-top: 1px solid #eee; padding-top: 6px;">
+        <label style="cursor: pointer; font-size: 11px; color: #555; display: flex; align-items: center; gap: 3px; user-select: none;">
+          <input type="checkbox" id="modalMemoToggle" checked style="cursor: pointer; margin: 0;">
+          <span data-i18n="label_modal_memo_setting">メモを表示</span>
+        </label>
+        <button id="saveModalMemoBtn" type="button" style="padding: 3px 8px; font-size: 10px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="btn_quick_save">クイック保存</button>
+      </div>
+
     </div>
   </div>
 
-  <!-- 1. 【モーダル本体】元のコンパクトなサイズ＆スクロール仕組み -->
+  <!-- 1. 【モーダル本体】（縦の長さを 94vh に拡張） -->
   <div class="modal-inner" style="
-    background:#fff;
-    padding:24px;
+    background: #fff;
+    padding: 22px 24px;
     width: 100%;
     max-width: 520px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 90vh;
+    max-height: 94vh;
+    height: 94vh;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overscroll-behavior: contain;
     position: relative;
     box-sizing: border-box;
+    flex-shrink: 0;
   ">
 
-    <h3 data-i18n="modal_race_register" style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">レース登録</h3>
-
-    <label data-i18n="lbl_mode">モード</label><br>
-    <!-- ▼ モードの選択肢を元通りに復活させました -->
-    <select id="modalMode" style="width:100%; margin-bottom:12px; padding: 6px;">
-      <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
-      <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
-      <option value="nora" data-i18n="opt_mode_nora">野良</option>
-    </select>
-  
-    <div id="modalTierBlock">
-      <label data-i18n="lbl_tier">Tier</label><br>
-      <select id="modalTier" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
+    <!-- ヘッダー -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; flex-shrink: 0;">
+      <h3 data-i18n="modal_race_register" style="margin: 0; font-size: 16px;">レース登録</h3>
     </div>
 
-    <div id="modalSeasonBlock">
-      <label data-i18n="lbl_season">Season</label><br>
-      <select id="modalSeason" style="width:100%; margin-bottom:12px; padding: 6px;"></select>
-    </div>
-
-    <div id="modalRaceCountBlock">
-      <label data-i18n="modal_race_count">レース数</label><br>
-      <select id="modalRaceCount" style="width:100%; margin-bottom:12px; padding: 6px;">
-        <option value="1">1レース</option>
-        <option value="2">2レース</option>
-        <option value="3">3レース</option>
-        <option value="4">4レース</option>
-        <option value="5">5レース</option>
-        <option value="6">6レース</option>
-        <option value="7">7レース</option>
-        <option value="8">8レース（大会）</option>
-        <option value="9">9レース</option>
-        <option value="10">10レース</option>
-        <option value="11">11レース</option>
-        <option value="12">12レース（大会）</option>
+    <!-- スクロール可能な入力フォーム領域 -->
+    <div style="flex-grow: 1; overflow-y: auto; padding-right: 4px;">
+      <!-- モード選択 -->
+      <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_mode">モード</label>
+      <select id="modalMode" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;">
+        <option value="lounge" data-i18n="opt_mode_lounge">ラウンジ</option>
+        <option value="tournament" data-i18n="opt_mode_tournament">大会</option>
+        <option value="nora" data-i18n="opt_mode_nora">野良</option>
       </select>
+    
+      <div id="modalTierBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_tier">Tier</label>
+        <select id="modalTier" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;"></select>
+      </div>
+
+      <div id="modalSeasonBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="lbl_season">Season</label>
+        <select id="modalSeason" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;"></select>
+      </div>
+
+      <div id="modalRaceCountBlock">
+        <label style="font-size: 12px; font-weight: bold;" data-i18n="modal_race_count">レース数</label>
+        <select id="modalRaceCount" style="width:100%; margin-bottom:10px; padding: 6px; font-size: 13px; box-sizing: border-box;">
+          <option value="1">1レース</option>
+          <option value="2">2レース</option>
+          <option value="3">3レース</option>
+          <option value="4">4レース</option>
+          <option value="5">5レース</option>
+          <option value="6">6レース</option>
+          <option value="7">7レース</option>
+          <option value="8">8レース（大会）</option>
+          <option value="9">9レース</option>
+          <option value="10">10レース</option>
+          <option value="11">11レース</option>
+          <option value="12">12レース（大会）</option>
+        </select>
+      </div>
+
+      <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:10px; color:#555; font-size: 11px;">
+        ※ ラウンジは最大12レース（途中中断OK）
+      </div>
+
+      <div id="modalRaceInputs"></div>
     </div>
 
-    <div id="modalLoungeInfo" data-i18n="modal_lounge_note" style="margin-bottom:12px; color:#555; font-size: 12px;">
-      ※ ラウンジは最大12レース（途中中断OK）
-    </div>
-
-    <div id="modalRaceInputs"></div>
-
-    <div style="text-align:right; margin-top:20px; border-top: 1px solid #eee; padding-top: 15px;">
+    <!-- フッター（ボタン固定領域） -->
+    <div style="text-align:right; margin-top:12px; border-top: 1px solid #eee; padding-top: 10px; flex-shrink: 0;">
       <button id="closeModalBtn" data-i18n="btn_cancel" style="
         padding:8px 16px;
-        margin-right:8px;
+        margin-right:6px;
         background:#ccc;
         border: none;
         border-radius:6px;
+        font-size: 13px;
         cursor:pointer;
       ">キャンセル</button>
     
@@ -1682,6 +2031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color:#fff;
         border:none;
         border-radius:6px;
+        font-size: 13px;
         font-weight:bold;
         cursor:pointer;
       ">保存</button>
@@ -1689,7 +2039,6 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
 </div>
-
   
 
 <!-- ★★★ ここから全部の JS ★★★ -->
@@ -1758,8 +2107,9 @@ function renderRaceHistory(records) {
   // ▼ 共通フィルター済み records が渡される前提
   let list = records || [];
 
-  // ▼ DB版：timestamp は必ず存在するのでシンプルに新しい順
-  list = clone(list).sort((a, b) => b.timestamp - a.timestamp);
+  // ▼ 必ず配列に変換してから sort を実行するよう修正
+  let clonedList = Array.isArray(list) ? clone(list) : Array.from(list || []);
+  list = clonedList.sort((a, b) => b.timestamp - a.timestamp);
 
   const dict = i18nDict[currentLang] || i18nDict['ja'];
 
@@ -1790,7 +2140,7 @@ function renderRaceHistory(records) {
     let modeKey = `opt_mode_${r.mode}`;
     const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, '');
 
-    // ★ここでボタンのテキスト変数をしっかりと定義する
+    // ボタンのテキスト変数
     const editLabel = dict.btn_edit || "編集";
     const deleteLabel = dict.btn_delete || "削除";
 
@@ -2244,14 +2594,23 @@ function generateRaceInputs(count) {
         }
         triggerLiveWebhookProgress();
         updateModalCourseHistory(); // ★ コース変更時に右側のリストを即時更新
+
+        // ★ コースメモ連動：コースが変更されたら、そのコースのメモをモーダル内エリアに自動読み込み
+        if (typeof loadMemoForActiveModalCourse === "function") {
+          loadMemoForActiveModalCourse();
+        }
       };
     }
   }
 
   saveNextCourse();
   updateModalCourseHistory(); // ★ 入力欄生成時（モーダルを開いたとき）に初期状態を反映
-}
 
+  // ★ モーダルを開いたときにも最初のコースのメモを自動読み込み
+  if (typeof loadMemoForActiveModalCourse === "function") {
+    loadMemoForActiveModalCourse();
+  }
+}
   
 /**
  * 現在モーダルに入力されている全レース状況を収集してWebhook送信関数を呼ぶヘルパー
@@ -2332,7 +2691,44 @@ function initHistoryPanelPosition() {
 }
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const memoWrapper = document.getElementById("modalMemoWrapper");
 
+  if (memoToggle && memoWrapper) {
+    // 1. 保存されている設定を読み込み（デフォルトは true / 表示）
+    const savedSetting = localStorage.getItem("mk_modal_memo_visible");
+    const isVisible = savedSetting === null ? true : (savedSetting === "true");
+
+    memoToggle.checked = isVisible;
+    memoWrapper.style.display = isVisible ? "block" : "none";
+
+    // 2. チェックボックス変更時の処理
+    memoToggle.onchange = () => {
+      const checked = memoToggle.checked;
+      memoWrapper.style.display = checked ? "block" : "none";
+      localStorage.setItem("mk_modal_memo_visible", checked);
+
+      // 表示に切り替えたときは、現在のコースのメモを即座に読み込む
+      if (checked && typeof loadMemoForActiveModalCourse === "function") {
+        loadMemoForActiveModalCourse();
+      }
+    };
+  }
+});
+
+// 3. loadMemoForActiveModalCourse 内でも「非表示設定のときは処理をスキップ」するようにガードを入れる
+const originalLoadMemoForActiveModalCourse = window.loadMemoForActiveModalCourse;
+window.loadMemoForActiveModalCourse = async function() {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  // チェックが入っていない（非表示設定）の場合は何もしない
+  if (memoToggle && !memoToggle.checked) return;
+
+  // 元の処理を実行
+  if (typeof originalLoadMemoForActiveModalCourse === "function") {
+    await originalLoadMemoForActiveModalCourse();
+  }
+};
   
 </script>
 
@@ -2459,6 +2855,128 @@ saveRaceBtn.onclick = async () => {
   editingTimestamp = null;
   modal.classList.remove("show");
 };
+
+
+
+/**
+ * 現在フォーカスされている（または選択された）コースのメモをモーダル内に読み込む
+ */
+/**
+ * モーダルのモードに連動して、野良かそれ以外のメモを自動で読み込む
+ */
+async function loadMemoForActiveModalCourse() {
+  const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+  const courseNameSpan = document.getElementById("modalActiveCourseName");
+  if (!memoTextarea) return;
+
+  // 1. 現在のモーダル上のモードを取得してカテゴリ（nora / other）を判定
+  const rawMode = modalMode ? modalMode.value : "lounge";
+  const category = getMemoCategory(rawMode);
+
+  // 2. 現在入力中の最初のコースを取得
+  let activeCourse = null;
+  const count = rawMode === "lounge" ? 12 : Number(modalRaceCount.value || 1);
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    if (courseEl && courseEl.value) {
+      activeCourse = courseEl.value;
+      break;
+    }
+  }
+
+  if (!activeCourse) {
+    const firstCourseEl = document.getElementById(`raceCourse_1`);
+    if (firstCourseEl) activeCourse = firstCourseEl.value;
+  }
+
+  const categoryLabel = (category === "nora") ? "野良" : "大会/ラウンジ";
+
+  if (activeCourse) {
+    if (courseNameSpan) courseNameSpan.textContent = `[ ${activeCourse} (${categoryLabel}) ]`;
+    
+    // カテゴリ別にIndexedDBからメモを取得
+    const memo = await loadCourseMemo(category, activeCourse);
+    memoTextarea.value = memo || "";
+  } else {
+    if (courseNameSpan) courseNameSpan.textContent = "（コース未選択）";
+    memoTextarea.value = "";
+  }
+}
+
+// モーダル内の「クイック保存」ボタンの連動
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\((.*?)\)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const rawMode = modalMode ? modalMode.value : "lounge";
+      const category = getMemoCategory(rawMode);
+
+      // 正しいカテゴリ（nora または other）でIndexedDBに保存
+      const success = await saveCourseMemo(category, targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse} (${category === 'nora' ? '野良' : '大会/ラウンジ'})」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+
+  // モードセレクト（modalMode）が変更されたときにも対応するメモを自動で切り替え読込
+  if (typeof modalMode !== 'undefined' && modalMode) {
+    modalMode.addEventListener("change", () => {
+      loadMemoForActiveModalCourse();
+    });
+  }
+});
+
+// モーダルが開いたとき（openModalBtn.onclick 内）に上記を呼び出す
+// ※ 既存の openModalBtn.onclick の中に以下を追加してください
+/*
+  await loadMemoForActiveModalCourse();
+*/
+
+// モーダル内の「クイック保存」ボタンのイベント設定
+document.addEventListener("DOMContentLoaded", () => {
+  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
+  if (saveModalMemoBtn) {
+    saveModalMemoBtn.onclick = async () => {
+      const courseNameSpan = document.getElementById("modalActiveCourseName");
+      const memoTextarea = document.getElementById("modalCourseMemoTextarea");
+      
+      if (!courseNameSpan || !memoTextarea) return;
+      
+      // テキストからコース名を抽出（例: "[ マリオカートスタジアム ]" → "マリオカートスタジアム"）
+      const match = courseNameSpan.textContent.match(/\[\s*(.*?)\s*\]/);
+      if (!match || !match[1]) {
+        return alert("対象のコースが選択されていません");
+      }
+      
+      const targetCourse = match[1];
+      const success = await saveCourseMemo(targetCourse, memoTextarea.value);
+      
+      if (success) {
+        alert(`「${targetCourse}」のメモを保存しました！`);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+});
+
+  
 </script>
 
 
@@ -2601,14 +3119,10 @@ document.getElementById("backToAnalysisBtn").onclick = () => {
   
 <!-- オーバーレイ専用ボックス -->
 <div id="overlayBox">待機中...</div>
+  
 <!-- ▼ 分析タブ（ここに分析UI全部を入れる） -->
 <div id="analysisTab" class="tabContent" style="display:block;">
-  <div class="section-block">
-    <label>直近 N レースで比較：</label>
-    <input id="rangeN" type="number" value="30" min="1" max="20000" step="5">
-    <button onclick="(allRecords)">再描画</button>
-  </div>
-
+  
 <!-- ▼ 基本統計・3グラフ（専用フィルター） -->
 <div class="section-block">
   <h3 data-i18n="basic_stats_title">基本統計 / 勝率・平均順位・平均スコア</h3>
@@ -3110,7 +3624,6 @@ function openDB() {
       const db = e.target.result;
       if (!db.objectStoreNames.contains("records")) {
         db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
-        console.log("[IndexedDB] 'records' オブジェクトストアを新規作成しました。");
       }
     };
 
@@ -3269,7 +3782,7 @@ async function fixMissingTimestamps() {
   }
 
   await promisifyTx(tx);
-  console.log("timestamp 修復完了");
+ 
 }
 
 
@@ -4152,7 +4665,7 @@ const statsSeason = document.getElementById("statsSeason");
 const growthSeason = document.getElementById("growthSeason");
 const radarSeason = document.getElementById("radarSeason");
 const heatmapSeason = document.getElementById("heatmapSeason");
-const rankSeason = document.getElementById("rankSeason");
+const rankSeason = document.getElementById("rankSeasonSelect");
 const aiSeason = document.getElementById("aiSeason");
 const bubbleSeason = document.getElementById("bubbleSeason");
 const scatterSeason = document.getElementById("scatterSeason");
@@ -4162,7 +4675,7 @@ const statsTier = document.getElementById("statsTier");
 const growthTier = document.getElementById("growthTier");
 const radarTier = document.getElementById("radarTier");
 const heatmapTier = document.getElementById("heatmapTier");
-const rankTier = document.getElementById("rankTier");
+const rankTier = document.getElementById("rankTierSelect");
 const aiTier = document.getElementById("aiTier");
 const bubbleTier = document.getElementById("bubbleTier");
 const scatterTier = document.getElementById("scatterTier");
@@ -4285,7 +4798,7 @@ window.addEventListener("load", async () => {
     if (typeof loadOBSSettings === 'function') loadOBSSettings();
     if (typeof renderRaceHistory === 'function') renderRaceHistory();
 
-    console.log("すべての初期化・描画処理が正常に完了しました。");
+   
 
   } catch (e) {
     console.error("アプリケーションの初期化中に致命的なエラーが発生しました:", e);
@@ -4316,8 +4829,6 @@ async function initADPRecords() {
   courseStatsSource = {
     history: records
   };
-
-  console.log("courseStatsSource 初期化完了", courseStatsSource);
 }
 
 /* ==========
@@ -6346,7 +6857,6 @@ async function sendDataToWorker() {
   if (!queue.length) return;
 
   if (!shouldSendNow()) {
-    console.log("まだ送信しない（6時間に1回）");
     return;
   }
 
@@ -6365,15 +6875,11 @@ async function sendDataToWorker() {
     });
 
     if (res.ok) {
-      console.log("送信完了（6時間に1回）");
       localStorage.setItem("sendQueue", "[]");
       localStorage.setItem("lastSent", Date.now());
     } else {
-      console.log("送信失敗 → 次の6時間後に再試行");
-      console.log(await res.text());
     }
   } catch (e) {
-    console.log("送信エラー → 次の6時間後に再試行");
     console.error(e);
   }
 }
@@ -7172,7 +7678,7 @@ function mergeRecords(existingRecords, incomingRecords) {
     }
   }
 
-  console.log(`[重複チェック] 既存: ${existingRecords.length}件 / 新規候補: ${incomingRecords.length}件 / 実際に追加された差分: ${addedCount}件`);
+ 
 
   // 3. 全体を綺麗に時系列・セット順にソート
   return sortRecords(merged);
@@ -7951,7 +8457,7 @@ async function saveBackgroundToOPFS(file, settings) {
       await metaWritable.write(JSON.stringify(settings));
       await metaWritable.close();
 
-      console.log("[OPFS] 背景と設定を保存しました:", idName);
+     
       return;
     }
   } catch (err) {
@@ -7972,7 +8478,7 @@ async function saveBackgroundToOPFS(file, settings) {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
-    console.log("[IndexedDB] 背景と設定を保存しました:", idName);
+   
   } catch (dbErr) {
     console.error("[IndexedDB] 保存に失敗しました:", dbErr);
     throw new Error("背景の保存に失敗しました。");
@@ -7988,7 +8494,6 @@ async function deleteBackgroundFromOPFS(idName) {
     if (await checkOpfsUsable()) {
       const dirHandle = await getOpfsDirectory();
       await dirHandle.removeEntry(idName, { recursive: true });
-      console.log("[OPFS] 削除しました:", idName);
     }
   } catch (err) {
     // OPFSになければ無視
@@ -8004,7 +8509,6 @@ async function deleteBackgroundFromOPFS(idName) {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
-    console.log("[IndexedDB] 削除しました:", idName);
   } catch (dbErr) {
     console.error("[IndexedDB] 削除に失敗しました:", dbErr);
   }
@@ -8648,10 +9152,6 @@ async function onLoadLoungeStats() {
   const currentMode = modeSelect ? modeSelect.value : "24"; 
   const is12PAll = (selectedSeason === "ALL" && String(currentMode) === "12");
 
-  console.log("=== Lounge Debug ===");
-  console.log("playerId:", playerId);
-  console.log("selectedSeason:", selectedSeason);
-  console.log("is12PAll:", is12PAll);
 
   let stats;
 
@@ -8663,7 +9163,6 @@ async function onLoadLoungeStats() {
 
     for (let s = 1; s <= maxSeasonCheck; s++) {
       const url = buildMKCUrl(playerId, s);
-      console.log("Fetching Season", s, "URL:", url);
 
       try {
         const html = await fetchWorldHTML(url);
@@ -8679,19 +9178,19 @@ async function onLoadLoungeStats() {
           // ▼ 重複・フォールバック検知ガード
           // ==========================================
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-            console.log(`-> Season ${s} で重複データ（フォールバック）を検知しました。`);
+    
             
             if (is12PAll) {
               // 【12PモードのALL時】
               // 24Pデフォルトページが1回分誤混入しているため、直前データを pop して終了
               if (htmlList.length > 0) {
                 const removed = htmlList.pop();
-                console.log(`-> [12P ALL] 誤混入した Season ${removed.season} のデータを削除しました。`);
+                
               }
             } else {
               // 【24Pなどその他のモード時】
               // 直前データ（Season 3など）は正しい有効データなので pop せず、単に追加せずにそのままループ終了
-              console.log(`-> [通常 ALL] 追加せずにそのままループを終了します。`);
+              
             }
 
             break;
@@ -8705,7 +9204,7 @@ async function onLoadLoungeStats() {
                 return JSON.stringify(val) === JSON.stringify(tempParsed.history[idx]);
               });
               if (isSameHistory) {
-                console.log(`-> Season ${s} は前シーズンと完全に同一履歴のため終了します。`);
+            
                 if (is12PAll && htmlList.length > 0) {
                   htmlList.pop();
                 }
@@ -8716,7 +9215,7 @@ async function onLoadLoungeStats() {
 
           // 休止・データなしスキップ（試合履歴が0件の場合）
           if (!tempParsed.history || tempParsed.history.length === 0) {
-            console.log(`-> Season ${s} はデータなし（休止等）のためスキップ`);
+          
             continue;
           }
 
@@ -8724,10 +9223,10 @@ async function onLoadLoungeStats() {
           htmlList.push({ html, season: s, parsed: tempParsed });
           lastParsedSignature = currentSignature;
           lastValidSeasonData = tempParsed;
-          console.log(`-> Season ${s} のデータを追加しました。`);
+          
 
         } else {
-          console.log(`-> Season ${s} はページが見つからないためALL取得を終了します。`);
+      
           break;
         }
       } catch (e) {
@@ -8739,7 +9238,6 @@ async function onLoadLoungeStats() {
 
   } else {
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
-    console.log("detailsUrl:", detailsUrl);
 
     const html = await fetchWorldHTML(detailsUrl);
     stats = parseWorldHTML(html, selectedSeason);
@@ -8761,7 +9259,7 @@ async function onLoadLoungeStats() {
     }
   }
 
-  console.log("Final stats:", stats);
+
 
   if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
     console.warn("⚠️ 有効なMMR履歴が見つかりませんでした。");
@@ -8890,7 +9388,7 @@ if (updateLoungeBgBtn) {
     if (window.latestLoungeStats) {
       const imgStats = convertStatsForImage(window.latestLoungeStats);
       await drawLoungeImage(imgStats);
-      console.log("背景画像の設定を即時反映しました");
+     
     } else {
       alert("先に「データ取得」を行ってプレイヤーデータを読み込んでください。");
     }
@@ -9382,7 +9880,7 @@ function setBgImage(file) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    console.log("背景画像セット:", reader.result.slice(0, 50)); // デバッグ
+  
     state.backgroundImage = reader.result;  // ★ DataURL
   };
   reader.readAsDataURL(file);
@@ -9853,89 +10351,102 @@ function initAdpCourseSelects() {
 
   ids.forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) {
-      console.error("セレクトが存在しない:", id);
-      return;
-    }
+    if (!sel) return;
 
-    sel.innerHTML =
-      `<option value="">（未選択）</option>` +
-      courseList
-        .filter(c => typeof c === "string" && c.length > 0)
-        .map(c => `<option value="${c}">${c}</option>`)
-        .join("");
+    sel.innerHTML = '<option value="">-- コース選択 --</option>';
+
+    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
+      courseList.forEach(courseName => {
+        const opt = document.createElement("option");
+        opt.value = courseName;
+        opt.textContent = courseName;
+        sel.appendChild(opt);
+      });
+    } else {
+      console.warn("courseList が定義されていないか、配列ではありません。");
+    }
   });
+
+ 
 }
 
-
-
 document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
+  try {
+  
 
-  const selectedCourses = ids
-    .map(id => {
-      const el = document.getElementById(id);
-      return el ? el.value : "";
-    })
-    .filter(v => v && v !== "");
+    const ids = [
+      "adpCourseSelect1",
+      "adpCourseSelect2",
+      "adpCourseSelect3",
+      "adpCourseSelect4",
+      "adpCourseSelect5"
+    ];
 
-  if (selectedCourses.length === 0) {
-    return alert("少なくとも1つコースを選択してください");
-  }
+    const selectedCourses = ids
+      .map(id => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+      })
+      .filter(v => v && v !== "");
 
-  if (typeof loadADPIndexedDBRecords !== "function") {
-    return alert("loadADPIndexedDBRecords 関数が定義されていません");
-  }
-
-  const records = await loadADPIndexedDBRecords();
-  if (!records || records.length === 0) {
-    return alert("IndexedDB にレコードが存在しません");
-  }
-
-  const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
-  const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
-  const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
-  const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
-  const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
-
-  const filtered = applyAndOrFilter(records, {
-    season: seasonVal,
-    tier: tierVal,
-    recent: recentVal,
-    courses: selectedCourses,
-    mode: modeVal
-  }, filterModeVal);
-
-  if (!filtered || filtered.length === 0) {
-    return alert("条件に一致するレコードがありませんでした");
-  }
-
-  const stats = aggregateCourseStats(filtered);
-
-  // 1. テーブル・チャートの描画
-  drawAdpCourseStatsTable(stats);
-  drawAdpCourseStatsChart(stats);
-
-  // 2. キャンバス画像の描画（★ここを追加することで、画像送信ボタンを押したときに最新画像が必ず用意される）
-  if (typeof drawAdpCourseImage === "function") {
-    let bgUrl = null;
-    if (typeof getSelectedAdpBackgroundUrl === "function") {
-      bgUrl = getSelectedAdpBackgroundUrl();
+    if (selectedCourses.length === 0) {
+      return alert("コースを少なくとも1つ選択してください");
     }
-    await drawAdpCourseImage(stats, bgUrl);
+
+    if (typeof loadADPIndexedDBRecords !== "function") {
+      console.error("loadADPIndexedDBRecords 関数が定義されていません");
+      return alert("データ読み込み関数が見つかりません");
+    }
+
+    const records = await loadADPIndexedDBRecords();
+    if (!records || records.length === 0) {
+      return alert("IndexedDBにレースデータが存在しません");
+    }
+
+    const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
+    const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
+    const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
+    const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
+    const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
+
+    const filtered = applyAndOrFilter(records, {
+      season: seasonVal,
+      tier: tierVal,
+      recent: recentVal,
+      courses: selectedCourses,
+      mode: modeVal
+    }, filterModeVal);
+
+    if (!filtered || filtered.length === 0) {
+      return alert("条件に一致するレースデータがありませんでした");
+    }
+
+    const stats = aggregateCourseStats(filtered);
+
+    if (typeof drawAdpCourseStatsTable === "function") {
+      drawAdpCourseStatsTable(stats);
+    }
+
+    if (typeof drawAdpCourseStatsChart === "function") {
+      drawAdpCourseStatsChart(stats);
+    }
+
+    if (typeof drawAdpCourseImage === "function") {
+      let bgUrl = null;
+      if (typeof getSelectedAdpBackgroundUrl === "function") {
+        bgUrl = getSelectedAdpBackgroundUrl();
+      }
+      await drawAdpCourseImage(stats, bgUrl);
+    }
+
+    window.latestAdpCourseStats = stats;
+    
+
+  } catch (err) {
+    console.error("「表示」ボタン処理中にエラーが発生しました:", err);
+    alert("処理中にエラーが発生しました。F12のコンソールをご確認ください。");
   }
-
-  window.latestAdpCourseStats = stats;
-  console.log("コース別statsの表示および画像生成が完了しました:", stats);
 };
-
-
 
 function generateAdpCourseStatsText(stats) {
   if (!stats || !stats.length) return "データがありません。";
@@ -9953,30 +10464,13 @@ function generateAdpCourseStatsText(stats) {
     lines.push(`平均ポイント: ${s.avgPoints.toFixed(2)}`);
     lines.push(`勝率: ${(s.winRate * 100).toFixed(1)}%`);
 
-    // ★ Season 別（null安全）
-    lines.push("\nSeason別:");
-    if (s.season && Object.keys(s.season).length > 0) {
-      Object.keys(s.season).forEach(se => {
-        const obj = s.season[se];
-        lines.push(
-          `  ${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-        );
-      });
-    } else {
-      lines.push("  Seasonデータなし");
-    }
-
-    // ★ Tier 別（null安全）
-    lines.push("\nTier別:");
-    if (s.tier && Object.keys(s.tier).length > 0) {
-      Object.keys(s.tier).forEach(t => {
-        const obj = s.tier[t];
-        lines.push(
-          `  ${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`
-        );
-      });
-    } else {
-      lines.push("  Tierデータなし");
+    lines.push("\n各順位の確率:");
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (cnt > 0) { // 0回の順位は省略してスッキリさせることも可能ですが、必要に応じて表示
+        const pct = ((cnt / s.count) * 100).toFixed(1);
+        lines.push(`  ${i}位: ${pct}% (${cnt}回)`);
+      }
     }
 
     lines.push("\n");
@@ -9985,45 +10479,67 @@ function generateAdpCourseStatsText(stats) {
   return lines.join("\n");
 }
 
-
-  
-
 function drawAdpCourseStatsTable(stats) {
   let html = `
-    <table border="1" cellpadding="4" style="border-collapse: collapse; color: #fff; width: 100%;">
-      <tr>
-        <th>コース</th>
-        <th>レース数</th>
-        <th>平均順位</th>
-        <th>中央値</th>
-        <th>標準偏差</th>
-        <th>トップ3率</th>
-        <th>平均ポイント</th>
-        <th>勝率</th>
-      </tr>
+    <div style="overflow-x: auto; width: 100%; border: 1px solid #d8f3dd; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+      <table border="1" cellpadding="6" style="border-collapse: collapse; color: #222; width: 100%; font-size: 12px; text-align: center; border-color: #d8f3dd;">
+        <thead>
+          <tr style="background: #27ae60; color: #fff;">
+            <th style="text-align: left; padding-left: 10px; white-space: nowrap; position: sticky; left: 0; background: #27ae60; z-index: 2;">コース</th>
+            <th style="white-space: nowrap;">戦数</th>
+            <th style="white-space: nowrap;">平均</th>
+            <th style="white-space: nowrap;">中央</th>
+            <th style="white-space: nowrap;">標準偏差</th>
+            <th style="white-space: nowrap;">Top3率</th>
+            <th style="white-space: nowrap;">平均Pt</th>
+            <th style="white-space: nowrap;">勝率</th>
   `;
+
+  // 1位〜24位のヘッダーを展開
+  for (let i = 1; i <= 24; i++) {
+    html += `<th style="white-space: nowrap; padding: 6px 8px; min-width: 45px;">${i}位</th>`;
+  }
+  html += `</tr></thead><tbody>`;
 
   stats.forEach(s => {
     html += `
-      <tr>
-        <td>${s.course}</td>
+      <tr style="border-bottom: 1px solid #d8f3dd;">
+        <td style="text-align: left; font-weight: bold; padding-left: 10px; white-space: nowrap; color: #27ae60; position: sticky; left: 0; background: #fdfdfd; z-index: 1;">${s.course}</td>
         <td>${s.count}</td>
         <td>${s.avgRank.toFixed(2)}</td>
-        <td>${s.medianRank.toFixed(2)}</td>
+        <td>${s.medianRank.toFixed(1)}</td>
         <td>${s.rankStdDev.toFixed(2)}</td>
         <td>${(s.top3Rate * 100).toFixed(1)}%</td>
-        <td>${s.avgPoints.toFixed(2)}</td>
+        <td>${s.avgPoints.toFixed(1)}</td>
         <td>${(s.winRate * 100).toFixed(1)}%</td>
-      </tr>
     `;
+
+    // 1位〜24位それぞれの確率（%）と回数をセルに埋め込む
+    for (let i = 1; i <= 24; i++) {
+      const cnt = (s.rankCounts && s.rankCounts[i]) ? s.rankCounts[i] : 0;
+      const pct = s.count > 0 ? ((cnt / s.count) * 100).toFixed(0) : "0";
+      
+      // 出現回数が多いほど緑色の濃さが変わる演出
+      const cellBg = cnt > 0 ? `background-color: rgba(39, 174, 96, ${Math.min((cnt / s.count) * 0.9 + 0.05, 0.45)}); font-weight: bold;` : `color: #bbb;`;
+      
+      html += `<td style="${cellBg} white-space: nowrap; padding: 6px 4px;">${pct}%<br><span style="font-size:10px; color:${cnt > 0 ? '#333' : '#ccc'};">(${cnt})</span></td>`;
+    }
+
+    html += `</tr>`;
   });
 
-  html += `</table>`;
+  html += `</tbody></table></div>`;
+
   const resultEl = document.getElementById("adpCourseStatsResult");
-  if (resultEl) resultEl.innerHTML = html;
+  if (resultEl) {
+    resultEl.innerHTML = html;
+  } else {
+    console.warn("adpCourseStatsResult 要素が見つかりません");
+  }
 }
 
 
+  
 let chartAdpCourseStats = null;
 
 function drawAdpCourseStatsChart(stats) {
@@ -10056,7 +10572,7 @@ function drawAdpCourseStatsChart(stats) {
           backgroundColor: "rgba(255, 159, 64, 0.6)"
         },
         {
-          label: "トップ3率",
+          label: "トップ3率 (%)",
           data: stats.map(s => s.top3Rate * 100),
           backgroundColor: "rgba(255, 99, 132, 0.6)"
         },
@@ -10070,13 +10586,11 @@ function drawAdpCourseStatsChart(stats) {
   });
 }
 
-
 function applyRecentFilter(records, N) {
   if (!N || N === "ALL" || N <= 0) return records;
   const num = Number(N);
   return records.slice(-num);
 }
-
 
 function aggregateCourseStats(records) {
   const grouped = {};
@@ -10093,23 +10607,32 @@ function aggregateCourseStats(records) {
     const count = rs.length;
     if (count === 0) continue;
 
-    const ranks = rs.map(r => r.rank).sort((a, b) => a - b);
+    const ranks = rs.map(r => r.rank).filter(r => r >= 1 && r <= 24).sort((a, b) => a - b);
     const scores = rs.map(r => r.score || 0);
+
+    // 1〜24位までの出現回数を集計する配列（インデックス 0〜24）
+    const rankCounts = Array(25).fill(0);
+    rs.forEach(r => {
+      const rank = Number(r.rank);
+      if (rank >= 1 && rank <= 24) {
+        rankCounts[rank]++;
+      }
+    });
 
     const mid = Math.floor(ranks.length / 2);
     const medianRank =
-      ranks.length % 2 === 0
+      ranks.length % 2 === 0 && ranks.length > 0
         ? (ranks[mid - 1] + ranks[mid]) / 2
-        : ranks[mid];
+        : (ranks[mid] || 0);
 
-    const avgRank = ranks.reduce((a, b) => a + b, 0) / count;
-    const rankStdDev = Math.sqrt(
-      ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / count
-    );
+    const avgRank = ranks.length > 0 ? ranks.reduce((a, b) => a + b, 0) / ranks.length : 0;
+    const rankStdDev = ranks.length > 0 ? Math.sqrt(
+      ranks.reduce((a, r) => a + Math.pow(r - avgRank, 2), 0) / ranks.length
+    ) : 0;
 
-    const top3Rate = rs.filter(r => r.rank <= 3).length / count;
-    const avgPoints = scores.reduce((a, b) => a + b, 0) / count;
-    const winRate = rs.filter(r => r.rank === 1).length / count;
+    const top3Rate = count > 0 ? rs.filter(r => r.rank <= 3).length / count : 0;
+    const avgPoints = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const winRate = count > 0 ? rs.filter(r => r.rank === 1).length / count : 0;
 
     stats.push({
       course,
@@ -10119,16 +10642,15 @@ function aggregateCourseStats(records) {
       medianRank,
       rankStdDev,
       top3Rate,
-      avgPoints
+      avgPoints,
+      rankCounts
     });
   }
 
   return stats;
 }
 
-
 function applyAndOrFilter(records, filters, mode) {
-  // 直近N件フィルターを先に適用
   let targetRecords = applyRecentFilter(records, filters.recent);
 
   if (mode === "AND") {
@@ -10141,7 +10663,6 @@ function applyAndOrFilter(records, filters, mode) {
     });
   }
 
-  // OR モード
   if (mode === "OR") {
     return targetRecords.filter(r => {
       const matchCourse = filters.courses && filters.courses.length > 0 ? filters.courses.includes(r.course) : true;
@@ -10149,7 +10670,6 @@ function applyAndOrFilter(records, filters, mode) {
       const matchTier = filters.tier && filters.tier !== "ALL" ? r.tier === filters.tier : false;
       const matchMode = filters.mode && filters.mode !== "ALL" ? r.mode === filters.mode : false;
 
-      // コース指定が一致していることが大前提で、他の条件のいずれかに引っかかるか
       return matchCourse && (matchSeason || matchTier || matchMode || (!filters.season && !filters.tier && !filters.mode));
     });
   }
@@ -10157,160 +10677,42 @@ function applyAndOrFilter(records, filters, mode) {
   return targetRecords;
 }
 
-
-// ▼ コースセレクトボックスに候補を埋め込む関数（5つすべてに適用）
-// ▼ 5つのセレクトボックスすべてに courseList の内容を自動で埋め込む関数
-function initAdpCourseSelects() {
-  const ids = [
-    "adpCourseSelect1",
-    "adpCourseSelect2",
-    "adpCourseSelect3",
-    "adpCourseSelect4",
-    "adpCourseSelect5"
-  ];
-
-  ids.forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-
-    // 既にオプションが生成されている場合は二重追加を防ぐためクリア
-    sel.innerHTML = '<option value="">-- コース選択 --</option>';
-
-    if (typeof courseList !== 'undefined' && Array.isArray(courseList)) {
-      courseList.forEach(courseName => {
-        const opt = document.createElement("option");
-        opt.value = courseName;
-        opt.textContent = courseName;
-        sel.appendChild(opt);
-      });
-    } else {
-      console.warn("courseList が定義されていないか、配列ではありません。");
-    }
-  });
-
-  console.log("ADPコースセレクトボックスの初期化が完了しました。");
-}
-
-
 function getSelectedWebhookUrl() {
   if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) return null;
   if (typeof webhookList === 'undefined' || !webhookList[activeWebhookIndex]) return null;
   return webhookList[activeWebhookIndex].url;
 }
 
-
 function buildAdpCourseStatsMessage(stats) {
   let lines = [];
-  lines.push("**ADP コース比較結果（最大5コース）**");
+  lines.push("**📊 ADP コース比較結果（最大5コース）**");
 
   stats.forEach(s => {
+    // 上位・中位・下位のカウントを集計
+    let topCount = 0;   // 1〜5位
+    let midCount = 0;   // 6〜15位
+    let lowCount = 0;   // 16〜24位
+
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (i <= 5) topCount += cnt;
+      else if (i <= 15) midCount += cnt;
+      else lowCount += cnt;
+    }
+
+    const topPct = s.count > 0 ? ((topCount / s.count) * 100).toFixed(1) : "0.0";
+    const midPct = s.count > 0 ? ((midCount / s.count) * 100).toFixed(1) : "0.0";
+    const lowPct = s.count > 0 ? ((lowCount / s.count) * 100).toFixed(1) : "0.0";
+
     lines.push(
-      `\n【${s.course}】\n` +
-      `走行数: ${s.count}\n` +
-      `平均順位: ${s.avgRank.toFixed(2)}\n` +
-      `中央値: ${s.medianRank.toFixed(2)}\n` +
-      `勝率(1位): ${(s.winRate * 100).toFixed(1)}%\n` +
-      `平均ポイント: ${s.avgPoints.toFixed(2)}\n`
+      `\n> **${s.course}**\n` +
+      `> 走行数: **${s.count}** | 平均順位: **${s.avgRank.toFixed(2)}位** | 勝率: **${(s.winRate * 100).toFixed(1)}%**\n` +
+      `> 上位率(1-5位): **${topPct}%** (${topCount}回) | 中位率(6-15位): **${midPct}%** (${midCount}回) | 下位率(16-24位): **${lowPct}%** (${lowCount}回)`
     );
   });
 
   return lines.join("\n");
 }
-
-
-// ==========================================
-// ボタンイベントの紐付け
-// ==========================================
-document.getElementById("showAdpCourseStatsBtn").onclick = async () => {
-  try {
-    console.log("「表示」ボタンが押されました");
-
-    const ids = [
-      "adpCourseSelect1",
-      "adpCourseSelect2",
-      "adpCourseSelect3",
-      "adpCourseSelect4",
-      "adpCourseSelect5"
-    ];
-
-    // 選択されたコースを収集
-    const selectedCourses = ids
-      .map(id => {
-        const el = document.getElementById(id);
-        return el ? el.value : "";
-      })
-      .filter(v => v && v !== "");
-
-    console.log("選択されたコース:", selectedCourses);
-
-    if (selectedCourses.length === 0) {
-      return alert("コースを少なくとも1つ選択してください");
-    }
-
-    // レコードの読み込み
-    if (typeof loadADPIndexedDBRecords !== "function") {
-      console.error("loadADPIndexedDBRecords 関数が定義されていません");
-      return alert("データ読み込み関数が見つかりません");
-    }
-
-    const records = await loadADPIndexedDBRecords();
-    console.log("IndexedDBから取得したレコード数:", records ? records.length : 0);
-
-    if (!records || records.length === 0) {
-      return alert("IndexedDBにレースデータが存在しません");
-    }
-
-    // ★ document.getElementById を使って確実に各フィルターの値を取得する
-    const seasonVal = document.getElementById("adpSeasonSelect")?.value || "ALL";
-    const tierVal = document.getElementById("adpTierSelect")?.value || "ALL";
-    const recentVal = document.getElementById("adpRecentSelect")?.value || "ALL";
-    const modeVal = document.getElementById("adpModeSelect")?.value || "ALL";
-    const filterModeVal = document.getElementById("adpFilterModeSelect")?.value || "AND";
-
-    console.log("適用フィルター:", { seasonVal, tierVal, recentVal, modeVal, filterModeVal });
-
-    // フィルター適用
-    const filtered = applyAndOrFilter(records, {
-      season: seasonVal,
-      tier: tierVal,
-      recent: recentVal,
-      courses: selectedCourses,
-      mode: modeVal
-    }, filterModeVal);
-
-    console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
-
-    if (!filtered || filtered.length === 0) {
-      return alert("条件に一致するレースデータがありませんでした");
-    }
-
-    // 統計集計
-    const stats = aggregateCourseStats(filtered);
-    console.log("集計されたstats:", stats);
-
-    // テーブルとグラフの描画
-    if (typeof drawAdpCourseStatsTable === "function") {
-      drawAdpCourseStatsTable(stats);
-    } else {
-      console.warn("drawAdpCourseStatsTable 関数がありません");
-    }
-
-    if (typeof drawAdpCourseStatsChart === "function") {
-      drawAdpCourseStatsChart(stats);
-    } else {
-      console.warn("drawAdpCourseStatsChart 関数がありません");
-    }
-
-    // グローバルに保存（Discord送信用）
-    window.latestAdpCourseStats = stats;
-    console.log("コース統計の表示が正常に完了しました！");
-
-  } catch (err) {
-    console.error("「表示」ボタン処理中にエラーが発生しました:", err);
-    alert("処理中にエラーが発生しました。F12のコンソールをご確認ください。");
-  }
-};
-  
 document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
   if (typeof activeWebhookIndex === 'undefined' || activeWebhookIndex === -1) {
     return alert("Webhook が選択されていません");
@@ -10346,16 +10748,19 @@ document.getElementById("sendAdpCourseStatsBtn").onclick = async () => {
 };
 
 
+
+
+// ==========================================
+// 2. 画像生成：上位(1-5位)、中位(6-15位)、下位(16-24位)のゾーン別にまとめて描画
+// ==========================================
 async function drawAdpCourseImage(stats, backgroundUrl) {
   const canvas = document.getElementById("adpCourseImage");
   const ctx = canvas.getContext("2d");
 
-  // ★ 1. backgroundUrl が渡っていない場合、state から直接拾うようにする
   if (!backgroundUrl && state.adpCourseBackgroundImage) {
     backgroundUrl = state.adpCourseBackgroundImage;
   }
 
-  // ★ 2. data:imageだけでなく blob: URL も許可するように修正する
   const isValidBg =
     backgroundUrl &&
     typeof backgroundUrl === "string" &&
@@ -10365,42 +10770,25 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
     const bg = new Image();
     bg.src = backgroundUrl;
   
-    console.log("背景画像 src セット:", bg.src.slice(0, 50));
-  
     try {
       await bg.decode();
-      console.log("背景 decode 成功");
-  
-      // ★ 3. 変数名を state.adpCourseBg... に合わせる
       ctx.filter =
         `brightness(${Number(state.adpCourseBgBrightness ?? 1)}) ` +
         `contrast(${Number(state.adpCourseBgContrast ?? 1)}) ` +
         `blur(${Number(state.adpCourseBgBlur ?? 0)}px)`;
-  
       ctx.globalAlpha = Number(state.adpCourseBgOpacity ?? 1);
-  
-      console.log("背景 drawImage 実行");
       ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-  
       ctx.filter = "none";
       ctx.globalAlpha = 1;
-  
     } catch (e) {
-      console.error("背景画像 decode に失敗:", e);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  
   } else {
-    console.warn("背景画像が無効:", backgroundUrl);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // (以下、テキスト描画部分はそのまま)
-
-
-  // ★ ここからテキスト描画（既存コード）
   ctx.fillStyle = "white";
   ctx.font = "24px 'Noto Sans JP'";
   ctx.textBaseline = "top";
@@ -10412,49 +10800,47 @@ async function drawAdpCourseImage(stats, backgroundUrl) {
   y += 50;
 
   stats.forEach(s => {
-    ctx.fillText(`【${s.course}】`, x, y); y += 30;
-    ctx.fillText(`走行数: ${s.count}`, x + 20, y); y += 25;
-    ctx.fillText(`平均順位: ${s.avgRank.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`中央値: ${s.medianRank.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`標準偏差: ${s.rankStdDev.toFixed(2)}`, x + 20, y); y += 25;
-    ctx.fillText(`トップ3率: ${(s.top3Rate * 100).toFixed(1)}%`, x + 20, y); y += 25;
-    ctx.fillText(`平均ポイント: ${s.avgPoints.toFixed(2)}`, x + 20, y); y += 40;
+    // コース名と基本スタッツ
+    ctx.font = "bold 20px 'Noto Sans JP'";
+    ctx.fillText(`【${s.course}】 (戦数: ${s.count}回)`, x, y);
+    y += 28;
 
-    if (s.season && Object.keys(s.season).length > 0) {
-      ctx.fillText(`Season別:`, x + 20, y); y += 25;
-      Object.keys(s.season).forEach(se => {
-        const obj = s.season[se];
-        ctx.fillText(
-          `${se}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
-          x + 40,
-          y
-        );
-        y += 25;
-      });
-      y += 10;
+    ctx.font = "16px 'Noto Sans JP'";
+    ctx.fillText(
+      `平均順位: ${s.avgRank.toFixed(2)}位  |  勝率: ${(s.winRate * 100).toFixed(1)}%  |  Top3率: ${(s.top3Rate * 100).toFixed(1)}%  |  平均Pt: ${s.avgPoints.toFixed(1)}`,
+      x + 20,
+      y
+    );
+    y += 26;
+
+    // 上位・中位・下位の割合を計算
+    let topCount = 0;   // 1〜5位
+    let midCount = 0;   // 6〜15位
+    let lowCount = 0;   // 16〜24位
+
+    for (let i = 1; i <= 24; i++) {
+      const cnt = s.rankCounts[i] || 0;
+      if (i <= 5) topCount += cnt;
+      else if (i <= 15) midCount += cnt;
+      else lowCount += cnt;
     }
 
-    if (s.tier && Object.keys(s.tier).length > 0) {
-      ctx.fillText(`Tier別:`, x + 20, y); y += 25;
-      Object.keys(s.tier).forEach(t => {
-        const obj = s.tier[t];
-        ctx.fillText(
-          `${t}: ${obj.count}戦 / 平均${obj.avgRank.toFixed(2)} / 勝率${(obj.winRate * 100).toFixed(1)}%`,
-          x + 40,
-          y
-        );
-        y += 25;
-      });
-      y += 10;
-    }
+    const topPct = s.count > 0 ? ((topCount / s.count) * 100).toFixed(1) : "0.0";
+    const midPct = s.count > 0 ? ((midCount / s.count) * 100).toFixed(1) : "0.0";
+    const lowPct = s.count > 0 ? ((lowCount / s.count) * 100).toFixed(1) : "0.0";
 
-    y += 20;
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText(
+      `上位率 (1〜5位): ${topPct}% (${topCount}回)  |  中位率 (6〜15位): ${midPct}% (${midCount}回)  |  下位率 (16〜24位): ${lowPct}% (${lowCount}回)`,
+      x + 20,
+      y
+    );
+    ctx.fillStyle = "white";
+    y += 42;
   });
 }
 
-
 async function sendAdpCourseImageToDiscord() {
-  // 1. 現在選択されているWebhook URLを取得
   let webhook = "";
   if (typeof getSelectedWebhookUrl === "function") {
     webhook = getSelectedWebhookUrl();
@@ -10467,31 +10853,26 @@ async function sendAdpCourseImageToDiscord() {
     return;
   }
 
-  // ★ 補強: 送信直前に、最新の統計データと背景でキャンバスを確実に再描画しておく
   if (typeof window.latestAdpCourseStats !== "undefined" && window.latestAdpCourseStats && typeof drawAdpCourseImage === "function") {
     const bgUrl = state.adpCourseBackgroundImage || null;
     await drawAdpCourseImage(window.latestAdpCourseStats, bgUrl);
   }
 
-  // 2. キャンバス要素の取得と存在チェック
   const canvas = document.getElementById("adpCourseImage");
   if (!canvas) {
     alert("対象のキャンバスが見つかりません");
     return;
   }
 
-  // 3. キャンバスをBlob（画像データ）に変換
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) {
     alert("画像の生成に失敗しました");
     return;
   }
 
-  // 4. FormDataを作成して画像を添付
   const form = new FormData();
   form.append("file", blob, "adp_course_stats.png");
 
-  // 5. Discordへ送信
   try {
     const response = await fetch(webhook, {
       method: "POST",
@@ -10509,7 +10890,6 @@ async function sendAdpCourseImageToDiscord() {
   }
 }
 
-// ボタンへの紐付け
 const sendBtn = document.getElementById("sendAdpCourseImageBtn");
 if (sendBtn) {
   sendBtn.onclick = async () => {
@@ -10517,10 +10897,7 @@ if (sendBtn) {
   };
 }
 
-
-// ▼ タブ切り替え時に呼ばれる runCourseStats 関数を定義
 function runCourseStats() {
-  // コース統計のビューを更新、または初期描画を行う処理
   if (typeof updateCourseStatsView === "function") {
     updateCourseStatsView();
   } else if (typeof drawAdpCourseStatsTable === "function" && window.latestAdpCourseStats) {
@@ -10528,7 +10905,6 @@ function runCourseStats() {
     drawAdpCourseStatsChart(window.latestAdpCourseStats);
   }
 }
-
 
 // ▼ 読み込み（enabled や liveWebhook の復元に対応）
 function loadWebhookSettings() {
@@ -10846,7 +11222,7 @@ document.getElementById("loadLoungeBtn").onclick = async () => {
 
   const url = `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}`;
 
-  console.log("Fetch URL:", url);
+ 
 
   const html = await fetchWorldHTML(url);
   await parseAndDisplayLoungeStats(html, season);
@@ -11088,7 +11464,7 @@ function sendOverlayWithModalTracking(sourceDataset) {
   if (!isAutoTrackEnabled()) return;
 
   const conditions = getModalCurrentConditions();
-  console.log("★ 自動追尾による条件検出:", conditions);
+
 
   // オーバーレイ設定側のセレクトボックスを自動連動
   const overlayModeSelect = document.getElementById("overlayModeSelect");
@@ -11133,7 +11509,7 @@ function initModalAutoTracking() {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("change", () => {
-        console.log(`[AutoTrack] ${id} の変更を検知しました`);
+       
         sendOverlayWithModalTracking(allRecords);
       });
     }
@@ -11237,14 +11613,14 @@ function getFilteredStatsForOverlay(stats) {
       
       // Step 1: 指定シーズン ＆ 指定Tier
       let exactMatch = filtered.filter(r => String(r.season) === String(targetSeason) && String(r.tier).trim() === String(targetTier).trim());
-      console.log(`[Fallback Step 1] Season: ${targetSeason}, Tier: ${targetTier} -> 件数: ${exactMatch.length} (閾値: ${minCount})`);
+   
 
       if (!shouldFallback || exactMatch.length >= minCount) {
         resultRecords = exactMatch;
       } else {
         // Step 2: 指定シーズン + 1個前のシーズン (同条件Tier)
         const prevSeason = getPrevSeason(targetSeason);
-        console.log(`[Fallback Step 2] 前シーズン計算結果: ${prevSeason}`);
+       
 
         let seasonFallbackMatch = filtered.filter(r => {
           const s = String(r.season);
@@ -11254,21 +11630,20 @@ function getFilteredStatsForOverlay(stats) {
           return (isTarget || isPrev) && isSameTier;
         });
         
-        console.log(`[Fallback Step 2] 前シーズン合算 -> 件数: ${seasonFallbackMatch.length}`);
+       
 
         if (seasonFallbackMatch.length >= minCount) {
           resultRecords = seasonFallbackMatch;
         } else {
           // Step 3: ALLシーズン ＆ 指定Tier（すべてのシーズン＋指定Tier）
           let allSeasonMatch = filtered.filter(r => String(r.tier).trim() === String(targetTier).trim());
-          console.log(`[Fallback Step 3] ALLシーズン同Tier合算 -> 件数: ${allSeasonMatch.length}`);
-
+         
           if (allSeasonMatch.length >= minCount) {
             resultRecords = allSeasonMatch;
           } else {
             // Step 4: それでも足りない場合は ALLシーズン ＆ ALL Tier（モード内の全履歴）
             let allSeasonAllTierMatch = filtered;
-            console.log(`[Fallback Step 4] ALLシーズン・ALL Tier（全履歴）合算 -> 件数: ${allSeasonAllTierMatch.length}`);
+          
 
             resultRecords = allSeasonAllTierMatch;
           }
@@ -11294,7 +11669,7 @@ function getFilteredStatsForOverlay(stats) {
     filtered = filtered.slice(-Number(recent));
   }
 
-  console.log(`[Debug Final] 最終的なオーバーレイ対象件数: ${filtered.length}`);
+
   return { history: filtered };
 }
 
@@ -11345,7 +11720,7 @@ async function sendLoungeOverlay(stats) {
       updatedAt: Date.now()
     };
 
-    console.log("★ 送信用 payload 作成完了:", payload);
+  
 
     // ★ PeerJS 送信
     const userSelect = document.getElementById("overlayUserSelect");
@@ -11374,7 +11749,6 @@ async function sendOverlayOBS(payload) {
         payload: payload
       }
     });
-    console.log("OBS CustomEvent 送信成功:", payload);
   } catch (e) {
     console.error("OBS送信エラー:", e);
   }
@@ -11385,7 +11759,7 @@ async function sendOverlayOBS(payload) {
 // 接続状態の確認 ＆ 切断・再接続を伴う即時反映関数
 // ==========================================
 async function applyOverlayManually() {
-  console.log("[Overlay] 即時反映ボタンが押されました：接続確認・再接続およびデータ送信を開始します...");
+  
 
   try {
     // 1. もし obs オブジェクトが存在し、何らかの理由でフリーズしている可能性を考慮して一度クリーンアップを試みる
@@ -11399,7 +11773,7 @@ async function applyOverlayManually() {
 
     // 2. わずかにウェイトを置いてから再接続を実行（接続関数が非同期の場合は await）
     if (typeof connectOBS === "function") {
-      console.log("[Overlay] OBS WebSocket へ再接続中...");
+    
       // connectOBS が Promise を返す設計であれば await する
       await connectOBS();
     }
@@ -11407,7 +11781,7 @@ async function applyOverlayManually() {
     // 3. 再接続（または接続確認）が完了した後に、最新データを即時送信
     if (typeof allRecords !== 'undefined' && Array.isArray(allRecords)) {
       await sendLoungeOverlay({ history: allRecords });
-      console.log("[Overlay] 接続の再確立 ＆ オーバーレイデータの即時送信が完了しました！");
+    
     } else {
       console.warn("[Overlay] 送信対象の allRecords データが見つかりません");
     }
@@ -11460,7 +11834,7 @@ function initLiveWebhookSetting() {
 // チェックボックス変更時の保存処理
 function toggleLiveWebhookSetting(checkbox) {
   localStorage.setItem('mkadp_live_webhook_enabled', checkbox.checked);
-  console.log(`[Webhook] リアルタイム通知: ${checkbox.checked ? 'ON' : 'OFF'}`);
+ 
 }
 
 // 修正版：送信関数（ONのときだけ実行されるようにガード）
@@ -11772,17 +12146,17 @@ async function sendToCloudflareWorker(payload) {
  */
 async function sendBackupDataViaForm() {
   try {
-    console.log('[Sync] mogiDB からデータを取得してバックアップ送信を開始します...');
+   
 
     // 1. mogiDB から全データを自動取得
     const allRecords = await getAllRecordsFromMogiDB();
 
     if (!Array.isArray(allRecords) || allRecords.length === 0) {
-      console.log('[Sync] DB内に送信可能なレコードがありません。');
+      
       return true;
     }
 
-    console.log(`[Sync] 取得データ ${allRecords.length} 件をフォーム経由で送信します。`);
+    
 
     // 2. 送信データを構築
     const payload = allRecords.map(record => {
@@ -11812,7 +12186,7 @@ async function sendBackupDataViaForm() {
     }
     formEl.submit();
 
-    console.log('✅ バックアップデータの送信リクエストをフォーム経由で実行しました。');
+   
     
     // 同期済みフラグを更新
     await markMogiDBRecordsAsSynced(allRecords);
@@ -11835,20 +12209,18 @@ async function sendBackupDataViaForm() {
  * 定時同期実行メイン関数（環境に応じて fetch とフォーム送信を自動切り替え）
  */
 async function runScheduledSync() {
-  console.log('[Sync] 0:00 / 12:00 定時全データ同期を開始します...');
-  
+ 
   try {
     // 1. mogiDB から全データ取得
     const allRecords = await getAllRecordsFromMogiDB();
 
     if (allRecords.length === 0) {
-      console.log('[Sync] DB内に送信可能なレコードがありません。');
+    
       updateLastSyncTime();
       return;
     }
 
-    console.log(`[Sync] DB内データ ${allRecords.length} 件を取得。バッチ内重複チェックを開始します。`);
-
+  
     // 2. 送信データバッチ内での重複チェック
     const validRecordsToSend = sanitizeAndDeduplicateBatch(allRecords);
 
@@ -11870,11 +12242,11 @@ async function runScheduledSync() {
     let sendSuccess = false;
 
     if (isLocalFile) {
-      console.log('[Sync] ローカル環境 (file://) を検知。フォーム経由で同期します。');
+    
       // フォーム送信版を呼び出し
       sendSuccess = await sendBackupDataViaForm(); 
     } else {
-      console.log('[Sync] Web環境を検知。Cloudflare Workerへfetch送信します。');
+   
       // 通常の fetch 送信
       sendSuccess = await sendToCloudflareWorker(payload);
 
@@ -11886,7 +12258,7 @@ async function runScheduledSync() {
     }
 
     if (sendSuccess) {
-      console.log(`[Sync] 全 ${validRecordsToSend.length} 件のデータの同期処理が正常に完了しました。`);
+    
     } else {
       console.error('[Sync] クラウドへの送信に失敗しました。次回定時で再実行します。');
     }
@@ -11943,11 +12315,11 @@ function checkAndScheduleSync() {
 
   // 前回送信完了時刻が「1つ前の定時時刻」より古い場合、または12時間以上前なら即時実行
   if (lastSync < lastScheduledTime) {
-    console.log('[Sync] 前回の定時（0:00/12:00）同期が未完了のため、即時実行します。');
+   
     runScheduledSync();
   } else {
     const minutesUntilNext = Math.round(msUntilNext / 1000 / 60);
-    console.log(`[Sync] 次回の定時同期（12:00 または 0:00）まで残り ${minutesUntilNext} 分 (${(minutesUntilNext / 60).toFixed(1)} 時間) です。`);
+   
   }
 
   // 次の 12:00 または 0:00 に実行されるようタイマー設定
@@ -11968,7 +12340,7 @@ function initFixedTimeSyncScheduler() {
   // ★ タブが表に戻った時 / スマホのスリープ復帰時に未実行分がないか自動再チェック
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      console.log('[Sync] タブがフォアグラウンドに戻りました。定時同期の状況を確認します。');
+    
       checkAndScheduleSync();
     }
   });
@@ -11976,7 +12348,7 @@ function initFixedTimeSyncScheduler() {
   // モバイルブラウザでのキャッシュ復旧対策
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) {
-      console.log('[Sync] ページ復旧を検知。定時同期の状況を確認します。');
+     
       checkAndScheduleSync();
     }
   });
@@ -11988,7 +12360,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // スクリプト自体が読み込まれているか確認するログ
-console.log("--- コース統計スクリプトが読み込まれました ---");
 
 document.addEventListener("DOMContentLoaded", () => {
   const showBtn = document.getElementById("showAdpCourseStatsBtn");
@@ -11998,10 +12369,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
   
-  console.log("【成功】 #showAdpCourseStatsBtn のイベント紐付けを行います");
+
 
   showBtn.onclick = async () => {
-    console.log("▶「表示」ボタンがクリックされました！");
+ 
 
     try {
       const ids = [
@@ -12019,7 +12390,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .filter(v => v && v !== "");
 
-      console.log("選択されたコース:", selectedCourses);
+     
 
       if (selectedCourses.length === 0) {
         return alert("コースを少なくとも1つ選択してください");
@@ -12030,7 +12401,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const records = await loadADPIndexedDBRecords();
-      console.log("IndexedDBレコード数:", records ? records.length : 0);
+    
 
       if (!records || records.length === 0) {
         return alert("IndexedDBにレースデータが存在しません");
@@ -12050,14 +12421,13 @@ document.addEventListener("DOMContentLoaded", () => {
         mode: modeVal
       }, filterModeVal);
 
-      console.log("フィルター後のレコード数:", filtered ? filtered.length : 0);
+  
 
       if (!filtered || filtered.length === 0) {
         return alert("条件に一致するレコードがありませんでした");
       }
 
       const stats = aggregateCourseStats(filtered);
-      console.log("集計データ:", stats);
 
       if (typeof drawAdpCourseStatsTable === "function") drawAdpCourseStatsTable(stats);
       if (typeof drawAdpCourseStatsChart === "function") drawAdpCourseStatsChart(stats);
@@ -12068,7 +12438,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       window.latestAdpCourseStats = stats;
-      console.log("すべての表示処理が完了しました！");
+     
 
     } catch (err) {
       console.error("「表示」ボタン処理中のエラー:", err);
@@ -12080,113 +12450,1128 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-// ▼ コースメモデータ（localStorageから読み込み、なければ空オブジェクト）
-let courseMemoData = JSON.parse(localStorage.getItem("mk_course_memos") || "{}");
 
 
+// 💡 ご提示いただいた全コースリストをそのまま使用
+const activeCourseList = (typeof courseList !== 'undefined') ? courseList : [
+  "マリオブラザーズサーキット",
+  "トロフィーシティ",
+  "シュポポコースター",
+  "DKうちゅうセンター",
+  "サンサンさばく",
+  "ヘイホーカーニバル",
+  "ワリオスタジアム",
+  "キラーシップ",
+  "DKスノーマウンテン",
+  "ロゼッタてんもんだい",
+  "アイスビルディング",
+  "バニラレイク",
+  "ワリオシップ",
+  "ノコノコビーチ",
+  "SFCノコノコビーチ",
+  "リバーサイドサファリ",
+  "ピーチスタジアム",
+  "ピーチビーチ",
+  "ソルティータウン",
+  "ディノディノジャングル",
+  "ハテナしんでん",
+  "プクプクフォールズ",
+  "ショーニューロード",
+  "おばけシネマ",
+  "おばけぬま1",
+  "おばけぬま2",
+  "おばけぬま3",	
+  "ホネホネツイスター",
+  "モーモーカントリー",
+  "チョコマウンテン",
+  "チョコレーとう1",
+  "チョコレーとう2",
+  "キノピオファクトリー",
+  "クッパキャッスル",
+  "どんぐりツリーハウス",
+  "マリオサーキット",
+  "SFCマリオサーキット1",
+  "SFCマリオサーキット2",
+  "SFCマリオサーキット3",
+  "レインボーロード",
+  // 遷移データ等
+  "マリオブラザーズサーキット→トロフィーシティ",
+  "マリオブラザーズサーキット→シュポポコースター",
+  "マリオブラザーズサーキット→サンサンさばく",
+  "マリオブラザーズサーキット→ヘイホーカーニバル",
+  "マリオブラザーズサーキット→ワリオスタジアム",
+  "マリオブラザーズサーキット→チョコマウンテン",
+  "マリオブラザーズサーキット→キノピオファクトリー",
+  "トロフィーシティ→マリオブラザーズサーキット",
+  "トロフィーシティ→シュポポコースター",
+  "トロフィーシティ→DKうちゅうセンター",
+  "トロフィーシティ→サンサンさばく",
+  "トロフィーシティ→ワリオスタジアム",
+  "トロフィーシティ→ノコノコビーチ",
+  "トロフィーシティ→リバーサイドサファリ",
+  "トロフィーシティ→モーモーカントリー",
+  "トロフィーシティ→チョコマウンテン",
+  "トロフィーシティ→ピーチスタジアム",
+  "シュポポコースター→マリオブラザーズサーキット",
+  "シュポポコースター→トロフィーシティ",
+  "シュポポコースター→DKうちゅうセンター",
+  "シュポポコースター→サンサンさばく",
+  "シュポポコースター→ノコノコビーチ",
+  "シュポポコースター→チョコマウンテン",
+  "DKうちゅうセンター→マリオブラザーズサーキット",
+  "DKうちゅうセンター→トロフィーシティ",
+  "DKうちゅうセンター→シュポポコースター",
+  "DKうちゅうセンター→サンサンさばく",
+  "DKうちゅうセンター→ノコノコビーチ",
+  "DKうちゅうセンター→ピーチスタジアム",
+  "サンサンさばく→マリオブラザーズサーキット",
+  "サンサンさばく→トロフィーシティ",
+  "サンサンさばく→シュポポコースター",
+  "サンサンさばく→ヘイホーカーニバル",
+  "サンサンさばく→ノコノコビーチ",
+  "ヘイホーカーニバル→マリオブラザーズサーキット",
+  "ヘイホーカーニバル→サンサンさばく",
+  "ヘイホーカーニバル→ワリオスタジアム",
+  "ヘイホーカーニバル→キラーシップ",
+  "ヘイホーカーニバル→チョコマウンテン",
+  "ワリオスタジアム→マリオブラザーズサーキット",
+  "ワリオスタジアム→トロフィーシティ",
+  "ワリオスタジアム→ヘイホーカーニバル",
+  "ワリオスタジアム→キラーシップ",
+  "ワリオスタジアム→ホネホネツイスター",
+  "ワリオスタジアム→チョコマウンテン",
+  "ワリオスタジアム→キノピオファクトリー",
+  "ワリオスタジアム→クッパキャッスル",
+  "キラーシップ→ヘイホーカーニバル",
+  "キラーシップ→ワリオスタジアム",
+  "キラーシップ→ホネホネツイスター",
+  "キラーシップ→キノピオファクトリー",
+  "キラーシップ→クッパキャッスル",
+  "DKスノーマウンテン→ロゼッタてんもんだい",
+  "DKスノーマウンテン→アイスビルディング",
+  "DKスノーマウンテン→ワリオシップ",
+  "DKスノーマウンテン→ソルティータウン",
+  "DKスノーマウンテン→プクプクフォールズ",
+  "DKスノーマウンテン→ショーニューロード",
+  "DKスノーマウンテン→モーモーカントリー",
+  "ロゼッタてんもんだい→DKスノーマウンテン",
+  "ロゼッタてんもんだい→アイスビルディング",
+  "ロゼッタてんもんだい→ワリオシップ",
+  "ロゼッタてんもんだい→プクプクフォールズ",
+  "ロゼッタてんもんだい→ショーニューロード",
+  "ロゼッタてんもんだい→おばけシネマ",
+  "ロゼッタてんもんだい→マリオサーキット",
+  "アイスビルディング→DKスノーマウンテン",
+  "アイスビルディング→ロゼッタてんもんだい",
+  "アイスビルディング→ワリオシップ",
+  "アイスビルディング→ソルティータウン",
+  "アイスビルディング→プクプクフォールズ",
+  "アイスビルディング→ショーニューロード",
+  "ワリオシップ→DKスノーマウンテン",
+  "ワリオシップ→ロゼッタてんもんだい",
+  "ワリオシップ→アイスビルディング",
+  "ワリオシップ→ピーチビーチ",
+  "ワリオシップ→ソルティータウン",
+  "ワリオシップ→プクプクフォールズ",
+  "ノコノコビーチ→トロフィーシティ",
+  "ノコノコビーチ→DKうちゅうセンター",
+  "ノコノコビーチ→リバーサイドサファリ",
+  "ノコノコビーチ→ディノディノジャングル",
+  "ノコノコビーチ→ピーチスタジアム",
+  "リバーサイドサファリ→トロフィーシティ",
+  "リバーサイドサファリ→ノコノコビーチ",
+  "リバーサイドサファリ→ピーチビーチ",
+  "リバーサイドサファリ→ソルティータウン",
+  "リバーサイドサファリ→ディノディノジャングル",
+  "リバーサイドサファリ→ハテナしんでん",
+  "リバーサイドサファリ→プクプクフォールズ",
+  "リバーサイドサファリ→ピーチスタジアム",
+  "ピーチビーチ→ワリオシップ",
+  "ピーチビーチ→リバーサイドサファリ",
+  "ピーチビーチ→ソルティータウン",
+  "ピーチビーチ→ディノディノジャングル",
+  "ピーチビーチ→ハテナしんでん",
+  "ソルティータウン→DKスノーマウンテン",
+  "ソルティータウン→ワリオシップ",
+  "ソルティータウン→リバーサイドサファリ",
+  "ソルティータウン→ピーチビーチ",
+  "ソルティータウン→ディノディノジャングル",
+  "ソルティータウン→ハテナしんでん",
+  "ソルティータウン→プクプクフォールズ",
+  "ディノディノジャングル→ノコノコビーチ",
+  "ディノディノジャングル→リバーサイドサファリ",
+  "ディノディノジャングル→ピーチビーチ",
+  "ディノディノジャングル→ソルティータウン",
+  "ディノディノジャングル→ハテナしんでん",
+  "ハテナしんでん→ノコノコビーチ",
+  "ハテナしんでん→リバーサイドサファリ",
+  "ハテナしんでん→ピーチビーチ",
+  "ハテナしんでん→ソルティータウン",
+  "ハテナしんでん→ディノディノジャングル",
+  "プクプクフォールズ→DKスノーマウンテン",
+  "プクプクフォールズ→ロゼッタてんもんだい",
+  "プクプクフォールズ→ワリオシップ",
+  "プクプクフォールズ→リバーサイドサファリ",
+  "プクプクフォールズ→ソルティータウン",
+  "プクプクフォールズ→ショーニューロード",
+  "プクプクフォールズ→モーモーカントリー",
+  "プクプクフォールズ→チョコマウンテン",
+  "プクプクフォールズ→ピーチスタジアム",
+  "ショーニューロード→DKスノーマウンテン",
+  "ショーニューロード→ロゼッタてんもんだい",
+  "ショーニューロード→アイスビルディング",
+  "ショーニューロード→プクプクフォールズ",
+  "ショーニューロード→おばけシネマ",
+  "ショーニューロード→モーモーカントリー",
+  "ショーニューロード→キノピオファクトリー",
+  "ショーニューロード→どんぐりツリーハウス",
+  "ショーニューロード→マリオサーキット",
+  "おばけシネマ→ロゼッタてんもんだい",
+  "おばけシネマ→ショーニューロード",
+  "おばけシネマ→ホネホネツイスター",
+  "おばけシネマ→どんぐりツリーハウス",
+  "おばけシネマ→マリオサーキット",
+  "ホネホネツイスター→ワリオスタジアム",
+  "ホネホネツイスター→キラーシップ",
+  "ホネホネツイスター→おばけシネマ",
+  "ホネホネツイスター→モーモーカントリー",
+  "ホネホネツイスター→キノピオファクトリー",
+  "ホネホネツイスター→クッパキャッスル",
+  "ホネホネツイスター→どんぐりツリーハウス",
+  "ホネホネツイスター→マリオサーキット",
+  "モーモーカントリー→トロフィーシティ",
+  "モーモーカントリー→DKスノーマウンテン",
+  "モーモーカントリー→プクプクフォールズ",
+  "モーモーカントリー→ショーニューロード",
+  "モーモーカントリー→ホネホネツイスター",
+  "モーモーカントリー→チョコマウンテン",
+  "モーモーカントリー→キノピオファクトリー",
+  "モーモーカントリー→マリオサーキット",
+  "モーモーカントリー→ピーチスタジアム",
+  "チョコマウンテン→マリオブラザーズサーキット",
+  "チョコマウンテン→トロフィーシティ",
+  "チョコマウンテン→シュポポコースター",
+  "チョコマウンテン→ヘイホーカーニバル",
+  "チョコマウンテン→ワリオスタジアム",
+  "チョコマウンテン→プクプクフォールズ",
+  "チョコマウンテン→モーモーカントリー",
+  "チョコマウンテン→キノピオファクトリー",
+  "チョコマウンテン→クッパキャッスル",
+  "チョコマウンテン→ピーチスタジアム",
+  "キノピオファクトリー→マリオブラザーズサーキット",
+  "キノピオファクトリー→ワリオスタジアム",
+  "キノピオファクトリー→キラーシップ",
+  "キノピオファクトリー→ショーニューロード",
+  "キノピオファクトリー→ホネホネツイスター",
+  "キノピオファクトリー→モーモーカントリー",
+  "キノピオファクトリー→チョコマウンテン",
+  "キノピオファクトリー→クッパキャッスル",
+  "キノピオファクトリー→どんぐりツリーハウス",
+  "キノピオファクトリー→マリオサーキット",
+  "キノピオファクトリー→ピーチスタジアム",
+  "クッパキャッスル→ワリオスタジアム",
+  "クッパキャッスル→キラーシップ",
+  "クッパキャッスル→ホネホネツイスター",
+  "クッパキャッスル→チョコマウンテン",
+  "クッパキャッスル→キノピオファクトリー",
+  "クッパキャッスル→マリオサーキット",
+  "どんぐりツリーハウス→ショーニューロード",
+  "どんぐりツリーハウス→おばけシネマ",
+  "どんぐりツリーハウス→ホネホネツイスター",
+  "どんぐりツリーハウス→キノピオファクトリー",
+  "どんぐりツリーハウス→マリオサーキット",
+  "マリオサーキット→ロゼッタてんもんだい",
+  "マリオサーキット→ショーニューロード",
+  "マリオサーキット→おばけシネマ",
+  "マリオサーキット→ホネホネツイスター",
+  "マリオサーキット→モーモーカントリー",
+  "マリオサーキット→キノピオファクトリー",
+  "マリオサーキット→クッパキャッスル",
+  "マリオサーキット→どんぐりツリーハウス",
+  "マリオサーキット→ピーチスタジアム",
+  "ピーチスタジアム→トロフィーシティ",
+  "ピーチスタジアム→ノコノコビーチ",
+  "ピーチスタジアム→リバーサイドサファリ",
+  "ピーチスタジアム→プクプクフォールズ",
+  "ピーチスタジアム→モーモーカントリー",
+  "ピーチスタジアム→チョコマウンテン",
+  "ピーチスタジアム→キノピオファクトリー",
+  "ピーチスタジアム→レインボーロード"
+];
+
+
+
+// ▼ 変数の重複衝突を防ぐため、コースメモ専用のユニークな定数名に変更
+const MK_MEMO_DB_NAME = "MKCourseMemoDB";
+const MK_MEMO_STORE_NAME = "memos";
+const MK_MEMO_DB_VERSION = 1;
+
+// コースメモデータ（localStorageのバックアップ等が必要な場合はここから移行）
+let courseMemoData = {};
+
+/**
+ * コースメモ専用 IndexedDB の接続を開く
+ */
+function openCourseMemoDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(MK_MEMO_DB_NAME, MK_MEMO_DB_VERSION);
+    
+    request.onerror = (event) => {
+      console.error("IndexedDB open error:", event.target.error);
+      reject(event.target.error);
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(MK_MEMO_STORE_NAME)) {
+        db.createObjectStore(MK_MEMO_STORE_NAME);
+      }
+    };
+  });
+}
+
+/**
+ * 指定したコースのメモをIndexedDBから取得
+ */
+/**
+ * モーダルのモード（lounge, tournament, nora）から、メモ用の2分類キー（nora または other）を判定する
+ */
+function getMemoCategory(mode) {
+  return (mode === "nora") ? "nora" : "other";
+}
+
+/**
+ * 指定したカテゴリー（nora / other）とコース名のキーを生成
+ */
+function getMemoStorageKey(category, courseName) {
+  return `${category}_${courseName}`;
+}
+
+/**
+ * コースメモをIndexedDBから取得する
+ */
+async function loadCourseMemo(category, courseName) {
+  try {
+    const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
+      const request = store.get(storageKey);
+
+      request.onsuccess = () => resolve(request.result || "");
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("メモの読み込みに失敗しました:", e);
+    return "";
+  }
+}
+
+/**
+ * コースメモをIndexedDBに保存する
+ */
+async function saveCourseMemo(category, courseName, memoText) {
+  try {
+    const db = await openCourseMemoDB();
+    const storageKey = getMemoStorageKey(category, courseName);
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(MK_MEMO_STORE_NAME);
+      const request = store.put(memoText, storageKey);
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("メモの保存に失敗しました:", e);
+    return false;
+  }
+}
 
 // 起動時の初期化
-document.addEventListener("DOMContentLoaded", () => {
-  initCourseMemoTab();
-  setupModalMemoSync();
+document.addEventListener("DOMContentLoaded", async () => {
+  // ▼ refreshAllAnalysisViews が未定義の場合のエラーを安全にガード
+  if (typeof refreshAllAnalysisViews === 'undefined') {
+    window.refreshAllAnalysisViews = function() {
+      console.warn("refreshAllAnalysisViews は定義されていません");
+    };
+  }
+
+  // コースメモタブの初期化を実行
+  await initCourseMemoTabIndexedDB();
 });
 
 /**
- * コースメモタブの初期化
+ * コースメモタブの初期化（IndexedDB対応版）
  */
-function initCourseMemoTab() {
+function initCourseMemoTabIndexedDB() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
   const titleEl = document.getElementById("selectedCourseTitle");
   const saveBtn = document.getElementById("saveCourseMemoBtn");
+  const memoCategorySelect = document.getElementById("memoCategorySelect"); // カテゴリ選択
 
   if (!selectEl) return;
 
-  // セレクトボックスにコース一覧を挿入
+  const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
+
+  // コース一覧の挿入
   selectEl.innerHTML = "";
-  COURSE_LIST.forEach(course => {
+  targetCourseList.forEach(course => {
     const opt = document.createElement("option");
     opt.value = course;
     opt.textContent = course;
     selectEl.appendChild(opt);
   });
 
-  // リスト選択時のイベント
-  selectEl.onchange = () => {
+  // 現在選択されているカテゴリを取得（nora または other）
+  const getCurrentCategory = () => memoCategorySelect ? memoCategorySelect.value : "other";
+
+  // メモをロードしてテキストエリアに反映
+  const loadAndShowMemo = async () => {
     const selectedCourse = selectEl.value;
-    titleEl.textContent = selectedCourse;
-    textareaEl.value = courseMemoData[selectedCourse] || "";
-  };
+    const currentCategory = getCurrentCategory();
+    if (!selectedCourse) return;
 
-  // 初期選択として最初のコースを表示
-  if (COURSE_LIST.length > 0) {
-    selectEl.value = COURSE_LIST[0];
-    titleEl.textContent = COURSE_LIST[0];
-    textareaEl.value = courseMemoData[COURSE_LIST[0]] || "";
-  }
-
-  // 「メモを保存」ボタンの処理
-  saveBtn.onclick = () => {
-    const selectedCourse = selectEl.value;
-    if (!selectedCourse) return alert("コースを選択してください");
-
-    courseMemoData[selectedCourse] = textareaEl.value;
-    localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
-
-    // 保存成功のフィードバック表示
-    const statusEl = document.getElementById("memoSaveStatus");
-    if (statusEl) {
-      statusEl.style.display = "inline";
-      setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+    const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
+    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
+    textareaEl.value = "読み込み中...";
+    
+    const memo = await loadCourseMemo(currentCategory, selectedCourse);
+    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory) {
+      textareaEl.value = memo;
     }
   };
-}
 
-/**
- * レース登録モーダルとメモの同期処理
- */
-function setupModalMemoSync() {
-  // モーダル内のコース選択セレクトボックス（既存の要素IDに合わせて調整してください）
-  const raceCourseSelect = document.getElementById("raceCourseSelect") || document.getElementById("modalCourseSelect");
-  const modalMemoTextarea = document.getElementById("modalCourseMemoTextarea");
-  const modalCourseName = document.getElementById("modalCourseName");
-  const saveModalMemoBtn = document.getElementById("saveModalMemoBtn");
-
-  if (!modalMemoTextarea) return;
-
-  // モーダル側のコース選択が変更されたとき（またはモーダルが開かれた時）に呼び出す関数
-  window.updateModalCourseMemo = function(courseName) {
-    if (modalCourseName) modalCourseName.textContent = courseName || "コース未選択";
-    if (modalMemoTextarea) modalMemoTextarea.value = courseMemoData[courseName] || "";
-  };
-
-  // もしモーダル内にコース選択プルダウンがある場合は連動させる
-  if (raceCourseSelect) {
-    raceCourseSelect.addEventListener("change", () => {
-      window.updateModalCourseMemo(raceCourseSelect.value);
-    });
+  selectEl.onchange = loadAndShowMemo;
+  if (memoCategorySelect) {
+    memoCategorySelect.onchange = loadAndShowMemo;
   }
 
-  // モーダル内からの「簡易保存」ボタン処理
-  if (saveModalMemoBtn) {
-    saveModalMemoBtn.onclick = () => {
-      // 選択中のコース名を取得（プルダウンまたは表示要素から）
-      const course = raceCourseSelect ? raceCourseSelect.value : (modalCourseName ? modalCourseName.textContent : "");
-      if (!course || course === "コース未選択") return alert("コースが選択されていません");
+  // 初期選択
+  if (targetCourseList.length > 0) {
+    selectEl.value = targetCourseList[0];
+    loadAndShowMemo();
+  }
 
-      courseMemoData[course] = modalMemoTextarea.value;
-      localStorage.setItem("mk_course_memos", JSON.stringify(courseMemoData));
+  // 保存ボタン
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      const selectedCourse = selectEl.value;
+      const currentCategory = getCurrentCategory();
+      if (!selectedCourse) return alert("コースを選択してください");
 
-      // メモタブ側が開いていた場合に備えてテキストエリアを同期
-      const mainSelect = document.getElementById("memoCourseSelect");
-      if (mainSelect && mainSelect.value === course) {
-        document.getElementById("courseMemoTextarea").value = modalMemoTextarea.value;
+      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl.value);
+      if (success) {
+        const statusEl = document.getElementById("memoSaveStatus");
+        if (statusEl) {
+          statusEl.style.display = "inline";
+          setTimeout(() => { statusEl.style.display = "none"; }, 2000);
+        }
+      } else {
+        alert("メモの保存に失敗しました");
       }
-
-      alert("コースメモを更新しました");
     };
   }
 }
+
+
+// ==========================================
+// MMR Matrix 計算 & UIコントローラー（多言語対応版）
+// ==========================================
+
+function isEn() {
+  return typeof currentLang !== 'undefined' && currentLang === 'en';
+}
+
+function formatOrdinalEn(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const formatSelect = document.getElementById('formatSelect');
+  const mogiHeaderInput = document.getElementById('mogiHeaderInput');
+  const playerSelect = document.getElementById('playerSelect');
+  const matrixResultOutput = document.getElementById('matrixResultOutput');
+
+  const scoreboardInput = document.getElementById('scoreboardInput');
+  const mmrTableOutput = document.getElementById('mmrTableOutput');
+  const calculateButton = document.getElementById('calculateButton');
+  const copyButton = document.getElementById('copyButton');
+  const mogiHeaderStatusBar = document.getElementById('mogiHeaderStatusBar');
+  const mmrTableStatusBar = document.getElementById('mmrTableStatusBar');
+  
+  const sendMmrDiscordBtn = document.getElementById('sendMmrDiscordBtn');       
+  const sendMatrixDiscordBtn = document.getElementById('sendMatrixDiscordBtn'); 
+
+  if (!mogiHeaderInput) return;
+
+  const FORMAT_SETTINGS = {
+    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500, labelJa: 'FFA (24人 個人戦)', labelEn: 'FFA (24p Solo)' },
+    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500, labelJa: '2v2 (12チーム)',    labelEn: '2v2 (12 Teams)' },
+    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100, labelJa: '3v3 (8チーム)',    labelEn: '3v3 (8 Teams)' },
+    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800, labelJa: '4v4 (6チーム)',    labelEn: '4v4 (6 Teams)' },
+    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650, labelJa: '6v6 (4チーム)',    labelEn: '6v6 (4 Teams)' },
+    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550, labelJa: '8v8 (3チーム)',    labelEn: '8v8 (3 Teams)' },
+    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500, labelJa: '12v12 (2チーム)',  labelEn: '12v12 (2 Teams)' }
+  };
+
+  function getActiveWebhookUrl() {
+    let webhook = "";
+    if (typeof getSelectedWebhookUrl === "function") {
+      webhook = getSelectedWebhookUrl();
+    } else if (typeof webhookList !== 'undefined' && typeof activeWebhookIndex !== 'undefined' && activeWebhookIndex !== -1) {
+      webhook = webhookList[activeWebhookIndex]?.url || "";
+    }
+    return webhook;
+  }
+
+  formatSelect?.addEventListener('change', () => {
+    updatePlayerDropdown();
+  });
+
+  // ▼ 3. 確定結果のDiscord送信
+  if (sendMmrDiscordBtn) {
+    sendMmrDiscordBtn.onclick = async () => {
+      const webhook = getActiveWebhookUrl();
+      if (!webhook) {
+        return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
+      }
+
+      if (!mmrTableOutput || !mmrTableOutput.value.trim()) {
+        return alert(isEn() ? "No calculation result to send. Please calculate first." : "送信する計算結果がありません。先に Calculate を実行してください。");
+      }
+
+      const payload = { content: mmrTableOutput.value };
+
+      try {
+        sendMmrDiscordBtn.disabled = true;
+        sendMmrDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert(isEn() ? "Calculation results sent to Discord!" : "Discord に計算結果を送信しました！");
+        } else {
+          alert("Failed to send (Status: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMmrDiscordBtn.disabled = false;
+        sendMmrDiscordBtn.textContent = isEn() ? "Send to Discord" : "計算結果をDiscordに送信";
+      }
+    };
+  }
+
+  // ▼ 2. 予測早見表のDiscord送信
+  if (sendMatrixDiscordBtn) {
+    sendMatrixDiscordBtn.onclick = async () => {
+      const webhook = getActiveWebhookUrl();
+      if (!webhook) {
+        return alert(isEn() ? "Webhook is not selected." : "Webhook が選択されていません");
+      }
+
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert(isEn() ? "No matrix result to send. Please select a team first." : "送信する早見表がありません。先にチームを選択してください。");
+      }
+
+      const payload = {
+        content: "```\n" + matrixResultOutput.value + "\n```"
+      };
+
+      try {
+        sendMatrixDiscordBtn.disabled = true;
+        sendMatrixDiscordBtn.textContent = isEn() ? "Sending..." : "送信中...";
+
+        const response = await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok || response.status === 204) {
+          alert(isEn() ? "Matrix result sent to Discord!" : "Discord に予測早見表を送信しました！");
+        } else {
+          alert("Failed to send (Status: " + response.status + ")");
+        }
+      } catch (error) {
+        console.error("Webhook送信エラー:", error);
+        alert(isEn() ? "An error occurred while sending to Discord." : "Discordへの送信中にエラーが発生しました");
+      } finally {
+        sendMatrixDiscordBtn.disabled = false;
+        sendMatrixDiscordBtn.textContent = isEn() ? "Send Matrix to Discord" : "予測早見表をDiscordに送信";
+      }
+    };
+  }
+
+  // --- 計算実行 ---
+  if (calculateButton) {
+    calculateButton.addEventListener('click', () => {
+      const selectedFormat = formatSelect ? formatSelect.value : 'ffa';
+      let processTextResult = processText(mogiHeaderInput.value, scoreboardInput.value, selectedFormat);
+      if (!processTextResult.ok) {
+        mmrTableOutput.value = isEn()
+          ? "Error: Please check input data or player count (24 players required)."
+          : "エラー: 入力データまたはプレイヤー人数(24人)を確認してください。";
+        return;
+      }
+      mmrTableOutput.value = getMmrChangeSummaryText(processTextResult.playersInfo);
+    });
+  }
+
+  if (copyButton) {
+    copyButton.addEventListener('click', async () => {
+      if (mmrTableOutput.value === "") return;
+      await navigator.clipboard.writeText(mmrTableOutput.value);
+    });
+  }
+
+  mogiHeaderInput.addEventListener('input', () => {
+    setStatus(mogiHeaderStatusBar, "", true);
+    updatePlayerDropdown();
+  });
+
+  function updatePlayerDropdown() {
+    const headerList = parseHeaderInputList(mogiHeaderInput.value);
+    playerSelect.innerHTML = "";
+    
+    if (headerList.length === 0) {
+      let opt = document.createElement('option');
+      opt.value = "";
+      opt.textContent = isEn() ? "(Player list not loaded)" : "(プレイヤーリストが読み込まれていません)";
+      playerSelect.appendChild(opt);
+      playerSelect.disabled = true;
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    const formatKey = formatSelect ? formatSelect.value : 'ffa';
+    const config = FORMAT_SETTINGS[formatKey] || FORMAT_SETTINGS['ffa'];
+
+    let defaultOpt = document.createElement('option');
+    defaultOpt.value = "";
+    if (config.teamSize > 1) {
+      defaultOpt.textContent = isEn() ? "-- Select a Team --" : "-- チームを選択してください --";
+    } else {
+      defaultOpt.textContent = isEn() ? "-- Select a Player --" : "-- プレイヤーを選択してください --";
+    }
+    playerSelect.appendChild(defaultOpt);
+
+    if (config.teamSize > 1) {
+      for (let teamId = 1; teamId <= config.totalTeams; teamId++) {
+        let teamMembers = headerList.filter(item => item.teamId === teamId);
+        let memberNames = teamMembers.map(m => `${m.name} (${m.mmr})`).join(' & ');
+        let avgMmr = teamMembers.length > 0 ? Math.round(teamMembers.reduce((sum, m) => sum + m.mmr, 0) / teamMembers.length) : 0;
+
+        let opt = document.createElement('option');
+        opt.value = `team_${teamId}`;
+        opt.textContent = isEn()
+          ? `Team ${teamId}: ${memberNames} [Avg ${avgMmr}]`
+          : `Team ${teamId}: ${memberNames} [平均 ${avgMmr}]`;
+        playerSelect.appendChild(opt);
+      }
+    } else {
+      headerList.forEach(item => {
+        let opt = document.createElement('option');
+        opt.value = `player_${item.name}`;
+        opt.textContent = `${item.index}. ${item.name} (${item.mmr} MMR)`;
+        playerSelect.appendChild(opt);
+      });
+    }
+
+    playerSelect.disabled = false;
+  }
+
+  playerSelect.addEventListener('change', () => {
+    const selectedVal = playerSelect.value;
+    if (!selectedVal) {
+      matrixResultOutput.value = "";
+      return;
+    }
+
+    const formatKey = formatSelect ? formatSelect.value : 'ffa';
+    const config = FORMAT_SETTINGS[formatKey] || FORMAT_SETTINGS['ffa'];
+    const headerList = parseHeaderInputList(mogiHeaderInput.value);
+
+    if (headerList.length !== 24) {
+      matrixResultOutput.value = isEn()
+        ? "Error: Player list does not contain exactly 24 players."
+        : "エラー: プレイヤーリストが24人分正しく読み込めていません。";
+      return;
+    }
+
+    let targetMembers = [];
+
+    if (selectedVal.startsWith('team_')) {
+      const teamId = Number(selectedVal.split('_')[1]);
+      targetMembers = headerList.filter(item => item.teamId === teamId);
+    } else if (selectedVal.startsWith('player_')) {
+      const playerName = selectedVal.replace('player_', '');
+      const member = headerList.find(m => m.name === playerName);
+      if (member) targetMembers.push(member);
+    }
+
+    if (targetMembers.length === 0) return;
+
+    let teamAvgMmrs = new Map();
+    if (config.teamSize > 1) {
+      for (let tId = 1; tId <= config.totalTeams; tId++) {
+        let members = headerList.filter(m => m.teamId === tId);
+        if (members.length > 0) {
+          let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+          teamAvgMmrs.set(tId, avg);
+        }
+      }
+    }
+
+    let fullOutputText = "";
+    const isTeamMode = (config.teamSize > 1);
+    const fmtLabel = isEn() ? config.labelEn : config.labelJa;
+
+    targetMembers.forEach((targetItem, memberIdx) => {
+      const selectedName = targetItem.name;
+      const targetMmr = targetItem.mmr;
+      const targetTeamId = targetItem.teamId;
+
+      let opponentMmrs = [];
+      if (isTeamMode) {
+        for (let tId = 1; tId <= config.totalTeams; tId++) {
+          if (tId !== targetTeamId) {
+            opponentMmrs.push(teamAvgMmrs.get(tId));
+          }
+        }
+      } else {
+        headerList.forEach(item => {
+          if (item.name !== selectedName) {
+            opponentMmrs.push(item.mmr);
+          }
+        });
+      }
+
+      opponentMmrs.sort((a, b) => a - b);
+
+      if (memberIdx > 0) fullOutputText += "\n" + "=".repeat(60) + "\n\n";
+
+      // ヘッダーおよびカラム構成の切り替え（多言語対応）
+      if (isTeamMode) {
+        fullOutputText += isEn()
+          ? `=== [Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nTeam Place | Expected Range\n----------------------------------------\n`
+          : `=== 【Team ${targetTeamId} / ${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\nチーム順位 | 予想変動レンジ\n----------------------------------------\n`;
+      } else {
+        fullOutputText += isEn()
+          ? `=== [${selectedName} (${targetMmr} MMR)] ${fmtLabel} Matrix ===\nPlace      | Expected Range            | Est. New MMR\n----------------------------------------------------------\n`
+          : `=== 【${selectedName} (${targetMmr} MMR)】 ${fmtLabel} 早見表 ===\n順位       | 予想変動レンジ            | 変動後MMR目安\n----------------------------------------------------------\n`;
+      }
+
+      const numTeams = config.totalTeams;
+      const totalOpponents = opponentMmrs.length;
+
+      for (let place = 1; place <= numTeams; place++) {
+        let winningCount = isTeamMode ? (numTeams - place) : (24 - place);
+        let losingCount = isTeamMode ? (place - 1) : (place - 1);
+
+        let realisticMaxChange = 0;
+        let realisticMinChange = 0;
+
+        for (let i = 0; i < totalOpponents; i++) {
+          const oppMmr = opponentMmrs[i];
+
+          if (i >= losingCount) {
+            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
+          } else {
+            realisticMaxChange += calculateMmrAdjustment(targetMmr, oppMmr, -1, config);
+          }
+
+          if (i < winningCount) {
+            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, 1, config);
+          } else {
+            realisticMinChange += calculateMmrAdjustment(targetMmr, oppMmr, -1, config);
+          }
+        }
+
+        let valMax = Math.round(Math.max(realisticMaxChange, realisticMinChange));
+        let valMin = Math.round(Math.min(realisticMaxChange, realisticMinChange));
+
+        const maxText = (valMax > 0 ? "+" : "") + valMax;
+        const minText = (valMin > 0 ? "+" : "") + valMin;
+
+        const placeStr = isEn()
+          ? formatOrdinalEn(place).padStart(4, ' ')
+          : String(place).padStart(2, ' ') + "位";
+
+        const rangeStr = (valMin === valMax) 
+          ? `${maxText.padStart(5, ' ')} MMR` 
+          : `${minText.padStart(5, ' ')} ～ ${maxText.padStart(5, ' ')} MMR`;
+
+        if (isTeamMode) {
+          fullOutputText += `${placeStr.padEnd(10, ' ')} | ${rangeStr}\n`;
+        } else {
+          const finalMaxMmr = Math.max(targetMmr + valMax, 0);
+          const finalMinMmr = Math.max(targetMmr + valMin, 0);
+          const afterMmrStr = (finalMinMmr === finalMaxMmr) ? `${finalMaxMmr}` : `${finalMinMmr} ～ ${finalMaxMmr}`;
+          fullOutputText += `${placeStr.padEnd(11, ' ')} | ${rangeStr.padEnd(24, ' ')} | ${afterMmrStr}\n`;
+        }
+      }
+    });
+
+    matrixResultOutput.value = fullOutputText;
+  });
+
+  document.querySelectorAll('.clear-overlay').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const textarea = document.getElementById(targetId);
+      if (textarea) {
+        textarea.value = '';
+        textarea.focus();
+        if (targetId === 'mogiHeaderInput') updatePlayerDropdown();
+      }
+    });
+  });
+});
+
+// ==========================================
+// パーサー・計算コアロジック（そのまま維持）
+// ==========================================
+
+function setStatus(target, message, isPositive) {
+  if (!target) return;
+  target.textContent = message;
+  if (isPositive) {
+    target.classList.remove("error");
+  } else {
+    target.classList.add("error");
+  }
+}
+
+function parseHeaderInputList(input) {
+  let result = [];
+  let linesArr = input.split(/\r?\n/);
+  let globalIndex = 1;
+  let currentTeamId = 1;
+  let currentTeamCount = 0;
+
+  const formatSelect = document.getElementById('formatSelect');
+  const formatKey = formatSelect ? formatSelect.value : 'ffa';
+  const teamSizes = { 'ffa': 1, '2v2': 2, '3v3': 3, '4v4': 4, '6v6': 6, '8v8': 8, '12v12': 12 };
+  const teamSize = teamSizes[formatKey] || 1;
+
+  for (const line of linesArr) {
+    let match = line.match(/^\s*`?(\d+)\.`?\s*(.+?)\s*\((\d+)\s*MMR\)\s*$/i);
+    if (match) {
+      let namesPart = match[2].replace(/\\/g, "").trim();
+      let mmrVal = Number(match[3]);
+      let names = namesPart.split(',').map(n => n.trim()).filter(n => n.length > 0);
+
+      for (const name of names) {
+        result.push({
+          index: globalIndex++,
+          name: name,
+          mmr: mmrVal,
+          teamId: currentTeamId
+        });
+        currentTeamCount++;
+        if (currentTeamCount >= teamSize) {
+          currentTeamId++;
+          currentTeamCount = 0;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function parseHeaderInput(input) {
+  let nameMmrMap = new Map();
+  let list = parseHeaderInputList(input);
+  for (const item of list) {
+    nameMmrMap.set(item.name, item.mmr);
+  }
+  return nameMmrMap;
+}
+
+function parseScoreboardInput(input) {
+  let nameScoreMap = new Map();
+  let linesArr = input.split(/\r?\n/);
+
+  for (const line of linesArr) {
+    let cleanLine = line.trim();
+    if (!cleanLine) continue;
+
+    let matchTeamFormat = cleanLine.match(/^(.+?)\s*\[.*?\]\s*(\d+)(\s*\+\s*(\d+))?$/);
+    if (matchTeamFormat) {
+      let name = matchTeamFormat[1].replace(/\\/g, "").trim();
+      let score = Number(matchTeamFormat[2]);
+      if (matchTeamFormat[4]) {
+        score += Number(matchTeamFormat[4]);
+      }
+      nameScoreMap.set(name, score);
+      continue;
+    }
+
+    let matchFFA = cleanLine.match(/^\s*([^\+]+?)\s+(\d+)(\s*\+\s*(\d+))?\s*$/);
+    if (matchFFA) {
+      let name = matchFFA[1].replace(/\\/g, "").trim();
+      let score = Number(matchFFA[2]);
+      if (matchFFA[4]) {
+        score += Number(matchFFA[4]);
+      }
+      nameScoreMap.set(name, score);
+    }
+  }
+  return nameScoreMap;
+}
+
+function calculateMmrAdjustment(mmrA, mmrB, decision, config) {
+  const cap = config.C;
+  const baseline = config.D;
+  const scaling_factor = config.P;
+  const logistic_base = 11;
+
+  if (decision === 0) {
+    return Math.sign(mmrB - mmrA) * (cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.abs(mmrB - mmrA) / scaling_factor)) - cap / 3);
+  } else {
+    return Math.sign(decision) * cap / (1 + (cap / baseline - 1) * Math.pow(logistic_base, -Math.sign(decision) * (mmrB - mmrA) / scaling_factor));
+  }
+}
+
+function processText(a, b, format = 'ffa') {
+  const FORMAT_SETTINGS = {
+    'ffa':   { teamSize: 1,  totalTeams: 24, C: 30,  D: 10, P: 9500 },
+    '2v2':   { teamSize: 2,  totalTeams: 12, C: 60,  D: 20, P: 5500 },
+    '3v3':   { teamSize: 3,  totalTeams: 8,  C: 90,  D: 30, P: 5100 },
+    '4v4':   { teamSize: 4,  totalTeams: 6,  C: 120, D: 40, P: 4800 },
+    '6v6':   { teamSize: 6,  totalTeams: 4,  C: 180, D: 60, P: 4650 },
+    '8v8':   { teamSize: 8,  totalTeams: 3,  C: 240, D: 80, P: 4550 },
+    '12v12': { teamSize: 12, totalTeams: 2,  C: 300, D: 100,P: 4500 }
+  };
+  const config = FORMAT_SETTINGS[format] || FORMAT_SETTINGS['ffa'];
+
+  let headerList = parseHeaderInputList(a);
+  let nameMmrMap = parseHeaderInput(a);
+  let nameScoreMap = parseScoreboardInput(b);
+  let playersInfo = [];
+  let mismatchedNames = [];
+
+  if (headerList.length !== 24 || nameScoreMap.size !== 24) return {ok: false};
+
+  for (const [name] of nameScoreMap) {
+    if (!nameMmrMap.has(name)) mismatchedNames.push(name);
+  }
+  if (mismatchedNames.length > 0) return {ok: false};
+
+  let playerTeamMap = new Map();
+  let teamScoreMap = new Map();
+  let teamAvgMmrMap = new Map();
+
+  headerList.forEach((item) => {
+    playerTeamMap.set(item.name, item.teamId);
+    const score = nameScoreMap.get(item.name) || 0;
+    teamScoreMap.set(item.teamId, (teamScoreMap.get(item.teamId) || 0) + score);
+  });
+
+  if (config.teamSize > 1) {
+    for (let tId = 1; tId <= config.totalTeams; tId++) {
+      let members = headerList.filter(m => m.teamId === tId);
+      if (members.length > 0) {
+        let avg = members.reduce((sum, m) => sum + m.mmr, 0) / members.length;
+        teamAvgMmrMap.set(tId, avg);
+      }
+    }
+  }
+
+  for (const item1 of headerList) {
+    const name1 = item1.name;
+    const mmr1 = item1.mmr;
+    let player = {name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 0};
+    player.score = nameScoreMap.get(player.name);
+    const team1 = playerTeamMap.get(name1);
+    const team1Score = teamScoreMap.get(team1);
+
+    if (config.teamSize > 1) {
+      for (let tId = 1; tId <= config.totalTeams; tId++) {
+        if (tId === team1) continue;
+
+        let team2Score = teamScoreMap.get(tId);
+        let decision = Math.sign(team1Score - team2Score);
+        let opponentAvgMmr = teamAvgMmrMap.get(tId);
+
+        player.place += (decision === -1 ? 1 : 0);
+        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, opponentAvgMmr, decision, config);
+      }
+    } else {
+      for (const item2 of headerList) {
+        if (item1.name === item2.name) continue;
+        const decision = Math.sign(player.score - nameScoreMap.get(item2.name));
+        player.place += (decision === -1 ? 1 : 0);
+        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, item2.mmr, decision, config);
+      }
+    }
+
+    player.mmrChange = Math.round(player.mmrChange);
+    player.mmrAfter = Math.max(player.mmrBefore + player.mmrChange, 0);
+    player.mmrChange = player.mmrAfter - player.mmrBefore;
+    playersInfo.push(player);
+  }
+
+  playersInfo.sort((a, b) => {
+    return a.place !== b.place ? a.place - b.place : a.mmrBefore - b.mmrBefore;
+  });
+
+  return {ok: true, playersInfo: playersInfo};
+}
+
+function getMmrChangeSummaryText(playersInfo) {
+  let longestNameLength = 0;
+  let longestMmrBeforeLength = 0;
+  let longestMmrAfterLength = 0;
+  let longestMmrDeltaLength = 0;
+  let mmrDeltaTextMap = new Map();
+
+  for (const player of playersInfo) {
+    if (player.name.length > longestNameLength) longestNameLength = player.name.length;
+    if (String(player.mmrBefore).length > longestMmrBeforeLength) longestMmrBeforeLength = String(player.mmrBefore).length;
+    if (String(player.mmrAfter).length > longestMmrAfterLength) longestMmrAfterLength = String(player.mmrAfter).length;
+    let mmrDeltaText = (player.mmrChange > 0 ? "+" : "") + player.mmrChange;
+    if (mmrDeltaText.length > longestMmrDeltaLength) longestMmrDeltaLength = mmrDeltaText.length;
+    mmrDeltaTextMap.set(player.name, mmrDeltaText);
+  }
+  
+  let mmrAdjustmentText = "```Expected MMR Changes (unofficial)";
+  for (const player of playersInfo) {
+    let mmrDeltaText = mmrDeltaTextMap.get(player.name);
+    mmrAdjustmentText += "\n" + player.name + " ".repeat(longestNameLength - player.name.length) + ": " +
+        " ".repeat(longestMmrBeforeLength - String(player.mmrBefore).length) + player.mmrBefore + " --> " +
+        " ".repeat(longestMmrAfterLength - String(player.mmrAfter).length) + player.mmrAfter + " (" +
+        " ".repeat(longestMmrDeltaLength - mmrDeltaText.length) + mmrDeltaText + ")";
+  }
+
+  mmrAdjustmentText += "```\n-# Generated using custom calculator. No warranty implied. May contain errors.";
+  return mmrAdjustmentText;
+}
+
+
+// ▼ 予測早見表のクリップボードコピー処理
+  const copyMatrixButton = document.getElementById('copyMatrixButton');
+  if (copyMatrixButton) {
+    copyMatrixButton.addEventListener('click', async () => {
+      if (!matrixResultOutput || !matrixResultOutput.value.trim()) {
+        return alert(isEn() ? "No matrix result to copy." : "コピーする早見表がありません。");
+      }
+      try {
+        await navigator.clipboard.writeText(matrixResultOutput.value);
+        alert(isEn() ? "Matrix copied to clipboard!" : "早見表をクリップボードにコピーしました！");
+      } catch (error) {
+        console.error("コピーエラー:", error);
+        alert(isEn() ? "Failed to copy to clipboard." : "クリップボードへのコピーに失敗しました。");
+      }
+    });
+  }
+
+
+
+
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
+const playerIdCache = {};
+
+/**
+ * プレイヤー名またはIDからIDを解決するヘルパー
+ */
+async function resolvePlayerId(identifier) {
+  if (!identifier) return null;
+  if (!isNaN(identifier)) return Number(identifier);
+
+  const queryName = String(identifier).trim();
+  if (playerIdCache[queryName]) return playerIdCache[queryName];
+
+  // 名前の場合は検索API経由でIDを取得
+  const searchResult = await fetchLoungeApiViaGas("api/player/search", { name: queryName });
+  let foundId = null;
+  if (Array.isArray(searchResult) && searchResult.length > 0) {
+    foundId = searchResult[0].id || searchResult[0].playerId;
+  } else if (searchResult && searchResult.id) {
+    foundId = searchResult.id;
+  }
+
+  if (foundId) {
+    playerIdCache[queryName] = foundId;
+    return foundId;
+  } else {
+    alert(`プレイヤー "${queryName}" が見つかりませんでした。`);
+    return null;
+  }
+}
+
+/**
+ * GAS経由でLounge APIを叩く汎用フェッチ関数
+ */
+async function fetchLoungeApiViaGas(apiPath, queryParams = {}) {
+  try {
+    let params = { path: apiPath, ...queryParams };
+    let searchParams = new URLSearchParams(params);
+    const url = `${GAS_API_URL}?${searchParams.toString()}`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("通信エラー:", error);
+    return null;
+  }
+}
+
+/**
+ * 【名前・ID両対応】プレイヤーの stats データを取得して表示する関数
+ * @param {string|number} playerIdentifier - プレイヤー名 または プレイヤーID
+ * @param {number} season - シーズン番号
+ */
+async function loadPlayerStats(playerIdentifier, season) {
+  // 名前の場合は自動でIDに変換
+  const playerId = await resolvePlayerId(playerIdentifier);
+  if (!playerId) return;
+
+  // プレイヤーの stats（詳細情報）を取得
+  const data = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: season });
+  
+  if (data) {
+    console.log("Stats取得成功:", data);
+    renderPlayerStatsUI(data);
+  }
+}
+
+/**
+ * 取得した stats データを画面（UI）に反映する関数
+ */
+function renderPlayerStatsUI(data) {
+  const container = document.getElementById("loungeStatsDisplayArea");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="padding: 12px; background: #f6fdf6; border: 1px solid #d8f3dd; border-radius: 6px;">
+      <h3 style="margin: 0 0 8px 0; color: #27ae60;">${data.name || "Player"}</h3>
+      <p><strong>MMR:</strong> ${data.mmr || 0}</p>
+      <p><strong>Peak MMR:</strong> ${data.maxMmr || 0}</p>
+      <p><strong>Wins / Events:</strong> ${data.wins || 0} / ${data.attended || 0}</p>
+    </div>
+  `;
+}
+  
+  
 </script>
 
 
