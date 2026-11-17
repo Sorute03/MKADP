@@ -9138,6 +9138,9 @@ function buildMKCUrl(playerId, season) {
   return `https://lounge.mkcentral.com/mkworld/PlayerDetails/${playerId}?season=${season}&p=${p}`;
 }
   
+/******************************************************
+ * API優先 ＆ 失敗時既存HTMLパース維持型ラッパー
+ *********************************--------------------*/
 async function onLoadLoungeStats() {
   if (activePlayerIndex === -1) {
     return alert("プレイヤーが選択されていません");
@@ -9146,12 +9149,54 @@ async function onLoadLoungeStats() {
   const playerId = playerIdList[activePlayerIndex].id;
   const selectedSeason = document.getElementById("loungeSeasonSelect").value;
 
+  // ==========================================================
+  // ▼ 1. まず【GAS経由のAPI取得】を試みる
+  // ==========================================================
+  try {
+    const apiStats = await tryFetchStatsViaApiHelper(playerId, selectedSeason);
+    
+    // APIから有効なデータ（現在のMMRまたは履歴）が取得できた場合
+    if (apiStats && (apiStats.currentMMR > 0 || (Array.isArray(apiStats.history) && apiStats.history.length > 0))) {
+      console.log("🚀 API経由での取得に成功しました。");
+
+      // ▼ API取得データの描画処理（既存の描画ロジックと同一）
+      drawLoungeStats({
+        details: {
+          name: apiStats.name,
+          mmr: apiStats.currentMMR,
+          peak_mmr: apiStats.peakMMR,
+          wins: apiStats.wins,
+          losses: apiStats.losses,
+          mmr_rank: apiStats.rank,
+          peak_mmr_rank: apiStats.rank
+        },
+        history: apiStats.mmrHistory || apiStats.history,
+        courseStats: null
+      });
+
+      if (typeof drawLoungeMMRChart === "function") {
+        drawLoungeMMRChart(apiStats);
+      }
+      if (typeof convertStatsForImage === "function" && typeof drawLoungeImage === "function") {
+        const imgStats = convertStatsForImage(apiStats);
+        await drawLoungeImage(imgStats);
+      }
+      window.latestLoungeStats = apiStats;
+      return; // 成功した場合はここで終了（既存のHTMLパースには進まない）
+    }
+  } catch (err) {
+    console.warn("⚠️ API取得中にエラーが発生したため、従来のHTMLパースにフォールバックします。", err);
+  }
+
+  // ==========================================================
+  // ▼ 2. APIが失敗・エラーだった場合は、ご提示いただいた【既存のHTMLパース処理】をそのまま実行
+  // ==========================================================
+  console.log("🛡️ 従来のHTMLパース方式に切り替えます。");
+
   // モードの取得（12Pか24Pかを判定）
-  // ※お使いのHTMLのモード選択エレメントに合わせて適宜ID等を調整してください
   const modeSelect = document.getElementById("loungeModeSelect");
   const currentMode = modeSelect ? modeSelect.value : "24"; 
   const is12PAll = (selectedSeason === "ALL" && String(currentMode) === "12");
-
 
   let stats;
 
@@ -9178,21 +9223,11 @@ async function onLoadLoungeStats() {
           // ▼ 重複・フォールバック検知ガード
           // ==========================================
           if (lastParsedSignature && lastParsedSignature === currentSignature) {
-    
-            
             if (is12PAll) {
-              // 【12PモードのALL時】
-              // 24Pデフォルトページが1回分誤混入しているため、直前データを pop して終了
               if (htmlList.length > 0) {
-                const removed = htmlList.pop();
-                
+                htmlList.pop();
               }
-            } else {
-              // 【24Pなどその他のモード時】
-              // 直前データ（Season 3など）は正しい有効データなので pop せず、単に追加せずにそのままループ終了
-              
             }
-
             break;
           }
           // ==========================================
@@ -9204,7 +9239,6 @@ async function onLoadLoungeStats() {
                 return JSON.stringify(val) === JSON.stringify(tempParsed.history[idx]);
               });
               if (isSameHistory) {
-            
                 if (is12PAll && htmlList.length > 0) {
                   htmlList.pop();
                 }
@@ -9215,7 +9249,6 @@ async function onLoadLoungeStats() {
 
           // 休止・データなしスキップ（試合履歴が0件の場合）
           if (!tempParsed.history || tempParsed.history.length === 0) {
-          
             continue;
           }
 
@@ -9223,10 +9256,8 @@ async function onLoadLoungeStats() {
           htmlList.push({ html, season: s, parsed: tempParsed });
           lastParsedSignature = currentSignature;
           lastValidSeasonData = tempParsed;
-          
 
         } else {
-      
           break;
         }
       } catch (e) {
@@ -9238,7 +9269,6 @@ async function onLoadLoungeStats() {
 
   } else {
     const detailsUrl = buildMKCUrl(playerId, selectedSeason);
-
     const html = await fetchWorldHTML(detailsUrl);
     stats = parseWorldHTML(html, selectedSeason);
   }
@@ -9258,8 +9288,6 @@ async function onLoadLoungeStats() {
       stats.mmrHistory = combinedHistory;
     }
   }
-
-
 
   if (!stats.mmrHistory || stats.mmrHistory.length === 0) {
     console.warn("⚠️ 有効なMMR履歴が見つかりませんでした。");
@@ -9290,7 +9318,89 @@ async function onLoadLoungeStats() {
   // ▼ 最新 stats を保存（Discord送信用）
   window.latestLoungeStats = stats;
 }
+
+
+/******************************************************
+ * 補助ヘルパー：API経由での取得＆ALL時合算（既存関数を汚さない独立ヘルパー）
+ ******************************************************/
+async function tryFetchStatsViaApiHelper(playerId, season) {
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
   
+  async function callApi(path, query = {}) {
+    try {
+      const res = await fetch(`${GAS_API_URL}?${new URLSearchParams({ path, ...query })}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (!json || json.error) return null;
+      return json;
+    } catch {
+      return null;
+    }
+  }
+
+  function normalize(res, sNum) {
+    const history = (res.history || res.events || []).map(h => ({ ...h, season: sNum }));
+    const mmrHistory = (res.mmrHistory || history).map(m => typeof m === "object" ? { ...m, season: sNum } : { mmr: m, season: sNum });
+    return {
+      name: res.name || res.username || "Unknown",
+      country: res.country || "",
+      currentMMR: res.mmr || res.rating || 0,
+      peakMMR: res.maxMmr || res.peakMmr || 0,
+      rank: res.rank || res.mmrRank || "-",
+      tier: res.tier || "",
+      wins: res.wins || 0,
+      losses: res.losses || 0,
+      history,
+      mmrHistory,
+      eventsPlayed: res.attended || res.eventsPlayed || 0
+    };
+  }
+
+  if (season !== "ALL") {
+    const res = await callApi(`api/player/${playerId}`, { season });
+    return res ? normalize(res, Number(season)) : null;
+  }
+
+  // ALL指定時の合算処理
+  let allHistory = [];
+  let allMmrHistory = [];
+  let merged = { name: "Unknown", country: "", currentMMR: 0, peakMMR: 0, rank: "-", tier: "", wins: 0, losses: 0, eventsPlayed: 0 };
+  let activeSeasons = 0;
+  let consecutiveErrors = 0;
+
+  for (let s = 1; s <= 30; s++) {
+    const res = await callApi(`api/player/${playerId}`, { season: s });
+    if (!res || (res.attended === 0 && !res.mmr && !res.rating)) {
+      consecutiveErrors++;
+      if (consecutiveErrors >= 3 && activeSeasons > 0) break;
+      continue;
+    }
+    consecutiveErrors = 0;
+    activeSeasons++;
+
+    merged.name = res.name || res.username || merged.name;
+    merged.country = res.country || res.country;
+    merged.currentMMR = res.mmr || res.rating || merged.currentMMR;
+    merged.peakMMR = Math.max(merged.peakMMR, res.maxMmr || res.peakMmr || 0);
+    merged.rank = res.rank || res.mmrRank || merged.rank;
+    merged.tier = res.tier || merged.tier;
+    merged.wins += res.wins || 0;
+    merged.losses += res.losses || 0;
+    merged.eventsPlayed += res.attended || res.eventsPlayed || 0;
+
+    if (Array.isArray(res.history)) {
+      allHistory.push(...res.history.map(h => ({ ...h, season: s })));
+    }
+    if (Array.isArray(res.mmrHistory)) {
+      allMmrHistory.push(...res.mmrHistory.map(m => typeof m === "object" ? { ...m, season: s } : { mmr: m, season: s }));
+    }
+  }
+
+  if (activeSeasons === 0) return null;
+  merged.history = allHistory;
+  merged.mmrHistory = allMmrHistory.length > 0 ? allMmrHistory : allHistory;
+  return merged;
+}
   
   
 
