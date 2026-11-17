@@ -11124,6 +11124,7 @@ function savePlayerIdList() {
 // ▼ 表示
 function renderPlayerIdList() {
   const box = document.getElementById("playerIdListBox");
+  if (!box) return;
   box.innerHTML = "";
 
   playerIdList.forEach((p, i) => {
@@ -11131,10 +11132,12 @@ function renderPlayerIdList() {
     div.textContent = `${p.name} (ID: ${p.id})`;
     div.style.padding = "6px";
     div.style.cursor = "pointer";
+    div.style.borderRadius = "4px";
 
     if (i === activePlayerIndex) {
       div.style.background = "#444";
       div.style.color = "white";
+      div.style.fontWeight = "bold";
     }
 
     div.onclick = () => {
@@ -11169,49 +11172,112 @@ function extractLoungePlayerId(inputStr) {
   return trimmed;
 }
 
-// ▼ プレイヤーID追加ボタンの処理
-document.getElementById("addPlayerIdBtn").onclick = () => {
-  const nameInput = document.getElementById("playerNameInput");
-  const idInput = document.getElementById("playerIdInput");
+/**
+ * 名前からプレイヤーIDを検索・解決する関数（GASプロキシ経由）
+ */
+async function resolvePlayerIdByName(nameStr) {
+  if (!nameStr) return null;
+  const queryName = nameStr.trim();
 
-  const rawName = nameInput.value.trim();
-  const rawId = idInput.value.trim();
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const gameParam = (modeSelect && modeSelect.value === "12") ? "mkworld12p" : "mkworld24p";
 
-  if (!rawId) {
-    return alert("プレイヤーIDまたはURLを入力してください");
+  const searchApiUrl = `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(queryName)}&game=${gameParam}`;
+
+  try {
+    const res = await fetch(`${GAS_API_URL}?url=${encodeURIComponent(searchApiUrl)}`);
+    const searchResult = await res.json();
+    
+    let found = null;
+    if (Array.isArray(searchResult) && searchResult.length > 0) {
+      const exact = searchResult.find(p => (p.name || "").toLowerCase() === queryName.toLowerCase()) || searchResult[0];
+      found = { id: exact.id || exact.playerId, name: exact.name || queryName };
+    } else if (searchResult && searchResult.id) {
+      found = { id: searchResult.id, name: searchResult.name || queryName };
+    }
+
+    return found;
+  } catch (err) {
+    console.error("プレイヤー名検索エラー:", err);
+    return null;
   }
+}
 
-  // URLの場合はIDを抽出し、それ以外はそのまま取得
-  const id = extractLoungePlayerId(rawId);
+// ▼ プレイヤーID追加ボタンの処理（名前のみの入力＆ID/URL入力の両方に対応）
+const addPlayerBtn = document.getElementById("addPlayerIdBtn");
+if (addPlayerBtn) {
+  addPlayerBtn.onclick = async () => {
+    const nameInput = document.getElementById("playerNameInput");
+    const idInput = document.getElementById("playerIdInput");
 
-  // 名前が空の場合は仮名（Player_ID）を割り当てる
-  const name = rawName || `Player_${id}`;
+    const rawName = nameInput ? nameInput.value.trim() : "";
+    const rawId = idInput ? idInput.value.trim() : "";
 
-  // 重複登録のチェック
-  if (playerIdList.some(p => p.id === id)) {
-    return alert("このプレイヤーIDはすでに登録されています");
-  }
+    if (!rawName && !rawId) {
+      return alert("プレイヤー名、またはプレイヤーID / URLを入力してください");
+    }
 
-  // リストに追加して保存・再描画
-  playerIdList.push({ name, id });
-  savePlayerIdList();
-  renderPlayerIdList();
+    addPlayerBtn.disabled = true;
+    const origText = addPlayerBtn.textContent;
+    addPlayerBtn.textContent = "処理中...";
 
-  // 登録後に入力欄を両方クリア
-  nameInput.value = "";
-  idInput.value = "";
-};
+    try {
+      let finalId = "";
+      let finalName = rawName;
 
-  
+      if (rawId) {
+        // ID欄に何か入力されている場合（URLまたは数値ID）
+        finalId = extractLoungePlayerId(rawId);
+        if (!finalName) {
+          finalName = `Player_${finalId}`;
+        }
+      } else if (rawName) {
+        // ID欄が空で、名前のみ入力されている場合：検索APIでIDを解決
+        const resolved = await resolvePlayerIdByName(rawName);
+        if (!resolved || !resolved.id) {
+          return alert(`プレイヤー "${rawName}" が見つかりませんでした。`);
+        }
+        finalId = resolved.id;
+        finalName = resolved.name;
+      }
+
+      // 重複登録のチェック
+      if (playerIdList.some(p => String(p.id) === String(finalId))) {
+        return alert("このプレイヤーIDはすでに登録されています");
+      }
+
+      // リストに追加して保存・再描画
+      playerIdList.push({ name: finalName, id: finalId });
+      savePlayerIdList();
+      renderPlayerIdList();
+
+      // 入力欄をクリア
+      if (nameInput) nameInput.value = "";
+      if (idInput) idInput.value = "";
+    } finally {
+      addPlayerBtn.disabled = false;
+      addPlayerIdBtn.textContent = origText;
+    }
+  };
+}
+
 // ▼ 削除
-document.getElementById("deletePlayerIdBtn").onclick = () => {
-  if (activePlayerIndex === -1) return alert("削除するプレイヤーが選択されていません");
+const deletePlayerBtn = document.getElementById("deletePlayerIdBtn");
+if (deletePlayerBtn) {
+  deletePlayerBtn.onclick = () => {
+    if (activePlayerIndex === -1) return alert("削除するプレイヤーが選択されていません");
 
-  playerIdList.splice(activePlayerIndex, 1);
-  activePlayerIndex = -1;
-  savePlayerIdList();
-  renderPlayerIdList();
-};
+    playerIdList.splice(activePlayerIndex, 1);
+    activePlayerIndex = -1;
+    savePlayerIdList();
+    renderPlayerIdList();
+  };
+}
+
+// 起動時の自動ロード＆描画実行
+loadPlayerIdList();
+renderPlayerIdList();
 
 // ▼ データ取得ボタン
 document.getElementById("loadLoungeBtn").onclick = async () => {
@@ -13571,7 +13637,252 @@ function renderPlayerStatsUI(data) {
   `;
 }
   
-  
+
+
+/******************************************************
+ * 1. GASプロキシ通信 & プレイヤー名・ID解決レイヤー
+ ******************************************************/
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
+const playerIdCache = {};
+
+async function fetchLoungeApiViaGas(apiPath, queryParams = {}) {
+  try {
+    const params = { path: apiPath, ...queryParams };
+    const url = `${GAS_API_URL}?${new URLSearchParams(params).toString()}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const text = await response.text();
+    const json = JSON.parse(text);
+    // API自体がエラーオブジェクトを返した場合も失敗とみなす
+    if (!json || json.error || json.status === 404 || json.status === 500) {
+      return null;
+    }
+    return json;
+  } catch (error) {
+    console.warn(`[APIエラー] ${apiPath} の取得に失敗しました:`, error);
+    return null;
+  }
+}
+
+
+
+
+/**
+ * URL・ID・プレイヤー名のいずれからでもプレイヤーIDと正式名を解決する
+ */
+async function resolvePlayerInfo(identifier) {
+  if (!identifier) return null;
+  const trimmed = String(identifier).trim();
+
+  // 1. MKCentral URL からの抽出
+  const mkcentralMatch = trimmed.match(/PlayerDetails\/([0-9a-zA-Z_-]+)/i);
+  if (mkcentralMatch && mkcentralMatch[1]) {
+    return { id: Number(mkcentralMatch[1]) || mkcentralMatch[1], name: null };
+  }
+
+  // 2. 一般的なプロフィールURLからの抽出
+  const generalMatch = trimmed.match(/(?:profile|player)\/([0-9a-zA-Z_-]+)/i);
+  if (generalMatch && generalMatch[1]) {
+    return { id: Number(generalMatch[1]) || generalMatch[1], name: null };
+  }
+
+  // 3. 数値（ID直接）の場合
+  if (!isNaN(trimmed)) {
+    return { id: Number(trimmed), name: null };
+  }
+
+  // 4. 文字列（ラウンジ名）の場合：キャッシュ確認 → 検索API
+  if (playerIdCache[trimmed]) {
+    return playerIdCache[trimmed];
+  }
+
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const gameParam = (modeSelect && modeSelect.value === "12") ? "mkworld12p" : "mkworld24p";
+
+  const searchResult = await fetchLoungeApiViaGas("api/player/search", {
+    name: trimmed,
+    game: gameParam
+  });
+
+  let found = null;
+  if (Array.isArray(searchResult) && searchResult.length > 0) {
+    // 完全一致を優先し、なければ先頭候補を採用
+    const exact = searchResult.find(p => (p.name || "").toLowerCase() === trimmed.toLowerCase()) || searchResult[0];
+    found = { id: exact.id || exact.playerId, name: exact.name || trimmed };
+  } else if (searchResult && searchResult.id) {
+    found = { id: searchResult.id, name: searchResult.name || trimmed };
+  }
+
+  if (found && found.id) {
+    playerIdCache[trimmed] = found;
+    return found;
+  }
+
+  return null;
+}
+
+
+async function fetchLoungeStatsViaApiMain(playerId, season = "ALL") {
+  // ① 特定シーズン指定の場合
+  if (season !== "ALL") {
+    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: season });
+    if (result && !result.error) {
+      return formatApiResult(result, Number(season));
+    }
+    return null;
+  }
+
+  // ② "ALL" 指定の場合：シーズン1から順に個別取得して合算
+  const maxSeasonCheck = 30;
+  let allHistory = [];
+  let allMmrHistory = [];
+  let mergedData = {
+    name: "Unknown",
+    country: "",
+    currentMMR: 0,
+    peakMMR: 0,
+    rank: "-",
+    tier: "",
+    wins: 0,
+    losses: 0,
+    eventsPlayed: 0
+  };
+
+  let activeSeasonsCount = 0;
+  let consecutiveErrors = 0;
+
+  for (let s = 1; s <= maxSeasonCheck; s++) {
+    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: s });
+
+    if (!result || result.error || (result.attended === 0 && !result.mmr && !result.rating)) {
+      consecutiveErrors++;
+      if (consecutiveErrors >= 3 && activeSeasonsCount > 0) break;
+      continue;
+    }
+
+    consecutiveErrors = 0;
+    activeSeasonsCount++;
+
+    mergedData.name = result.name || result.username || mergedData.name;
+    mergedData.country = result.country || mergedData.country;
+    mergedData.currentMMR = result.mmr || result.rating || mergedData.currentMMR;
+    mergedData.peakMMR = Math.max(mergedData.peakMMR, result.maxMmr || result.peakMmr || 0);
+    mergedData.rank = result.rank || result.mmrRank || mergedData.rank;
+    mergedData.tier = result.tier || mergedData.tier;
+
+    mergedData.wins += (result.wins || 0);
+    mergedData.losses += (result.losses || 0);
+    mergedData.eventsPlayed += (result.attended || result.eventsPlayed || 0);
+
+    if (Array.isArray(result.history)) {
+      allHistory.push(...result.history.map(h => ({ ...h, season: s })));
+    }
+    if (Array.isArray(result.mmrHistory)) {
+      allMmrHistory.push(...result.mmrHistory.map(m => (typeof m === 'object' ? { ...m, season: s } : { mmr: m, season: s })));
+    }
+  }
+
+  if (activeSeasonsCount === 0) return null;
+
+  mergedData.history = allHistory;
+  mergedData.mmrHistory = allMmrHistory.length > 0 ? allMmrHistory : allHistory;
+  return mergedData;
+}
+
+function formatApiResult(result, seasonNum = 1) {
+  const history = (result.history || result.events || []).map(h => ({ ...h, season: seasonNum }));
+  const mmrHistory = (result.mmrHistory || history).map(m => (typeof m === 'object' ? { ...m, season: seasonNum } : { mmr: m, season: seasonNum }));
+
+  return {
+    name: result.name || result.username || "Unknown",
+    country: result.country || "",
+    currentMMR: result.mmr || result.rating || 0,
+    peakMMR: result.maxMmr || result.peakMmr || 0,
+    rank: result.rank || result.mmrRank || "-",
+    tier: result.tier || "",
+    wins: result.wins || 0,
+    losses: result.losses || 0,
+    history: history,
+    mmrHistory: mmrHistory,
+    eventsPlayed: result.attended || result.eventsPlayed || 0
+  };
+}
+
+
+
+async function resolvePlayerIdByNameWithFallback(nameStr) {
+  if (!nameStr) return null;
+  const queryName = nameStr.trim();
+  const modeVal = document.getElementById("loungeModeSelect")?.value || "24";
+  const gameParam = (modeVal === "12") ? "mkworld12p" : "mkworld24p";
+
+  // ① まずAPIで検索を試みる
+  const searchResult = await fetchLoungeApiViaGas("api/player/search", {
+    name: queryName,
+    game: gameParam
+  });
+
+  if (searchResult) {
+    if (Array.isArray(searchResult) && searchResult.length > 0) {
+      const exact = searchResult.find(p => (p.name || "").toLowerCase() === queryName.toLowerCase()) || searchResult[0];
+      const id = exact.id || exact.playerId;
+      if (id) return { id: String(id), name: exact.name || queryName };
+    } else if (searchResult.id) {
+      return { id: String(searchResult.id), name: searchResult.name || queryName };
+    }
+  }
+
+  // ② APIがエラーまたは空だった場合：従来のHTML検索ページをパースしてIDを探す
+  console.warn(`[フォールバック] 名前検索API失敗のため、HTML検索ページから "${queryName}" を探します...`);
+  const searchHtmlUrl = `https://lounge.mkcentral.com/mkworld/Leaderboard?search=${encodeURIComponent(queryName)}`;
+  const html = await fetchWorldHTML(searchHtmlUrl);
+  if (!html) return null;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  // PlayerDetails/12345 へのリンクを抽出
+  const links = [...doc.querySelectorAll('a[href*="PlayerDetails/"]')];
+  for (const a of links) {
+    const linkName = a.textContent.trim();
+    const match = a.getAttribute("href").match(/PlayerDetails\/([0-9a-zA-Z_-]+)/i);
+    if (match && match[1]) {
+      if (linkName.toLowerCase() === queryName.toLowerCase()) {
+        return { id: match[1], name: linkName };
+      }
+    }
+  }
+  // 完全一致がなければ最初のヒットを返す
+  if (links.length > 0) {
+    const firstMatch = links[0].getAttribute("href").match(/PlayerDetails\/([0-9a-zA-Z_-]+)/i);
+    if (firstMatch && firstMatch[1]) {
+      return { id: firstMatch[1], name: links[0].textContent.trim() || queryName };
+    }
+  }
+
+  return null;
+}
+
+
+/******************************************************
+ * 3. データ取得の統合コントローラー（APIエラー時は即座にHTMLパースへ移行）
+ ******************************************************/
+async function fetchPlayerStatsWithAutoFallback(playerId, season = "ALL") {
+  // ① 【メイン】API経由での取得を試行
+  let stats = await fetchLoungeStatsViaApiMain(playerId, season);
+
+  // ② APIがnull（通信エラー・JSON異常・データ欠損）を返した場合、従来のHTMLパースへ移行
+  if (!stats || (!stats.currentMMR && (!stats.history || stats.history.length === 0))) {
+    console.warn(`[フォールバック発動] API取得エラーのため、従来のHTMLパース方式へ切り替えます (ID: ${playerId}, Season: ${season})`);
+    if (typeof logMessage === "function") {
+      logMessage("APIエラーのため、従来のHTML解析方式に切り替えてデータを取得しています...");
+    }
+    stats = await fetchLoungeStatsViaHtmlFallback(playerId, season);
+  }
+
+  return stats;
+}
+
+
 </script>
 
 
