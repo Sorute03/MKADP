@@ -9318,7 +9318,7 @@ async function onLoadLoungeStats() {
   window.latestLoungeStats = stats;
 }
 
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycby1_Ucv4mJz469KB3IhEcTOfbYf5n93IUULDzo_hk5FrhIV1b16mBfJC1yhzEe1ll22/exec";
 
 /******************************************************
 - 補助ヘルパー：API経由での取得＆ALL時合算（ゲームタイプ・シーズン0対応版）
@@ -11323,12 +11323,21 @@ async function resolvePlayerIdByName(nameStr) {
   if (!nameStr) return null;
   const queryName = nameStr.trim();
 
-  // 1. ゲームタイプの判定（共通関数またはセレクトボックスから取得）
+  // ★ GASのURLを安全に取得（GAS_API_URL と GAS_URL のどちらが存在しても対応）
+  const gasUrl = (typeof GAS_API_URL !== "undefined" && GAS_API_URL) 
+    ? GAS_API_URL 
+    : (typeof GAS_URL !== "undefined" ? GAS_URL : "");
+
+  if (!gasUrl) {
+    console.error("エラー: GASのURL（GAS_API_URL または GAS_URL）が定義されていません。");
+    return null;
+  }
+
+  // ゲームタイプの判定（共通関数またはセレクトボックスから取得）
   const assignedGame = typeof getAssignedGameType === "function" 
     ? getAssignedGameType() 
     : ((document.getElementById("loungeModeSelect")?.value === "12") ? "mkworld12p" : "mkworld24p");
 
-  // 2. GASの個別パラメータ方式に合わせる
   const params = {
     path: "api/player/search",
     game: assignedGame,
@@ -11336,17 +11345,15 @@ async function resolvePlayerIdByName(nameStr) {
   };
 
   try {
-    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params).toString()}`);
+    const res = await fetch(`${gasUrl}?${new URLSearchParams(params).toString()}`);
     if (!res.ok) return null;
 
-    // ★ レスポンスの中身を一度テキストで取得し、空文字でないか確認する
     const text = await res.text();
     if (!text || !text.trim()) {
       console.warn(`[プレイヤー検索] "${queryName}" の検索結果が空です。`);
       return null;
     }
 
-    // 安全にパース
     const searchResult = JSON.parse(text);
     
     let found = null;
@@ -11367,7 +11374,6 @@ async function resolvePlayerIdByName(nameStr) {
     return null;
   }
 }
-
 
 // ▼ プレイヤーID追加ボタンの処理（名前のみの入力＆ID/URL入力の両方に対応）
 const addPlayerBtn = document.getElementById("addPlayerIdBtn");
