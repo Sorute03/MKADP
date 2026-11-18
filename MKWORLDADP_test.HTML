@@ -9321,16 +9321,27 @@ async function onLoadLoungeStats() {
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
 
 /******************************************************
- * 補助ヘルパー：API経由での取得＆ALL時合算（既存関数を汚さない独立ヘルパー）
+- 補助ヘルパー：API経由での取得＆ALL時合算（ゲームタイプ・シーズン0対応版）
  ******************************************************/
 async function tryFetchStatsViaApiHelper(playerId, season) {
   
+  // 現在のゲームタイプ（mk8dx, mkworld24p, mkworld12p）を取得
+  const assignedGame = typeof getAssignedGameType === "function" 
+    ? getAssignedGameType() 
+    : ((document.getElementById("loungeModeSelect")?.value === "12") ? "mkworld12p" : "mkworld24p");
+
   async function callApi(path, query = {}) {
     try {
-      const res = await fetch(`${GAS_API_URL}?${new URLSearchParams({ path, ...query })}`);
+      // gameパラメータを自動付与してGAS経由でフェッチ
+      const params = { path, game: assignedGame, ...query };
+      const res = await fetch(`${GAS_API_URL}?${new URLSearchParams(params).toString()}`);
       if (!res.ok) return null;
-      const json = await res.json();
-      if (!json || json.error) return null;
+      
+      const text = await res.text();
+      if (!text || !text.trim()) return null;
+      
+      const json = JSON.parse(text);
+      if (!json || json.error || json.status === 404 || json.status === 500) return null;
       return json;
     } catch {
       return null;
@@ -9360,16 +9371,16 @@ async function tryFetchStatsViaApiHelper(playerId, season) {
     return res ? normalize(res, Number(season)) : null;
   }
 
-  // ALL指定時の合算処理
+  // ALL指定時の合算処理（シーズン0からチェック開始）
   let allHistory = [];
   let allMmrHistory = [];
   let merged = { name: "Unknown", country: "", currentMMR: 0, peakMMR: 0, rank: "-", tier: "", wins: 0, losses: 0, eventsPlayed: 0 };
   let activeSeasons = 0;
   let consecutiveErrors = 0;
 
-  for (let s = 1; s <= 30; s++) {
+  for (let s = 0; s <= 30; s++) {
     const res = await callApi(`api/player/${playerId}`, { season: s });
-    if (!res || (res.attended === 0 && !res.mmr && !res.rating)) {
+    if (!res || (res.attended === 0 && !res.mmr && !res.rating && !res.data)) {
       consecutiveErrors++;
       if (consecutiveErrors >= 3 && activeSeasons > 0) break;
       continue;
@@ -9378,7 +9389,7 @@ async function tryFetchStatsViaApiHelper(playerId, season) {
     activeSeasons++;
 
     merged.name = res.name || res.username || merged.name;
-    merged.country = res.country || res.country;
+    merged.country = res.country || merged.country;
     merged.currentMMR = res.mmr || res.rating || merged.currentMMR;
     merged.peakMMR = Math.max(merged.peakMMR, res.maxMmr || res.peakMmr || 0);
     merged.rank = res.rank || res.mmrRank || merged.rank;
@@ -9400,7 +9411,6 @@ async function tryFetchStatsViaApiHelper(playerId, season) {
   merged.mmrHistory = allMmrHistory.length > 0 ? allMmrHistory : allHistory;
   return merged;
 }
-  
   
 
 function convertStatsForImage(stats) {
@@ -9538,21 +9548,46 @@ if (adpModeSelectEl) {
   updateAdpFilterByMode();
 }
 
+
+function getAssignedGameTypeSafe() {
+  if (typeof getAssignedGameType === "function") {
+    return getAssignedGameType();
+  }
+  const modeSelect = document.getElementById("loungeModeSelect");
+  const modeVal = modeSelect ? modeSelect.value : "24";
+  return (modeVal === "12") ? "mkworld12p" : "mkworld24p";
+}
+
 async function apiSearchPlayer(name) {
-  const apiUrl = `https://lounge.mkcentral.com/api/player/search?name=${encodeURIComponent(name)}&game=mkworld24p`;
-  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+  const assignedGame = getAssignedGameTypeSafe();
+  const params = {
+    path: "api/player/search",
+    game: assignedGame,
+    name: name
+  };
+  const proxyUrl = `${GAS_URL}?${new URLSearchParams(params).toString()}`;
   return await fetchJson(proxyUrl);
 }
 
 async function apiPlayerDetails(playerId) {
-  const apiUrl = `https://lounge.mkcentral.com/api/player/details?player_id=${playerId}&game=mkworld24p`;
-  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+  const assignedGame = getAssignedGameTypeSafe();
+  const params = {
+    path: "api/player/details",
+    game: assignedGame,
+    player_id: playerId
+  };
+  const proxyUrl = `${GAS_URL}?${new URLSearchParams(params).toString()}`;
   return await fetchJson(proxyUrl);
 }
 
 async function apiPlayerHistory(playerId) {
-  const apiUrl = `https://lounge.mkcentral.com/api/player/history?player_id=${playerId}&game=mkworld24p`;
-  const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(apiUrl)}`;
+  const assignedGame = getAssignedGameTypeSafe();
+  const params = {
+    path: "api/player/history",
+    game: assignedGame,
+    player_id: playerId
+  };
+  const proxyUrl = `${GAS_URL}?${new URLSearchParams(params).toString()}`;
   return await fetchJson(proxyUrl);
 }
 
