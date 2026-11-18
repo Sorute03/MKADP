@@ -11323,12 +11323,12 @@ async function resolvePlayerIdByName(nameStr) {
   if (!nameStr) return null;
   const queryName = nameStr.trim();
 
-  // 定数 GAME_TYPE とセレクトボックスの状態から正しいゲームタイプ（mk8dx / mkworld24p / mkworld12p）を自動判定
+  // 1. ゲームタイプの判定（共通関数またはセレクトボックスから取得）
   const assignedGame = typeof getAssignedGameType === "function" 
     ? getAssignedGameType() 
-    : "mkworld24p";
+    : ((document.getElementById("loungeModeSelect")?.value === "12") ? "mkworld12p" : "mkworld24p");
 
-  // パスとパラメータを分割してGASへ送信（これまで構築したGAS側仕様に完全一致）
+  // 2. GASの個別パラメータ方式に合わせる
   const params = {
     path: "api/player/search",
     game: assignedGame,
@@ -11336,31 +11336,38 @@ async function resolvePlayerIdByName(nameStr) {
   };
 
   try {
-    const res = await fetch(`${GAS_API_URL}?${new URLSearchParams(params).toString()}`);
+    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params).toString()}`);
     if (!res.ok) return null;
-    
-    const searchResult = await res.json();
+
+    // ★ レスポンスの中身を一度テキストで取得し、空文字でないか確認する
+    const text = await res.text();
+    if (!text || !text.trim()) {
+      console.warn(`[プレイヤー検索] "${queryName}" の検索結果が空です。`);
+      return null;
+    }
+
+    // 安全にパース
+    const searchResult = JSON.parse(text);
     
     let found = null;
     if (Array.isArray(searchResult) && searchResult.length > 0) {
       const exact = searchResult.find(p => (p.name || "").toLowerCase() === queryName.toLowerCase()) || searchResult[0];
-      found = { 
-        id: String(exact.id || exact.playerId), 
-        name: exact.name || queryName 
-      };
+      const id = exact.id || exact.playerId;
+      if (id) {
+        found = { id: String(id), name: exact.name || queryName };
+      }
     } else if (searchResult && (searchResult.id || searchResult.playerId)) {
-      found = { 
-        id: String(searchResult.id || searchResult.playerId), 
-        name: searchResult.name || queryName 
-      };
+      const id = searchResult.id || searchResult.playerId;
+      found = { id: String(id), name: searchResult.name || queryName };
     }
 
     return found;
   } catch (err) {
-    console.error("プレイヤー名検索エラー:", err);
+    console.warn("プレイヤー名検索エラー:", err);
     return null;
   }
 }
+
 
 // ▼ プレイヤーID追加ボタンの処理（名前のみの入力＆ID/URL入力の両方に対応）
 const addPlayerBtn = document.getElementById("addPlayerIdBtn");
