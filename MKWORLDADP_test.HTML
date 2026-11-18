@@ -13787,7 +13787,6 @@ async function fetchLoungeApiViaGas(apiPath, queryParams = {}) {
 
 
 
-
 /**
  * URL・ID・プレイヤー名のいずれからでもプレイヤーIDと正式名を解決する
  */
@@ -13813,16 +13812,18 @@ async function resolvePlayerInfo(identifier) {
   }
 
   // 4. 文字列（ラウンジ名）の場合：キャッシュ確認 → 検索API
-  if (playerIdCache[trimmed]) {
+  if (typeof playerIdCache !== "undefined" && playerIdCache[trimmed]) {
     return playerIdCache[trimmed];
   }
 
-  const modeSelect = document.getElementById("loungeModeSelect");
-  const gameParam = (modeSelect && modeSelect.value === "12") ? "mkworld12p" : "mkworld24p";
+  // ★ 共通のゲームタイプ判別関数を使用（MK8DX と MK World 12P/24P を自動切り替え）
+  const assignedGame = typeof getAssignedGameType === "function" 
+    ? getAssignedGameType() 
+    : ((document.getElementById("loungeModeSelect")?.value === "12") ? "mkworld12p" : "mkworld24p");
 
   const searchResult = await fetchLoungeApiViaGas("api/player/search", {
     name: trimmed,
-    game: gameParam
+    game: assignedGame
   });
 
   let found = null;
@@ -13830,31 +13831,38 @@ async function resolvePlayerInfo(identifier) {
     // 完全一致を優先し、なければ先頭候補を採用
     const exact = searchResult.find(p => (p.name || "").toLowerCase() === trimmed.toLowerCase()) || searchResult[0];
     found = { id: exact.id || exact.playerId, name: exact.name || trimmed };
-  } else if (searchResult && searchResult.id) {
-    found = { id: searchResult.id, name: searchResult.name || trimmed };
+  } else if (searchResult && (searchResult.id || searchResult.playerId)) {
+    found = { id: searchResult.id || searchResult.playerId, name: searchResult.name || trimmed };
   }
 
   if (found && found.id) {
-    playerIdCache[trimmed] = found;
+    if (typeof playerIdCache !== "undefined") {
+      playerIdCache[trimmed] = found;
+    }
     return found;
   }
 
   return null;
 }
 
-
 async function fetchLoungeStatsViaApiMain(playerId, season = "ALL") {
+  // 現在のゲームタイプ（mk8dx, mkworld24p, mkworld12p）を取得
+  const assignedGame = typeof getAssignedGameType === "function" ? getAssignedGameType() : "mkworld24p";
+
   // ① 特定シーズン指定の場合
   if (season !== "ALL") {
-    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: season });
+    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { 
+      season: season,
+      game: assignedGame 
+    });
     if (result && !result.error) {
       return formatApiResult(result, Number(season));
     }
     return null;
   }
 
-  // ② "ALL" 指定の場合：シーズン1から順に個別取得して合算
-  const maxSeasonCheck = 30;
+  // ② "ALL" 指定の場合：シーズン0から順に個別取得して合算
+  const maxSeasonCheck = 50;
   let allHistory = [];
   let allMmrHistory = [];
   let mergedData = {
@@ -13872,11 +13880,16 @@ async function fetchLoungeStatsViaApiMain(playerId, season = "ALL") {
   let activeSeasonsCount = 0;
   let consecutiveErrors = 0;
 
-  for (let s = 1; s <= maxSeasonCheck; s++) {
-    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { season: s });
+  // MK Worldのシーズン0（または1）からチェック開始
+  for (let s = 0; s <= maxSeasonCheck; s++) {
+    const result = await fetchLoungeApiViaGas(`api/player/${playerId}`, { 
+      season: s,
+      game: assignedGame 
+    });
 
-    if (!result || result.error || (result.attended === 0 && !result.mmr && !result.rating)) {
+    if (!result || result.error || (result.attended === 0 && !result.mmr && !result.rating && !result.data)) {
       consecutiveErrors++;
+      // すでにシーズンが1つ以上見つかっている状態で、エラーが3回続いたら終了
       if (consecutiveErrors >= 3 && activeSeasonsCount > 0) break;
       continue;
     }
@@ -13934,13 +13947,16 @@ function formatApiResult(result, seasonNum = 1) {
 async function resolvePlayerIdByNameWithFallback(nameStr) {
   if (!nameStr) return null;
   const queryName = nameStr.trim();
-  const modeVal = document.getElementById("loungeModeSelect")?.value || "24";
-  const gameParam = (modeVal === "12") ? "mkworld12p" : "mkworld24p";
+
+  // 1. 定数やセレクトボックスから正しいゲームタイプ（mk8dx / mkworld24p / mkworld12p）を自動取得
+  const assignedGame = typeof getAssignedGameType === "function" 
+    ? getAssignedGameType() 
+    : ((document.getElementById("loungeModeSelect")?.value === "12") ? "mkworld12p" : "mkworld24p");
 
   // ① まずAPIで検索を試みる
   const searchResult = await fetchLoungeApiViaGas("api/player/search", {
     name: queryName,
-    game: gameParam
+    game: assignedGame
   });
 
   if (searchResult) {
@@ -13948,15 +13964,28 @@ async function resolvePlayerIdByNameWithFallback(nameStr) {
       const exact = searchResult.find(p => (p.name || "").toLowerCase() === queryName.toLowerCase()) || searchResult[0];
       const id = exact.id || exact.playerId;
       if (id) return { id: String(id), name: exact.name || queryName };
-    } else if (searchResult.id) {
-      return { id: String(searchResult.id), name: searchResult.name || queryName };
+    } else if (searchResult.id || searchResult.playerId) {
+      const id = searchResult.id || searchResult.playerId;
+      return { id: String(id), name: searchResult.name || queryName };
     }
   }
 
-  // ② APIがエラーまたは空だった場合：従来のHTML検索ページをパースしてIDを探す
+  // ② APIがエラーまたは空だった場合：ゲーム種別に応じたHTML検索ページをパースしてIDを探す
   console.warn(`[フォールバック] 名前検索API失敗のため、HTML検索ページから "${queryName}" を探します...`);
-  const searchHtmlUrl = `https://lounge.mkcentral.com/mkworld/Leaderboard?search=${encodeURIComponent(queryName)}`;
-  const html = await fetchWorldHTML(searchHtmlUrl);
+  
+  // MK 8DXか Worldかによってフォールバック先のURLを切り替え
+  const is8dx = assignedGame === "mk8dx";
+  const searchHtmlUrl = is8dx 
+    ? `https://mk8dx.mkcentral.com/Leaderboard?search=${encodeURIComponent(queryName)}`
+    : `https://lounge.mkcentral.com/mkworld/Leaderboard?search=${encodeURIComponent(queryName)}`;
+
+  // fetchWorldHTML もしくは共通のHTML取得関数を使用
+  const fetchFn = typeof fetchWorldHTML === "function" ? fetchWorldHTML : (async (url) => {
+    const res = await fetch(url);
+    return res.ok ? await res.text() : null;
+  });
+
+  const html = await fetchFn(searchHtmlUrl);
   if (!html) return null;
 
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -13981,7 +14010,6 @@ async function resolvePlayerIdByNameWithFallback(nameStr) {
 
   return null;
 }
-
 
 /******************************************************
  * 3. データ取得の統合コントローラー（APIエラー時は即座にHTMLパースへ移行）
