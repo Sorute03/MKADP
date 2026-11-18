@@ -9319,12 +9319,12 @@ async function onLoadLoungeStats() {
   window.latestLoungeStats = stats;
 }
 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
 
 /******************************************************
  * 補助ヘルパー：API経由での取得＆ALL時合算（既存関数を汚さない独立ヘルパー）
  ******************************************************/
 async function tryFetchStatsViaApiHelper(playerId, season) {
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
   
   async function callApi(path, query = {}) {
     try {
@@ -11289,7 +11289,6 @@ async function resolvePlayerIdByName(nameStr) {
   if (!nameStr) return null;
   const queryName = nameStr.trim();
 
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2d3bIISoYu4RVrL20BPrOQ48vLjmkRt3MY8eQTO_Wxg7SBT1vXbDPl4wwCgg-xF2c/exec";
   const modeSelect = document.getElementById("loungeModeSelect");
   const gameParam = (modeSelect && modeSelect.value === "12") ? "mkworld12p" : "mkworld24p";
 
@@ -13661,8 +13660,6 @@ function getMmrChangeSummaryText(playersInfo) {
 
 
 
-
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
 const playerIdCache = {};
 
 /**
@@ -13752,8 +13749,7 @@ function renderPlayerStatsUI(data) {
 /******************************************************
  * 1. GASプロキシ通信 & プレイヤー名・ID解決レイヤー
  ******************************************************/
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxXZsjvXKQ2oDMwyb9gTpjkEVGMm8PWUxw2WNXOHM9mIvgGmlERRm4bh-lSP3LHR2we/exec";
-const playerIdCache = {};
+
 
 async function fetchLoungeApiViaGas(apiPath, queryParams = {}) {
   try {
