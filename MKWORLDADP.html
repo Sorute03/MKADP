@@ -13368,12 +13368,12 @@ function processText(a, b, format = 'ffa') {
   let playersInfo = [];
   let mismatchedNames = [];
 
-  if (headerList.length !== 24 || nameScoreMap.size !== 24) return {ok: false};
+  if (headerList.length !== 24 || nameScoreMap.size !== 24) return { ok: false };
 
   for (const [name] of nameScoreMap) {
     if (!nameMmrMap.has(name)) mismatchedNames.push(name);
   }
-  if (mismatchedNames.length > 0) return {ok: false};
+  if (mismatchedNames.length > 0) return { ok: false };
 
   let playerTeamMap = new Map();
   let teamScoreMap = new Map();
@@ -13398,12 +13398,14 @@ function processText(a, b, format = 'ffa') {
   for (const item1 of headerList) {
     const name1 = item1.name;
     const mmr1 = item1.mmr;
-    let player = {name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 0};
+    let player = { name: name1, mmrBefore: mmr1, mmrChange: 0, mmrAfter: 0, score: 0, place: 0 };
     player.score = nameScoreMap.get(player.name);
     const team1 = playerTeamMap.get(name1);
     const team1Score = teamScoreMap.get(team1);
 
     if (config.teamSize > 1) {
+      const myTeamAvgMmr = teamAvgMmrMap.get(team1);
+
       for (let tId = 1; tId <= config.totalTeams; tId++) {
         if (tId === team1) continue;
 
@@ -13412,7 +13414,7 @@ function processText(a, b, format = 'ffa') {
         let opponentAvgMmr = teamAvgMmrMap.get(tId);
 
         player.place += (decision === -1 ? 1 : 0);
-        player.mmrChange += calculateMmrAdjustment(player.mmrBefore, opponentAvgMmr, decision, config);
+        player.mmrChange += calculateMmrAdjustment(myTeamAvgMmr, opponentAvgMmr, decision, config);
       }
     } else {
       for (const item2 of headerList) {
@@ -13423,7 +13425,7 @@ function processText(a, b, format = 'ffa') {
       }
     }
 
-    player.mmrChange = Math.round(player.mmrChange);
+    player.mmrChange = Math.trunc(player.mmrChange);
     player.mmrAfter = Math.max(player.mmrBefore + player.mmrChange, 0);
     player.mmrChange = player.mmrAfter - player.mmrBefore;
     playersInfo.push(player);
@@ -13433,7 +13435,7 @@ function processText(a, b, format = 'ffa') {
     return a.place !== b.place ? a.place - b.place : a.mmrBefore - b.mmrBefore;
   });
 
-  return {ok: true, playersInfo: playersInfo};
+  return { ok: true, playersInfo: playersInfo };
 }
 
 function getMmrChangeSummaryText(playersInfo) {
