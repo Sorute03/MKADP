@@ -2467,9 +2467,13 @@ function saveNextCourse() {
 
     const obsCourse = document.getElementById("obsCourse");
     if (obsCourse) obsCourse.value = nextCourse;
+
+    // ★ コースメモの選択コースを nextCourse に同期
+    if (typeof window.syncMemoCourseFromNextCourse === "function") {
+      window.syncMemoCourseFromNextCourse(nextCourse);
+    }
   }
 }
-
 /* ============================================================
    ▼ モーダルセレクタ初期化
 ============================================================ */
@@ -12811,64 +12815,97 @@ document.addEventListener("DOMContentLoaded", async () => {
 /**
  * コースメモタブの初期化（IndexedDB対応版）
  */
+function resolveNextCourseName(explicitCourse = null, courseListArr = []) {
+  const candidate =
+    explicitCourse ||
+    localStorage.getItem("nextCourse") ||
+    document.getElementById("obsCourse")?.value ||
+    (typeof getNextCourseFromModal === "function" ? getNextCourseFromModal() : null);
+
+  if (!candidate) return null;
+  const trimmed = String(candidate).trim();
+  if (!trimmed) return null;
+
+  if (Array.isArray(courseListArr) && courseListArr.length > 0) {
+    return (
+      courseListArr.find(c => c === trimmed) ||
+      courseListArr.find(c => c.toLowerCase() === trimmed.toLowerCase()) ||
+      trimmed
+    );
+  }
+  return trimmed;
+}
+
 function initCourseMemoTabIndexedDB() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
   const titleEl = document.getElementById("selectedCourseTitle");
   const saveBtn = document.getElementById("saveCourseMemoBtn");
-  const memoCategorySelect = document.getElementById("memoCategorySelect"); // カテゴリ選択
+  const memoCategorySelect = document.getElementById("memoCategorySelect");
 
   if (!selectEl) return;
 
-  const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
+  const targetCourseList = (typeof courseList !== "undefined" && Array.isArray(courseList)) ? courseList : [];
 
-  // コース一覧の挿入
   selectEl.innerHTML = "";
   targetCourseList.forEach(course => {
     const opt = document.createElement("option");
     opt.value = course;
-    opt.textContent = course;
+    opt.textContent = (typeof translateMKWorldCourse === "function" && typeof currentLang !== "undefined")
+      ? translateMKWorldCourse(course, currentLang)
+      : course;
     selectEl.appendChild(opt);
   });
 
-  // 現在選択されているカテゴリを取得（nora または other）
   const getCurrentCategory = () => memoCategorySelect ? memoCategorySelect.value : "other";
 
-  // メモをロードしてテキストエリアに反映
-  const loadAndShowMemo = async () => {
+  const loadMemoForActiveModalCourse = async () => {
     const selectedCourse = selectEl.value;
     const currentCategory = getCurrentCategory();
     if (!selectedCourse) return;
 
     const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
-    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
-    textareaEl.value = "読み込み中...";
-    
+    if (titleEl) {
+      titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
+    }
+    if (textareaEl) {
+      textareaEl.value = "読み込み中...";
+    }
+
     const memo = await loadCourseMemo(currentCategory, selectedCourse);
-    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory) {
+    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory && textareaEl) {
       textareaEl.value = memo;
     }
   };
+  window.loadMemoForActiveModalCourse = loadMemoForActiveModalCourse;
 
-  selectEl.onchange = loadAndShowMemo;
+  const syncMemoCourseFromNextCourse = (explicitCourse = null) => {
+    const matchedCourse = resolveNextCourseName(explicitCourse, targetCourseList);
+    if (matchedCourse && [...selectEl.options].some(opt => opt.value === matchedCourse)) {
+      selectEl.value = matchedCourse;
+    } else if (!selectEl.value && targetCourseList.length > 0) {
+      selectEl.value = targetCourseList[0];
+    }
+    loadMemoForActiveModalCourse();
+  };
+  window.syncMemoCourseFromNextCourse = syncMemoCourseFromNextCourse;
+
+  selectEl.onchange = loadMemoForActiveModalCourse;
   if (memoCategorySelect) {
-    memoCategorySelect.onchange = loadAndShowMemo;
+    memoCategorySelect.onchange = loadMemoForActiveModalCourse;
   }
 
-  // 初期選択
   if (targetCourseList.length > 0) {
-    selectEl.value = targetCourseList[0];
-    loadAndShowMemo();
+    syncMemoCourseFromNextCourse();
   }
 
-  // 保存ボタン
   if (saveBtn) {
     saveBtn.onclick = async () => {
       const selectedCourse = selectEl.value;
       const currentCategory = getCurrentCategory();
       if (!selectedCourse) return alert("コースを選択してください");
 
-      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl.value);
+      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl ? textareaEl.value : "");
       if (success) {
         const statusEl = document.getElementById("memoSaveStatus");
         if (statusEl) {
@@ -12881,8 +12918,6 @@ function initCourseMemoTabIndexedDB() {
     };
   }
 }
-
-
 // ==========================================
 // MMR Matrix 計算 & UIコントローラー（多言語対応版）
 // ==========================================
