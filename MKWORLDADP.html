@@ -2698,6 +2698,9 @@ function initHistoryPanelPosition() {
 /**
  * nextCourse（引数・モーダル入力・localStorage・#obsCourse）から対象コースを取得
  */
+/**
+ * nextCourse（引数・モーダル入力・localStorage・#obsCourse）から対象コースを取得
+ */
 function resolveNextCourseForMemo(explicitCourse = null) {
   if (explicitCourse && String(explicitCourse).trim()) {
     return String(explicitCourse).trim();
@@ -2720,53 +2723,70 @@ function resolveNextCourseForMemo(explicitCourse = null) {
 }
 
 /**
- * 現在の nextCourse（または指定コース）に合わせて #memoCourseSelect とメモ内容を更新
+ * 現在の nextCourse（または指定コース）に合わせてモーダル内サイドパネルのメモを更新
  */
 window.loadMemoForActiveModalCourse = async function(explicitCourse = null) {
   const memoToggle = document.getElementById("modalMemoToggle");
   if (memoToggle && !memoToggle.checked) return;
 
-  const selectEl = document.getElementById("memoCourseSelect");
-  const textareaEl = document.getElementById("courseMemoTextarea");
-  const titleEl = document.getElementById("selectedCourseTitle");
+  const courseNameEl = document.getElementById("modalActiveCourseName");
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
   const memoCategorySelect = document.getElementById("memoCategorySelect");
 
-  if (!selectEl) return;
+  const rawCourse = resolveNextCourseForMemo(explicitCourse);
+  const displayCourse = (typeof translateMKWorldCourse === "function" && typeof currentLang !== "undefined" && rawCourse)
+    ? translateMKWorldCourse(rawCourse, currentLang)
+    : rawCourse;
 
-  const rawNext = resolveNextCourseForMemo(explicitCourse);
-  if (rawNext) {
-    applyCourseToSelect(selectEl, rawNext);
+  if (!rawCourse) {
+    if (courseNameEl) {
+      courseNameEl.textContent = "（未選択）";
+      courseNameEl.title = "コース未選択";
+    }
+    if (textareaEl) {
+      textareaEl.value = "";
+    }
+    return;
   }
 
-  // それでも未選択なら先頭の有効なコースをフォールバック
-  if (!selectEl.value && selectEl.options.length > 0) {
-    const firstValid = [...selectEl.options].find(opt => opt.value !== "");
-    if (firstValid) selectEl.value = firstValid.value;
+  if (courseNameEl) {
+    courseNameEl.textContent = displayCourse || rawCourse;
+    courseNameEl.title = displayCourse || rawCourse;
   }
 
-  const selectedCourse = selectEl.value;
-  if (!selectedCourse) return;
-
-  const currentCategory = memoCategorySelect ? memoCategorySelect.value : "other";
-  const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
-
-  if (titleEl) {
-    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
+  // カテゴリ判定（memoCategorySelect があれば優先、なければ modalMode から判定）
+  let currentCategory = "other";
+  if (memoCategorySelect && memoCategorySelect.value) {
+    currentCategory = memoCategorySelect.value;
+  } else if (typeof modalMode !== "undefined" && modalMode && typeof getMemoCategory === "function") {
+    currentCategory = getMemoCategory(modalMode.value);
   }
+
   if (textareaEl) {
     textareaEl.value = "読み込み中...";
   }
 
-  const memo = await loadCourseMemo(currentCategory, selectedCourse);
-  if (selectEl.value === selectedCourse && (!memoCategorySelect || memoCategorySelect.value === currentCategory) && textareaEl) {
-    textareaEl.value = memo;
+  // IndexedDB から読み込み（rawCourse 基準で取得し、空なら翻訳後名称でもフォールバック）
+  let memo = "";
+  if (typeof loadCourseMemo === "function") {
+    memo = await loadCourseMemo(currentCategory, rawCourse);
+    if (!memo && displayCourse && displayCourse !== rawCourse) {
+      memo = await loadCourseMemo(currentCategory, displayCourse);
+    }
+  }
+
+  // 読み込み完了後に現在の nextCourse と一致していれば反映
+  const latestCourse = resolveNextCourseForMemo(explicitCourse);
+  if (latestCourse === rawCourse && textareaEl) {
+    textareaEl.value = memo || "";
   }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
   const memoToggle = document.getElementById("modalMemoToggle");
   const memoWrapper = document.getElementById("modalMemoWrapper");
-  const selectEl = document.getElementById("memoCourseSelect");
+  const saveQuickBtn = document.getElementById("saveModalMemoBtn");
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
   const memoCategorySelect = document.getElementById("memoCategorySelect");
 
   if (memoToggle && memoWrapper) {
@@ -2790,29 +2810,46 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // ユーザーがプルダウンやカテゴリを手動変更したときは、その選択値のままメモだけ再読込
-  const reloadSelectedOnly = async () => {
-    const toggle = document.getElementById("modalMemoToggle");
-    if (toggle && !toggle.checked) return;
-    if (!selectEl || !selectEl.value) return;
+  // 3. クイック保存ボタン
+  if (saveQuickBtn && textareaEl) {
+    saveQuickBtn.onclick = async () => {
+      const targetCourse = resolveNextCourseForMemo();
+      if (!targetCourse) {
+        return alert("対象コースが見つかりません");
+      }
 
-    const currentCategory = memoCategorySelect ? memoCategorySelect.value : "other";
-    const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
-    const titleEl = document.getElementById("selectedCourseTitle");
-    const textareaEl = document.getElementById("courseMemoTextarea");
+      let currentCategory = "other";
+      if (memoCategorySelect && memoCategorySelect.value) {
+        currentCategory = memoCategorySelect.value;
+      } else if (typeof modalMode !== "undefined" && modalMode && typeof getMemoCategory === "function") {
+        currentCategory = getMemoCategory(modalMode.value);
+      }
 
-    if (titleEl) titleEl.textContent = `${selectEl.value} [ ${categoryText} ]`;
-    if (textareaEl) textareaEl.value = "読み込み中...";
+      if (typeof saveCourseMemo === "function") {
+        const ok = await saveCourseMemo(currentCategory, targetCourse, textareaEl.value);
+        if (ok) {
+          const origText = saveQuickBtn.textContent;
+          saveQuickBtn.textContent = "保存済 ✓";
+          setTimeout(() => {
+            saveQuickBtn.textContent = origText;
+          }, 1200);
+        } else {
+          alert("メモの保存に失敗しました");
+        }
+      }
+    };
+  }
 
-    const memo = await loadCourseMemo(currentCategory, selectEl.value);
-    if (selectEl.value && (!memoCategorySelect || memoCategorySelect.value === currentCategory) && textareaEl) {
-      textareaEl.value = memo;
-    }
-  };
-
-  if (selectEl) selectEl.onchange = reloadSelectedOnly;
-  if (memoCategorySelect) memoCategorySelect.onchange = reloadSelectedOnly;
+  // 4. モード変更時にもメモカテゴリ・コースを更新
+  if (typeof modalMode !== "undefined" && modalMode) {
+    modalMode.addEventListener("change", () => {
+      if (typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    });
+  }
 });
+  
 </script>
 
 
