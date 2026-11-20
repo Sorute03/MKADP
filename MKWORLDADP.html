@@ -2117,18 +2117,52 @@ closeModalBtn.onclick = () => {
 
 
 <script>
+/**
+ * 復元・読み込み後の最新データからレース一覧を再描画するヘルパー
+ */
+function refreshRaceHistoryAfterRestore() {
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
+  }
+
+  if (typeof renderRaceHistory === "function") {
+    if (typeof getFilteredRecords === "function") {
+      const filtered = getFilteredRecords();
+      // フィルター結果が空でも allRecords 側にデータがある場合は全体を表示して見失わないようにする
+      if ((!filtered || filtered.length === 0) && Array.isArray(window.allRecords) && window.allRecords.length > 0) {
+        renderRaceHistory(window.allRecords);
+        return;
+      }
+      renderRaceHistory(filtered);
+    } else if (Array.isArray(window.allRecords)) {
+      renderRaceHistory(window.allRecords);
+    }
+  }
+}
+
 function renderRaceHistory(records) {
   const box = document.getElementById("raceHistoryList");
   if (!box) return;
 
-  // ▼ 共通フィルター済み records が渡される前提
-  let list = records || [];
+  // 引数が無い／空の場合でも allRecords があればフォールバックで拾う
+  let list = Array.isArray(records) && records.length > 0
+    ? records
+    : (Array.isArray(window.allRecords) ? window.allRecords : (records || []));
 
-  // ▼ 必ず配列に変換してから sort を実行するよう修正
-  let clonedList = Array.isArray(list) ? clone(list) : Array.from(list || []);
-  list = clonedList.sort((a, b) => b.timestamp - a.timestamp);
+  // 配列化して安全にコピー＆ソート（timestamp が数値・文字列・Dateでも比較できるように正規化）
+  const toTs = (val) => {
+    if (typeof val === "number" && Number.isFinite(val)) return val;
+    const parsed = Date.parse(val);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
 
-  const dict = i18nDict[currentLang] || i18nDict['ja'];
+  let clonedList = Array.isArray(list)
+    ? (typeof clone === "function" ? clone(list) : list.slice())
+    : Array.from(list || []);
+
+  list = clonedList.sort((a, b) => toTs(b.timestamp) - toTs(a.timestamp));
+
+  const dict = (typeof i18nDict !== "undefined" && (i18nDict[currentLang] || i18nDict["ja"])) || {};
 
   if (!list.length) {
     box.innerHTML = `<p>${dict.msg_no_data || "レース履歴がありません。"}</p>`;
@@ -2142,22 +2176,19 @@ function renderRaceHistory(records) {
     div.className = "race-history-item";
     div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
-    const date = new Date(r.timestamp).toLocaleString();
-    
-    // コース名を現在の言語に合わせて翻訳
-    const translatedCourse = typeof translateMKWorldCourse === "function" 
-      ? translateMKWorldCourse(r.course, currentLang) 
+    const tsNum = toTs(r.timestamp);
+    const date = tsNum ? new Date(tsNum).toLocaleString() : "";
+
+    const translatedCourse = typeof translateMKWorldCourse === "function"
+      ? translateMKWorldCourse(r.course, currentLang)
       : r.course;
 
-    // 順位やスコアの単位
     const rankSuffix = dict.unit_rank !== undefined ? dict.unit_rank : "位";
     const ptsSuffix = dict.unit_pts !== undefined ? dict.unit_pts : "点";
 
-    // モード名を言語に合わせて綺麗に変換
-    let modeKey = `opt_mode_${r.mode}`;
-    const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, '');
+    const modeKey = `opt_mode_${r.mode}`;
+    const translatedMode = (dict[modeKey] || r.mode || "").replace(/ \([\s\S]*?\)/g, "");
 
-    // ボタンのテキスト変数
     const editLabel = dict.btn_edit || "編集";
     const deleteLabel = dict.btn_delete || "削除";
 
@@ -2166,11 +2197,11 @@ function renderRaceHistory(records) {
       (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${translatedMode})
       <span style="margin-left:10px; color:#555;">${date}</span>
 
-      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_edit">
+      <button type="button" class="editBtn" data-ts="${tsNum}" style="margin-left:10px;" data-i18n="btn_edit">
         ${editLabel}
       </button>
 
-      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_delete">
+      <button type="button" class="deleteBtn" data-ts="${tsNum}" style="margin-left:10px;" data-i18n="btn_delete">
         ${deleteLabel}
       </button>
     `;
@@ -2178,14 +2209,21 @@ function renderRaceHistory(records) {
     box.appendChild(div);
   });
 
-  // ▼ 編集ボタン
-  document.querySelectorAll(".editBtn").forEach(btn => {
-    btn.onclick = () => openEditRecord(Number(btn.dataset.ts));
+  // 一覧コンテナ（box）内のボタンに限定してイベントを紐づけ
+  box.querySelectorAll(".editBtn").forEach(btn => {
+    btn.onclick = () => {
+      if (typeof openEditRecord === "function") {
+        openEditRecord(Number(btn.dataset.ts));
+      }
+    };
   });
 
-  // ▼ 削除ボタン
-  document.querySelectorAll(".deleteBtn").forEach(btn => {
-    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
+  box.querySelectorAll(".deleteBtn").forEach(btn => {
+    btn.onclick = () => {
+      if (typeof deleteRecord === "function") {
+        deleteRecord(Number(btn.dataset.ts));
+      }
+    };
   });
 }
 
