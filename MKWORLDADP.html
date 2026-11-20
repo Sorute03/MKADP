@@ -1327,14 +1327,21 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
 
-    <div id="courseMemoBackupBox" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
-      <button id="exportCourseMemoBtn" type="button" style="padding: 4px 10px; font-size: 11px; cursor: pointer;">
-        💾 メモをバックアップ
-      </button>
-      <button id="importCourseMemoBtn" type="button" style="padding: 4px 10px; font-size: 11px; cursor: pointer;">
-        📂 バックアップから復元
-      </button>
-      <input id="importCourseMemoFileInput" type="file" accept=".json,application/json" style="display: none;">
+    <!-- コースメモのバックアップ・復元 -->
+    <div id="courseMemoBackupBox" style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;">コースメモのバックアップ・復元</h3>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button id="exportCourseMemoBtn" type="button" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+          💾 メモをバックアップ
+        </button>
+        <button id="importCourseMemoBtn" type="button" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+          📂 バックアップから復元
+        </button>
+        <input id="importCourseMemoFileInput" type="file" accept=".json,application/json" style="display: none;">
+      </div>
+      <p style="margin-top: 10px; margin-bottom: 0; font-size: 13px; color: #555;">
+        ※ IndexedDB に保存されているコースメモ（野良・大会／ラウンジ）を JSON ファイルで出力・復元します。
+      </p>
     </div>
 
     <!-- ② その他のバックアップ・ファイル復元ボタン類 -->
