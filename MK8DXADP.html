@@ -1180,6 +1180,23 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
 
+    <!-- コースメモのバックアップ・復元 -->
+    <div id="courseMemoBackupBox" style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px;">
+      <h3 style="margin-top: 0; color: #27ae60;">コースメモのバックアップ・復元</h3>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button id="exportCourseMemoBtn" type="button" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+          💾 メモをバックアップ
+        </button>
+        <button id="importCourseMemoBtn" type="button" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+          📂 バックアップから復元
+        </button>
+        <input id="importCourseMemoFileInput" type="file" accept=".json,application/json" style="display: none;">
+      </div>
+      <p style="margin-top: 10px; margin-bottom: 0; font-size: 13px; color: #555;">
+        ※ IndexedDB に保存されているコースメモ（野良・大会／ラウンジ）を JSON ファイルで出力・復元します。
+      </p>
+    </div>
+
     <!-- ② その他のバックアップ・ファイル復元ボタン類 -->
     <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px; display: flex; gap: 12px; flex-wrap: wrap;">
       <button id="importBackupBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
@@ -1219,6 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ※ 取り込んだデータは IndexedDB に保存され、今後は安全に管理されます。
       </p>
     </div>
+    
     <div style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px;">
       <h3 data-i18n="dup_title">重複データの整理</h3>
       <button id="removeDupBtn" data-i18n="btn_remove_dup">重複データを自動削除する</button>
@@ -1228,6 +1246,8 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
+
+
   
 
 
@@ -1944,18 +1964,116 @@ closeModalBtn.onclick = () => {
 
 
 <script>
-function renderRaceHistory(records) {
+**
+ * 復元・読み込み後の最新データからレース一覧を再描画するヘルパー
+ */
+function refreshRaceHistoryAfterRestore() {
+  if (typeof refreshAllAnalysisViews === "function") {
+    refreshAllAnalysisViews();
+  }
+
+  if (typeof renderRaceHistory === "function") {
+    if (typeof getFilteredRecords === "function") {
+      const filtered = getFilteredRecords();
+      // フィルター結果が空でも allRecords 側にデータがある場合は全体を表示して見失わないようにする
+      if ((!filtered || filtered.length === 0) && Array.isArray(window.allRecords) && window.allRecords.length > 0) {
+        renderRaceHistory(window.allRecords);
+        return;
+      }
+      renderRaceHistory(filtered);
+    } else if (Array.isArray(window.allRecords)) {
+      renderRaceHistory(window.allRecords);
+    }
+  }
+}
+
+/**
+ * getAllRecords() / loadADPIndexedDBRecords() / allRecords を統合（重複排除）
+ */
+async function collectRaceHistoryRecords(explicitRecords = null) {
+  let dbRecords = [];
+  if (typeof getAllRecords === "function") {
+    dbRecords = await getAllRecords();
+  } else if (typeof loadADPIndexedDBRecords === "function") {
+    dbRecords = await loadADPIndexedDBRecords();
+  } else if (typeof getAllRecordsFromMogiDB === "function") {
+    dbRecords = await getAllRecordsFromMogiDB();
+  }
+
+  const argRecords = Array.isArray(explicitRecords) ? explicitRecords : [];
+  const memRecords = Array.isArray(window.allRecords) ? window.allRecords : [];
+
+  const combined = argRecords.concat(Array.isArray(dbRecords) ? dbRecords : [], memRecords);
+
+  const seen = new Set();
+  const merged = [];
+
+  for (const r of combined) {
+    if (!r || typeof r !== "object") continue;
+    const key = [
+      r.timestamp ?? "",
+      r.course ?? "",
+      r.rank ?? "",
+      r.score ?? "",
+      r.mode ?? "",
+      r.season ?? "",
+      r.tier ?? ""
+    ].join("|");
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(r);
+    }
+  }
+
+  return merged;
+}
+
+let __raceHistoryRenderSeq = 0;
+
+async function renderRaceHistory(records) {
   const box = document.getElementById("raceHistoryList");
   if (!box) return;
 
-  // ▼ 共通フィルター済み records が渡される前提
-  let list = records || [];
+  const seq = ++__raceHistoryRenderSeq;
 
-  // ▼ 必ず配列に変換してから sort を実行するよう修正
-  let clonedList = Array.isArray(list) ? clone(list) : Array.from(list || []);
-  list = clonedList.sort((a, b) => b.timestamp - a.timestamp);
+  // mogiDB.records（getAllRecords等）とメモリ上の allRecords を統合して取得
+  const mergedAll = typeof collectRaceHistoryRecords === "function"
+    ? await collectRaceHistoryRecords(records)
+    : (Array.isArray(records) && records.length > 0
+        ? records
+        : (Array.isArray(window.allRecords) ? window.allRecords : (records || [])));
 
-  const dict = i18nDict[currentLang] || i18nDict['ja'];
+  // 古い非同期描画が後から完了した場合は破棄
+  if (seq !== __raceHistoryRenderSeq) return;
+
+  // メモリ側 allRecords も最新状態に同期
+  window.allRecords = mergedAll;
+
+  let list = mergedAll;
+
+  // フィルター関数があれば適用。ただし復元直後などでフィルター結果が0件かつ全体データがある場合は全体を表示
+  if (typeof getFilteredRecords === "function") {
+    const filtered = getFilteredRecords();
+    if (Array.isArray(filtered) && filtered.length > 0) {
+      list = filtered;
+    }
+  }
+
+  // timestamp が数値・文字列・Dateでも比較できるように正規化
+  const toTs = (val) => {
+    if (typeof val === "number" && Number.isFinite(val)) return val;
+    const parsed = Date.parse(val);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  let clonedList = Array.isArray(list)
+    ? (typeof clone === "function" ? clone(list) : list.slice())
+    : Array.from(list || []);
+
+  list = clonedList.sort((a, b) => toTs(b.timestamp) - toTs(a.timestamp));
+
+  const dict = (typeof i18nDict !== "undefined" && (i18nDict[currentLang] || i18nDict["ja"])) || {};
 
   if (!list.length) {
     box.innerHTML = `<p>${dict.msg_no_data || "レース履歴がありません。"}</p>`;
@@ -1969,11 +2087,12 @@ function renderRaceHistory(records) {
     div.className = "race-history-item";
     div.style = "padding:8px; border-bottom:1px solid #ddd;";
 
-    const date = new Date(r.timestamp).toLocaleString();
-    
+    const tsNum = toTs(r.timestamp);
+    const date = tsNum ? new Date(tsNum).toLocaleString() : "";
+
     // コース名を現在の言語に合わせて翻訳
-    const translatedCourse = typeof translateMKWorldCourse === "function" 
-      ? translateMKWorldCourse(r.course, currentLang) 
+    const translatedCourse = typeof translateMKWorldCourse === "function"
+      ? translateMKWorldCourse(r.course, currentLang)
       : r.course;
 
     // 順位やスコアの単位
@@ -1981,8 +2100,8 @@ function renderRaceHistory(records) {
     const ptsSuffix = dict.unit_pts !== undefined ? dict.unit_pts : "点";
 
     // モード名を言語に合わせて綺麗に変換
-    let modeKey = `opt_mode_${r.mode}`;
-    const translatedMode = (dict[modeKey] || r.mode).replace(/ \([\s\S]*?\)/g, '');
+    const modeKey = `opt_mode_${r.mode}`;
+    const translatedMode = (dict[modeKey] || r.mode || "").replace(/ \([\s\S]*?\)/g, "");
 
     // ボタンのテキスト変数
     const editLabel = dict.btn_edit || "編集";
@@ -1993,11 +2112,11 @@ function renderRaceHistory(records) {
       (${r.rank}${rankSuffix} / ${r.score}${ptsSuffix} / ${translatedMode})
       <span style="margin-left:10px; color:#555;">${date}</span>
 
-      <button class="editBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_edit">
+      <button type="button" class="editBtn" data-ts="${tsNum}" style="margin-left:10px;" data-i18n="btn_edit">
         ${editLabel}
       </button>
 
-      <button class="deleteBtn" data-ts="${r.timestamp}" style="margin-left:10px;" data-i18n="btn_delete">
+      <button type="button" class="deleteBtn" data-ts="${tsNum}" style="margin-left:10px;" data-i18n="btn_delete">
         ${deleteLabel}
       </button>
     `;
@@ -2005,14 +2124,21 @@ function renderRaceHistory(records) {
     box.appendChild(div);
   });
 
-  // ▼ 編集ボタン
-  document.querySelectorAll(".editBtn").forEach(btn => {
-    btn.onclick = () => openEditRecord(Number(btn.dataset.ts));
+  // 一覧コンテナ（box）内のボタンに限定してイベントを紐づけ
+  box.querySelectorAll(".editBtn").forEach(btn => {
+    btn.onclick = () => {
+      if (typeof openEditRecord === "function") {
+        openEditRecord(Number(btn.dataset.ts));
+      }
+    };
   });
 
-  // ▼ 削除ボタン
-  document.querySelectorAll(".deleteBtn").forEach(btn => {
-    btn.onclick = () => deleteRecord(Number(btn.dataset.ts));
+  box.querySelectorAll(".deleteBtn").forEach(btn => {
+    btn.onclick = () => {
+      if (typeof deleteRecord === "function") {
+        deleteRecord(Number(btn.dataset.ts));
+      }
+    };
   });
 }
 
@@ -2536,9 +2662,193 @@ function initHistoryPanelPosition() {
 }
 
 
+/**
+ * nextCourse（引数・モーダル入力・localStorage・#obsCourse）から対象コースを取得
+ */
+/**
+ * nextCourse（引数・モーダル入力・localStorage・#obsCourse）から対象コースを取得
+ */
+/**
+ * モーダルで現在対象になっているコース名を取得する
+ * （未入力のレースコース → localStorage.nextCourse → #obsCourse の順）
+ */
+function getActiveModalMemoCourse() {
+  if (typeof getNextCourseFromModal === "function") {
+    const fromModal = getNextCourseFromModal();
+    if (fromModal && String(fromModal).trim()) {
+      return String(fromModal).trim();
+    }
+  }
+
+  const fromStorage = localStorage.getItem("nextCourse");
+  if (fromStorage && fromStorage.trim()) {
+    return fromStorage.trim();
+  }
+
+  const obsCourse = document.getElementById("obsCourse");
+  if (obsCourse && obsCourse.value && obsCourse.value.trim()) {
+    return obsCourse.value.trim();
+  }
+
+  return null;
+}
+
+/**
+ * モーダルで現在対象になっているメモカテゴリ（nora / other）を取得する
+ */
+function getActiveModalMemoCategory() {
+  if (typeof modalMode !== "undefined" && modalMode && modalMode.value) {
+    return getMemoCategory(modalMode.value);
+  }
+  const memoCategorySelect = document.getElementById("memoCategorySelect");
+  if (memoCategorySelect && memoCategorySelect.value) {
+    return memoCategorySelect.value;
+  }
+  return "other";
+}
+
+/**
+ * コース表示名の整形
+ */
+function formatModalCourseTitle(rawCourse) {
+  if (!rawCourse) return "（未選択）";
+  if (typeof translateMKWorldCourse === "function" && typeof currentLang !== "undefined") {
+    return translateMKWorldCourse(rawCourse, currentLang);
+  }
+  return rawCourse;
+}
+
+/**
+ * モーダル内のコースメモを確認用に読み込む（コース変更・モード変更・モーダル表示時に呼ぶ）
+ */
+window.loadMemoForActiveModalCourse = async function(explicitCourse = null) {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  if (memoToggle && !memoToggle.checked) return;
+
+  const courseNameEl = document.getElementById("modalActiveCourseName");
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
+  if (!courseNameEl && !textareaEl) return;
+
+  const targetCourse = (explicitCourse && String(explicitCourse).trim())
+    ? String(explicitCourse).trim()
+    : getActiveModalMemoCourse();
+
+  const category = getActiveModalMemoCategory();
+
+  if (!targetCourse) {
+    if (courseNameEl) {
+      courseNameEl.textContent = "（未選択）";
+      courseNameEl.title = "コース未選択";
+    }
+    if (textareaEl) {
+      textareaEl.value = "";
+      textareaEl.placeholder = "対象コースがありません";
+    }
+    return;
+  }
+
+  const displayTitle = formatModalCourseTitle(targetCourse);
+  if (courseNameEl) {
+    courseNameEl.textContent = displayTitle;
+    courseNameEl.title = displayTitle;
+  }
+
+  if (textareaEl) {
+    textareaEl.value = "読み込み中...";
+    textareaEl.placeholder = `${displayTitle} のメモを入力・編集...`;
+  }
+
+  const savedMemo = await loadCourseMemo(category, targetCourse);
+
+  // 読み込み完了時点でも同じコース・カテゴリならテキストエリアに反映
+  const currentCourse = (explicitCourse && String(explicitCourse).trim())
+    ? String(explicitCourse).trim()
+    : getActiveModalMemoCourse();
+  if (currentCourse === targetCourse && getActiveModalMemoCategory() === category && textareaEl) {
+    textareaEl.value = savedMemo || "";
+  }
+};
+
+/**
+ * モーダル内のメモを編集・追加保存する
+ */
+async function saveActiveModalCourseMemo() {
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
+  const saveBtn = document.getElementById("saveModalMemoBtn");
+  if (!textareaEl) return;
+
+  const targetCourse = getActiveModalMemoCourse();
+  if (!targetCourse) {
+    alert("メモを保存するコースがありません");
+    return;
+  }
+
+  const category = getActiveModalMemoCategory();
+  const memoText = textareaEl.value;
+
+  const ok = await saveCourseMemo(category, targetCourse, memoText);
+  if (ok) {
+    // もし通常タブ側のメモ欄（#courseMemoTextarea / #memoCourseSelect）も同じコースを表示中なら同期
+    const tabSelect = document.getElementById("memoCourseSelect");
+    const tabTextarea = document.getElementById("courseMemoTextarea");
+    if (tabSelect && tabTextarea && tabSelect.value === targetCourse) {
+      tabTextarea.value = memoText;
+    }
+
+    if (saveBtn) {
+      const prevText = saveBtn.textContent;
+      saveBtn.textContent = "保存済 ✓";
+      setTimeout(() => {
+        saveBtn.textContent = prevText;
+      }, 1200);
+    }
+  } else {
+    alert("メモの保存に失敗しました");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const memoToggle = document.getElementById("modalMemoToggle");
   const memoWrapper = document.getElementById("modalMemoWrapper");
+  const saveBtn = document.getElementById("saveModalMemoBtn");
+
+  if (memoToggle && memoWrapper) {
+    const savedSetting = localStorage.getItem("mk_modal_memo_visible");
+    const isVisible = savedSetting === null ? true : (savedSetting === "true");
+
+    memoToggle.checked = isVisible;
+    memoWrapper.style.display = isVisible ? "block" : "none";
+
+    memoToggle.onchange = () => {
+      const checked = memoToggle.checked;
+      memoWrapper.style.display = checked ? "block" : "none";
+      localStorage.setItem("mk_modal_memo_visible", checked);
+
+      if (checked && typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    };
+  }
+
+  if (saveBtn) {
+    saveBtn.onclick = saveActiveModalCourseMemo;
+  }
+
+  if (typeof modalMode !== "undefined" && modalMode) {
+    modalMode.addEventListener("change", () => {
+      if (typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    });
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const memoWrapper = document.getElementById("modalMemoWrapper");
+  const saveQuickBtn = document.getElementById("saveModalMemoBtn");
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
+  const memoCategorySelect = document.getElementById("memoCategorySelect");
 
   if (memoToggle && memoWrapper) {
     // 1. 保存されている設定を読み込み（デフォルトは true / 表示）
@@ -2554,26 +2864,53 @@ document.addEventListener("DOMContentLoaded", () => {
       memoWrapper.style.display = checked ? "block" : "none";
       localStorage.setItem("mk_modal_memo_visible", checked);
 
-      // 表示に切り替えたときは、現在のコースのメモを即座に読み込む
-      if (checked && typeof loadMemoForActiveModalCourse === "function") {
-        loadMemoForActiveModalCourse();
+      // 表示に切り替えたときは、現在の nextCourse を反映してメモを読み込む
+      if (checked && typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
       }
     };
   }
-});
 
-// 3. loadMemoForActiveModalCourse 内でも「非表示設定のときは処理をスキップ」するようにガードを入れる
-const originalLoadMemoForActiveModalCourse = window.loadMemoForActiveModalCourse;
-window.loadMemoForActiveModalCourse = async function() {
-  const memoToggle = document.getElementById("modalMemoToggle");
-  // チェックが入っていない（非表示設定）の場合は何もしない
-  if (memoToggle && !memoToggle.checked) return;
+  // 3. クイック保存ボタン
+  if (saveQuickBtn && textareaEl) {
+    saveQuickBtn.onclick = async () => {
+      const targetCourse = resolveNextCourseForMemo();
+      if (!targetCourse) {
+        return alert("対象コースが見つかりません");
+      }
 
-  // 元の処理を実行
-  if (typeof originalLoadMemoForActiveModalCourse === "function") {
-    await originalLoadMemoForActiveModalCourse();
+      let currentCategory = "other";
+      if (memoCategorySelect && memoCategorySelect.value) {
+        currentCategory = memoCategorySelect.value;
+      } else if (typeof modalMode !== "undefined" && modalMode && typeof getMemoCategory === "function") {
+        currentCategory = getMemoCategory(modalMode.value);
+      }
+
+      if (typeof saveCourseMemo === "function") {
+        const ok = await saveCourseMemo(currentCategory, targetCourse, textareaEl.value);
+        if (ok) {
+          const origText = saveQuickBtn.textContent;
+          saveQuickBtn.textContent = "保存済 ✓";
+          setTimeout(() => {
+            saveQuickBtn.textContent = origText;
+          }, 1200);
+        } else {
+          alert("メモの保存に失敗しました");
+        }
+      }
+    };
   }
-};
+
+  // 4. モード変更時にもメモカテゴリ・コースを更新
+  if (typeof modalMode !== "undefined" && modalMode) {
+    modalMode.addEventListener("change", () => {
+      if (typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    });
+  }
+});
+  
   
 </script>
 
@@ -12065,7 +12402,7 @@ const activeCourseList = (typeof courseList !== 'undefined') ? courseList : [
 
 
 // ▼ 変数の重複衝突を防ぐため、コースメモ専用のユニークな定数名に変更
-const MK_MEMO_DB_NAME = "MKCourseMemoDXDB";
+const MK_MEMO_DB_NAME = "MKCourseMemoDB";
 const MK_MEMO_STORE_NAME = "memos";
 const MK_MEMO_DB_VERSION = 1;
 
@@ -12078,16 +12415,16 @@ let courseMemoData = {};
 function openCourseMemoDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(MK_MEMO_DB_NAME, MK_MEMO_DB_VERSION);
-    
+
     request.onerror = (event) => {
       console.error("IndexedDB open error:", event.target.error);
       reject(event.target.error);
     };
-    
+
     request.onsuccess = (event) => {
       resolve(event.target.result);
     };
-    
+
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(MK_MEMO_STORE_NAME)) {
@@ -12097,9 +12434,6 @@ function openCourseMemoDB() {
   });
 }
 
-/**
- * 指定したコースのメモをIndexedDBから取得
- */
 /**
  * モーダルのモード（lounge, tournament, nora）から、メモ用の2分類キー（nora または other）を判定する
  */
@@ -12121,7 +12455,7 @@ async function loadCourseMemo(category, courseName) {
   try {
     const db = await openCourseMemoDB();
     const storageKey = getMemoStorageKey(category, courseName);
-    
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(MK_MEMO_STORE_NAME, "readonly");
       const store = transaction.objectStore(MK_MEMO_STORE_NAME);
@@ -12158,94 +12492,437 @@ async function saveCourseMemo(category, courseName, memoText) {
   }
 }
 
-// 起動時の初期化
-document.addEventListener("DOMContentLoaded", async () => {
-  // ▼ refreshAllAnalysisViews が未定義の場合のエラーを安全にガード
-  if (typeof refreshAllAnalysisViews === 'undefined') {
-    window.refreshAllAnalysisViews = function() {
-      console.warn("refreshAllAnalysisViews は定義されていません");
-    };
-  }
+/**
+ * nextCourse（引数・モーダル入力・localStorage・#obsCourse）から対象コースを取得
+ */
+function resolveNextCourseName(explicitCourse = null, courseListArr = []) {
+  const candidate =
+    explicitCourse ||
+    (typeof getNextCourseFromModal === "function" ? getNextCourseFromModal() : null) ||
+    localStorage.getItem("nextCourse") ||
+    document.getElementById("obsCourse")?.value ||
+    null;
 
-  // コースメモタブの初期化を実行
-  await initCourseMemoTabIndexedDB();
-});
+  if (!candidate) return null;
+  const trimmed = String(candidate).trim();
+  if (!trimmed) return null;
+
+  if (Array.isArray(courseListArr) && courseListArr.length > 0) {
+    return (
+      courseListArr.find(c => c === trimmed) ||
+      courseListArr.find(c => c.toLowerCase() === trimmed.toLowerCase()) ||
+      trimmed
+    );
+  }
+  return trimmed;
+}
 
 /**
- * コースメモタブの初期化（IndexedDB対応版）
+ * 現在のカテゴリ（nora / other）を取得
+ */
+function resolveMemoCategory() {
+  const memoCategorySelect = document.getElementById("memoCategorySelect");
+  if (memoCategorySelect && memoCategorySelect.value) {
+    return memoCategorySelect.value;
+  }
+  if (typeof modalMode !== "undefined" && modalMode && modalMode.value) {
+    return getMemoCategory(modalMode.value);
+  }
+  return "other";
+}
+
+/**
+ * コース名を表示用文字列に変換
+ */
+function formatCourseLabel(rawCourse) {
+  if (!rawCourse) return "";
+  if (typeof translateMKWorldCourse === "function" && typeof currentLang !== "undefined") {
+    return translateMKWorldCourse(rawCourse, currentLang);
+  }
+  return rawCourse;
+}
+
+/**
+ * モーダル内サイドパネルのコース名とメモを nextCourse に合わせて更新
+ */
+async function updateModalSideMemo(explicitCourse = null) {
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const courseNameEl = document.getElementById("modalActiveCourseName");
+  const textareaEl = document.getElementById("modalCourseMemoTextarea");
+
+  if (!courseNameEl && !textareaEl) return;
+  if (memoToggle && !memoToggle.checked) return;
+
+  const targetCourseList = (typeof courseList !== "undefined" && Array.isArray(courseList)) ? courseList : [];
+  const rawCourse = resolveNextCourseName(explicitCourse, targetCourseList);
+
+  if (!rawCourse) {
+    if (courseNameEl) {
+      courseNameEl.textContent = "（未選択）";
+      courseNameEl.title = "コース未選択";
+    }
+    if (textareaEl) {
+      textareaEl.value = "";
+    }
+    return;
+  }
+
+  const displayCourse = formatCourseLabel(rawCourse);
+  if (courseNameEl) {
+    courseNameEl.textContent = displayCourse;
+    courseNameEl.title = displayCourse;
+  }
+
+  const currentCategory = resolveMemoCategory();
+  if (textareaEl) {
+    textareaEl.value = "読み込み中...";
+  }
+
+  let memo = await loadCourseMemo(currentCategory, rawCourse);
+  if (!memo && displayCourse && displayCourse !== rawCourse) {
+    memo = await loadCourseMemo(currentCategory, displayCourse);
+  }
+
+  const latestCourse = resolveNextCourseName(explicitCourse, targetCourseList);
+  if (latestCourse === rawCourse && textareaEl) {
+    textareaEl.value = memo || "";
+  }
+}
+
+/**
+ * コースメモタブおよびモーダルサイドパネルの初期化（IndexedDB対応版）
  */
 function initCourseMemoTabIndexedDB() {
   const selectEl = document.getElementById("memoCourseSelect");
   const textareaEl = document.getElementById("courseMemoTextarea");
   const titleEl = document.getElementById("selectedCourseTitle");
   const saveBtn = document.getElementById("saveCourseMemoBtn");
-  const memoCategorySelect = document.getElementById("memoCategorySelect"); // カテゴリ選択
+  const memoCategorySelect = document.getElementById("memoCategorySelect");
 
-  if (!selectEl) return;
+  const targetCourseList = (typeof courseList !== "undefined" && Array.isArray(courseList)) ? courseList : [];
 
-  const targetCourseList = (typeof courseList !== 'undefined') ? courseList : [];
-
-  // コース一覧の挿入
-  selectEl.innerHTML = "";
-  targetCourseList.forEach(course => {
-    const opt = document.createElement("option");
-    opt.value = course;
-    opt.textContent = course;
-    selectEl.appendChild(opt);
-  });
-
-  // 現在選択されているカテゴリを取得（nora または other）
-  const getCurrentCategory = () => memoCategorySelect ? memoCategorySelect.value : "other";
-
-  // メモをロードしてテキストエリアに反映
-  const loadAndShowMemo = async () => {
+  // コースメモタブ側（#memoCourseSelect がある場合）
+  const loadTabMemoForSelected = async () => {
+    if (!selectEl) return;
     const selectedCourse = selectEl.value;
-    const currentCategory = getCurrentCategory();
     if (!selectedCourse) return;
 
+    const currentCategory = resolveMemoCategory();
     const categoryText = (currentCategory === "nora") ? "野良モード" : "大会・ラウンジ";
-    titleEl.textContent = `${selectedCourse} [ ${categoryText} ]`;
-    textareaEl.value = "読み込み中...";
-    
+
+    if (titleEl) {
+      titleEl.textContent = `${formatCourseLabel(selectedCourse)} [ ${categoryText} ]`;
+    }
+    if (textareaEl) {
+      textareaEl.value = "読み込み中...";
+    }
+
     const memo = await loadCourseMemo(currentCategory, selectedCourse);
-    if (selectEl.value === selectedCourse && getCurrentCategory() === currentCategory) {
-      textareaEl.value = memo;
+    if (selectEl.value === selectedCourse && resolveMemoCategory() === currentCategory && textareaEl) {
+      textareaEl.value = memo || "";
     }
   };
 
-  selectEl.onchange = loadAndShowMemo;
+  if (selectEl) {
+    selectEl.innerHTML = "";
+    targetCourseList.forEach(course => {
+      const opt = document.createElement("option");
+      opt.value = course;
+      opt.textContent = formatCourseLabel(course);
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.onchange = loadTabMemoForSelected;
+  }
+
   if (memoCategorySelect) {
-    memoCategorySelect.onchange = loadAndShowMemo;
+    memoCategorySelect.onchange = () => {
+      loadTabMemoForSelected();
+      updateModalSideMemo();
+    };
   }
 
-  // 初期選択
-  if (targetCourseList.length > 0) {
-    selectEl.value = targetCourseList[0];
-    loadAndShowMemo();
-  }
-
-  // 保存ボタン
-  if (saveBtn) {
+  if (saveBtn && selectEl) {
     saveBtn.onclick = async () => {
       const selectedCourse = selectEl.value;
-      const currentCategory = getCurrentCategory();
       if (!selectedCourse) return alert("コースを選択してください");
 
-      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl.value);
+      const currentCategory = resolveMemoCategory();
+      const success = await saveCourseMemo(currentCategory, selectedCourse, textareaEl ? textareaEl.value : "");
       if (success) {
         const statusEl = document.getElementById("memoSaveStatus");
         if (statusEl) {
           statusEl.style.display = "inline";
           setTimeout(() => { statusEl.style.display = "none"; }, 2000);
         }
+        updateModalSideMemo(selectedCourse);
       } else {
         alert("メモの保存に失敗しました");
       }
     };
   }
+
+  // 外部（saveNextCourse / generateRaceInputs / トグル等）から呼ばれる関数を統一
+  const syncAllMemoViews = async (explicitCourse = null) => {
+    const rawNext = resolveNextCourseName(explicitCourse, targetCourseList);
+    if (selectEl && rawNext && [...selectEl.options].some(opt => opt.value === rawNext)) {
+      selectEl.value = rawNext;
+    } else if (selectEl && !selectEl.value && targetCourseList.length > 0) {
+      selectEl.value = targetCourseList[0];
+    }
+
+    await Promise.all([
+      loadTabMemoForSelected(),
+      updateModalSideMemo(rawNext)
+    ]);
+  };
+
+  window.syncMemoCourseFromNextCourse = syncAllMemoViews;
+  window.loadMemoForActiveModalCourse = (explicitCourse = null) => syncAllMemoViews(explicitCourse);
+
+  // 初期反映
+  syncAllMemoViews();
+}
+
+// 起動時・モーダルメモUIの初期化
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof refreshAllAnalysisViews === "undefined") {
+    window.refreshAllAnalysisViews = function() {
+      console.warn("refreshAllAnalysisViews は定義されていません");
+    };
+  }
+
+  await initCourseMemoTabIndexedDB();
+
+  const memoToggle = document.getElementById("modalMemoToggle");
+  const memoWrapper = document.getElementById("modalMemoWrapper");
+  const saveQuickBtn = document.getElementById("saveModalMemoBtn");
+  const modalTextareaEl = document.getElementById("modalCourseMemoTextarea");
+
+  if (memoToggle && memoWrapper) {
+    const savedSetting = localStorage.getItem("mk_modal_memo_visible");
+    const isVisible = savedSetting === null ? true : (savedSetting === "true");
+
+    memoToggle.checked = isVisible;
+    memoWrapper.style.display = isVisible ? "block" : "none";
+
+    memoToggle.onchange = () => {
+      const checked = memoToggle.checked;
+      memoWrapper.style.display = checked ? "block" : "none";
+      localStorage.setItem("mk_modal_memo_visible", checked);
+
+      if (checked && typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    };
+  }
+
+  if (saveQuickBtn && modalTextareaEl) {
+    saveQuickBtn.onclick = async () => {
+      const targetCourseList = (typeof courseList !== "undefined" && Array.isArray(courseList)) ? courseList : [];
+      const targetCourse = resolveNextCourseName(null, targetCourseList);
+      if (!targetCourse) {
+        return alert("対象コースが見つかりません");
+      }
+
+      const currentCategory = resolveMemoCategory();
+      const ok = await saveCourseMemo(currentCategory, targetCourse, modalTextareaEl.value);
+      if (ok) {
+        const origText = saveQuickBtn.textContent;
+        saveQuickBtn.textContent = "保存済 ✓";
+        setTimeout(() => {
+          saveQuickBtn.textContent = origText;
+        }, 1200);
+      } else {
+        alert("メモの保存に失敗しました");
+      }
+    };
+  }
+
+  if (typeof modalMode !== "undefined" && modalMode) {
+    modalMode.addEventListener("change", () => {
+      if (typeof window.loadMemoForActiveModalCourse === "function") {
+        window.loadMemoForActiveModalCourse();
+      }
+    });
+  }
+});
+  
+
+// 安全にコースを選択状態にするヘルパー（該当optionがなければ現在の選択を維持）
+function applyCourseToSelect(selectEl, rawCourse) {
+  if (!selectEl || !rawCourse) return false;
+  const target = String(rawCourse).trim();
+  if (!target) return false;
+
+  const options = [...selectEl.options];
+  const matched =
+    options.find(opt => opt.value === target) ||
+    options.find(opt => opt.value.toLowerCase() === target.toLowerCase()) ||
+    options.find(opt => opt.textContent.trim() === target);
+
+  if (matched && matched.value !== "") {
+    if (selectEl.value !== matched.value) {
+      selectEl.value = matched.value;
+    }
+    return true;
+  }
+  return false;
 }
 
 
+/**
+ * IndexedDB（memos ストア）内の全コースメモを { [storageKey]: memoText } 形式で取得
+ */
+async function dumpAllCourseMemos() {
+  const db = await openCourseMemoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+    const store = tx.objectStore(MK_MEMO_STORE_NAME);
+    const result = {};
+
+    const cursorReq = store.openCursor();
+    cursorReq.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        result[String(cursor.key)] = cursor.value ?? "";
+        cursor.continue();
+      } else {
+        resolve(result);
+      }
+    };
+    cursorReq.onerror = () => reject(cursorReq.error);
+  });
+}
+
+/**
+ * コースメモを JSON ファイルとしてダウンロード（バックアップ）
+ */
+async function exportCourseMemosJSON() {
+  try {
+    const memos = await dumpAllCourseMemos();
+    const payload = {
+      type: "MKCourseMemoBackup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      memos
+    };
+
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    const filename = `mk_course_memos_${y}${m}${d}.json`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    return true;
+  } catch (e) {
+    console.error("コースメモのバックアップ出力に失敗しました:", e);
+    alert("コースメモのバックアップに失敗しました");
+    return false;
+  }
+}
+
+/**
+ * JSONファイルからコースメモを復元（既存メモとマージ・上書き）
+ */
+async function importCourseMemosFromFile(file, { overwriteExisting = true } = {}) {
+  if (!file) return { imported: 0, skipped: 0 };
+
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+
+  // { memos: { "nora_コース名": "..." } } 形式と { "nora_コース名": "..." } 形式の両方に対応
+  const rawMemos = (parsed && typeof parsed === "object" && parsed.memos && typeof parsed.memos === "object")
+    ? parsed.memos
+    : parsed;
+
+  if (!rawMemos || typeof rawMemos !== "object") {
+    throw new Error("無効なバックアップファイル形式です");
+  }
+
+  const db = await openCourseMemoDB();
+  let imported = 0;
+  let skipped = 0;
+
+  for (const [key, value] of Object.entries(rawMemos)) {
+    if (typeof value !== "string" && value != null) continue;
+    const memoVal = value ?? "";
+
+    if (!overwriteExisting) {
+      const exists = await new Promise((resolve, reject) => {
+        const tx = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+        const store = tx.objectStore(MK_MEMO_STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result !== undefined && req.result !== "");
+        req.onerror = () => reject(req.error);
+      });
+      if (exists) {
+        skipped++;
+        continue;
+      }
+    }
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
+      const store = tx.objectStore(MK_MEMO_STORE_NAME);
+      const req = store.put(memoVal, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+    imported++;
+  }
+
+  // 現在表示中のメモがあれば再読み込み
+  if (typeof window.loadMemoForActiveModalCourse === "function") {
+    await window.loadMemoForActiveModalCourse();
+  }
+
+  return { imported, skipped };
+}    
+
+document.addEventListener("DOMContentLoaded", () => {
+  const exportBtn = document.getElementById("exportCourseMemoBtn");
+  const importBtn = document.getElementById("importCourseMemoBtn");
+  const fileInput = document.getElementById("importCourseMemoFileInput");
+
+  if (exportBtn) {
+    exportBtn.onclick = async () => {
+      await exportCourseMemosJSON();
+    };
+  }
+
+  if (importBtn && fileInput) {
+    importBtn.onclick = () => {
+      fileInput.value = "";
+      fileInput.click();
+    };
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      try {
+        const { imported } = await importCourseMemosFromFile(file, { overwriteExisting: true });
+        alert(`コースメモを ${imported} 件復元しました`);
+      } catch (e) {
+        console.error("復元に失敗しました:", e);
+        alert("バックアップファイルの読み込みに失敗しました");
+      }
+    };
+  }
+});
 
 
 
