@@ -13557,7 +13557,56 @@ function getMmrChangeSummaryText(playersInfo) {
       }
     });
   }
+function updateModalCourseHistory() {
+  const historyArea = document.getElementById("modalCourseHistoryArea");
+  const countSpan = document.getElementById("modalCurrentCount");
+  if (!historyArea) return;
 
+  const dict = typeof i18nDict !== 'undefined' && i18nDict[currentLang] ? i18nDict[currentLang] : (i18nDict['ja'] || {});
+  const unitItems = dict.unit_items || (currentLang === 'en' ? 'items' : '件');
+  const emptyMsg = dict.msg_no_input_yet || (currentLang === 'en' ? 'No courses entered yet' : 'まだ入力されていません');
+
+  const mode = modalMode.value;
+  const count = mode === "lounge" ? 12 : Number(modalRaceCount.value);
+  
+  let enteredCount = 0;
+  let html = "";
+
+  for (let i = 1; i <= count; i++) {
+    const courseEl = document.getElementById(`raceCourse_${i}`);
+    const rankEl = document.getElementById(`raceRank_${i}`);
+
+    if (rankEl && rankEl.value) {
+      enteredCount++;
+      const courseName = courseEl ? courseEl.value : `Race ${i}`;
+      
+      // コース名の多言語対応（関数が存在すれば適用）
+      const translatedCourse = typeof translateMKWorldCourse === "function" 
+        ? translateMKWorldCourse(courseName, typeof currentLang !== 'undefined' ? currentLang : 'ja') 
+        : courseName;
+      
+      const rankVal = rankEl.value;
+      const rankSuffix = dict.unit_rank || (currentLang === 'en' ? 'th' : '位');
+
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin-bottom: 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; border-left: 3px solid #007bff;">
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-weight: 500;" title="${translatedCourse}">
+            <span style="color: #666; font-size: 11px; margin-right: 4px;">#${i}</span> ${translatedCourse}
+          </span>
+          <span style="font-weight: bold; color: #007bff; font-size: 11px; background: #e7f1ff; padding: 2px 6px; border-radius: 4px;">${rankVal}${rankSuffix}</span>
+        </div>
+      `;
+    }
+  }
+
+  if (countSpan) countSpan.innerText = `${enteredCount}${unitItems}`;
+
+  if (enteredCount === 0) {
+    historyArea.innerHTML = `<div style="color: #888; text-align: center; padding: 30px 0;">${emptyMsg}</div>`;
+  } else {
+    historyArea.innerHTML = html;
+  }
+}
   
   
 </script>
