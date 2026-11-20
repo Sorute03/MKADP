@@ -1327,6 +1327,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
 
+    <div id="courseMemoBackupBox" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
+      <button id="exportCourseMemoBtn" type="button" style="padding: 4px 10px; font-size: 11px; cursor: pointer;">
+        💾 メモをバックアップ
+      </button>
+      <button id="importCourseMemoBtn" type="button" style="padding: 4px 10px; font-size: 11px; cursor: pointer;">
+        📂 バックアップから復元
+      </button>
+      <input id="importCourseMemoFileInput" type="file" accept=".json,application/json" style="display: none;">
+    </div>
+
     <!-- ② その他のバックアップ・ファイル復元ボタン類 -->
     <div style="margin-bottom: 20px; padding:16px; background: #f6fdf6; border:1px solid #d8f3dd; border-radius:8px; display: flex; gap: 12px; flex-wrap: wrap;">
       <button id="importBackupBtn" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" data-i18n="btn_restore_backup_alt">バックアップ復元</button>
@@ -13288,6 +13298,162 @@ function applyCourseToSelect(selectEl, rawCourse) {
   }
   return false;
 }
+
+
+/**
+ * IndexedDB（memos ストア）内の全コースメモを { [storageKey]: memoText } 形式で取得
+ */
+async function dumpAllCourseMemos() {
+  const db = await openCourseMemoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+    const store = tx.objectStore(MK_MEMO_STORE_NAME);
+    const result = {};
+
+    const cursorReq = store.openCursor();
+    cursorReq.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        result[String(cursor.key)] = cursor.value ?? "";
+        cursor.continue();
+      } else {
+        resolve(result);
+      }
+    };
+    cursorReq.onerror = () => reject(cursorReq.error);
+  });
+}
+
+/**
+ * コースメモを JSON ファイルとしてダウンロード（バックアップ）
+ */
+async function exportCourseMemosJSON() {
+  try {
+    const memos = await dumpAllCourseMemos();
+    const payload = {
+      type: "MKCourseMemoBackup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      memos
+    };
+
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    const filename = `mk_course_memos_${y}${m}${d}.json`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    return true;
+  } catch (e) {
+    console.error("コースメモのバックアップ出力に失敗しました:", e);
+    alert("コースメモのバックアップに失敗しました");
+    return false;
+  }
+}
+
+/**
+ * JSONファイルからコースメモを復元（既存メモとマージ・上書き）
+ */
+async function importCourseMemosFromFile(file, { overwriteExisting = true } = {}) {
+  if (!file) return { imported: 0, skipped: 0 };
+
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+
+  // { memos: { "nora_コース名": "..." } } 形式と { "nora_コース名": "..." } 形式の両方に対応
+  const rawMemos = (parsed && typeof parsed === "object" && parsed.memos && typeof parsed.memos === "object")
+    ? parsed.memos
+    : parsed;
+
+  if (!rawMemos || typeof rawMemos !== "object") {
+    throw new Error("無効なバックアップファイル形式です");
+  }
+
+  const db = await openCourseMemoDB();
+  let imported = 0;
+  let skipped = 0;
+
+  for (const [key, value] of Object.entries(rawMemos)) {
+    if (typeof value !== "string" && value != null) continue;
+    const memoVal = value ?? "";
+
+    if (!overwriteExisting) {
+      const exists = await new Promise((resolve, reject) => {
+        const tx = db.transaction(MK_MEMO_STORE_NAME, "readonly");
+        const store = tx.objectStore(MK_MEMO_STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result !== undefined && req.result !== "");
+        req.onerror = () => reject(req.error);
+      });
+      if (exists) {
+        skipped++;
+        continue;
+      }
+    }
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(MK_MEMO_STORE_NAME, "readwrite");
+      const store = tx.objectStore(MK_MEMO_STORE_NAME);
+      const req = store.put(memoVal, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+    imported++;
+  }
+
+  // 現在表示中のメモがあれば再読み込み
+  if (typeof window.loadMemoForActiveModalCourse === "function") {
+    await window.loadMemoForActiveModalCourse();
+  }
+
+  return { imported, skipped };
+}    
+
+document.addEventListener("DOMContentLoaded", () => {
+  const exportBtn = document.getElementById("exportCourseMemoBtn");
+  const importBtn = document.getElementById("importCourseMemoBtn");
+  const fileInput = document.getElementById("importCourseMemoFileInput");
+
+  if (exportBtn) {
+    exportBtn.onclick = async () => {
+      await exportCourseMemosJSON();
+    };
+  }
+
+  if (importBtn && fileInput) {
+    importBtn.onclick = () => {
+      fileInput.value = "";
+      fileInput.click();
+    };
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      try {
+        const { imported } = await importCourseMemosFromFile(file, { overwriteExisting: true });
+        alert(`コースメモを ${imported} 件復元しました`);
+      } catch (e) {
+        console.error("復元に失敗しました:", e);
+        alert("バックアップファイルの読み込みに失敗しました");
+      }
+    };
+  }
+});
+
+    
   
 // ==========================================
 // MMR Matrix 計算 & UIコントローラー（多言語対応版）
