@@ -2735,15 +2735,13 @@ window.loadMemoForActiveModalCourse = async function(explicitCourse = null) {
 
   const rawNext = resolveNextCourseForMemo(explicitCourse);
   if (rawNext) {
-    const options = [...selectEl.options];
-    const matchedOption =
-      options.find(opt => opt.value === rawNext) ||
-      options.find(opt => opt.value.toLowerCase() === rawNext.toLowerCase()) ||
-      options.find(opt => opt.textContent.trim() === rawNext);
+    applyCourseToSelect(selectEl, rawNext);
+  }
 
-    if (matchedOption) {
-      selectEl.value = matchedOption.value;
-    }
+  // それでも未選択なら先頭の有効なコースをフォールバック
+  if (!selectEl.value && selectEl.options.length > 0) {
+    const firstValid = [...selectEl.options].find(opt => opt.value !== "");
+    if (firstValid) selectEl.value = firstValid.value;
   }
 
   const selectedCourse = selectEl.value;
@@ -13042,6 +13040,27 @@ function initCourseMemoTabIndexedDB() {
     };
   }
 }
+
+// 安全にコースを選択状態にするヘルパー（該当optionがなければ現在の選択を維持）
+function applyCourseToSelect(selectEl, rawCourse) {
+  if (!selectEl || !rawCourse) return false;
+  const target = String(rawCourse).trim();
+  if (!target) return false;
+
+  const options = [...selectEl.options];
+  const matched =
+    options.find(opt => opt.value === target) ||
+    options.find(opt => opt.value.toLowerCase() === target.toLowerCase()) ||
+    options.find(opt => opt.textContent.trim() === target);
+
+  if (matched && matched.value !== "") {
+    if (selectEl.value !== matched.value) {
+      selectEl.value = matched.value;
+    }
+    return true;
+  }
+  return false;
+}
   
 // ==========================================
 // MMR Matrix 計算 & UIコントローラー（多言語対応版）
@@ -13732,6 +13751,8 @@ function renderPlayerStatsUI(data) {
     </div>
   `;
 }
+
+
   
   
 </script>
