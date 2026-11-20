@@ -2140,16 +2140,80 @@ function refreshRaceHistoryAfterRestore() {
   }
 }
 
-function renderRaceHistory(records) {
+/**
+ * getAllRecords() / loadADPIndexedDBRecords() / allRecords を統合（重複排除）
+ */
+async function collectRaceHistoryRecords(explicitRecords = null) {
+  let dbRecords = [];
+  if (typeof getAllRecords === "function") {
+    dbRecords = await getAllRecords();
+  } else if (typeof loadADPIndexedDBRecords === "function") {
+    dbRecords = await loadADPIndexedDBRecords();
+  } else if (typeof getAllRecordsFromMogiDB === "function") {
+    dbRecords = await getAllRecordsFromMogiDB();
+  }
+
+  const argRecords = Array.isArray(explicitRecords) ? explicitRecords : [];
+  const memRecords = Array.isArray(window.allRecords) ? window.allRecords : [];
+
+  const combined = argRecords.concat(Array.isArray(dbRecords) ? dbRecords : [], memRecords);
+
+  const seen = new Set();
+  const merged = [];
+
+  for (const r of combined) {
+    if (!r || typeof r !== "object") continue;
+    const key = [
+      r.timestamp ?? "",
+      r.course ?? "",
+      r.rank ?? "",
+      r.score ?? "",
+      r.mode ?? "",
+      r.season ?? "",
+      r.tier ?? ""
+    ].join("|");
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(r);
+    }
+  }
+
+  return merged;
+}
+
+let __raceHistoryRenderSeq = 0;
+
+async function renderRaceHistory(records) {
   const box = document.getElementById("raceHistoryList");
   if (!box) return;
 
-  // 引数が無い／空の場合でも allRecords があればフォールバックで拾う
-  let list = Array.isArray(records) && records.length > 0
-    ? records
-    : (Array.isArray(window.allRecords) ? window.allRecords : (records || []));
+  const seq = ++__raceHistoryRenderSeq;
 
-  // 配列化して安全にコピー＆ソート（timestamp が数値・文字列・Dateでも比較できるように正規化）
+  // mogiDB.records（getAllRecords等）とメモリ上の allRecords を統合して取得
+  const mergedAll = typeof collectRaceHistoryRecords === "function"
+    ? await collectRaceHistoryRecords(records)
+    : (Array.isArray(records) && records.length > 0
+        ? records
+        : (Array.isArray(window.allRecords) ? window.allRecords : (records || [])));
+
+  // 古い非同期描画が後から完了した場合は破棄
+  if (seq !== __raceHistoryRenderSeq) return;
+
+  // メモリ側 allRecords も最新状態に同期
+  window.allRecords = mergedAll;
+
+  let list = mergedAll;
+
+  // フィルター関数があれば適用。ただし復元直後などでフィルター結果が0件かつ全体データがある場合は全体を表示
+  if (typeof getFilteredRecords === "function") {
+    const filtered = getFilteredRecords();
+    if (Array.isArray(filtered) && filtered.length > 0) {
+      list = filtered;
+    }
+  }
+
+  // timestamp が数値・文字列・Dateでも比較できるように正規化
   const toTs = (val) => {
     if (typeof val === "number" && Number.isFinite(val)) return val;
     const parsed = Date.parse(val);
@@ -2179,16 +2243,20 @@ function renderRaceHistory(records) {
     const tsNum = toTs(r.timestamp);
     const date = tsNum ? new Date(tsNum).toLocaleString() : "";
 
+    // コース名を現在の言語に合わせて翻訳
     const translatedCourse = typeof translateMKWorldCourse === "function"
       ? translateMKWorldCourse(r.course, currentLang)
       : r.course;
 
+    // 順位やスコアの単位
     const rankSuffix = dict.unit_rank !== undefined ? dict.unit_rank : "位";
     const ptsSuffix = dict.unit_pts !== undefined ? dict.unit_pts : "点";
 
+    // モード名を言語に合わせて綺麗に変換
     const modeKey = `opt_mode_${r.mode}`;
     const translatedMode = (dict[modeKey] || r.mode || "").replace(/ \([\s\S]*?\)/g, "");
 
+    // ボタンのテキスト変数
     const editLabel = dict.btn_edit || "編集";
     const deleteLabel = dict.btn_delete || "削除";
 
@@ -2226,7 +2294,6 @@ function renderRaceHistory(records) {
     };
   });
 }
-
 function updateModalCourseHistory() {
   const historyArea = document.getElementById("modalCourseHistoryArea");
   const countSpan = document.getElementById("modalCurrentCount");
