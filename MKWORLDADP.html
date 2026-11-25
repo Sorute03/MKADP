@@ -2143,6 +2143,27 @@ function refreshRaceHistoryAfterRestore() {
 /**
  * getAllRecords() / loadADPIndexedDBRecords() / allRecords を統合（重複排除）
  */
+/**
+ * 重複判定用の正規化キーを生成
+ */
+function buildRaceHistoryDedupeKey(r) {
+  if (!r || typeof r !== "object") return "";
+  const ts = Number(r.timestamp);
+  const normTs = Number.isFinite(ts) ? String(ts) : String(r.timestamp ?? "").trim();
+  return [
+    normTs,
+    String(r.course ?? "").trim(),
+    String(r.rank ?? "").trim(),
+    String(r.score ?? "").trim(),
+    String(r.mode ?? "").trim(),
+    String(r.season ?? "").trim(),
+    String(r.tier ?? "").trim()
+  ].join("|");
+}
+
+/**
+ * mogiDB（getAllRecords 等）・メモリ配列・明示引数を統合（重複排除）
+ */
 async function collectRaceHistoryRecords(explicitRecords = null) {
   let dbRecords = [];
   if (typeof getAllRecords === "function") {
@@ -2155,28 +2176,24 @@ async function collectRaceHistoryRecords(explicitRecords = null) {
 
   const argRecords = Array.isArray(explicitRecords) ? explicitRecords : [];
   const memRecords = Array.isArray(window.allRecords) ? window.allRecords : [];
+  const localMemRecords = (typeof allRecords !== "undefined" && Array.isArray(allRecords)) ? allRecords : [];
 
-  const combined = argRecords.concat(Array.isArray(dbRecords) ? dbRecords : [], memRecords);
+  // 新規登録直後（argRecords / memRecords / localMemRecords）を優先して結合
+  const combined = argRecords.concat(
+    memRecords,
+    localMemRecords,
+    Array.isArray(dbRecords) ? dbRecords : []
+  );
 
   const seen = new Set();
   const merged = [];
 
   for (const r of combined) {
     if (!r || typeof r !== "object") continue;
-    const key = [
-      r.timestamp ?? "",
-      r.course ?? "",
-      r.rank ?? "",
-      r.score ?? "",
-      r.mode ?? "",
-      r.season ?? "",
-      r.tier ?? ""
-    ].join("|");
-
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(r);
-    }
+    const key = buildRaceHistoryDedupeKey(r);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(r);
   }
 
   return merged;
@@ -2190,7 +2207,7 @@ async function renderRaceHistory(records) {
 
   const seq = ++__raceHistoryRenderSeq;
 
-  // mogiDB.records（getAllRecords等）とメモリ上の allRecords を統合して取得
+  // mogiDB.records（getAllRecords等）とメモリ上の allRecords / 引数を統合して取得
   const mergedAll = typeof collectRaceHistoryRecords === "function"
     ? await collectRaceHistoryRecords(records)
     : (Array.isArray(records) && records.length > 0
@@ -2200,16 +2217,30 @@ async function renderRaceHistory(records) {
   // 古い非同期描画が後から完了した場合は破棄
   if (seq !== __raceHistoryRenderSeq) return;
 
-  // メモリ側 allRecords も最新状態に同期
+  // メモリ側 allRecords を最新状態に同期
   window.allRecords = mergedAll;
+  if (typeof allRecords !== "undefined") {
+    try {
+      allRecords = mergedAll;
+    } catch (_) {
+      // const 宣言などの場合は無視
+    }
+  }
 
   let list = mergedAll;
 
-  // フィルター関数があれば適用。ただし復元直後などでフィルター結果が0件かつ全体データがある場合は全体を表示
+  // フィルター関数があれば適用
   if (typeof getFilteredRecords === "function") {
     const filtered = getFilteredRecords();
     if (Array.isArray(filtered) && filtered.length > 0) {
-      list = filtered;
+      // 明示的に渡された新規レコード等があれば、フィルターから漏れても消えないよう合流させる
+      if (Array.isArray(records) && records.length > 0) {
+        const filteredKeys = new Set(filtered.map(buildRaceHistoryDedupeKey));
+        const extra = records.filter(r => r && !filteredKeys.has(buildRaceHistoryDedupeKey(r)));
+        list = extra.concat(filtered);
+      } else {
+        list = filtered;
+      }
     }
   }
 
@@ -2220,10 +2251,7 @@ async function renderRaceHistory(records) {
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  let clonedList = Array.isArray(list)
-    ? (typeof clone === "function" ? clone(list) : list.slice())
-    : Array.from(list || []);
-
+  const clonedList = typeof clone === "function" ? clone(list) : list.slice();
   list = clonedList.sort((a, b) => toTs(b.timestamp) - toTs(a.timestamp));
 
   const dict = (typeof i18nDict !== "undefined" && (i18nDict[currentLang] || i18nDict["ja"])) || {};
@@ -2294,6 +2322,7 @@ async function renderRaceHistory(records) {
     };
   });
 }
+  
 function updateModalCourseHistory() {
   const historyArea = document.getElementById("modalCourseHistoryArea");
   const countSpan = document.getElementById("modalCurrentCount");
