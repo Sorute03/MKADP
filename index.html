@@ -524,5 +524,125 @@
       setLanguage(savedLang || userLang);
     });
   </script>
+  
+  <script type="module">
+  import { DiscordSDK } from "https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@2.5.0/+esm";
+
+  // Discord Developer Portal の Application ID（Client ID）を設定
+  const DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID";
+
+  // グローバル状態（既存スクリプトから参照可能）
+  window.MKADP_ENV = {
+    isDiscordActivity: false,
+    sdkReady: false,
+    storagePersisted: null,
+    channelId: null,
+    guildId: null,
+    error: null
+  };
+
+  /**
+   * 現在の実行環境が Discord Activity の iframe 内かを判定
+   */
+  function detectDiscordActivityContext() {
+    const params = new URLSearchParams(window.location.search);
+    const hasDiscordParams =
+      params.has("frame_id") ||
+      params.has("instance_id") ||
+      params.has("platform");
+
+    const isInIframe = window.self !== window.top;
+    const ref = document.referrer || "";
+    const hasDiscordReferrer = ref.includes("discord.com") || ref.includes("discordsays.com");
+
+    return Boolean(hasDiscordParams || (isInIframe && hasDiscordReferrer));
+  }
+
+  /**
+   * ストレージの永続化（Persistent Storage）をリクエスト
+   */
+  async function requestStoragePersistence() {
+    try {
+      if (!navigator.storage || typeof navigator.storage.persist !== "function") {
+        window.MKADP_ENV.storagePersisted = null;
+        return null;
+      }
+
+      // すでに永続化済みか確認してからリクエスト
+      const alreadyPersisted =
+        typeof navigator.storage.persisted === "function"
+          ? await navigator.storage.persisted()
+          : false;
+
+      const granted = alreadyPersisted ? true : await navigator.storage.persist();
+      window.MKADP_ENV.storagePersisted = granted;
+
+      if (typeof window.logMessage === "function") {
+        window.logMessage(
+          `> Storage persistence: ${granted ? "GRANTED (persistent)" : "BEST-EFFORT (not granted)"}`
+        );
+      }
+      return granted;
+    } catch (err) {
+      window.MKADP_ENV.storagePersisted = false;
+      console.warn("[MKADP] storage.persist() failed:", err);
+      return false;
+    }
+  }
+
+  /**
+   * Discord Embedded App SDK 初期化（通常ブラウザ時はスキップ）
+   */
+  async function initDiscordActivitySDK() {
+    const isActivity = detectDiscordActivityContext();
+    window.MKADP_ENV.isDiscordActivity = isActivity;
+
+    if (!isActivity) {
+      return;
+    }
+
+    if (!DISCORD_CLIENT_ID || DISCORD_CLIENT_ID === "YOUR_DISCORD_CLIENT_ID") {
+      console.warn("[MKADP] DISCORD_CLIENT_ID is not configured.");
+      return;
+    }
+
+    try {
+      const discordSdk = new DiscordSDK(DISCORD_CLIENT_ID);
+      window.discordSdk = discordSdk;
+
+      await discordSdk.ready();
+      window.MKADP_ENV.sdkReady = true;
+      window.MKADP_ENV.channelId = discordSdk.channelId || null;
+      window.MKADP_ENV.guildId = discordSdk.guildId || null;
+
+      if (typeof window.logMessage === "function") {
+        window.logMessage(
+          `> Discord Activity ready (channelId: ${window.MKADP_ENV.channelId || "none"})`
+        );
+      }
+
+      // 必要であればここで参加者情報などを取得可能
+      // const participants = await discordSdk.commands.getActivityInstanceConnectedParticipants();
+      window.dispatchEvent(
+        new CustomEvent("mkadp:discord-ready", { detail: { ...window.MKADP_ENV, sdk: discordSdk } })
+      );
+    } catch (err) {
+      window.MKADP_ENV.sdkReady = false;
+      window.MKADP_ENV.error = err;
+      console.warn("[MKADP] DiscordSDK init failed, falling back to standard mode:", err);
+    }
+  }
+
+  async function bootstrapActivityAndStorage() {
+    await requestStoragePersistence();
+    await initDiscordActivitySDK();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapActivityAndStorage, { once: true });
+  } else {
+    bootstrapActivityAndStorage();
+  }
+</script>
 </body>
 </html>
