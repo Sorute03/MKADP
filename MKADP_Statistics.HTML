@@ -1687,6 +1687,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAndDecryptGameData('MKWORLD');
   });
 });
+window.addEventListener('discord-sdk-ready', (e) => {
+  const sdk = e.detail.sdk;
+  // 必要に応じて sdk.channelId や sdk.guildId などを参照
+});
 </script>
 </body>
 </html>
