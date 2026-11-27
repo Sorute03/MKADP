@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>利用規約 | MK All Database Program（MKADP）</title>
+  <meta name="robots" content="index, follow">
+
+  <script type="module">
+    import { DiscordSDK } from "https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@2.5.0/+esm";
+
+    const DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID";
+
+    function detectDiscordActivityContext() {
+      const params = new URLSearchParams(window.location.search);
+      return Boolean(
+        window.location.hostname.endsWith(".discordsays.com") ||
+        params.has("frame_id") ||
+        params.has("instance_id") ||
+        params.has("platform")
+      );
+    }
+
+    async function initSdk() {
+      if (!detectDiscordActivityContext()) return;
+      document.documentElement.classList.add("is-discord-activity");
+      if (!DISCORD_CLIENT_ID || DISCORD_CLIENT_ID === "YOUR_DISCORD_CLIENT_ID") return;
+      try {
+        const sdk = new DiscordSDK(DISCORD_CLIENT_ID);
+        window.discordSdk = sdk;
+        await sdk.ready();
+      } catch (e) {
+        console.warn("[MKADP] DiscordSDK init failed:", e);
+      }
+    }
+
+    initSdk();
+  </script>
+
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #e2e8f0;
+      --accent-bg: #eff6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      height: auto;
+      overflow-y: auto;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 20px 16px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding-bottom: 32px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .lang-switcher {
+      display: inline-flex;
+      background-color: #e2e8f0;
+      padding: 3px;
+      border-radius: 9999px;
+      gap: 4px;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .lang-btn.active {
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .tag {
+      display: inline-block;
+      background-color: #dbeafe;
+      color: #1e40af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      margin-bottom: 6px;
+    }
+
+    .updated {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      color: #1e3a8a;
+      margin: 22px 0 8px 0;
+    }
+
+    p, li {
+      font-size: 0.94rem;
+      color: var(--text-main);
+    }
+
+    ul {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .note-box {
+      background-color: var(--accent-bg);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 20px;
+    }
+
+    .footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <a href="./index.html" class="back-link" data-i18n="back_home">← トップページへ戻る</a>
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">日本語</button>
+        <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">English</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="tag" data-i18n="tag">MKADP 公式ドキュメント</span>
+      <h1 data-i18n="title">利用規約</h1>
+      <p class="updated" data-i18n="updated">最終更新日: 2026年11月27日</p>
+
+      <p data-i18n="intro">
+        本利用規約（以下「本規約」といいます）は、MK All Database Program（以下「本サービス」といいます）の提供条件および利用者の皆様と開発者との間の権利義務関係を定めるものです。本サービスを利用される場合は、本規約に同意したものとみなします。
+      </p>
+
+      <h2 data-i18n="h1">第1条（本サービスの内容・非公式ツールとしての位置づけ）</h2>
+      <p data-i18n="p1">
+        本サービスは、ゲームの戦績記録・統計分析・MMR予測計算・配信向けオーバーレイ表示を支援する個人開発のファンメイドツールです。任天堂株式会社、Discord Inc.、その他関連団体とは一切関係のない非公式サービスです。
+      </p>
+
+      <h2 data-i18n="h2">第2条（禁止事項）</h2>
+      <p data-i18n="p2_lead">利用者は、本サービスの利用にあたり、以下の行為を行ってはなりません。</p>
+      <ul>
+        <li data-i18n="li2_1">本サービスのサーバー・外部API・関連インフラに過度な負荷をかける行為、または不正アクセスを試みる行為</li>
+        <li data-i18n="li2_2">他者の Discord Webhook URL や認証情報を無断で使用する行為</li>
+        <li data-i18n="li2_3">本サービスを悪用したスパム送信、嫌がらせ、違法または公序良俗に反する行為</li>
+        <li data-i18n="li2_4">本サービスのコードを無断で再配布し、自作と偽って公開・販売する行為</li>
+        <li data-i18n="li2_5">Discord 利用規約およびコミュニティガイドラインに違反する行為</li>
+      </ul>
+
+      <h2 data-i18n="h3">第3条（データのバックアップ責任）</h2>
+      <p data-i18n="p3">
+        本サービスのデータは主に利用者のブラウザストレージに保存されます。ブラウザのキャッシュ削除・端末変更・不具合等によりデータが消失する可能性があるため、利用者自身の責任において定期的なエクスポート・バックアップを行ってください。
+      </p>
+
+      <h2 data-i18n="h4">第4条（サービスの変更・中断・終了）</h2>
+      <p data-i18n="p4">
+        開発者は、システム保守、外部API仕様の変更、その他やむを得ない事由により、利用者への事前通知なく本サービスの全部または一部の内容を変更、中断、または終了できるものとします。
+      </p>
+
+      <h2 data-i18n="h5">第5条（免責事項）</h2>
+      <p data-i18n="p5">
+        開発者は、本サービスの計算結果（MMR予測・統計値等）の正確性・完全性・特定の目的への適合性について保証するものではありません。本サービスの利用または利用不能により利用者に生じた損害について、開発者は一切の責任を負いません。
+      </p>
+
+      <h2 data-i18n="h6">第6条（規約の改定）</h2>
+      <p data-i18n="p6">
+        開発者は、必要と判断した場合にはいつでも本規約を改定できるものとし、改定後の規約は本ページに掲載された時点から効力を生じるものとします。
+      </p>
+
+      <div class="note-box" data-i18n="contact">
+        <strong>開発者・お問い合わせ：</strong>レモちゃん♪（X: @harucchi03）
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="./index.html" data-i18n="footer_home">トップページ</a> ｜
+      <a href="./privacy.html" data-i18n="footer_privacy">プライバシーポリシー</a>
+    </div>
+  </div>
+
+  <script>
+    const i18nData = {
+      ja: {
+        back_home: "← トップページへ戻る",
+        tag: "MKADP 公式ドキュメント",
+        title: "利用規約",
+        updated: "最終更新日: 2026年11月27日",
+        intro: "本利用規約（以下「本規約」といいます）は、MK All Database Program（以下「本サービス」といいます）の提供条件および利用者の皆様と開発者との間の権利義務関係を定めるものです。本サービスを利用される場合は、本規約に同意したものとみなします。",
+        h1: "第1条（本サービスの内容・非公式ツールとしての位置づけ）",
+        p1: "本サービスは、ゲームの戦績記録・統計分析・MMR予測計算・配信向けオーバーレイ表示を支援する個人開発のファンメイドツールです。任天堂株式会社、Discord Inc.、その他関連団体とは一切関係のない非公式サービスです。",
+        h2: "第2条（禁止事項）",
+        p2_lead: "利用者は、本サービスの利用にあたり、以下の行為を行ってはなりません。",
+        li2_1: "本サービスのサーバー・外部API・関連インフラに過度な負荷をかける行為、または不正アクセスを試みる行為",
+        li2_2: "他者の Discord Webhook URL や認証情報を無断で使用する行為",
+        li2_3: "本サービスを悪用したスパム送信、嫌がらせ、違法または公序良俗に反する行為",
+        li2_4: "本サービスのコードを無断で再配布し、自作と偽って公開・販売する行為",
+        li2_5: "Discord 利用規約およびコミュニティガイドラインに違反する行為",
+        h3: "第3条（データのバックアップ責任）",
+        p3: "本サービスのデータは主に利用者のブラウザストレージに保存されます。ブラウザのキャッシュ削除・端末変更・不具合等によりデータが消失する可能性があるため、利用者自身の責任において定期的なエクスポート・バックアップを行ってください。",
+        h4: "第4条（サービスの変更・中断・終了）",
+        p4: "開発者は、システム保守、外部API仕様の変更、その他やむを得ない事由により、利用者への事前通知なく本サービスの全部または一部の内容を変更、中断、または終了できるものとします。",
+        h5: "第5条（免責事項）",
+        p5: "開発者は、本サービスの計算結果（MMR予測・統計値等）の正確性・完全性・特定の目的への適合性について保証するものではありません。本サービスの利用または利用不能により利用者に生じた損害について、開発者は一切の責任を負いません。",
+        h6: "第6条（規約の改定）",
+        p6: "開発者は、必要と判断した場合にはいつでも本規約を改定できるものとし、改定後の規約は本ページに掲載された時点から効力を生じます。",
+        contact: "開発者・お問い合わせ：レモちゃん♪（X: @harucchi03）",
+        footer_home: "トップページ",
+        footer_privacy: "プライバシーポリシー"
+      },
+      en: {
+        back_home: "← Back to Home",
+        tag: "MKADP Official Document",
+        title: "Terms of Service",
+        updated: "Last Updated: November 27, 2026",
+        intro: "These Terms of Service (\"Terms\") govern your access to and use of MK All Database Program (\"the Service\"). By using the Service, you agree to be bound by these Terms.",
+        h1: "1. Nature of the Service (Unofficial Fan-Made Tool)",
+        p1: "The Service is an independent, fan-made utility designed to assist with match tracking, statistical analysis, MMR estimation, and stream overlays. It is not affiliated with, endorsed by, or sponsored by Nintendo Co., Ltd., Discord Inc., or any related organizations.",
+        h2: "2. Prohibited Conduct",
+        p2_lead: "When using the Service, you agree not to:",
+        li2_1: "Place excessive load on servers, external APIs, or related infrastructure, or attempt unauthorized access.",
+        li2_2: "Use another person's Discord Webhook URL or credentials without permission.",
+        li2_3: "Use the Service for spam, harassment, or any unlawful or abusive activity.",
+        li2_4: "Redistribute or sell the Service's code while claiming it as your own work.",
+        li2_5: "Violate the Discord Terms of Service or Community Guidelines.",
+        h3: "3. Responsibility for Data Backups",
+        p3: "Data is primarily stored in your local browser storage. Because clearing browser data, switching devices, or unexpected errors may result in data loss, you are responsible for regularly exporting and backing up your records.",
+        h4: "4. Modification, Suspension, or Termination",
+        p4: "The developer reserves the right to modify, suspend, or discontinue any part of the Service at any time without prior notice due to maintenance, external API changes, or other reasons.",
+        h5: "5. Disclaimer of Warranties",
+        p5: "The Service is provided \"as is\" without warranties of any kind regarding the accuracy or completeness of MMR calculations or statistics. The developer shall not be liable for any damages arising from the use or inability to use the Service.",
+        h6: "6. Changes to These Terms",
+        p6: "The developer may revise these Terms at any time. Revised Terms become effective upon posting on this page.",
+        contact: "Developer & Contact: レモちゃん♪ (X: @harucchi03)",
+        footer_home: "Home",
+        footer_privacy: "Privacy Policy"
+      }
+    };
+
+    function setLanguage(lang) {
+      localStorage.setItem("mkadp_lang", lang);
+      document.documentElement.lang = lang;
+      document.getElementById("btn-lang-ja").classList.toggle("active", lang === "ja");
+      document.getElementById("btn-lang-en").classList.toggle("active", lang === "en");
+
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (i18nData[lang] && i18nData[lang][key]) {
+          el.textContent = i18nData[lang][key];
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedLang = localStorage.getItem("mkadp_lang");
+      const userLang = navigator.language.startsWith("ja") ? "ja" : "en";
+      setLanguage(savedLang || userLang);
+    });
+  </script>
+</body>
+</html>
